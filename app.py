@@ -948,6 +948,7 @@ def search_work_orders():
     status_filter = request.args.get('status', '')
     priority_filter = request.args.get('priority', '')
     technician_filter = request.args.get('technician', '')
+    intervention_filter = request.args.get('intervention', '')
     
     conn = get_db_connection()
     try:
@@ -979,12 +980,18 @@ def search_work_orders():
             if technician_filter:
                 sql += " AND wo.assigned_technician_id = %s"
                 params.append(technician_filter)
-            
+
+            # Filtre intervention: 'yes' => intervention_id IS NOT NULL, 'no' => intervention_id IS NULL
+            if intervention_filter == 'yes':
+                sql += " AND wo.intervention_id IS NOT NULL"
+            elif intervention_filter == 'no':
+                sql += " AND wo.intervention_id IS NULL"
+
             sql += " GROUP BY wo.id ORDER BY wo.created_at DESC LIMIT 100"
-            
+
             cur.execute(sql, params)
             work_orders = cur.fetchall()
-            
+
             return {'work_orders': work_orders}
             
     except Exception as e:

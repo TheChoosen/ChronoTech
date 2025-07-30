@@ -123,7 +123,7 @@
             <div class="work-order-card" 
                  data-id="{{ work_order.id }}" 
                  onclick="selectWorkOrder(this)"
-                 ondblclick="editWorkOrder({{ work_order.id }})">
+                 ondblclick="editWorkOrder('{{ work_order.id }}')">
                 
                 <!-- Header de la carte -->
                 <div class="card-header">
@@ -155,17 +155,17 @@
                     </div>
                     <div class="card-actions">
                         <button class="action-btn primary" 
-                                onclick="event.stopPropagation(); editWorkOrder({{ work_order.id }})"
+                                onclick="event.stopPropagation(); editWorkOrder('{{ work_order.id }}')"
                                 title="Modifier (F4)">
                             <i class="fas fa-edit"></i>
                         </button>
                         <button class="action-btn info" 
-                                onclick="event.stopPropagation(); viewProducts({{ work_order.id }})"
+                                onclick="event.stopPropagation(); viewProducts('{{ work_order.id }}')"
                                 title="Produits (F8)">
                             <i class="fas fa-boxes"></i>
                         </button>
                         <button class="action-btn danger" 
-                                onclick="event.stopPropagation(); confirmDelete({{ work_order.id }}, '{{ work_order.claim_number }}')"
+                                onclick="event.stopPropagation(); confirmDelete('{{ work_order.id }}', '{{ work_order.claim_number }}')"
                                 title="Supprimer (F9)">
                             <i class="fas fa-trash"></i>
                         </button>
@@ -264,7 +264,7 @@
                     <tr data-id="{{ work_order.id }}" 
                         class="{% if work_order.intervention_id %}has-intervention{% endif %}"
                         onclick="selectWorkOrder(this)"
-                        ondblclick="editWorkOrder({{ work_order.id }})">
+                        ondblclick="editWorkOrder('{{ work_order.id }}')">
                         <td>
                             <div class="claim-cell">
                                 <strong class="claim-compact">{{ work_order.claim_number }}</strong>
@@ -340,17 +340,17 @@
                         <td class="actions-column">
                             <div class="action-buttons compact">
                                 <button class="btn btn-xs btn-primary" 
-                                        onclick="event.stopPropagation(); editWorkOrder({{ work_order.id }})"
+                                        onclick="event.stopPropagation(); editWorkOrder('{{ work_order.id }}')"
                                         title="Modifier">
                                     <i class="fas fa-edit"></i>
                                 </button>
                                 <button class="btn btn-xs btn-info" 
-                                        onclick="event.stopPropagation(); viewProducts({{ work_order.id }})"
+                                        onclick="event.stopPropagation(); viewProducts('{{ work_order.id }}')"
                                         title="Produits">
                                     <i class="fas fa-boxes"></i>
                                 </button>
                                 <button class="btn btn-xs btn-danger" 
-                                        onclick="event.stopPropagation(); confirmDelete({{ work_order.id }}, '{{ work_order.claim_number }}')"
+                                        onclick="event.stopPropagation(); confirmDelete('{{ work_order.id }}', '{{ work_order.claim_number }}')"
                                         title="Supprimer">
                                     <i class="fas fa-trash"></i>
                                 </button>
@@ -1018,41 +1018,37 @@ function updateFiltersWithInterventions() {
 
 // Amélioration de applyFilters pour inclure les interventions
 function applyFilters() {
-    const statusFilter = document.getElementById('statusFilter').value;
-    const priorityFilter = document.getElementById('priorityFilter').value;
-    const technicianFilter = document.getElementById('technicianFilter').value;
-    const interventionFilter = document.getElementById('interventionFilter')?.value || '';
-    
-    const items = currentView === 'cards' 
-        ? document.querySelectorAll('.work-order-card')
-        : document.querySelectorAll('#workOrdersTable tbody tr');
-    
-    let visibleCount = 0;
-    
-    items.forEach(item => {
-        const status = getItemAttribute(item, 'status');
-        const priority = getItemAttribute(item, 'priority');
-        const technician = getItemAttribute(item, 'technician');
-        const intervention = getItemAttribute(item, 'intervention');
-        
-        const statusMatch = !statusFilter || status === statusFilter;
-        const priorityMatch = !priorityFilter || priority === priorityFilter;
-        const technicianMatch = !technicianFilter || technician === technicianFilter;
-        const interventionMatch = !interventionFilter || intervention === interventionFilter;
-        
-        if (statusMatch && priorityMatch && technicianMatch && interventionMatch) {
-            item.style.display = '';
-            visibleCount++;
-        } else {
-            item.style.display = 'none';
-        }
-    });
-    
-    // Mettre à jour le compteur
-    const itemsCount = document.getElementById('itemsCount');
-    if (itemsCount) {
-        itemsCount.textContent = `${visibleCount} travaux filtrés`;
-    }
+    const query = document.getElementById('searchInput').value.trim();
+    const status = document.getElementById('statusFilter').value;
+    const priority = document.getElementById('priorityFilter').value;
+    const technician = document.getElementById('technicianFilter').value;
+    const intervention = document.getElementById('interventionFilter')?.value || '';
+
+    const params = new URLSearchParams();
+    if (query) params.append('q', query);
+    if (status) params.append('status', status);
+    if (priority) params.append('priority', priority);
+    if (technician) params.append('technician', technician);
+    if (intervention) params.append('intervention', intervention);
+
+    showLoading();
+
+    fetch(`/api/work_orders/search?${params.toString()}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showNotification('Erreur lors de la recherche: ' + data.error, 'error');
+                return;
+            }
+            updateWorkOrdersTable(data.work_orders);
+            updateStats(data.work_orders);
+        })
+        .catch(error => {
+            showNotification('Erreur lors de la recherche: ' + error.message, 'error');
+        })
+        .finally(() => {
+            hideLoading();
+        });
 }
 
 // Initialiser les filtres au chargement
