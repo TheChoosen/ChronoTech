@@ -1,0 +1,6 @@
+Flask==2.2.2
+Flask-PyMySQL
+python-dotenv
+PyMySQL
+Werkzeug==2.2.3
+PyYAML

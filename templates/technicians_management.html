@@ -1,0 +1,447 @@
+{% extends 'layout.html' %}
+
+{% block title %}Gestion des Techniciens - ChronoTech{% endblock %}
+
+{% block content %}
+<!-- Header avec titre et actions -->
+<div class="clay-card clay-card-elevated mb-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center">
+        <div class="mb-3 mb-md-0">
+            <h1 class="mb-2">
+                <i class="fa-solid fa-users-gear me-2" style="color: var(--clay-accent-primary);"></i>
+                Gestion des Techniciens
+            </h1>
+            <p class="clay-text-secondary mb-0">
+                Gérez votre équipe de techniciens et leurs accès
+            </p>
+        </div>
+        <button class="clay-btn clay-btn-primary clay-pulse" data-bs-toggle="modal" data-bs-target="#addTechnicianModal">
+            <i class="fa-solid fa-user-plus me-1"></i>
+            <span class="d-none d-sm-inline">Ajouter un technicien</span>
+        </button>
+    </div>
+</div>
+
+<!-- Statistiques rapides -->
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="clay-card clay-card-compact text-center">
+            <i class="fa-solid fa-users fa-2x mb-2" style="color: var(--clay-accent-primary);"></i>
+            <h3 class="mb-1">{{ technicians|length }}</h3>
+            <p class="clay-text-secondary mb-0">Techniciens</p>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="clay-card clay-card-compact text-center">
+            <i class="fa-solid fa-user-check fa-2x mb-2" style="color: var(--clay-success);"></i>
+            <h3 class="mb-1">{{ technicians|selectattr('status', 'equalto', 'active')|list|length or technicians|length }}</h3>
+            <p class="clay-text-secondary mb-0">Actifs</p>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="clay-card clay-card-compact text-center">
+            <i class="fa-solid fa-wrench fa-2x mb-2" style="color: var(--clay-info);"></i>
+            <h3 class="mb-1">0</h3>
+            <p class="clay-text-secondary mb-0">En intervention</p>
+        </div>
+    </div>
+</div>
+
+<!-- Liste des techniciens -->
+<div class="clay-card">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">
+            <i class="fa-solid fa-list me-2"></i>
+            Liste des techniciens
+        </h2>
+        <div class="d-flex gap-2">
+            <input type="text" class="clay-input" placeholder="Rechercher..." id="searchTechnician" style="width: 200px;">
+        </div>
+    </div>
+
+    {% if technicians %}
+        <div class="clay-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th><i class="fa-solid fa-user me-1"></i> Nom</th>
+                        <th><i class="fa-solid fa-envelope me-1"></i> Email</th>
+                        <th><i class="fa-solid fa-calendar me-1"></i> Inscrit le</th>
+                        <th class="text-center"><i class="fa-solid fa-cogs me-1"></i> Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="techniciansTableBody">
+                    {% for tech in technicians %}
+                    <tr data-name="{{ tech.name|lower }}" data-email="{{ tech.email|lower }}">
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="me-3">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                                         style="width: 40px; height: 40px; background: linear-gradient(135deg, var(--clay-accent-primary), var(--clay-accent-secondary)); color: white; font-weight: bold;">
+                                        {{ tech.name[0].upper() }}
+                                    </div>
+                                </div>
+                                <div>
+                                    <strong class="clay-text-primary">{{ tech.name }}</strong>
+                                    <br>
+                                    <small class="clay-text-light">
+                                        <i class="fa-solid fa-circle text-success me-1" style="font-size: 0.6rem;"></i>
+                                        En ligne
+                                    </small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="clay-text-secondary">
+                            <i class="fa-solid fa-envelope me-1"></i>
+                            {{ tech.email }}
+                        </td>
+                        <td class="clay-text-secondary">
+                            <i class="fa-solid fa-calendar-alt me-1"></i>
+                            {{ tech.created_at.strftime('%d/%m/%Y') if tech.created_at else 'N/A' }}
+                        </td>
+                        <td>
+                            <div class="d-flex justify-content-center gap-1">
+                                <button class="clay-btn clay-btn-sm clay-btn-warning" onclick="editTechnician({{ tech.id }}, '{{ tech.name }}', '{{ tech.email }}')" title="Modifier">
+                                    <i class="fa-solid fa-edit"></i>
+                                </button>
+                                <button type="button" class="clay-btn clay-btn-sm clay-btn-danger" title="Supprimer"
+                                        onclick="handleTechnicianDelete({{ tech.id }}, '{{ tech.name }}')">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                                <!-- Formulaire caché pour la suppression normale -->
+                                <form action="{{ url_for('delete_technician', id=tech.id) }}" method="post" style="display:none;" 
+                                      data-item-name="{{ tech.name }}" data-item-type="le technicien">
+                                    <button type="submit" style="display:none;"></button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <i class="fa-solid fa-users-slash fa-4x clay-text-light mb-3"></i>
+            <h4 class="clay-text-secondary">Aucun technicien trouvé</h4>
+            <p class="clay-text-light">Commencez par ajouter votre premier technicien</p>
+            <button class="clay-btn clay-btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#addTechnicianModal">
+                <i class="fa-solid fa-user-plus me-1"></i>Ajouter un technicien
+            </button>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Modal Ajouter Technicien Claymorphism -->
+<div class="modal fade" id="addTechnicianModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('new_technician') }}" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fa-solid fa-user-plus me-2"></i>Ajouter un technicien
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="clay-form-group">
+                        <label for="name" class="clay-label">
+                            <i class="fa-solid fa-user me-1"></i>Nom complet
+                        </label>
+                        <input type="text" class="clay-input" name="name" required placeholder="Nom et prénom du technicien">
+                    </div>
+                    <div class="clay-form-group">
+                        <label for="email" class="clay-label">
+                            <i class="fa-solid fa-envelope me-1"></i>Adresse email
+                        </label>
+                        <input type="email" class="clay-input" name="email" required placeholder="email@exemple.com">
+                    </div>
+                    <div class="clay-form-group">
+                        <label for="password" class="clay-label">
+                            <i class="fa-solid fa-lock me-1"></i>Mot de passe initial
+                        </label>
+                        <input type="password" class="clay-input" name="password" required placeholder="••••••••" minlength="6">
+                        <small class="clay-text-light">Le technicien pourra changer ce mot de passe après connexion</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="clay-btn" data-bs-dismiss="modal">
+                        <i class="fa-solid fa-times me-1"></i>Annuler
+                    </button>
+                    <button type="submit" class="clay-btn clay-btn-primary">
+                        <i class="fa-solid fa-save me-1"></i>Créer le technicien
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Modifier Technicien Claymorphism -->
+<div class="modal fade" id="editTechnicianModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="editTechnicianForm" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fa-solid fa-user-edit me-2"></i>Modifier le technicien
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="clay-form-group">
+                        <label for="edit_name" class="clay-label">
+                            <i class="fa-solid fa-user me-1"></i>Nom complet
+                        </label>
+                        <input type="text" class="clay-input" id="edit_name" name="name" required>
+                    </div>
+                    <div class="clay-form-group">
+                        <label for="edit_email" class="clay-label">
+                            <i class="fa-solid fa-envelope me-1"></i>Adresse email
+                        </label>
+                        <input type="email" class="clay-input" id="edit_email" name="email" required>
+                    </div>
+                    <div class="clay-form-group">
+                        <label for="edit_password" class="clay-label">
+                            <i class="fa-solid fa-lock me-1"></i>Nouveau mot de passe
+                        </label>
+                        <input type="password" class="clay-input" id="edit_password" name="password" placeholder="Laisser vide pour conserver le mot de passe actuel">
+                        <small class="clay-text-light">Laissez vide si vous ne souhaitez pas changer le mot de passe</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="clay-btn" data-bs-dismiss="modal">
+                        <i class="fa-solid fa-times me-1"></i>Annuler
+                    </button>
+                    <button type="submit" class="clay-btn clay-btn-primary">
+                        <i class="fa-solid fa-save me-1"></i>Enregistrer les modifications
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de réassignation -->
+<div class="clay-modal clay-modal-hidden" id="reassignModal">
+    <div class="clay-modal-backdrop"></div>
+    <div class="clay-modal-content">
+        <form id="reassignForm" method="post" class="clay-form">
+            <div class="clay-modal-header">
+                <h3 class="clay-title-secondary">
+                    <i class="fas fa-exchange-alt clay-icon-warning mr-3"></i>
+                    Réassigner les interventions
+                </h3>
+                <button type="button" class="clay-btn-close" data-dismiss="modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="clay-modal-body">
+                <div class="clay-alert clay-alert-warning mb-4">
+                    <div class="clay-alert-content">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        <div>
+                            <strong>Attention :</strong> Ce technicien a des interventions associées.
+                            <br>Vous devez les réassigner à un autre technicien avant de pouvoir le supprimer.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="clay-info-card mb-4">
+                    <div class="clay-info-content">
+                        <span class="clay-label">Technicien à supprimer :</span>
+                        <span id="technicianToDelete" class="clay-text-primary"></span>
+                    </div>
+                    <div class="clay-info-content">
+                        <span class="clay-label">Interventions à réassigner :</span>
+                        <span id="interventionCount" class="clay-text-accent"></span>
+                    </div>
+                </div>
+                
+                <div class="clay-form-group">
+                    <label for="new_technician_id" class="clay-label">Nouveau technicien</label>
+                    <select class="clay-select" id="new_technician_id" name="new_technician_id" required>
+                        <option value="">Sélectionner un technicien</option>
+                        {% for tech in technicians %}
+                            <option value="{{ tech.id }}">{{ tech.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="clay-modal-footer">
+                <button type="button" class="clay-btn clay-btn-secondary" data-dismiss="modal">Annuler</button>
+                <button type="submit" class="clay-btn clay-btn-warning clay-ripple">
+                    <i class="fas fa-exchange-alt mr-2"></i>
+                    Réassigner et Supprimer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+/* Animations spécifiques aux techniciens */
+.clay-table tbody tr {
+    transition: var(--clay-transition);
+}
+
+.clay-table tbody tr:hover {
+    background: rgba(212, 165, 116, 0.08);
+    transform: translateX(5px);
+}
+
+/* Animation des avatars */
+.rounded-circle {
+    transition: var(--clay-transition);
+}
+
+.rounded-circle:hover {
+    transform: scale(1.1);
+}
+
+/* Recherche en temps réel */
+#searchTechnician {
+    transition: var(--clay-transition);
+}
+
+#searchTechnician:focus {
+    transform: scale(1.05);
+}
+
+/* Badges de statut */
+.text-success {
+    color: var(--clay-success) !important;
+}
+
+/* Animation d'entrée */
+.clay-card {
+    animation: slideInUp 0.6s ease-out;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
+
+<script>
+// Fonction pour éditer un technicien
+function editTechnician(id, name, email) {
+    document.getElementById('edit_name').value = name;
+    document.getElementById('edit_email').value = email;
+    document.getElementById('edit_password').value = '';
+    document.getElementById('editTechnicianForm').action = `/technician/${id}/edit`;
+    new bootstrap.Modal(document.getElementById('editTechnicianModal')).show();
+}
+
+// Fonction pour ouvrir le modal de réassignation
+function openReassignModal(technicianName, interventionCount) {
+    document.getElementById('technicianToDelete').textContent = technicianName;
+    document.getElementById('interventionCount').textContent = interventionCount;
+    new bootstrap.Modal(document.getElementById('reassignModal')).show();
+}
+
+// Gestion de la réassignation
+function showReassignModal(techId, techName, interventionCount) {
+    document.getElementById('technicianToDelete').textContent = techName;
+    document.getElementById('interventionCount').textContent = interventionCount + ' intervention(s)';
+    document.getElementById('reassignForm').action = `/technician/${techId}/reassign`;
+    
+    // Filtrer les options pour exclure le technicien à supprimer
+    const select = document.getElementById('new_technician_id');
+    Array.from(select.options).forEach(option => {
+        if (option.value == techId) {
+            option.style.display = 'none';
+        } else {
+            option.style.display = 'block';
+        }
+    });
+    
+    showModal('reassignModal');
+}
+
+// Mise à jour de la gestion des suppressions avec vérification des interventions
+async function handleTechnicianDelete(techId, techName) {
+    try {
+        // Vérifier les interventions associées via AJAX
+        const response = await fetch(`/api/technician/${techId}/interventions/count`);
+        const data = await response.json();
+        
+        if (data.count > 0) {
+            // Il y a des interventions, proposer la réassignation
+            showReassignModal(techId, techName, data.count);
+        } else {
+            // Aucune intervention, suppression directe
+            if (confirm(`Êtes-vous sûr de vouloir supprimer le technicien "${techName}" ?\n\nCette action est irréversible.`)) {
+                // Soumettre le formulaire de suppression normale
+                const form = document.querySelector(`form[action*="/technician/${techId}/delete"]`);
+                if (form) {
+                    form.submit();
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Erreur lors de la vérification:', error);
+        // Fallback vers la suppression normale avec confirmation
+        if (confirm(`Êtes-vous sûr de vouloir supprimer le technicien "${techName}" ?\n\nCette action est irréversible.`)) {
+            const form = document.querySelector(`form[action*="/technician/${techId}/delete"]`);
+            if (form) {
+                form.submit();
+            }
+        }
+    }
+}
+
+// Recherche en temps réel
+document.getElementById('searchTechnician').addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    const rows = document.querySelectorAll('#techniciansTableBody tr');
+    
+    rows.forEach(row => {
+        const name = row.dataset.name;
+        const email = row.dataset.email;
+        
+        if (name.includes(searchTerm) || email.includes(searchTerm)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+
+// Animation d'entrée des cartes
+document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.clay-card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            card.style.transition = 'all 0.5s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+});
+
+// Validation en temps réel des formulaires
+document.querySelectorAll('.clay-input[type="email"]').forEach(input => {
+    input.addEventListener('input', function() {
+        if (this.validity.valid) {
+            this.style.borderLeft = '3px solid var(--clay-success)';
+        } else if (this.value.length > 0) {
+            this.style.borderLeft = '3px solid var(--clay-danger)';
+        } else {
+            this.style.borderLeft = '';
+        }
+    });
+});
+</script>
+{% endblock %}

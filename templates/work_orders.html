@@ -1,0 +1,1063 @@
+{% extends "layout.html" %}
+
+{% block title %}Travaux Demandés - ChronoTech{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1 class="dashboard-title">
+            <i class="fas fa-clipboard-list"></i>
+            Travaux Demandés
+        </h1>
+        <div class="header-actions">
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="showCreateModal()">
+                    <i class="fas fa-plus"></i>
+                    Nouveau Travail
+                </button>
+                <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <span class="sr-only">Options</span>
+                </button>
+                <ul class="dropdown-menu">
+                    <li>
+                        <a class="dropdown-item" href="#" onclick="showCreateModalWithIntervention()">
+                            <i class="fas fa-tools"></i>
+                            Travail avec intervention
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('create_work_order') }}">
+                            <i class="fas fa-edit"></i>
+                            Formulaire complet
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <button class="btn btn-secondary" onclick="refreshWorkOrders()">
+                <i class="fas fa-sync-alt"></i>
+                Actualiser
+            </button>
+        </div>
+    </div>
+
+    <!-- Filtres et recherche -->
+    <div class="filters-container card">
+        <div class="filters-grid">
+            <div class="filter-group">
+                <label for="searchInput">Recherche</label>
+                <input type="text" id="searchInput" class="form-control" 
+                       placeholder="Réclamation, client, description..." 
+                       onkeyup="handleSearchKeyup(event)">
+            </div>
+            <div class="filter-group">
+                <label for="statusFilter">Statut</label>
+                <select id="statusFilter" class="form-control" onchange="applyFilters()">
+                    <option value="">Tous les statuts</option>
+                    <option value="draft">Brouillon</option>
+                    <option value="pending">En attente</option>
+                    <option value="assigned">Assigné</option>
+                    <option value="in_progress">En cours</option>
+                    <option value="completed">Terminé</option>
+                    <option value="cancelled">Annulé</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="priorityFilter">Priorité</label>
+                <select id="priorityFilter" class="form-control" onchange="applyFilters()">
+                    <option value="">Toutes priorités</option>
+                    <option value="low">Faible</option>
+                    <option value="medium">Moyenne</option>
+                    <option value="high">Élevée</option>
+                    <option value="urgent">Urgente</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="technicianFilter">Technicien</label>
+                <select id="technicianFilter" class="form-control" onchange="applyFilters()">
+                    <option value="">Tous les techniciens</option>
+                    {% for technician in technicians %}
+                    <option value="{{ technician.id }}">{{ technician.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des travaux en cartes -->
+    <div class="work-orders-container card">
+        <!-- Vue de contrôle améliorée -->
+        <div class="view-controls">
+            <div class="view-section">
+                <div class="view-toggle">
+                    <button class="view-btn active" data-view="cards" onclick="switchView('cards')" title="Vue cartes (F2)">
+                        <i class="fas fa-th-large"></i>
+                        <span>Cartes</span>
+                    </button>
+                    <button class="view-btn" data-view="table" onclick="switchView('table')" title="Vue tableau (F2)">
+                        <i class="fas fa-table"></i>
+                        <span>Tableau</span>
+                    </button>
+                </div>
+                <div class="quick-actions">
+                    <button class="clay-btn clay-btn-sm" onclick="selectAll()" title="Tout sélectionner (Ctrl+A)">
+                        <i class="fas fa-check-square"></i>
+                    </button>
+                    <button class="clay-btn clay-btn-sm" onclick="clearSelection()" title="Désélectionner (Esc)">
+                        <i class="fas fa-square"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="items-info">
+                <div class="items-count">
+                    <span id="itemsCount">{{ work_orders|length }} travaux</span>
+                </div>
+                <div class="keyboard-hint">
+                    <small>F2: Basculer vue • F4: Modifier • F8: Produits • F9: Supprimer</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vue cartes -->
+        <div id="cardsView" class="cards-container">
+            {% for work_order in work_orders %}
+            <div class="work-order-card" 
+                 data-id="{{ work_order.id }}" 
+                 onclick="selectWorkOrder(this)"
+                 ondblclick="editWorkOrder({{ work_order.id }})">
+                
+                <!-- Header de la carte -->
+                <div class="card-header">
+                    <div class="claim-info">
+                        <h3 class="claim-number">{{ work_order.claim_number }}</h3>
+                        <div class="badges-row">
+                            <span class="status-badge status-{{ work_order.status }}">
+                                {% if work_order.status == 'draft' %}Brouillon
+                                {% elif work_order.status == 'pending' %}En attente
+                                {% elif work_order.status == 'assigned' %}Assigné
+                                {% elif work_order.status == 'in_progress' %}En cours
+                                {% elif work_order.status == 'completed' %}Terminé
+                                {% elif work_order.status == 'cancelled' %}Annulé
+                                {% endif %}
+                            </span>
+                            <span class="priority-badge priority-{{ work_order.priority }}">
+                                {% if work_order.priority == 'low' %}<i class="fas fa-chevron-down"></i>
+                                {% elif work_order.priority == 'medium' %}<i class="fas fa-minus"></i>
+                                {% elif work_order.priority == 'high' %}<i class="fas fa-chevron-up"></i>
+                                {% elif work_order.priority == 'urgent' %}<i class="fas fa-exclamation"></i>
+                                {% endif %}
+                                {% if work_order.priority == 'low' %}Faible
+                                {% elif work_order.priority == 'medium' %}Moyenne
+                                {% elif work_order.priority == 'high' %}Élevée
+                                {% elif work_order.priority == 'urgent' %}Urgente
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-actions">
+                        <button class="action-btn primary" 
+                                onclick="event.stopPropagation(); editWorkOrder({{ work_order.id }})"
+                                title="Modifier (F4)">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn info" 
+                                onclick="event.stopPropagation(); viewProducts({{ work_order.id }})"
+                                title="Produits (F8)">
+                            <i class="fas fa-boxes"></i>
+                        </button>
+                        <button class="action-btn danger" 
+                                onclick="event.stopPropagation(); confirmDelete({{ work_order.id }}, '{{ work_order.claim_number }}')"
+                                title="Supprimer (F9)">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Informations client -->
+                <div class="card-customer">
+                    <div class="customer-avatar">
+                        <i class="fas fa-building"></i>
+                    </div>
+                    <div class="customer-details">
+                        <h4 class="customer-name">{{ work_order.customer_name }}</h4>
+                        <p class="customer-address">{{ work_order.customer_address[:60] }}{% if work_order.customer_address|length > 60 %}...{% endif %}</p>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div class="card-description">
+                    <p>{{ work_order.description[:120] }}{% if work_order.description|length > 120 %}...{% endif %}</p>
+                </div>
+
+                <!-- Intervention associée (si applicable) -->
+                {% if work_order.intervention_id %}
+                <div class="card-intervention">
+                    <div class="intervention-badge">
+                        <i class="fas fa-tools"></i>
+                        <span>Intervention liée</span>
+                    </div>
+                    <div class="intervention-details">
+                        <span class="intervention-title">{{ work_order.intervention_title or 'Intervention associée' }}</span>
+                        {% if work_order.intervention_date %}
+                        <span class="intervention-date">
+                            <i class="fas fa-clock"></i>
+                            {{ work_order.intervention_date.strftime('%d/%m/%Y %H:%M') }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Footer de la carte -->
+                <div class="card-footer">
+                    <div class="footer-info">
+                        <div class="info-item">
+                            <i class="fas fa-user-gear"></i>
+                            {% if work_order.technician_name %}
+                                <span class="technician-assigned">{{ work_order.technician_name }}</span>
+                            {% else %}
+                                <span class="no-technician">Non assigné</span>
+                            {% endif %}
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-boxes"></i>
+                            {% if work_order.products_count > 0 %}
+                                <span class="products-count">{{ work_order.products_count }} produit(s)</span>
+                            {% else %}
+                                <span class="no-products">Aucun produit</span>
+                            {% endif %}
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-calendar"></i>
+                            <span class="date-info">{{ work_order.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
+                        </div>
+                        {% if work_order.estimated_cost %}
+                        <div class="info-item cost-estimate">
+                            <i class="fas fa-euro-sign"></i>
+                            <span class="cost-value">{{ "%.2f"|format(work_order.estimated_cost|float) }} €</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Vue tableau (cachée par défaut) -->
+        <div id="tableView" class="table-container" style="display: none;">
+            <table class="data-table compact" id="workOrdersTable">
+                <thead>
+                    <tr>
+                        <th>Réclamation</th>
+                        <th>Client</th>
+                        <th>Description</th>
+                        <th>Statut</th>
+                        <th>Priorité</th>
+                        <th>Technicien</th>
+                        <th>Intervention</th>
+                        <th>Produits</th>
+                        <th>Date</th>
+                        <th class="actions-column">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="workOrdersTableBody">
+                    {% for work_order in work_orders %}
+                    <tr data-id="{{ work_order.id }}" 
+                        class="{% if work_order.intervention_id %}has-intervention{% endif %}"
+                        onclick="selectWorkOrder(this)"
+                        ondblclick="editWorkOrder({{ work_order.id }})">
+                        <td>
+                            <div class="claim-cell">
+                                <strong class="claim-compact">{{ work_order.claim_number }}</strong>
+                                {% if work_order.intervention_id %}
+                                <span class="intervention-indicator" title="Intervention associée">
+                                    <i class="fas fa-tools"></i>
+                                </span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="customer-compact">
+                                <div class="customer-name">{{ work_order.customer_name }}</div>
+                                <small class="customer-address">{{ work_order.customer_address[:30] }}{% if work_order.customer_address|length > 30 %}...{% endif %}</small>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="description-compact">
+                                {{ work_order.description[:60] }}{% if work_order.description|length > 60 %}...{% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="status-badge compact status-{{ work_order.status }}">
+                                {% if work_order.status == 'draft' %}Brouillon
+                                {% elif work_order.status == 'pending' %}En attente
+                                {% elif work_order.status == 'assigned' %}Assigné
+                                {% elif work_order.status == 'in_progress' %}En cours
+                                {% elif work_order.status == 'completed' %}Terminé
+                                {% elif work_order.status == 'cancelled' %}Annulé
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="priority-badge compact priority-{{ work_order.priority }}">
+                                {% if work_order.priority == 'low' %}<i class="fas fa-chevron-down"></i>
+                                {% elif work_order.priority == 'medium' %}<i class="fas fa-minus"></i>
+                                {% elif work_order.priority == 'high' %}<i class="fas fa-chevron-up"></i>
+                                {% elif work_order.priority == 'urgent' %}<i class="fas fa-exclamation"></i>
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            {% if work_order.technician_name %}
+                                <span class="technician-compact">{{ work_order.technician_name.split()[0] }}</span>
+                            {% else %}
+                                <span class="no-technician">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if work_order.intervention_id %}
+                                <div class="intervention-cell">
+                                    <span class="intervention-badge-compact" title="{{ work_order.intervention_title or 'Intervention associée' }}">
+                                        <i class="fas fa-tools"></i>
+                                        {% if work_order.intervention_date %}
+                                        <small>{{ work_order.intervention_date.strftime('%d/%m') }}</small>
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            {% else %}
+                                <span class="no-intervention">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if work_order.products_count > 0 %}
+                                <span class="products-count">{{ work_order.products_count }}</span>
+                            {% else %}
+                                <span class="no-products">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small class="date-compact">{{ work_order.created_at.strftime('%d/%m %H:%M') }}</small>
+                        </td>
+                        <td class="actions-column">
+                            <div class="action-buttons compact">
+                                <button class="btn btn-xs btn-primary" 
+                                        onclick="event.stopPropagation(); editWorkOrder({{ work_order.id }})"
+                                        title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-xs btn-info" 
+                                        onclick="event.stopPropagation(); viewProducts({{ work_order.id }})"
+                                        title="Produits">
+                                    <i class="fas fa-boxes"></i>
+                                </button>
+                                <button class="btn btn-xs btn-danger" 
+                                        onclick="event.stopPropagation(); confirmDelete({{ work_order.id }}, '{{ work_order.claim_number }}')"
+                                        title="Supprimer">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="stats-container">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-clipboard-list"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-number" id="totalWorkOrders">{{ work_orders|length }}</div>
+                    <div class="stat-label">Total travaux</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-number" id="pendingWorkOrders">
+                        {{ work_orders|selectattr('status', 'equalto', 'pending')|list|length }}
+                    </div>
+                    <div class="stat-label">En attente</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-cogs"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-number" id="inProgressWorkOrders">
+                        {{ work_orders|selectattr('status', 'equalto', 'in_progress')|list|length }}
+                    </div>
+                    <div class="stat-label">En cours</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-number" id="completedWorkOrders">
+                        {{ work_orders|selectattr('status', 'equalto', 'completed')|list|length }}
+                    </div>
+                    <div class="stat-label">Terminés</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de création/modification -->
+<div id="workOrderModal" class="modal">
+    <div class="modal-content modal-lg">
+        <div class="modal-header">
+            <h3 id="modalTitle">Nouveau Travail</h3>
+            <button class="modal-close" onclick="closeModal('workOrderModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="workOrderForm" method="POST">
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="claim_number">Numéro de réclamation *</label>
+                        <input type="text" id="claim_number" name="claim_number" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="priority">Priorité</label>
+                        <select id="priority" name="priority" class="form-control">
+                            <option value="low">Faible</option>
+                            <option value="medium" selected>Moyenne</option>
+                            <option value="high">Élevée</option>
+                            <option value="urgent">Urgente</option>
+                        </select>
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="customer_name">Nom du client *</label>
+                        <input type="text" id="customer_name" name="customer_name" class="form-control" required>
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="customer_address">Adresse du client *</label>
+                        <textarea id="customer_address" name="customer_address" class="form-control" rows="2" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="customer_phone">Téléphone</label>
+                        <input type="tel" id="customer_phone" name="customer_phone" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="customer_email">Email</label>
+                        <input type="email" id="customer_email" name="customer_email" class="form-control">
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="description">Description *</label>
+                        <textarea id="description" name="description" class="form-control" rows="3" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="assigned_technician_id">Technicien assigné</label>
+                        <select id="assigned_technician_id" name="assigned_technician_id" class="form-control">
+                            <option value="">Non assigné</option>
+                            {% for technician in technicians %}
+                            <option value="{{ technician.id }}">{{ technician.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="status">Statut</label>
+                        <select id="status" name="status" class="form-control">
+                            <option value="draft">Brouillon</option>
+                            <option value="pending">En attente</option>
+                            <option value="assigned">Assigné</option>
+                            <option value="in_progress">En cours</option>
+                            <option value="completed">Terminé</option>
+                            <option value="cancelled">Annulé</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="estimated_duration">Durée estimée (min)</label>
+                        <input type="number" id="estimated_duration" name="estimated_duration" class="form-control" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="estimated_cost">Coût estimé (€)</label>
+                        <input type="number" id="estimated_cost" name="estimated_cost" class="form-control" min="0" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="scheduled_date">Date prévue</label>
+                        <input type="datetime-local" id="scheduled_date" name="scheduled_date" class="form-control">
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="notes">Notes</label>
+                        <textarea id="notes" name="notes" class="form-control" rows="2"></textarea>
+                    </div>
+                    
+                    <!-- Section intervention -->
+                    <div class="form-group full-width intervention-section">
+                        <div class="section-header">
+                            <h4>
+                                <i class="fas fa-tools"></i>
+                                Intervention associée
+                                <span class="optional-badge">Optionnel</span>
+                            </h4>
+                        </div>
+                        
+                        <div class="intervention-toggle-modal">
+                            <label class="toggle-switch-modal">
+                                <input type="checkbox" id="modal_has_intervention" name="has_intervention" onchange="toggleModalInterventionSection()">
+                                <span class="toggle-slider-modal"></span>
+                                <span class="toggle-label-modal">Créer ou associer une intervention</span>
+                            </label>
+                        </div>
+                        
+                        <div id="modalInterventionSection" class="modal-intervention-fields" style="display: none;">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="modal_intervention_type">Type</label>
+                                    <select id="modal_intervention_type" name="intervention_type" class="form-control" onchange="toggleModalInterventionType()">
+                                        <option value="new">Nouvelle intervention</option>
+                                        <option value="existing">Intervention existante</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group" id="modalExistingInterventionGroup" style="display: none;">
+                                    <label for="modal_intervention_id">Intervention</label>
+                                    <select id="modal_intervention_id" name="intervention_id" class="form-control">
+                                        <option value="">Sélectionner...</option>
+                                        {% for intervention in interventions %}
+                                        <option value="{{ intervention.id }}">
+                                            {{ intervention.titre }} - {{ intervention.date_intervention.strftime('%d/%m/%Y') if intervention.date_intervention else 'Non planifiée' }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div id="modalNewInterventionFields" class="new-intervention-fields-modal">
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label for="modal_intervention_title">Titre intervention</label>
+                                        <input type="text" id="modal_intervention_title" name="intervention_title" class="form-control" placeholder="Ex: Maintenance urgente">
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="modal_intervention_date">Date intervention</label>
+                                        <input type="datetime-local" id="modal_intervention_date" name="intervention_date" class="form-control">
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group full-width">
+                                    <label for="modal_intervention_description">Description intervention</label>
+                                    <textarea id="modal_intervention_description" name="intervention_description" class="form-control" rows="2" placeholder="Détails de l'intervention..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('workOrderModal')">
+                    Annuler
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    Enregistrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de confirmation de suppression -->
+<div id="deleteModal" class="modal">
+    <div class="modal-content modal-sm">
+        <div class="modal-header">
+            <h3>Confirmer la suppression</h3>
+            <button class="modal-close" onclick="closeModal('deleteModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="delete-confirmation">
+                <i class="fas fa-exclamation-triangle warning-icon"></i>
+                <p>Êtes-vous sûr de vouloir supprimer le travail :</p>
+                <p><strong id="deleteWorkOrderNumber"></strong></p>
+                <p class="warning-text">Cette action est irréversible.</p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('deleteModal')">
+                Annuler
+            </button>
+            <form id="deleteForm" method="POST" style="display: inline;">
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-trash"></i>
+                    Supprimer
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Variables globales
+let selectedWorkOrderId = null;
+let searchTimeout = null;
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+    // Gestion des raccourcis clavier
+    document.addEventListener('keydown', handleKeyboardShortcuts);
+    
+    // Focus sur la recherche
+    document.getElementById('searchInput').focus();
+});
+
+// Gestion des raccourcis clavier
+function handleKeyboardShortcuts(event) {
+    // Empêcher l'action par défaut pour nos raccourcis
+    if (event.key === 'F4' || event.key === 'F8' || event.key === 'F9') {
+        event.preventDefault();
+    }
+    
+    switch (event.key) {
+        case 'F4':
+            if (selectedWorkOrderId) {
+                editWorkOrder(selectedWorkOrderId);
+            } else {
+                showCreateModal();
+            }
+            break;
+        case 'F8':
+            if (selectedWorkOrderId) {
+                viewProducts(selectedWorkOrderId);
+            }
+            break;
+        case 'F9':
+            if (selectedWorkOrderId) {
+                const row = document.querySelector(`tr[data-id="${selectedWorkOrderId}"]`);
+                if (row) {
+                    const claimNumber = row.querySelector('td:first-child strong').textContent;
+                    confirmDelete(selectedWorkOrderId, claimNumber);
+                }
+            }
+            break;
+        case 'Enter':
+            if (selectedWorkOrderId && !document.querySelector('.modal.show')) {
+                editWorkOrder(selectedWorkOrderId);
+            }
+            break;
+        case 'Escape':
+            // Fermer les modals ouverts
+            document.querySelectorAll('.modal.show').forEach(modal => {
+                closeModal(modal.id);
+            });
+            break;
+    }
+}
+
+// Sélection d'une ligne
+function selectWorkOrder(row) {
+    // Désélectionner les autres lignes
+    document.querySelectorAll('tr.selected').forEach(r => r.classList.remove('selected'));
+    
+    // Sélectionner la ligne cliquée
+    row.classList.add('selected');
+    selectedWorkOrderId = parseInt(row.dataset.id);
+}
+
+// Modal de création
+function showCreateModal() {
+    document.getElementById('modalTitle').textContent = 'Nouveau Travail Demandé';
+    document.getElementById('workOrderForm').action = '/work_orders/new';
+    document.getElementById('workOrderForm').reset();
+    
+    // Réinitialiser la section intervention
+    document.getElementById('modal_has_intervention').checked = false;
+    toggleModalInterventionSection();
+    
+    // Masquer le champ statut pour la création
+    const statusGroup = document.getElementById('status').parentNode;
+    if (statusGroup) {
+        statusGroup.style.display = 'none';
+    }
+    
+    showModal('workOrderModal');
+    document.getElementById('claim_number').focus();
+}
+
+// Édition d'un travail
+function editWorkOrder(id) {
+    window.location.href = `/work_orders/${id}/edit`;
+}
+
+// Voir les produits
+function viewProducts(id) {
+    window.location.href = `/work_orders/${id}/products`;
+}
+
+// Confirmation de suppression
+function confirmDelete(id, claimNumber) {
+    document.getElementById('deleteWorkOrderNumber').textContent = claimNumber;
+    document.getElementById('deleteForm').action = `/work_orders/${id}/delete`;
+    showModal('deleteModal');
+}
+
+// Actualiser la liste
+function refreshWorkOrders() {
+    showLoading();
+    window.location.reload();
+}
+
+// Recherche avec délai
+function handleSearchKeyup(event) {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        applyFilters();
+    }, 300);
+}
+
+// Appliquer les filtres
+function applyFilters() {
+    const query = document.getElementById('searchInput').value.trim();
+    const status = document.getElementById('statusFilter').value;
+    const priority = document.getElementById('priorityFilter').value;
+    const technician = document.getElementById('technicianFilter').value;
+    const intervention = document.getElementById('interventionFilter')?.value || '';
+    
+    const params = new URLSearchParams();
+    if (query) params.append('q', query);
+    if (status) params.append('status', status);
+    if (priority) params.append('priority', priority);
+    if (technician) params.append('technician', technician);
+    if (intervention) params.append('intervention', intervention);
+    
+    showLoading();
+    
+    fetch(`/api/work_orders/search?${params.toString()}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showNotification('Erreur lors de la recherche: ' + data.error, 'error');
+                return;
+            }
+            
+            updateWorkOrdersTable(data.work_orders);
+            updateStats(data.work_orders);
+        })
+        .catch(error => {
+            showNotification('Erreur lors de la recherche: ' + error.message, 'error');
+        })
+        .finally(() => {
+            hideLoading();
+        });
+}
+
+// Mettre à jour le tableau
+function updateWorkOrdersTable(workOrders) {
+    const tbody = document.getElementById('workOrdersTableBody');
+    tbody.innerHTML = '';
+    
+    workOrders.forEach(workOrder => {
+        const row = createWorkOrderRow(workOrder);
+        tbody.appendChild(row);
+    });
+    
+    selectedWorkOrderId = null;
+}
+
+// Créer une ligne de tableau
+function createWorkOrderRow(workOrder) {
+    const row = document.createElement('tr');
+    row.dataset.id = workOrder.id;
+    row.onclick = () => selectWorkOrder(row);
+    row.ondblclick = () => editWorkOrder(workOrder.id);
+    
+    const statusLabels = {
+        'draft': 'Brouillon',
+        'pending': 'En attente',
+        'assigned': 'Assigné',
+        'in_progress': 'En cours',
+        'completed': 'Terminé',
+        'cancelled': 'Annulé'
+    };
+    
+    const priorityLabels = {
+        'low': 'Faible',
+        'medium': 'Moyenne',
+        'high': 'Élevée',
+        'urgent': 'Urgente'
+    };
+    
+    const createdDate = new Date(workOrder.created_at);
+    
+    row.innerHTML = `
+        <td><strong>${workOrder.claim_number}</strong></td>
+        <td>
+            <div class="customer-info">
+                <div class="customer-name">${workOrder.customer_name}</div>
+                <div class="customer-address">${workOrder.customer_address.length > 50 ? 
+                    workOrder.customer_address.substring(0, 50) + '...' : 
+                    workOrder.customer_address}</div>
+            </div>
+        </td>
+        <td>
+            <div class="description-preview">
+                ${workOrder.description.length > 100 ? 
+                    workOrder.description.substring(0, 100) + '...' : 
+                    workOrder.description}
+            </div>
+        </td>
+        <td>
+            <span class="status-badge status-${workOrder.status}">
+                ${statusLabels[workOrder.status]}
+            </span>
+        </td>
+        <td>
+            <span class="priority-badge priority-${workOrder.priority}">
+                ${priorityLabels[workOrder.priority]}
+            </span>
+        </td>
+        <td>
+            ${workOrder.technician_name ? 
+                `<span class="technician-assigned">${workOrder.technician_name}</span>` :
+                '<span class="no-technician">Non assigné</span>'}
+        </td>
+        <td>
+            ${workOrder.products_count > 0 ?
+                `<span class="products-count">${workOrder.products_count} produit(s)</span>` :
+                '<span class="no-products">Aucun produit</span>'}
+        </td>
+        <td>
+            <div class="date-info">
+                ${createdDate.toLocaleDateString('fr-FR')}
+                <small>${createdDate.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}</small>
+            </div>
+        </td>
+        <td class="actions-column">
+            <div class="action-buttons">
+                <button class="btn btn-sm btn-primary" 
+                        onclick="event.stopPropagation(); editWorkOrder(${workOrder.id})"
+                        title="Modifier (F4)">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-sm btn-info" 
+                        onclick="event.stopPropagation(); viewProducts(${workOrder.id})"
+                        title="Produits (F8)">
+                    <i class="fas fa-boxes"></i>
+                </button>
+                <button class="btn btn-sm btn-danger" 
+                        onclick="event.stopPropagation(); confirmDelete(${workOrder.id}, '${workOrder.claim_number}')"
+                        title="Supprimer (F9)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </td>
+    `;
+    
+    return row;
+}
+
+// Mettre à jour les statistiques
+function updateStats(workOrders) {
+    document.getElementById('totalWorkOrders').textContent = workOrders.length;
+    document.getElementById('pendingWorkOrders').textContent = 
+        workOrders.filter(wo => wo.status === 'pending').length;
+    document.getElementById('inProgressWorkOrders').textContent = 
+        workOrders.filter(wo => wo.status === 'in_progress').length;
+    document.getElementById('completedWorkOrders').textContent = 
+        workOrders.filter(wo => wo.status === 'completed').length;
+}
+
+// Fonctions pour la gestion des interventions dans le modal
+function toggleModalInterventionSection() {
+    const checkbox = document.getElementById('modal_has_intervention');
+    const section = document.getElementById('modalInterventionSection');
+    
+    if (checkbox.checked) {
+        section.style.display = 'block';
+        section.style.animation = 'clay-fade-in 0.3s ease-in-out';
+    } else {
+        section.style.display = 'none';
+        
+        // Réinitialiser les champs
+        section.querySelectorAll('input, select, textarea').forEach(field => {
+            if (field.type !== 'checkbox') {
+                field.value = '';
+            }
+        });
+    }
+}
+
+function toggleModalInterventionType() {
+    const interventionType = document.getElementById('modal_intervention_type');
+    const newFields = document.getElementById('modalNewInterventionFields');
+    const existingGroup = document.getElementById('modalExistingInterventionGroup');
+    
+    if (interventionType.value === 'new') {
+        newFields.style.display = 'block';
+        existingGroup.style.display = 'none';
+        
+        // Réinitialiser l'intervention existante
+        document.getElementById('modal_intervention_id').value = '';
+    } else {
+        newFields.style.display = 'none';
+        existingGroup.style.display = 'block';
+        
+        // Réinitialiser les champs nouveaux
+        newFields.querySelectorAll('input, textarea').forEach(field => {
+            field.value = '';
+        });
+    }
+}
+
+// Validation spécifique pour le modal
+document.getElementById('workOrderForm').addEventListener('submit', function(event) {
+    const hasIntervention = document.getElementById('modal_has_intervention').checked;
+    
+    if (hasIntervention) {
+        const interventionType = document.getElementById('modal_intervention_type').value;
+        
+        if (interventionType === 'new') {
+            const title = document.getElementById('modal_intervention_title').value.trim();
+            if (!title) {
+                event.preventDefault();
+                showNotification('Le titre de l\'intervention est requis', 'warning');
+                document.getElementById('modal_intervention_title').focus();
+                return;
+            }
+        } else if (interventionType === 'existing') {
+            const interventionId = document.getElementById('modal_intervention_id').value;
+            if (!interventionId) {
+                event.preventDefault();
+                showNotification('Veuillez sélectionner une intervention existante', 'warning');
+                document.getElementById('modal_intervention_id').focus();
+                return;
+            }
+        }
+    }
+});
+
+// Fonction pour créer un travail avec intervention pré-activée
+function showCreateModalWithIntervention() {
+    showCreateModal();
+    
+    // Activer automatiquement l'intervention
+    setTimeout(() => {
+        const interventionCheckbox = document.getElementById('modal_has_intervention');
+        if (interventionCheckbox) {
+            interventionCheckbox.checked = true;
+            toggleModalInterventionSection();
+            
+            // Focus sur le titre de l'intervention
+            const interventionTitle = document.getElementById('modal_intervention_title');
+            if (interventionTitle) {
+                interventionTitle.focus();
+            }
+        }
+    }, 100);
+}
+
+// Amélioration du tri pour inclure les interventions
+function getItemAttribute(item, attribute) {
+    if (currentView === 'cards') {
+        switch (attribute) {
+            case 'status':
+                const statusBadge = item.querySelector('.status-badge');
+                return statusBadge ? statusBadge.className.match(/status-(\w+)/)?.[1] : '';
+            case 'priority':
+                const priorityBadge = item.querySelector('.priority-badge');
+                return priorityBadge ? priorityBadge.className.match(/priority-(\w+)/)?.[1] : '';
+            case 'technician':
+                const technicianSpan = item.querySelector('.technician-assigned');
+                return technicianSpan ? technicianSpan.textContent.trim() : '';
+            case 'intervention':
+                const interventionBadge = item.querySelector('.intervention-badge');
+                return interventionBadge ? 'yes' : 'no';
+            default:
+                return '';
+        }
+    } else {
+        // Pour le tableau, utiliser les données dans les cellules
+        const cells = item.querySelectorAll('td');
+        switch (attribute) {
+            case 'status':
+                return cells[3]?.querySelector('.status-badge')?.className.match(/status-(\w+)/)?.[1] || '';
+            case 'priority':
+                return cells[4]?.querySelector('.priority-badge')?.className.match(/priority-(\w+)/)?.[1] || '';
+            case 'technician':
+                return cells[5]?.textContent.trim() || '';
+            case 'intervention':
+                return cells[6]?.querySelector('.intervention-badge-compact') ? 'yes' : 'no';
+            default:
+                return '';
+        }
+    }
+}
+
+// Amélioration de l'affichage des filtres pour inclure les interventions
+function updateFiltersWithInterventions() {
+    // Ajouter un filtre pour les interventions
+    const filtersGrid = document.querySelector('.filters-grid');
+    if (filtersGrid && !document.getElementById('interventionFilter')) {
+        const interventionFilterGroup = document.createElement('div');
+        interventionFilterGroup.className = 'filter-group';
+        interventionFilterGroup.innerHTML = `
+            <label for="interventionFilter">Intervention</label>
+            <select id="interventionFilter" class="form-control" onchange="applyFilters()">
+                <option value="">Tous</option>
+                <option value="yes">Avec intervention</option>
+                <option value="no">Sans intervention</option>
+            </select>
+        `;
+        filtersGrid.appendChild(interventionFilterGroup);
+    }
+}
+
+// Amélioration de applyFilters pour inclure les interventions
+function applyFilters() {
+    const statusFilter = document.getElementById('statusFilter').value;
+    const priorityFilter = document.getElementById('priorityFilter').value;
+    const technicianFilter = document.getElementById('technicianFilter').value;
+    const interventionFilter = document.getElementById('interventionFilter')?.value || '';
+    
+    const items = currentView === 'cards' 
+        ? document.querySelectorAll('.work-order-card')
+        : document.querySelectorAll('#workOrdersTable tbody tr');
+    
+    let visibleCount = 0;
+    
+    items.forEach(item => {
+        const status = getItemAttribute(item, 'status');
+        const priority = getItemAttribute(item, 'priority');
+        const technician = getItemAttribute(item, 'technician');
+        const intervention = getItemAttribute(item, 'intervention');
+        
+        const statusMatch = !statusFilter || status === statusFilter;
+        const priorityMatch = !priorityFilter || priority === priorityFilter;
+        const technicianMatch = !technicianFilter || technician === technicianFilter;
+        const interventionMatch = !interventionFilter || intervention === interventionFilter;
+        
+        if (statusMatch && priorityMatch && technicianMatch && interventionMatch) {
+            item.style.display = '';
+            visibleCount++;
+        } else {
+            item.style.display = 'none';
+        }
+    });
+    
+    // Mettre à jour le compteur
+    const itemsCount = document.getElementById('itemsCount');
+    if (itemsCount) {
+        itemsCount.textContent = `${visibleCount} travaux filtrés`;
+    }
+}
+
+// Initialiser les filtres au chargement
+document.addEventListener('DOMContentLoaded', function() {
+    updateFiltersWithInterventions();
+});
+</script>
+{% endblock %}

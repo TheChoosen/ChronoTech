@@ -1,0 +1,214 @@
+{% extends 'layout.html' %}
+
+{% block title %}ChronoTech - Gestion d'Interventions Moderne{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="clay-card clay-card-elevated text-center mb-5">
+    <div class="row align-items-center">
+        <div class="col-lg-6">
+            <div class="mb-4">
+                <i class="fa-solid fa-stopwatch fa-4x clay-float mb-4" style="color: var(--clay-accent-primary);"></i>
+                <h1 class="display-4 mb-3">
+                    Bienvenue sur <span style="color: var(--clay-accent-primary);">ChronoTech</span>
+                </h1>
+                <p class="lead clay-text-secondary mb-4">
+                    L'outil ultime pour les techniciens de terrain. Gérez vos interventions avec facilité, 
+                    utilisez les commandes vocales pour accélérer votre workflow, et générez des rapports en temps réel.
+                </p>
+                
+                <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center">
+                    <a href="{{ url_for('register') }}" class="clay-btn clay-btn-primary clay-btn-lg clay-pulse">
+                        <i class="fa-solid fa-rocket me-2"></i>Commencer maintenant
+                    </a>
+                    <a href="{{ url_for('login') }}" class="clay-btn clay-btn-lg">
+                        <i class="fa-solid fa-sign-in-alt me-2"></i>Se connecter
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6">
+            <div class="text-center">
+                <i class="fa-solid fa-mobile-alt fa-8x clay-float" style="color: var(--clay-accent-secondary); animation-delay: 0.5s;"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Fonctionnalités -->
+<div class="row mb-5">
+    <div class="col-md-4 mb-4">
+        <div class="clay-card clay-card-compact text-center h-100">
+            <i class="fa-solid fa-clock fa-3x mb-3" style="color: var(--clay-accent-primary);"></i>
+            <h4 class="mb-3">Suivi en Temps Réel</h4>
+            <p class="clay-text-secondary">
+                Chronométrez vos interventions automatiquement et suivez le progrès de chaque étape en temps réel.
+            </p>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="clay-card clay-card-compact text-center h-100">
+            <i class="fa-solid fa-microphone fa-3x mb-3" style="color: var(--clay-warning);"></i>
+            <h4 class="mb-3">Notes Vocales</h4>
+            <p class="clay-text-secondary">
+                Dictez vos notes directement depuis le terrain sans interrompre votre travail.
+            </p>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="clay-card clay-card-compact text-center h-100">
+            <i class="fa-solid fa-chart-bar fa-3x mb-3" style="color: var(--clay-success);"></i>
+            <h4 class="mb-3">Rapports Intelligents</h4>
+            <p class="clay-text-secondary">
+                Générez des rapports détaillés avec photos, signatures et données de performance.
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Avantages -->
+<div class="clay-card mb-5">
+    <div class="text-center mb-5">
+        <h2 class="mb-3">
+            <i class="fa-solid fa-star me-2" style="color: var(--clay-accent-primary);"></i>
+            Pourquoi ChronoTech ?
+        </h2>
+        <p class="lead clay-text-secondary">Une solution complète pour optimiser vos interventions</p>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="d-flex align-items-start">
+                <div class="flex-shrink-0">
+                    <i class="fa-solid fa-check-circle fa-2x" style="color: var(--clay-success);"></i>
+                </div>
+                <div class="flex-grow-1 ms-3">
+                    <h5>Interface Intuitive</h5>
+                    <p class="clay-text-secondary mb-0">
+                        Design claymorphism moderne et ergonomique, optimisé pour une utilisation sur mobile et desktop.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6 mb-4">
+            <div class="d-flex align-items-start">
+                <div class="flex-shrink-0">
+                    <i class="fa-solid fa-shield-alt fa-2x" style="color: var(--clay-info);"></i>
+                </div>
+                <div class="flex-grow-1 ms-3">
+                    <h5>Sécurité Maximale</h5>
+                    <p class="clay-text-secondary mb-0">
+                        Vos données sont protégées avec un cryptage SSL et des sauvegardes automatiques.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6 mb-4">
+            <div class="d-flex align-items-start">
+                <div class="flex-shrink-0">
+                    <i class="fa-solid fa-wifi fa-2x" style="color: var(--clay-warning);"></i>
+                </div>
+                <div class="flex-grow-1 ms-3">
+                    <h5>Mode Hors Ligne</h5>
+                    <p class="clay-text-secondary mb-0">
+                        Continuez à travailler même sans connexion internet. Synchronisation automatique au retour.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6 mb-4">
+            <div class="d-flex align-items-start">
+                <div class="flex-shrink-0">
+                    <i class="fa-solid fa-cogs fa-2x" style="color: var(--clay-accent-secondary);"></i>
+                </div>
+                <div class="flex-grow-1 ms-3">
+                    <h5>Intégration BDM</h5>
+                    <p class="clay-text-secondary mb-0">
+                        Connexion directe avec votre base de données matérielle pour un catalogage précis.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Call to Action Final -->
+<div class="clay-card clay-card-elevated text-center">
+    <h3 class="mb-3">Prêt à transformer votre façon de travailler ?</h3>
+    <p class="lead clay-text-secondary mb-4">
+        Rejoignez les techniciens qui ont déjà optimisé leur productivité avec ChronoTech
+    </p>
+    <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center">
+        <a href="{{ url_for('register') }}" class="clay-btn clay-btn-primary clay-btn-lg">
+            <i class="fa-solid fa-user-plus me-2"></i>Créer un compte gratuit
+        </a>
+        <a href="#" class="clay-btn clay-btn-lg" onclick="scrollToTop()">
+            <i class="fa-solid fa-arrow-up me-2"></i>Retour en haut
+        </a>
+    </div>
+</div>
+
+<style>
+/* Animations spécifiques à la page d'accueil */
+.clay-card {
+    animation: fadeInUp 0.8s ease-out;
+    animation-fill-mode: both;
+}
+
+.clay-card:nth-child(1) { animation-delay: 0.1s; }
+.clay-card:nth-child(2) { animation-delay: 0.3s; }
+.clay-card:nth-child(3) { animation-delay: 0.5s; }
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(40px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Effet hover sur les cartes de fonctionnalités */
+.clay-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--clay-shadow-heavy);
+}
+
+/* Responsive hero section */
+@media (max-width: 768px) {
+    .display-4 { font-size: 2rem; }
+    .fa-8x { font-size: 4rem !important; }
+}
+</style>
+
+<script>
+function scrollToTop() {
+    window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+    });
+}
+
+// Animation au scroll
+window.addEventListener('scroll', function() {
+    const cards = document.querySelectorAll('.clay-card');
+    cards.forEach(card => {
+        const cardTop = card.getBoundingClientRect().top;
+        const cardVisible = 150;
+        
+        if (cardTop < window.innerHeight - cardVisible) {
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }
+    });
+});
+</script>
+{% endblock %}

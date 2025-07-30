@@ -1,0 +1,374 @@
+{% extends 'layout.html' %}
+
+{% block title %}Dashboard - ChronoTech{% endblock %}
+
+{% block content %}
+<!-- Header avec titre et actions -->
+<div class="clay-card clay-card-elevated mb-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center">
+        <div class="mb-3 mb-md-0">
+            <h1 class="mb-2">
+                <i class="fa-solid fa-table-columns me-2 clay-text-primary"></i>
+                Dashboard
+            </h1>
+            <p class="clay-text-secondary mb-0">
+                Bienvenue, <strong>{{ session.user_name }}</strong>! 
+                <span class="badge rounded-pill" style="background: var(--clay-accent-primary); color: white;">
+                    {{ session.user_role.title() }}
+                </span>
+            </p>
+        </div>
+        
+        {% if session.user_role != 'technician' %}
+        <div class="d-flex gap-2">
+            <button class="clay-btn clay-btn-primary clay-pulse" data-bs-toggle="modal" data-bs-target="#createInterventionModal">
+                <i class="fa-solid fa-plus"></i>
+                <span class="d-none d-sm-inline ms-1">Nouvelle intervention</span>
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Statistiques rapides -->
+<div class="row mb-4">
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="clay-card clay-card-compact text-center">
+            <div class="clay-text-primary">
+                <i class="fa-solid fa-list-check fa-2x mb-2" style="color: var(--clay-accent-primary);"></i>
+                <h3 class="mb-1">{{ interventions|length }}</h3>
+                <p class="clay-text-secondary mb-0">Interventions</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="clay-card clay-card-compact text-center">
+            <div class="clay-text-primary">
+                <i class="fa-solid fa-clock-rotate-left fa-2x mb-2" style="color: var(--clay-warning);"></i>
+                <h3 class="mb-1">{{ interventions|selectattr('status', 'equalto', 'pending')|list|length }}</h3>
+                <p class="clay-text-secondary mb-0">En attente</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="clay-card clay-card-compact text-center">
+            <div class="clay-text-primary">
+                <i class="fa-solid fa-wrench fa-2x mb-2" style="color: var(--clay-info);"></i>
+                <h3 class="mb-1">{{ interventions|selectattr('status', 'equalto', 'in_progress')|list|length }}</h3>
+                <p class="clay-text-secondary mb-0">En cours</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="clay-card clay-card-compact text-center">
+            <div class="clay-text-primary">
+                <i class="fa-solid fa-check-circle fa-2x mb-2" style="color: var(--clay-success);"></i>
+                <h3 class="mb-1">{{ interventions|selectattr('status', 'equalto', 'completed')|list|length }}</h3>
+                <p class="clay-text-secondary mb-0">Terminées</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Liste des interventions -->
+<div class="clay-card">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">
+            <i class="fa-solid fa-clipboard-list me-2"></i>
+            Vos interventions
+        </h2>
+        <div class="d-flex gap-2">
+            <button class="clay-btn clay-btn-sm" onclick="filterInterventions('all')">
+                <i class="fa-solid fa-list"></i> Toutes
+            </button>
+            <button class="clay-btn clay-btn-sm" onclick="filterInterventions('pending')">
+                <i class="fa-solid fa-clock"></i> En attente
+            </button>
+            <button class="clay-btn clay-btn-sm" onclick="filterInterventions('in_progress')">
+                <i class="fa-solid fa-play"></i> En cours
+            </button>
+        </div>
+    </div>
+
+    {% if interventions %}
+        <div class="clay-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th><i class="fa-solid fa-user me-1"></i> Client</th>
+                        <th><i class="fa-solid fa-info-circle me-1"></i> Statut</th>
+                        {% if session.user_role != 'technician' %}
+                            <th><i class="fa-solid fa-user-gear me-1"></i> Technicien</th>
+                        {% endif %}
+                        <th><i class="fa-solid fa-calendar me-1"></i> Créé le</th>
+                        <th class="text-center"><i class="fa-solid fa-cogs me-1"></i> Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for intervention in interventions %}
+                    <tr data-status="{{ intervention.status }}">
+                        <td>
+                            <div>
+                                <strong class="clay-text-primary">{{ intervention.customer_name }}</strong>
+                                <br>
+                                <small class="clay-text-light">{{ intervention.customer_address[:50] }}...</small>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge rounded-pill px-3 py-2 status-badge status-{{ intervention.status }}">
+                                {% if intervention.status == 'pending' %}
+                                    <i class="fa-solid fa-clock me-1"></i> En attente
+                                {% elif intervention.status == 'in_progress' %}
+                                    <i class="fa-solid fa-play me-1"></i> En cours
+                                {% elif intervention.status == 'completed' %}
+                                    <i class="fa-solid fa-check me-1"></i> Terminée
+                                {% endif %}
+                            </span>
+                        </td>
+                        {% if session.user_role != 'technician' %}
+                        <td>
+                            {% if intervention.technician_name %}
+                                <span class="clay-text-secondary">
+                                    <i class="fa-solid fa-user me-1"></i>{{ intervention.technician_name }}
+                                </span>
+                            {% else %}
+                                <span class="clay-text-light">
+                                    <i class="fa-solid fa-user-slash me-1"></i>Non assigné
+                                </span>
+                            {% endif %}
+                        </td>
+                        {% endif %}
+                        <td class="clay-text-secondary">
+                            <i class="fa-solid fa-calendar-alt me-1"></i>
+                            {{ intervention.start_time.strftime('%d/%m/%Y') if intervention.start_time else 'N/A' }}
+                        </td>
+                        <td>
+                            <div class="d-flex justify-content-center gap-1">
+                                <a href="{{ url_for('intervention', id=intervention.id) }}" class="clay-btn clay-btn-sm clay-btn-primary" title="Voir les détails">
+                                    <i class="fa-solid fa-eye"></i>
+                                </a>
+                                {% if session.user_role != 'technician' %}
+                                <button class="clay-btn clay-btn-sm clay-btn-warning" onclick="editIntervention('{{ intervention.id }}', '{{ intervention.customer_name }}', '{{ intervention.customer_address }}', '{{ intervention.technician_id or '' }}')" title="Modifier">
+                                    <i class="fa-solid fa-edit"></i>
+                                </button>
+                                <form action="{{ url_for('delete_intervention', id=intervention.id) }}" method="post" style="display:inline;" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette intervention ?');">
+                                    <button type="submit" class="clay-btn clay-btn-sm clay-btn-danger" title="Supprimer">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <i class="fa-solid fa-clipboard-list fa-4x clay-text-light mb-3"></i>
+            <h4 class="clay-text-secondary">Aucune intervention trouvée</h4>
+            <p class="clay-text-light">Commencez par créer votre première intervention</p>
+            {% if session.user_role != 'technician' %}
+            <button class="clay-btn clay-btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#createInterventionModal">
+                <i class="fa-solid fa-plus me-1"></i>Créer une intervention
+            </button>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+<!-- Styles spécifiques au dashboard -->
+<style>
+.status-badge {
+    font-weight: 600;
+    font-size: 0.8rem;
+    border: none;
+}
+
+.status-pending {
+    background: linear-gradient(135deg, var(--clay-warning), #daa852) !important;
+    color: var(--clay-text-primary) !important;
+}
+
+.status-in_progress {
+    background: linear-gradient(135deg, var(--clay-info), #9fb0c3) !important;
+    color: var(--clay-text-primary) !important;
+}
+
+.status-completed {
+    background: linear-gradient(135deg, var(--clay-success), #7a9977) !important;
+    color: var(--clay-text-inverse) !important;
+}
+
+.clay-table tr[data-status="pending"] {
+    border-left: 4px solid var(--clay-warning);
+}
+
+.clay-table tr[data-status="in_progress"] {
+    border-left: 4px solid var(--clay-info);
+}
+
+.clay-table tr[data-status="completed"] {
+    border-left: 4px solid var(--clay-success);
+}
+</style>
+
+<!-- Modal Créer Intervention Claymorphism -->
+<div class="modal fade" id="createInterventionModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form action="{{ url_for('create_intervention') }}" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fa-solid fa-plus-circle me-2"></i>Créer une nouvelle intervention
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="clay-form-group">
+                                <label for="customer_name" class="clay-label">
+                                    <i class="fa-solid fa-user me-1"></i>Nom du client
+                                </label>
+                                <input type="text" class="clay-input" name="customer_name" required placeholder="Entrez le nom du client">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="clay-form-group">
+                                <label for="technician_id" class="clay-label">
+                                    <i class="fa-solid fa-user-gear me-1"></i>Assigner un technicien
+                                </label>
+                                <select class="clay-select" name="technician_id" required>
+                                    <option value="">Sélectionner un technicien</option>
+                                    {% for tech in technicians %}
+                                        <option value="{{ tech.id }}">{{ tech.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="clay-form-group">
+                        <label for="customer_address" class="clay-label">
+                            <i class="fa-solid fa-location-dot me-1"></i>Adresse du client
+                        </label>
+                        <textarea class="clay-textarea" name="customer_address" rows="3" required placeholder="Entrez l'adresse complète du client"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="clay-btn" data-bs-dismiss="modal">
+                        <i class="fa-solid fa-times me-1"></i>Annuler
+                    </button>
+                    <button type="submit" class="clay-btn clay-btn-primary">
+                        <i class="fa-solid fa-save me-1"></i>Créer l'intervention
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Modifier Intervention Claymorphism -->
+<div class="modal fade" id="editInterventionModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form id="editInterventionForm" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fa-solid fa-edit me-2"></i>Modifier l'intervention
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="clay-form-group">
+                                <label for="edit_customer_name" class="clay-label">
+                                    <i class="fa-solid fa-user me-1"></i>Nom du client
+                                </label>
+                                <input type="text" class="clay-input" id="edit_customer_name" name="customer_name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="clay-form-group">
+                                <label for="edit_technician_id" class="clay-label">
+                                    <i class="fa-solid fa-user-gear me-1"></i>Technicien assigné
+                                </label>
+                                <select class="clay-select" id="edit_technician_id" name="technician_id" required>
+                                    {% for tech in technicians %}
+                                        <option value="{{ tech.id }}">{{ tech.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="clay-form-group">
+                        <label for="edit_customer_address" class="clay-label">
+                            <i class="fa-solid fa-location-dot me-1"></i>Adresse du client
+                        </label>
+                        <textarea class="clay-textarea" id="edit_customer_address" name="customer_address" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="clay-btn" data-bs-dismiss="modal">
+                        <i class="fa-solid fa-times me-1"></i>Annuler
+                    </button>
+                    <button type="submit" class="clay-btn clay-btn-primary">
+                        <i class="fa-solid fa-save me-1"></i>Enregistrer les modifications
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Fonction pour éditer une intervention
+function editIntervention(id, customerName, customerAddress, technicianId) {
+    document.getElementById('edit_customer_name').value = customerName;
+    document.getElementById('edit_customer_address').value = customerAddress;
+    document.getElementById('edit_technician_id').value = technicianId;
+    document.getElementById('editInterventionForm').action = `/intervention/${id}/edit`;
+    new bootstrap.Modal(document.getElementById('editInterventionModal')).show();
+}
+
+// Fonction pour filtrer les interventions
+function filterInterventions(status) {
+    const rows = document.querySelectorAll('tbody tr[data-status]');
+    const buttons = document.querySelectorAll('[onclick^="filterInterventions"]');
+    
+    // Reset des boutons
+    buttons.forEach(btn => {
+        btn.classList.remove('clay-btn-primary');
+        btn.classList.add('clay-btn');
+    });
+    
+    // Activer le bouton sélectionné
+    event.target.classList.remove('clay-btn');
+    event.target.classList.add('clay-btn-primary');
+    
+    rows.forEach(row => {
+        if (status === 'all' || row.dataset.status === status) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+// Animation d'entrée pour les cartes
+document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.clay-card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            card.style.transition = 'all 0.5s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends 'layout.html' %}
+
+{% block title %}Connexion - ChronoTech{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="clay-card clay-card-elevated text-center">
+            <!-- Logo et titre -->
+            <div class="mb-4">
+                <i class="fa-solid fa-stopwatch fa-3x clay-float mb-3" style="color: var(--clay-accent-primary);"></i>
+                <h2 class="mb-2">Connexion</h2>
+                <p class="clay-text-secondary">Accédez à votre espace ChronoTech</p>
+            </div>
+
+            <!-- Formulaire de connexion -->
+            <form method="post" class="text-start">
+                <div class="clay-form-group">
+                    <label for="email" class="clay-label">
+                        <i class="fa-solid fa-envelope me-1"></i>Adresse email
+                    </label>
+                    <input type="email" class="clay-input" id="email" name="email" required placeholder="votre@email.com">
+                </div>
+
+                <div class="clay-form-group">
+                    <label for="password" class="clay-label">
+                        <i class="fa-solid fa-lock me-1"></i>Mot de passe
+                    </label>
+                    <input type="password" class="clay-input" id="password" name="password" required placeholder="••••••••">
+                </div>
+
+                <button type="submit" class="clay-btn clay-btn-primary w-100 clay-btn-lg mb-3">
+                    <i class="fa-solid fa-sign-in-alt me-2"></i>Se connecter
+                </button>
+            </form>
+
+            <!-- Lien vers l'inscription -->
+            <div class="text-center">
+                <p class="clay-text-light mb-2">Pas encore de compte ?</p>
+                <a href="{{ url_for('register') }}" class="clay-btn clay-btn-sm">
+                    <i class="fa-solid fa-user-plus me-1"></i>Créer un compte
+                </a>
+            </div>
+        </div>
+
+        <!-- Informations supplémentaires -->
+        <div class="clay-card clay-card-compact text-center mt-3">
+            <p class="clay-text-light mb-2">
+                <i class="fa-solid fa-shield-alt me-1"></i>
+                Vos données sont sécurisées
+            </p>
+            <small class="clay-text-light">
+                Connexion sécurisée SSL - Données cryptées
+            </small>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Animations d'entrée pour la page de login */
+.clay-card {
+    animation: slideInUp 0.6s ease-out;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Effet de focus amélioré */
+.clay-input:focus {
+    transform: scale(1.02);
+}
+
+/* Animation du logo */
+.clay-float {
+    animation: clayFloat 3s ease-in-out infinite;
+}
+</style>
+{% endblock %}

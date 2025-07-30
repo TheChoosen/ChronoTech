@@ -1,0 +1,207 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="clay-container">
+    <!-- Header avec animation d'entrée -->
+    <header class="text-center clay-fade-in" style="animation-delay: 0.1s;">
+        <h1 class="clay-title-primary mb-4">
+            <i class="fas fa-clipboard-list clay-icon-accent mr-3"></i>
+            Bon de Travail — Lignes
+        </h1>
+        <p class="clay-subtitle">Gestion des opérations, pièces, coûts et statuts détaillés</p>
+    </header>
+
+    <!-- Carte d'ajout de ligne -->
+    <div class="clay-card clay-card-elevated clay-fade-in" style="animation-delay: 0.2s;">
+        <div class="clay-card-header mb-6">
+            <h2 class="clay-title-secondary">
+                <i class="fas fa-plus-circle clay-icon-success mr-3"></i>
+                Ajouter une nouvelle ligne
+            </h2>
+        </div>
+        
+        <form action="{{ url_for('add_work_order_line', work_order_id=work_order.id) }}" method="post" class="clay-form">
+            <div class="clay-grid clay-grid-2">
+                <div class="clay-form-group">
+                    <label for="CODE" class="clay-label">Code pièce/opération</label>
+                    <input type="text" name="CODE" id="CODE" class="clay-input" required placeholder="Ex: PCS001">
+                </div>
+                <div class="clay-form-group">
+                    <label for="DESC" class="clay-label">Description</label>
+                    <input type="text" name="DESC" id="DESC" class="clay-input" required placeholder="Description détaillée">
+                </div>
+                <div class="clay-form-group">
+                    <label for="QUANT" class="clay-label">Quantité</label>
+                    <input type="number" step="0.01" name="QUANT" id="QUANT" class="clay-input" placeholder="1.00">
+                </div>
+                <div class="clay-form-group">
+                    <label for="COUT" class="clay-label">Coût unitaire</label>
+                    <input type="number" step="0.01" name="COUT" id="COUT" class="clay-input" placeholder="0.00">
+                </div>
+                <div class="clay-form-group">
+                    <label for="MONTANT" class="clay-label">Montant total</label>
+                    <input type="number" step="0.01" name="MONTANT" id="MONTANT" class="clay-input" placeholder="0.00">
+                </div>
+                <div class="clay-form-group">
+                    <label for="STATUS" class="clay-label">Statut</label>
+                    <select name="STATUS" id="STATUS" class="clay-select">
+                        <option value="A">Active</option>
+                        <option value="F">Facturée</option>
+                        <option value="X">Annulée</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button type="submit" class="clay-btn clay-btn-primary clay-btn-lg clay-ripple mt-4">
+                <i class="fas fa-plus mr-2"></i>
+                Ajouter la ligne
+            </button>
+        </form>
+    </div>
+    <!-- Tableau des lignes existantes -->
+    <div class="clay-card clay-fade-in" style="animation-delay: 0.3s;">
+        <div class="clay-card-header mb-6">
+            <h2 class="clay-title-secondary">
+                <i class="fas fa-list clay-icon-info mr-3"></i>
+                Lignes du bon de travail
+            </h2>
+        </div>
+        
+        <div class="clay-table-container">
+            <table class="clay-table">
+                <thead class="clay-table-header">
+                    <tr>
+                        <th class="clay-th">Code</th>
+                        <th class="clay-th">Description</th>
+                        <th class="clay-th">Quantité</th>
+                        <th class="clay-th">Coût</th>
+                        <th class="clay-th">Montant</th>
+                        <th class="clay-th">Statut</th>
+                        <th class="clay-th">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="clay-table-body">
+                    {% for line in work_order_lines %}
+                    <tr class="clay-tr clay-hover-row">
+                        <td class="clay-td">
+                            <span class="clay-code-badge">{{ line.CODE }}</span>
+                        </td>
+                        <td class="clay-td">
+                            <span class="clay-text-primary">{{ line.DESC }}</span>
+                        </td>
+                        <td class="clay-td">
+                            <span class="clay-quantity">{{ line.QUANT }}</span>
+                        </td>
+                        <td class="clay-td">
+                            <span class="clay-currency">{{ "%.2f"|format(line.COUT|float) }} €</span>
+                        </td>
+                        <td class="clay-td">
+                            <span class="clay-currency clay-text-accent">{{ "%.2f"|format(line.MONTANT|float) }} €</span>
+                        </td>
+                        <td class="clay-td">
+                            <span class="clay-badge clay-badge-{{ 'success' if line.STATUS == 'A' else 'warning' if line.STATUS == 'F' else 'danger' }}">
+                                {{ 'Active' if line.STATUS == 'A' else 'Facturée' if line.STATUS == 'F' else 'Annulée' }}
+                            </span>
+                        </td>
+                        <td class="clay-td">
+                            <div class="clay-button-group clay-button-group-sm">
+                                <a href="{{ url_for('edit_work_order_line', line_id=line.id) }}" 
+                                   class="clay-btn clay-btn-sm clay-btn-warning clay-ripple">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <form action="{{ url_for('delete_work_order_line', line_id=line.id) }}" 
+                                      method="post" 
+                                      style="display: inline;" 
+                                      onsubmit="return confirm('Supprimer cette ligne ?');">
+                                    <button type="submit" class="clay-btn clay-btn-sm clay-btn-danger clay-ripple">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="clay-td text-center">
+                            <div class="clay-empty-state py-8">
+                                <i class="fas fa-inbox clay-icon-muted" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                                <h3 class="clay-title-tertiary mb-2">Aucune ligne</h3>
+                                <p class="clay-text-secondary">Commencez par ajouter une première ligne au bon de travail.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Résumé financier -->
+        {% if work_order_lines %}
+        <div class="clay-summary-section mt-6">
+            <div class="clay-grid clay-grid-3">
+                <div class="clay-stat-card">
+                    <div class="clay-stat-icon">
+                        <i class="fas fa-list-ol clay-icon-info"></i>
+                    </div>
+                    <div class="clay-stat-content">
+                        <div class="clay-stat-value">{{ work_order_lines|length }}</div>
+                        <div class="clay-stat-label">Lignes totales</div>
+                    </div>
+                </div>
+                
+                <div class="clay-stat-card">
+                    <div class="clay-stat-icon">
+                        <i class="fas fa-calculator clay-icon-success"></i>
+                    </div>
+                    <div class="clay-stat-content">
+                        <div class="clay-stat-value">
+                            {{ "%.2f"|format(work_order_lines|sum(attribute='MONTANT')|float) }} €
+                        </div>
+                        <div class="clay-stat-label">Montant total</div>
+                    </div>
+                </div>
+                
+                <div class="clay-stat-card">
+                    <div class="clay-stat-icon">
+                        <i class="fas fa-check-circle clay-icon-success"></i>
+                    </div>
+                    <div class="clay-stat-content">
+                        <div class="clay-stat-value">
+                            {{ work_order_lines|selectattr('STATUS', 'equalto', 'A')|list|length }}
+                        </div>
+                        <div class="clay-stat-label">Lignes actives</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Calcul automatique du montant total
+document.addEventListener('DOMContentLoaded', function() {
+    const quantInput = document.getElementById('QUANT');
+    const coutInput = document.getElementById('COUT');
+    const montantInput = document.getElementById('MONTANT');
+    
+    function calculateTotal() {
+        const quant = parseFloat(quantInput.value) || 0;
+        const cout = parseFloat(coutInput.value) || 0;
+        const total = quant * cout;
+        montantInput.value = total.toFixed(2);
+    }
+    
+    quantInput.addEventListener('input', calculateTotal);
+    coutInput.addEventListener('input', calculateTotal);
+});
+
+// Animation d'entrée pour les lignes du tableau
+const tableRows = document.querySelectorAll('.clay-tr');
+tableRows.forEach((row, index) => {
+    row.style.animationDelay = `${0.1 * (index + 4)}s`;
+    row.classList.add('clay-fade-in');
+});
+</script>
+
+{% endblock %}

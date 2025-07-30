@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Prototype Intervention ChronoTech</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.tailwindcss.com" rel="stylesheet">
+    <style>body { background: #f8fafc; }</style>
+</head>
+<body class="text-gray-800 dark:text-gray-200">
+    <div class="max-w-5xl mx-auto p-6">
+        <header class="mb-8 text-center">
+            <h1 class="text-4xl font-bold text-indigo-600 mb-2">Prototype Intervention ChronoTech</h1>
+            <p class="text-lg text-gray-600">Page de discussion pour l'équipe de développement</p>
+        </header>
+        <section class="mb-8">
+            <h2 class="text-2xl font-bold mb-2">Objectif</h2>
+            <p>Permettre aux techniciens de gérer les interventions terrain étape par étape, avec association de produits, suivi chronométré, notes vocales, et expérience utilisateur moderne.</p>
+        </section>
+        <section class="mb-8">
+            <h2 class="text-2xl font-bold mb-2">Fonctionnalités principales</h2>
+            <ul class="list-disc ml-6 space-y-1">
+                <li>Création d’une intervention (client, adresse, technicien, statut)</li>
+                <li>Gestion des étapes (CRUD, description, date, chrono, produit associé)</li>
+                <li>Sélecteur de produit avancé (recherche dynamique, pagination, filtres)</li>
+                <li>Suivi chronométré par étape</li>
+                <li>Notes vocales (à venir)</li>
+                <li>Gestion des techniciens (admin)</li>
+                <li>Authentification sécurisée</li>
+                <li>UI moderne et responsive</li>
+                <li>Offline & API REST (à venir)</li>
+                <li>Gestion des erreurs (affichage, absence table inprix)</li>
+            </ul>
+        </section>
+        <section class="mb-8">
+            <h2 class="text-2xl font-bold mb-2">Parcours utilisateur</h2>
+            <ol class="list-decimal ml-6 space-y-1">
+                <li>Login</li>
+                <li>Accès au dashboard</li>
+                <li>Création ou sélection d’une intervention</li>
+                <li>Ajout d’étapes avec produits</li>
+                <li>Suivi chronométré et notes</li>
+                <li>Validation et clôture</li>
+            </ol>
+        </section>
+        <section class="mb-8">
+            <h2 class="text-2xl font-bold mb-2">Données principales</h2>
+            <ul class="list-disc ml-6 space-y-1">
+                <li><b>Intervention</b> : id, client, adresse, statut, technicien, début, fin</li>
+                <li><b>Étape</b> : id, intervention_id, description, timestamp, product_id, durée, note vocale</li>
+                <li><b>Produit (BDM.inprix)</b> : CODEAP, DESCR, prix, quantité</li>
+                <li><b>Technicien</b> : id, nom, email, rôle</li>
+            </ul>
+        </section>
+        <section class="mb-8">
+            <h2 class="text-2xl font-bold mb-2">Contraintes techniques</h2>
+            <ul class="list-disc ml-6 space-y-1">
+                <li>Backend Python/Flask, MySQL</li>
+                <li>Frontend HTML5, Tailwind, Bootstrap</li>
+                <li>Table inprix dans BDM (accès direct)</li>
+                <li>Sécurité (hash, permissions)</li>
+            </ul>
+        </section>
+        <section class="mb-8">
+            <h2 class="text-2xl font-bold mb-2">Prototype UI Intervention</h2>
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+                <!-- Intervention.html UI concept -->
+                <form class="max-w-xl mx-auto flex flex-col gap-4">
+                    <label for="description" class="block text-lg font-medium text-gray-700 dark:text-gray-300">Ajouter une étape</label>
+                    <textarea name="description" id="description" rows="2" class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md p-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required placeholder="Décrire l'étape..."></textarea>
+                    <label for="product_search" class="block text-lg font-medium text-gray-700 dark:text-gray-300">Produit associé</label>
+                    <div class="relative">
+                        <input type="text" id="product_search" class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md p-2 mb-2" placeholder="Rechercher un produit par nom ou code..." autocomplete="off">
+                        <div class="flex gap-2 mb-2">
+                            <select id="product_filter_type" class="bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded p-1">
+                                <option value="DESCR">Nom</option>
+                                <option value="CODEAP">Code</option>
+                            </select>
+                        </div>
+                        <div id="product_results" class="absolute z-10 w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto hidden"></div>
+                        <input type="hidden" name="product_id" id="product_id">
+                    </div>
+                    <div id="product_pager" class="flex justify-center items-center gap-2 mt-2"></div>
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105">Ajouter une Étape</button>
+                </form>
+                <div class="mt-8">
+                    <h3 class="text-xl font-bold mb-4">Étapes de l'intervention</h3>
+                    <div class="space-y-6">
+                        <div class="bg-gray-50 dark:bg-gray-800 p-5 rounded-xl shadow border border-gray-200 dark:border-gray-700">
+                            <h4 class="text-lg font-bold mb-2">Étape 1</h4>
+                            <div class="mb-2">Description de l'étape...</div>
+                            <div>Date: 2025-07-29</div>
+                            <div>Produit associé: <span class="font-semibold">CODEAP - DESCR</span></div>
+                            <div class="mt-2">Chronomètre, note vocale (à venir)</div>
+                        </div>
+                        <!-- ... autres étapes ... -->
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section class="mb-8">
+            <h2 class="text-2xl font-bold mb-2">Évolutions prévues</h2>
+            <ul class="list-disc ml-6 space-y-1">
+                <li>Gestion des quantités/prix produits</li>
+                <li>API REST mobile</li>
+                <li>Offline</li>
+                <li>Signature/photo</li>
+                <li>Tests unitaires</li>
+                <li>Documentation API</li>
+            </ul>
+        </section>
+    </div>
+</body>
+</html>

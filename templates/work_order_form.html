@@ -1,0 +1,877 @@
+{% extends "layout.html" %}
+
+{% block title %}
+{% if action == 'create' %}Nouveau Travail{% else %}Modifier Travail{% endif %} - ChronoTech
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <div class="form-header">
+        <h1 class="form-title">
+            <i class="fas fa-clipboard-list"></i>
+            {% if action == 'create' %}Nouveau Travail Demandé{% else %}Modifier Travail Demandé{% endif %}
+        </h1>
+        <div class="form-actions">
+            <a href="{{ url_for('work_orders') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i>
+                Retour à la liste
+            </a>
+        </div>
+    </div>
+
+    <div class="form-content card">
+        <form method="POST" id="workOrderForm" novalidate>
+            <div class="form-grid">
+                <!-- Informations principales -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-info-circle"></i>
+                        Informations principales
+                    </h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="claim_number" class="required">Numéro de réclamation</label>
+                            <input type="text" 
+                                   id="claim_number" 
+                                   name="claim_number" 
+                                   class="form-control" 
+                                   value="{% if work_order %}{{ work_order.claim_number }}{% endif %}"
+                                   required>
+                            <div class="form-help">Numéro unique d'identification du travail</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="priority">Priorité</label>
+                            <select id="priority" name="priority" class="form-control">
+                                <option value="low" {% if work_order and work_order.priority == 'low' %}selected{% endif %}>Faible</option>
+                                <option value="medium" {% if not work_order or work_order.priority == 'medium' %}selected{% endif %}>Moyenne</option>
+                                <option value="high" {% if work_order and work_order.priority == 'high' %}selected{% endif %}>Élevée</option>
+                                <option value="urgent" {% if work_order and work_order.priority == 'urgent' %}selected{% endif %}>Urgente</option>
+                            </select>
+                        </div>
+                        
+                        {% if action == 'edit' %}
+                        <div class="form-group">
+                            <label for="status">Statut</label>
+                            <select id="status" name="status" class="form-control">
+                                <option value="draft" {% if work_order.status == 'draft' %}selected{% endif %}>Brouillon</option>
+                                <option value="pending" {% if work_order.status == 'pending' %}selected{% endif %}>En attente</option>
+                                <option value="assigned" {% if work_order.status == 'assigned' %}selected{% endif %}>Assigné</option>
+                                <option value="in_progress" {% if work_order.status == 'in_progress' %}selected{% endif %}>En cours</option>
+                                <option value="completed" {% if work_order.status == 'completed' %}selected{% endif %}>Terminé</option>
+                                <option value="cancelled" {% if work_order.status == 'cancelled' %}selected{% endif %}>Annulé</option>
+                            </select>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="description" class="required">Description du travail</label>
+                        <textarea id="description" 
+                                  name="description" 
+                                  class="form-control" 
+                                  rows="4" 
+                                  required>{% if work_order %}{{ work_order.description }}{% endif %}</textarea>
+                        <div class="form-help">Décrivez en détail le travail à effectuer</div>
+                    </div>
+                </div>
+
+                <!-- Informations client -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-user"></i>
+                        Informations client
+                    </h3>
+                    
+                    <div class="form-group">
+                        <label for="customer_name" class="required">Nom du client</label>
+                        <input type="text" 
+                               id="customer_name" 
+                               name="customer_name" 
+                               class="form-control" 
+                               value="{% if work_order %}{{ work_order.customer_name }}{% endif %}"
+                               required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="customer_address" class="required">Adresse</label>
+                        <textarea id="customer_address" 
+                                  name="customer_address" 
+                                  class="form-control" 
+                                  rows="3" 
+                                  required>{% if work_order %}{{ work_order.customer_address }}{% endif %}</textarea>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="customer_phone">Téléphone</label>
+                            <input type="tel" 
+                                   id="customer_phone" 
+                                   name="customer_phone" 
+                                   class="form-control" 
+                                   value="{% if work_order %}{{ work_order.customer_phone or '' }}{% endif %}">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="customer_email">Email</label>
+                            <input type="email" 
+                                   id="customer_email" 
+                                   name="customer_email" 
+                                   class="form-control" 
+                                   value="{% if work_order %}{{ work_order.customer_email or '' }}{% endif %}">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Assignation et planification -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-calendar-alt"></i>
+                        Assignation et planification
+                    </h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="assigned_technician_id">Technicien assigné</label>
+                            <select id="assigned_technician_id" name="assigned_technician_id" class="form-control">
+                                <option value="">Non assigné</option>
+                                {% for technician in technicians %}
+                                <option value="{{ technician.id }}" 
+                                        {% if work_order and work_order.assigned_technician_id == technician.id %}selected{% endif %}>
+                                    {{ technician.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="scheduled_date">Date prévue</label>
+                            <input type="datetime-local" 
+                                   id="scheduled_date" 
+                                   name="scheduled_date" 
+                                   class="form-control"
+                                   value="{% if work_order and work_order.scheduled_date %}{{ work_order.scheduled_date.strftime('%Y-%m-%dT%H:%M') }}{% endif %}">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Estimations -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-calculator"></i>
+                        Estimations
+                    </h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="estimated_duration">Durée estimée (minutes)</label>
+                            <input type="number" 
+                                   id="estimated_duration" 
+                                   name="estimated_duration" 
+                                   class="form-control" 
+                                   min="0" 
+                                   step="15"
+                                   value="{% if work_order and work_order.estimated_duration %}{{ work_order.estimated_duration }}{% endif %}">
+                            <div class="form-help">Durée estimée en minutes</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="estimated_cost">Coût estimé (€)</label>
+                            <input type="number" 
+                                   id="estimated_cost" 
+                                   name="estimated_cost" 
+                                   class="form-control" 
+                                   min="0" 
+                                   step="0.01"
+                                   value="{% if work_order and work_order.estimated_cost %}{{ work_order.estimated_cost }}{% endif %}">
+                            <div class="form-help">Coût estimé en euros</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-sticky-note"></i>
+                        Notes complémentaires
+                    </h3>
+                    
+                    <div class="form-group">
+                        <label for="notes">Notes</label>
+                        <textarea id="notes" 
+                                  name="notes" 
+                                  class="form-control" 
+                                  rows="4" 
+                                  placeholder="Notes complémentaires, instructions spéciales...">{% if work_order %}{{ work_order.notes or '' }}{% endif %}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Association avec intervention (optionnelle) -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-tools"></i>
+                    Intervention associée
+                    <span class="optional-badge">Optionnel</span>
+                </h3>
+                
+                <div class="intervention-toggle">
+                    <label class="toggle-switch">
+                        <input type="checkbox" 
+                               id="has_intervention" 
+                               name="has_intervention" 
+                               {% if work_order and work_order.intervention_id %}checked{% endif %}
+                               onchange="toggleInterventionSection()">
+                        <span class="toggle-slider"></span>
+                        <span class="toggle-label">Associer à une intervention</span>
+                    </label>
+                    <div class="form-help">
+                        Cochez cette option si ce travail doit être lié à une intervention existante ou nouvelle
+                    </div>
+                </div>
+                
+                <div id="interventionSection" class="intervention-fields" style="display: {% if work_order and work_order.intervention_id %}block{% else %}none{% endif %};">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="intervention_type">Type d'intervention</label>
+                            <select id="intervention_type" name="intervention_type" class="form-control" onchange="toggleInterventionType()">
+                                <option value="new">Créer une nouvelle intervention</option>
+                                <option value="existing">Associer à une intervention existante</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group" id="existingInterventionGroup" style="display: none;">
+                            <label for="intervention_id">Intervention existante</label>
+                            <select id="intervention_id" name="intervention_id" class="form-control">
+                                <option value="">Sélectionner une intervention</option>
+                                {% for intervention in interventions %}
+                                <option value="{{ intervention.id }}" 
+                                        {% if work_order and work_order.intervention_id == intervention.id %}selected{% endif %}>
+                                    {{ intervention.titre }} - {{ intervention.date_intervention.strftime('%d/%m/%Y') if intervention.date_intervention else 'Non planifiée' }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div id="newInterventionFields" class="new-intervention-fields">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="intervention_title">Titre de l'intervention</label>
+                                <input type="text" 
+                                       id="intervention_title" 
+                                       name="intervention_title" 
+                                       class="form-control" 
+                                       placeholder="Ex: Réparation urgente équipement">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="intervention_date">Date d'intervention prévue</label>
+                                <input type="datetime-local" 
+                                       id="intervention_date" 
+                                       name="intervention_date" 
+                                       class="form-control">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="intervention_description">Description de l'intervention</label>
+                            <textarea id="intervention_description" 
+                                      name="intervention_description" 
+                                      class="form-control" 
+                                      rows="3" 
+                                      placeholder="Décrivez les actions à effectuer lors de l'intervention..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions du formulaire -->
+            <div class="form-footer">
+                <div class="form-actions">
+                    <a href="{{ url_for('work_orders') }}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i>
+                        Annuler
+                    </a>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        {% if action == 'create' %}Créer le travail{% else %}Enregistrer les modifications{% endif %}
+                    </button>
+                </div>
+                
+                {% if action == 'edit' %}
+                <div class="form-info">
+                    <div class="info-item">
+                        <span class="info-label">Créé par:</span>
+                        <span class="info-value">{{ work_order.creator_name or 'Inconnu' }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Créé le:</span>
+                        <span class="info-value">{{ work_order.created_at.strftime('%d/%m/%Y à %H:%M') }}</span>
+                    </div>
+                    {% if work_order.updated_at != work_order.created_at %}
+                    <div class="info-item">
+                        <span class="info-label">Modifié le:</span>
+                        <span class="info-value">{{ work_order.updated_at.strftime('%d/%m/%Y à %H:%M') }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Focus sur le premier champ
+    document.getElementById('claim_number').focus();
+    
+    // Validation en temps réel
+    const form = document.getElementById('workOrderForm');
+    const requiredFields = form.querySelectorAll('[required]');
+    
+    // Validation des champs requis
+    requiredFields.forEach(field => {
+        field.addEventListener('blur', validateField);
+        field.addEventListener('input', clearFieldError);
+    });
+    
+    // Validation du formulaire à la soumission
+    form.addEventListener('submit', function(event) {
+        if (!validateForm()) {
+            event.preventDefault();
+            showNotification('Veuillez corriger les erreurs avant de continuer', 'error');
+        }
+    });
+    
+    // Formatage du coût
+    const costField = document.getElementById('estimated_cost');
+    if (costField) {
+        costField.addEventListener('input', formatCurrency);
+    }
+    
+    // Initialiser l'état de l'intervention
+    initializeInterventionSection();
+    
+    // Raccourcis clavier
+    document.addEventListener('keydown', function(event) {
+        if (event.ctrlKey && event.key === 's') {
+            event.preventDefault();
+            form.submit();
+        }
+        if (event.key === 'Escape') {
+            window.location.href = "{{ url_for('work_orders') }}";
+        }
+    });
+});
+
+// Initialiser la section intervention
+function initializeInterventionSection() {
+    const hasIntervention = document.getElementById('has_intervention');
+    const interventionType = document.getElementById('intervention_type');
+    
+    if (hasIntervention) {
+        toggleInterventionSection();
+    }
+    
+    if (interventionType) {
+        toggleInterventionType();
+    }
+}
+
+// Basculer l'affichage de la section intervention
+function toggleInterventionSection() {
+    const checkbox = document.getElementById('has_intervention');
+    const section = document.getElementById('interventionSection');
+    
+    if (checkbox.checked) {
+        section.style.display = 'block';
+        section.style.animation = 'clay-fade-in 0.3s ease-in-out';
+        
+        // Marquer les champs comme requis si nécessaire
+        const interventionTitle = document.getElementById('intervention_title');
+        if (interventionTitle && document.getElementById('intervention_type').value === 'new') {
+            interventionTitle.setAttribute('required', 'required');
+        }
+    } else {
+        section.style.display = 'none';
+        
+        // Supprimer les attributs requis
+        const interventionFields = section.querySelectorAll('[required]');
+        interventionFields.forEach(field => {
+            field.removeAttribute('required');
+        });
+        
+        // Réinitialiser les valeurs
+        section.querySelectorAll('input, select, textarea').forEach(field => {
+            if (field.type !== 'checkbox') {
+                field.value = '';
+            }
+        });
+    }
+}
+
+// Basculer entre nouvelle intervention et intervention existante
+function toggleInterventionType() {
+    const interventionType = document.getElementById('intervention_type');
+    const newFields = document.getElementById('newInterventionFields');
+    const existingGroup = document.getElementById('existingInterventionGroup');
+    const interventionTitle = document.getElementById('intervention_title');
+    const interventionId = document.getElementById('intervention_id');
+    
+    if (interventionType.value === 'new') {
+        newFields.style.display = 'block';
+        existingGroup.style.display = 'none';
+        
+        // Marquer les champs nouveaux comme requis
+        if (interventionTitle) {
+            interventionTitle.setAttribute('required', 'required');
+        }
+        if (interventionId) {
+            interventionId.removeAttribute('required');
+            interventionId.value = '';
+        }
+    } else {
+        newFields.style.display = 'none';
+        existingGroup.style.display = 'block';
+        
+        // Marquer l'intervention existante comme requise
+        if (interventionId) {
+            interventionId.setAttribute('required', 'required');
+        }
+        if (interventionTitle) {
+            interventionTitle.removeAttribute('required');
+            interventionTitle.value = '';
+        }
+        
+        // Réinitialiser les champs nouveaux
+        newFields.querySelectorAll('input, textarea').forEach(field => {
+            field.value = '';
+        });
+    }
+}
+
+// Validation d'un champ
+function validateField(event) {
+    const field = event.target;
+    const value = field.value.trim();
+    
+    // Retirer les erreurs existantes
+    clearFieldError(event);
+    
+    // Validation des champs requis
+    if (field.hasAttribute('required') && !value) {
+        showFieldError(field, 'Ce champ est obligatoire');
+        return false;
+    }
+    
+    // Validation spécifique par type
+    switch (field.type) {
+        case 'email':
+            if (value && !isValidEmail(value)) {
+                showFieldError(field, 'Adresse email invalide');
+                return false;
+            }
+            break;
+        case 'tel':
+            if (value && !isValidPhone(value)) {
+                showFieldError(field, 'Numéro de téléphone invalide');
+                return false;
+            }
+            break;
+        case 'number':
+            if (value && (isNaN(value) || parseFloat(value) < 0)) {
+                showFieldError(field, 'Valeur numérique positive requise');
+                return false;
+            }
+            break;
+    }
+    
+    return true;
+}
+
+// Effacer l'erreur d'un champ
+function clearFieldError(event) {
+    const field = event.target;
+    field.classList.remove('error');
+    
+    const errorMsg = field.parentNode.querySelector('.field-error');
+    if (errorMsg) {
+        errorMsg.remove();
+    }
+}
+
+// Afficher l'erreur d'un champ
+function showFieldError(field, message) {
+    field.classList.add('error');
+    
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'field-error';
+    errorDiv.textContent = message;
+    
+    field.parentNode.appendChild(errorDiv);
+}
+
+// Validation complète du formulaire
+function validateForm() {
+    const form = document.getElementById('workOrderForm');
+    const requiredFields = form.querySelectorAll('[required]');
+    let isValid = true;
+    
+    requiredFields.forEach(field => {
+        const event = { target: field };
+        if (!validateField(event)) {
+            isValid = false;
+        }
+    });
+    
+    return isValid;
+}
+
+// Validation email
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
+// Validation téléphone
+function isValidPhone(phone) {
+    const phoneRegex = /^[\+]?[\d\s\-\.\(\)]{10,}$/;
+    return phoneRegex.test(phone);
+}
+
+// Formatage de la devise
+function formatCurrency(event) {
+    const field = event.target;
+    let value = field.value;
+    
+    // Supprimer les caractères non numériques sauf le point
+    value = value.replace(/[^0-9.]/g, '');
+    
+    // S'assurer qu'il n'y a qu'un seul point
+    const parts = value.split('.');
+    if (parts.length > 2) {
+        value = parts[0] + '.' + parts.slice(1).join('');
+    }
+    
+    // Limiter à 2 décimales
+    if (parts[1] && parts[1].length > 2) {
+        value = parts[0] + '.' + parts[1].substring(0, 2);
+    }
+    
+    field.value = value;
+}
+
+// Afficher ou masquer la section d'intervention
+function toggleInterventionSection() {
+    const checkbox = document.getElementById('has_intervention');
+    const section = document.getElementById('interventionSection');
+    
+    if (checkbox.checked) {
+        section.style.display = 'block';
+    } else {
+        section.style.display = 'none';
+        // Réinitialiser les champs de la section intervention
+        resetInterventionFields();
+    }
+}
+
+// Basculer le type d'intervention (nouvelle ou existante)
+function toggleInterventionType() {
+    const typeSelect = document.getElementById('intervention_type');
+    const existingGroup = document.getElementById('existingInterventionGroup');
+    const newFields = document.getElementById('newInterventionFields');
+    
+    if (typeSelect.value === 'existing') {
+        existingGroup.style.display = 'block';
+        newFields.style.display = 'none';
+    } else {
+        existingGroup.style.display = 'none';
+        newFields.style.display = 'block';
+    }
+}
+
+// Réinitialiser les champs de la section intervention
+function resetInterventionFields() {
+    const fields = document.querySelectorAll('#interventionSection .form-control');
+    fields.forEach(field => {
+        field.value = '';
+    });
+    
+    const existingGroup = document.getElementById('existingInterventionGroup');
+    const newFields = document.getElementById('newInterventionFields');
+    existingGroup.style.display = 'none';
+    newFields.style.display = 'block';
+}
+</script>
+
+<style>
+.form-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.form-title {
+    color: var(--text-primary);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.form-content {
+    padding: 2rem;
+}
+
+.form-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.form-section {
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    padding: 1.5rem;
+    background: var(--bg-secondary);
+}
+
+.section-title {
+    color: var(--primary);
+    font-size: 1.1rem;
+    margin: 0 0 1.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--primary-light);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.form-group label.required::after {
+    content: ' *';
+    color: var(--danger);
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid var(--border-light);
+    border-radius: 8px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-light);
+    outline: none;
+}
+
+.form-control.error {
+    border-color: var(--danger);
+    box-shadow: 0 0 0 3px rgba(var(--danger-rgb), 0.1);
+}
+
+.form-help {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+}
+
+/* Styles pour la section intervention */
+.optional-badge {
+    background: var(--clay-info);
+    color: white;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    margin-left: 0.5rem;
+    font-weight: 500;
+}
+
+.intervention-toggle {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: var(--clay-surface-light);
+    border-radius: 8px;
+    border-left: 4px solid var(--clay-info);
+}
+
+.toggle-switch {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    gap: 0.75rem;
+    font-weight: 500;
+}
+
+.toggle-switch input[type="checkbox"] {
+    display: none;
+}
+
+.toggle-slider {
+    position: relative;
+    width: 50px;
+    height: 24px;
+    background: var(--clay-border-light);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background: var(--clay-success);
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+    transform: translateX(26px);
+}
+
+.intervention-fields {
+    padding: 1rem;
+    border: 2px dashed var(--clay-border-light);
+    border-radius: 8px;
+    background: rgba(var(--clay-info-rgb), 0.02);
+    transition: all 0.3s ease;
+}
+
+.intervention-fields.active {
+    border-color: var(--clay-info);
+    background: rgba(var(--clay-info-rgb), 0.05);
+}
+
+.new-intervention-fields {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--clay-border-light);
+}
+
+.intervention-preview {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--clay-surface-light);
+    border-radius: 8px;
+    border-left: 4px solid var(--clay-accent-primary);
+}
+
+.preview-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: var(--clay-accent-primary);
+    margin-bottom: 0.5rem;
+}
+
+.preview-content p {
+    margin: 0.25rem 0;
+    font-size: 0.9rem;
+}
+
+/* Animation pour les sections qui apparaissent */
+@keyframes clay-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.intervention-fields {
+    animation: clay-fade-in 0.3s ease-in-out;
+}
+
+/* Amélioration des erreurs de champ */
+.field-error {
+    color: var(--clay-danger);
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    background: rgba(var(--clay-danger-rgb), 0.1);
+    border-radius: 4px;
+    border-left: 3px solid var(--clay-danger);
+}
+
+.form-control.error {
+    border-color: var(--clay-danger);
+    box-shadow: 0 0 0 3px rgba(var(--clay-danger-rgb), 0.1);
+    animation: clay-shake 0.5s ease-in-out;
+}
+
+@keyframes clay-shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+/* Responsive pour les nouvelles sections */
+@media (max-width: 768px) {
+    .intervention-toggle {
+        padding: 0.75rem;
+    }
+    
+    .toggle-switch {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+    }
+    
+    .intervention-fields {
+        padding: 0.75rem;
+    }
+    
+    .optional-badge {
+        display: block;
+        margin: 0.5rem 0 0 0;
+        text-align: center;
+        width: fit-content;
+    }
+}
+</style>
+{% endblock %}
