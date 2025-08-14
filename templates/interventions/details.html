@@ -1,0 +1,613 @@
+{% extends "base.html" %}
+
+{% block title %}Intervention {{ work_order.claim_number }} - ChronoTech{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/intervention-details.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="intervention-details-container">
+    <!-- En-tête de l'intervention avec IA -->
+    <div class="intervention-header clay-card">
+        <div class="header-main">
+            <div class="title-section">
+                <h1>{{ work_order.claim_number }}</h1>
+                <div class="status-priority">
+                    <span class="status-badge {{ work_order.status }}">
+                        {% if work_order.status == 'pending' %}⏳{% endif %}
+                        {% if work_order.status == 'in_progress' %}⚡{% endif %}
+                        {% if work_order.status == 'completed' %}✅{% endif %}
+                        {% if work_order.status == 'scheduled' %}📅{% endif %}
+                        {{ work_order.status | replace('_', ' ') | title }}
+                    </span>
+                    <span class="priority-badge {{ work_order.priority }}">
+                        {% if work_order.priority == 'urgent' %}🔴{% endif %}
+                        {% if work_order.priority == 'high' %}🟠{% endif %}
+                        {% if work_order.priority == 'medium' %}🟡{% endif %}
+                        {% if work_order.priority == 'low' %}🟢{% endif %}
+                        {{ work_order.priority | title }}
+                    </span>
+                </div>
+            </div>
+            
+            <div class="ai-summary">
+                <div class="ai-indicator">
+                    <span class="ai-icon">🤖</span>
+                    <span class="ai-label">Assistant IA Actif</span>
+                </div>
+                <div class="quick-stats">
+                    <div class="stat">
+                        <span class="number">{{ notes | length }}</span>
+                        <span class="label">Notes</span>
+                    </div>
+                    <div class="stat">
+                        <span class="number">{{ media | length }}</span>
+                        <span class="label">Médias</span>
+                    </div>
+                    <div class="stat">
+                        <span class="number">{{ work_order_lines | length }}</span>
+                        <span class="label">Lignes</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions principales -->
+        <div class="header-actions">
+            {% if session.user_role == 'technician' and work_order.assigned_technician_id == session.user_id %}
+                {% if work_order.status == 'pending' %}
+                <button class="clay-btn clay-btn-success" onclick="quickAction('start_work')">
+                    ▶️ Démarrer l'intervention
+                </button>
+                {% elif work_order.status == 'in_progress' %}
+                <button class="clay-btn clay-btn-warning" onclick="quickAction('complete_work')">
+                    ✅ Terminer l'intervention
+                </button>
+                {% endif %}
+            {% endif %}
+            
+            <button class="clay-btn clay-btn-primary" onclick="startVoiceNote()">
+                🎤 Note vocale
+            </button>
+            <button class="clay-btn clay-btn-primary" onclick="openPhotoCapture()">
+                📷 Photo
+            </button>
+            <button class="clay-btn clay-btn-ghost" onclick="openAiAssistant()">
+                🤖 Assistant IA
+            </button>
+        </div>
+    </div>
+
+    <!-- Layout principal avec colonnes adaptatives -->
+    <div class="intervention-layout">
+        <!-- Colonne principale (contenu) -->
+        <div class="main-column">
+            <!-- Informations client -->
+            <div class="client-info clay-card">
+                <h3>👤 Informations Client</h3>
+                <div class="client-details">
+                    <div class="detail-row">
+                        <strong>Nom:</strong> {{ work_order.customer_name }}
+                    </div>
+                    {% if work_order.customer_phone %}
+                    <div class="detail-row">
+                        <strong>Téléphone:</strong> 
+                        <a href="tel:{{ work_order.customer_phone }}">{{ work_order.customer_phone }}</a>
+                    </div>
+                    {% endif %}
+                    {% if work_order.customer_email %}
+                    <div class="detail-row">
+                        <strong>Email:</strong> 
+                        <a href="mailto:{{ work_order.customer_email }}">{{ work_order.customer_email }}</a>
+                    </div>
+                    {% endif %}
+                    {% if work_order.customer_address %}
+                    <div class="detail-row">
+                        <strong>Adresse:</strong> {{ work_order.customer_address }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Description de l'intervention -->
+            <div class="description-section clay-card">
+                <h3>📋 Description de l'intervention</h3>
+                <div class="description-content">
+                    <p>{{ work_order.description }}</p>
+                    {% if work_order.estimated_duration %}
+                    <div class="duration-info">
+                        <strong>Durée estimée:</strong> {{ work_order.estimated_duration }}h
+                        {% if work_order.actual_duration %}
+                        <span class="actual-duration">(Réel: {{ (work_order.actual_duration / 60) | round(1) }}h)</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Lignes de travail -->
+            {% if work_order_lines %}
+            <div class="work-lines clay-card">
+                <h3>🔧 Lignes de travail</h3>
+                <div class="lines-list">
+                    {% for line in work_order_lines %}
+                    <div class="work-line">
+                        <div class="line-header">
+                            <strong>{{ line.description }}</strong>
+                            <span class="line-status">{{ line.status | title }}</span>
+                        </div>
+                        {% if line.notes %}
+                        <div class="line-notes">{{ line.notes }}</div>
+                        {% endif %}
+                        <div class="line-details">
+                            {% if line.quantity %}
+                            <span>Quantité: {{ line.quantity }}</span>
+                            {% endif %}
+                            {% if line.unit_price %}
+                            <span>Prix unitaire: {{ "%.2f"|format(line.unit_price) }}€</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Interface d'ajout de notes avec IA -->
+            <div class="notes-interface clay-card">
+                <h3>📝 Notes d'intervention</h3>
+                
+                <!-- Formulaire de nouvelle note -->
+                <div class="note-form">
+                    <div class="form-header">
+                        <div class="form-tabs">
+                            <button class="tab-btn active" data-tab="text">✏️ Texte</button>
+                            <button class="tab-btn" data-tab="voice">🎤 Vocal</button>
+                            <button class="tab-btn" data-tab="ai">🤖 IA</button>
+                        </div>
+                        <div class="note-type-selector">
+                            <select id="note-type" class="clay-select">
+                                <option value="private">🔒 Privée</option>
+                                <option value="internal">👥 Interne</option>
+                                <option value="customer">👤 Client</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-content">
+                        <!-- Onglet texte -->
+                        <div class="tab-content active" data-tab="text">
+                            <textarea id="note-content" class="clay-textarea" 
+                                      placeholder="Décrivez l'état des travaux, les observations, les problèmes rencontrés..."></textarea>
+                            <div class="form-actions">
+                                <button class="clay-btn clay-btn-primary" onclick="addNote()">
+                                    📝 Ajouter la note
+                                </button>
+                                <button class="clay-btn clay-btn-ghost" onclick="translateNote()">
+                                    🌐 Traduire automatiquement
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Onglet vocal -->
+                        <div class="tab-content" data-tab="voice">
+                            <div class="voice-interface">
+                                <div class="voice-status" id="voice-status">
+                                    <span class="status-text">Prêt pour l'enregistrement</span>
+                                </div>
+                                <div class="voice-controls">
+                                    <button id="record-btn" class="clay-btn clay-btn-success" onclick="toggleRecording()">
+                                        🎤 Démarrer l'enregistrement
+                                    </button>
+                                    <button id="stop-btn" class="clay-btn clay-btn-danger" style="display:none;" onclick="stopRecording()">
+                                        ⏹️ Arrêter
+                                    </button>
+                                </div>
+                                <div class="transcription-preview" id="transcription-preview" style="display:none;">
+                                    <h4>📝 Transcription automatique:</h4>
+                                    <div class="transcription-text"></div>
+                                    <div class="transcription-actions">
+                                        <button class="clay-btn clay-btn-primary" onclick="useTranscription()">
+                                            ✅ Utiliser cette transcription
+                                        </button>
+                                        <button class="clay-btn clay-btn-ghost" onclick="retryRecording()">
+                                            🔄 Nouvel enregistrement
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Onglet IA -->
+                        <div class="tab-content" data-tab="ai">
+                            <div class="ai-assistant">
+                                <div class="ai-suggestions" id="ai-suggestions">
+                                    <!-- Suggestions chargées dynamiquement -->
+                                </div>
+                                <div class="ai-prompt">
+                                    <input type="text" id="ai-prompt-input" class="clay-input" 
+                                           placeholder="Demandez à l'IA de générer une note...">
+                                    <button class="clay-btn clay-btn-primary" onclick="generateAiNote()">
+                                        🤖 Générer
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Liste des notes existantes -->
+                <div class="notes-list">
+                    {% for note in notes %}
+                    <div class="note-item clay-card-nested {{ note.note_type }}">
+                        <div class="note-header">
+                            <div class="note-meta">
+                                <strong>{{ note.technician_name }}</strong>
+                                <span class="note-date">{{ moment(note.created_at).format('DD/MM/YYYY HH:mm') }}</span>
+                                <span class="note-type-badge {{ note.note_type }}">
+                                    {% if note.note_type == 'private' %}🔒{% endif %}
+                                    {% if note.note_type == 'internal' %}👥{% endif %}
+                                    {% if note.note_type == 'customer' %}👤{% endif %}
+                                    {{ note.note_type | title }}
+                                </span>
+                            </div>
+                            {% if note.translation_en or note.translation_es %}
+                            <div class="translation-indicator">
+                                <button class="clay-btn clay-btn-ghost" onclick="toggleTranslations({{ note.id }})">
+                                    🌐 Traductions
+                                </button>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="note-content">
+                            {{ note.content }}
+                        </div>
+                        
+                        <!-- Traductions (masquées par défaut) -->
+                        {% if note.translation_en or note.translation_es %}
+                        <div class="translations" id="translations-{{ note.id }}" style="display:none;">
+                            {% if note.translation_en %}
+                            <div class="translation en">
+                                <strong>🇬🇧 English:</strong>
+                                <p>{{ note.translation_en }}</p>
+                            </div>
+                            {% endif %}
+                            {% if note.translation_es %}
+                            <div class="translation es">
+                                <strong>🇪🇸 Español:</strong>
+                                <p>{{ note.translation_es }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Colonne latérale (médias et outils) -->
+        <div class="sidebar-column">
+            <!-- Galerie de médias avec IA -->
+            <div class="media-gallery clay-card">
+                <div class="gallery-header">
+                    <h3>📷 Médias</h3>
+                    <div class="upload-actions">
+                        <button class="clay-btn clay-btn-primary" onclick="openPhotoCapture()">
+                            📷 Photo
+                        </button>
+                        <label for="file-upload" class="clay-btn clay-btn-ghost">
+                            📁 Fichier
+                        </label>
+                        <input type="file" id="file-upload" style="display:none;" 
+                               accept="image/*,video/*,audio/*,.pdf" onchange="uploadFile(this)">
+                    </div>
+                </div>
+                
+                <div class="media-grid">
+                    {% for item in media %}
+                    <div class="media-item {{ item.media_type }}">
+                        {% if item.media_type == 'photo' %}
+                        <div class="media-thumbnail">
+                            <img src="{{ url_for('static', filename=item.file_path) }}" 
+                                 alt="Photo d'intervention" onclick="openMediaViewer('{{ item.file_path }}', 'photo')">
+                        </div>
+                        {% elif item.media_type == 'video' %}
+                        <div class="media-thumbnail video">
+                            <video onclick="openMediaViewer('{{ item.file_path }}', 'video')">
+                                <source src="{{ url_for('static', filename=item.file_path) }}">
+                            </video>
+                            <div class="play-overlay">▶️</div>
+                        </div>
+                        {% elif item.media_type == 'audio' %}
+                        <div class="media-thumbnail audio">
+                            <div class="audio-icon">🎵</div>
+                            <button onclick="playAudio('{{ item.file_path }}')">▶️</button>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="media-info">
+                            <div class="media-meta">
+                                <span class="technician">{{ item.technician_name }}</span>
+                                <span class="date">{{ moment(item.created_at).fromNow() }}</span>
+                            </div>
+                            
+                            {% if item.transcription %}
+                            <div class="transcription-preview">
+                                <strong>📝 Transcription:</strong>
+                                <p>{{ item.transcription | truncate(100) }}</p>
+                                {% if item.translation_en or item.translation_es %}
+                                <button class="show-translations" onclick="showMediaTranslations({{ item.id }})">
+                                    🌐 Voir traductions
+                                </button>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Suggestions IA contextuelles -->
+            <div class="ai-suggestions-panel clay-card">
+                <h3>🤖 Suggestions IA</h3>
+                <div class="suggestions-list" id="contextual-suggestions">
+                    {% for suggestion in ai_suggestions %}
+                    <div class="suggestion-item {{ suggestion.type }}">
+                        <div class="suggestion-header">
+                            <strong>{{ suggestion.title }}</strong>
+                            <span class="confidence">{{ (suggestion.confidence * 100) | round }}%</span>
+                        </div>
+                        <div class="suggestion-content">
+                            {{ suggestion.content }}
+                        </div>
+                        <div class="suggestion-actions">
+                            <button class="clay-btn clay-btn-ghost" onclick="applySuggestion('{{ suggestion.type }}', '{{ suggestion.content }}')">
+                                ✅ Appliquer
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Outils rapides -->
+            <div class="quick-tools clay-card">
+                <h3>⚡ Outils rapides</h3>
+                <div class="tools-grid">
+                    <button class="tool-btn" onclick="generateReport()">
+                        📊 Rapport auto
+                    </button>
+                    <button class="tool-btn" onclick="scheduleFollowUp()">
+                        📅 Planifier suivi
+                    </button>
+                    <button class="tool-btn" onclick="requestParts()">
+                        🔧 Demander pièces
+                    </button>
+                    <button class="tool-btn" onclick="customerNotification()">
+                        📧 Notifier client
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de visualisation de média -->
+<div id="media-viewer-modal" class="clay-modal" style="display:none;">
+    <div class="clay-modal-content large">
+        <div class="clay-modal-header">
+            <h3>📷 Visualisation média</h3>
+            <button class="clay-modal-close" onclick="closeMediaViewer()">&times;</button>
+        </div>
+        <div class="clay-modal-body">
+            <div id="media-viewer-content">
+                <!-- Contenu chargé dynamiquement -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Interface de capture photo -->
+<div id="photo-capture-modal" class="clay-modal" style="display:none;">
+    <div class="clay-modal-content">
+        <div class="clay-modal-header">
+            <h3>📷 Capture photo</h3>
+            <button class="clay-modal-close" onclick="closePhotoCapture()">&times;</button>
+        </div>
+        <div class="clay-modal-body">
+            <div class="camera-interface">
+                <video id="camera-feed" autoplay playsinline></video>
+                <canvas id="photo-canvas" style="display:none;"></canvas>
+                <div class="camera-controls">
+                    <button id="capture-btn" class="clay-btn clay-btn-primary">📷 Capturer</button>
+                    <button id="retake-btn" class="clay-btn clay-btn-ghost" style="display:none;">🔄 Reprendre</button>
+                    <button id="save-photo-btn" class="clay-btn clay-btn-success" style="display:none;">💾 Sauvegarder</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/intervention-details.js') }}"></script>
+<script>
+// Variables globales
+const workOrderId = {{ work_order.id }};
+let mediaRecorder;
+let recordedChunks = [];
+let isRecording = false;
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+    initializeTabs();
+    loadAiSuggestions();
+    setupFileUpload();
+    
+    // Mise à jour périodique des suggestions IA
+    setInterval(refreshAiSuggestions, 30000); // Toutes les 30 secondes
+});
+
+// Gestion des onglets
+function initializeTabs() {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const tabName = this.dataset.tab;
+            switchTab(tabName);
+        });
+    });
+}
+
+function switchTab(tabName) {
+    // Mise à jour des boutons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    
+    // Mise à jour du contenu
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.querySelector(`.tab-content[data-tab="${tabName}"]`).classList.add('active');
+}
+
+// Gestion des notes
+function addNote() {
+    const content = document.getElementById('note-content').value.trim();
+    const noteType = document.getElementById('note-type').value;
+    
+    if (!content) {
+        showNotification('Veuillez saisir le contenu de la note', 'error');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('content', content);
+    formData.append('note_type', noteType);
+    
+    fetch(`/interventions/${workOrderId}/add_note`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Note ajoutée avec succès', 'success');
+            document.getElementById('note-content').value = '';
+            location.reload(); // Recharger pour afficher la nouvelle note
+        } else {
+            showNotification(data.message, 'error');
+        }
+    });
+}
+
+// Enregistrement vocal
+function toggleRecording() {
+    if (isRecording) {
+        stopRecording();
+    } else {
+        startRecording();
+    }
+}
+
+function startRecording() {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+            mediaRecorder = new MediaRecorder(stream);
+            recordedChunks = [];
+            
+            mediaRecorder.ondataavailable = event => {
+                if (event.data.size > 0) {
+                    recordedChunks.push(event.data);
+                }
+            };
+            
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(recordedChunks, { type: 'audio/wav' });
+                processVoiceRecording(blob);
+            };
+            
+            mediaRecorder.start();
+            isRecording = true;
+            
+            document.getElementById('record-btn').style.display = 'none';
+            document.getElementById('stop-btn').style.display = 'inline-block';
+            document.getElementById('voice-status').innerHTML = 
+                '<span class="recording">🔴 Enregistrement en cours...</span>';
+        })
+        .catch(err => {
+            showNotification('Erreur d\'accès au microphone', 'error');
+        });
+}
+
+function stopRecording() {
+    if (mediaRecorder && isRecording) {
+        mediaRecorder.stop();
+        isRecording = false;
+        
+        document.getElementById('record-btn').style.display = 'inline-block';
+        document.getElementById('stop-btn').style.display = 'none';
+        document.getElementById('voice-status').innerHTML = 
+            '<span class="processing">⚡ Traitement en cours...</span>';
+    }
+}
+
+function processVoiceRecording(audioBlob) {
+    const formData = new FormData();
+    formData.append('audio_data', audioBlob, 'voice_note.wav');
+    
+    fetch(`/interventions/${workOrderId}/voice_note`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayTranscription(data.transcription, data.confidence);
+        } else {
+            showNotification('Erreur lors de la transcription', 'error');
+        }
+    });
+}
+
+function displayTranscription(transcription, confidence) {
+    const preview = document.getElementById('transcription-preview');
+    preview.querySelector('.transcription-text').textContent = transcription;
+    preview.style.display = 'block';
+    
+    document.getElementById('voice-status').innerHTML = 
+        `<span class="success">✅ Transcription terminée (${Math.round(confidence * 100)}%)</span>`;
+}
+
+// Fonctions utilitaires
+function showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+
+function loadAiSuggestions() {
+    fetch(`/interventions/ai/suggestions/${workOrderId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateSuggestionsDisplay(data.suggestions);
+            }
+        });
+}
+
+function refreshAiSuggestions() {
+    loadAiSuggestions();
+}
+</script>
+{% endblock %}

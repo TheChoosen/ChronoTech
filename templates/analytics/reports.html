@@ -1,0 +1,687 @@
+{% extends "base.html" %}
+
+{% block title %}Rapports et Analyses - ChronoTech{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-chart-bar me-2"></i>Rapports et Analyses
+        </h1>
+        <div class="d-flex gap-2">
+            <button class="btn btn-primary clay-button-primary" data-bs-toggle="modal" data-bs-target="#newReportModal">
+                <i class="fas fa-plus me-2"></i>Nouveau Rapport
+            </button>
+            <button class="btn btn-outline-secondary clay-button" onclick="scheduleReport()">
+                <i class="fas fa-clock me-2"></i>Programmer
+            </button>
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary clay-button dropdown-toggle" type="button" 
+                        data-bs-toggle="dropdown">
+                    <i class="fas fa-download me-2"></i>Exporter
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#" onclick="exportReports('pdf')">
+                        <i class="fas fa-file-pdf me-2"></i>PDF
+                    </a></li>
+                    <li><a class="dropdown-item" href="#" onclick="exportReports('excel')">
+                        <i class="fas fa-file-excel me-2"></i>Excel
+                    </a></li>
+                    <li><a class="dropdown-item" href="#" onclick="exportReports('csv')">
+                        <i class="fas fa-file-csv me-2"></i>CSV
+                    </a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres de rapport -->
+    <div class="clay-card mb-4">
+        <div class="card-body">
+            <form method="GET" id="reportFiltersForm">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-2">
+                        <label class="form-label">Type de Rapport</label>
+                        <select class="form-select clay-input" name="report_type" onchange="updateReportType()">
+                            <option value="">Tous les types</option>
+                            <option value="operational" {{ 'selected' if request.args.get('report_type') == 'operational' }}>Opérationnel</option>
+                            <option value="financial" {{ 'selected' if request.args.get('report_type') == 'financial' }}>Financier</option>
+                            <option value="performance" {{ 'selected' if request.args.get('report_type') == 'performance' }}>Performance</option>
+                            <option value="customer" {{ 'selected' if request.args.get('report_type') == 'customer' }}>Client</option>
+                            <option value="technical" {{ 'selected' if request.args.get('report_type') == 'technical' }}>Technique</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Période</label>
+                        <select class="form-select clay-input" name="period" onchange="updatePeriod()">
+                            <option value="week" {{ 'selected' if request.args.get('period') == 'week' }}>Cette semaine</option>
+                            <option value="month" {{ 'selected' if request.args.get('period') == 'month' }}>Ce mois</option>
+                            <option value="quarter" {{ 'selected' if request.args.get('period') == 'quarter' }}>Ce trimestre</option>
+                            <option value="year" {{ 'selected' if request.args.get('period') == 'year' }}>Cette année</option>
+                            <option value="custom" {{ 'selected' if request.args.get('period') == 'custom' }}>Personnalisée</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2" id="startDateCol" style="display: none;">
+                        <label class="form-label">Date début</label>
+                        <input type="date" class="form-control clay-input" name="start_date" 
+                               value="{{ request.args.get('start_date', '') }}">
+                    </div>
+                    <div class="col-md-2" id="endDateCol" style="display: none;">
+                        <label class="form-label">Date fin</label>
+                        <input type="date" class="form-control clay-input" name="end_date" 
+                               value="{{ request.args.get('end_date', '') }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Zone</label>
+                        <select class="form-select clay-input" name="zone">
+                            <option value="">Toutes zones</option>
+                            {% for zone in zones %}
+                            <option value="{{ zone }}" {{ 'selected' if request.args.get('zone') == zone }}>
+                                {{ zone }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary clay-button-primary w-100">
+                            <i class="fas fa-search me-2"></i>Filtrer
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Liste des rapports disponibles -->
+            <div class="clay-card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-list me-2"></i>Rapports Disponibles</h5>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-sm btn-outline-secondary" onclick="toggleView('grid')">
+                            <i class="fas fa-th-large"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary active" onclick="toggleView('list')">
+                            <i class="fas fa-list"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="reportsGrid" class="row" style="display: none;">
+                        {% for report in available_reports %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card h-100 report-card" data-type="{{ report.type }}">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-start mb-2">
+                                        <div class="icon-shape bg-{{ report.color }} text-white rounded me-3">
+                                            <i class="fas fa-{{ report.icon }}"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1">{{ report.title }}</h6>
+                                            <small class="text-muted">{{ report.description }}</small>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge bg-{{ report.color }}">{{ report.type.title() }}</span>
+                                        <div class="btn-group" role="group">
+                                            <button class="btn btn-sm btn-outline-primary" onclick="generateReport('{{ report.id }}')">
+                                                <i class="fas fa-play"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-secondary" onclick="configureReport('{{ report.id }}')">
+                                                <i class="fas fa-cog"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div id="reportsList" class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Rapport</th>
+                                    <th>Type</th>
+                                    <th>Fréquence</th>
+                                    <th>Dernière Génération</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for report in available_reports %}
+                                <tr class="report-row" data-type="{{ report.type }}">
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="icon-shape bg-{{ report.color }} text-white rounded me-2" style="width: 32px; height: 32px;">
+                                                <i class="fas fa-{{ report.icon }} fa-sm"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold">{{ report.title }}</div>
+                                                <small class="text-muted">{{ report.description }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ report.color }}">{{ report.type.title() }}</span>
+                                    </td>
+                                    <td>{{ report.frequency or 'Manuel' }}</td>
+                                    <td>
+                                        {% if report.last_generated %}
+                                        {{ report.last_generated.strftime('%d/%m/%Y %H:%M') }}
+                                        {% else %}
+                                        <span class="text-muted">Jamais</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if report.status == 'ready' else 'warning' if report.status == 'generating' else 'danger' }}">
+                                            {{ report.status_label }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <button class="btn btn-sm btn-outline-primary clay-button" 
+                                                    onclick="generateReport('{{ report.id }}')"
+                                                    {{ 'disabled' if report.status == 'generating' }}>
+                                                <i class="fas fa-play"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-info clay-button" 
+                                                    onclick="viewReport('{{ report.id }}')"
+                                                    {{ 'disabled' if not report.last_generated }}>
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-success clay-button" 
+                                                    onclick="downloadReport('{{ report.id }}')"
+                                                    {{ 'disabled' if not report.last_generated }}>
+                                                <i class="fas fa-download"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-secondary clay-button" 
+                                                    onclick="configureReport('{{ report.id }}')">
+                                                <i class="fas fa-cog"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historique des rapports générés -->
+            <div class="clay-card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Historique des Rapports</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Rapport</th>
+                                    <th>Période</th>
+                                    <th>Généré par</th>
+                                    <th>Taille</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for history in reports_history %}
+                                <tr>
+                                    <td>{{ history.generated_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                                    <td>
+                                        <div class="fw-bold">{{ history.report_title }}</div>
+                                        <small class="text-muted">{{ history.report_type.title() }}</small>
+                                    </td>
+                                    <td>{{ history.period_label }}</td>
+                                    <td>{{ history.generated_by }}</td>
+                                    <td>{{ history.file_size }}</td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ history.download_url }}" class="btn btn-sm btn-outline-primary clay-button">
+                                                <i class="fas fa-download"></i>
+                                            </a>
+                                            <button class="btn btn-sm btn-outline-danger clay-button" 
+                                                    onclick="deleteReport('{{ history.id }}')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Rapports programmés -->
+            <div class="clay-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Rapports Programmés</h5>
+                </div>
+                <div class="card-body">
+                    {% if scheduled_reports %}
+                    {% for schedule in scheduled_reports %}
+                    <div class="d-flex align-items-center justify-content-between mb-3 p-2 border rounded">
+                        <div>
+                            <div class="fw-bold">{{ schedule.report_title }}</div>
+                            <small class="text-muted">{{ schedule.frequency }}</small>
+                            <div class="mt-1">
+                                <small class="text-info">
+                                    <i class="fas fa-clock me-1"></i>
+                                    Prochaine: {{ schedule.next_run.strftime('%d/%m %H:%M') }}
+                                </small>
+                            </div>
+                        </div>
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="editSchedule('{{ schedule.id }}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteSchedule('{{ schedule.id }}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="text-center text-muted">
+                        <i class="fas fa-calendar-times fa-2x mb-2"></i>
+                        <p>Aucun rapport programmé</p>
+                        <button class="btn btn-sm btn-outline-primary clay-button" onclick="scheduleReport()">
+                            Programmer un rapport
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Templates de rapport -->
+            <div class="clay-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-file-alt me-2"></i>Templates Personnalisés</h5>
+                </div>
+                <div class="card-body">
+                    {% if custom_templates %}
+                    {% for template in custom_templates %}
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <div>
+                            <div class="fw-bold">{{ template.name }}</div>
+                            <small class="text-muted">{{ template.description }}</small>
+                        </div>
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-sm btn-outline-primary" onclick="useTemplate('{{ template.id }}')">
+                                <i class="fas fa-play"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="editTemplate('{{ template.id }}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="text-center text-muted">
+                        <i class="fas fa-file-plus fa-2x mb-2"></i>
+                        <p>Aucun template personnalisé</p>
+                        <button class="btn btn-sm btn-outline-primary clay-button" data-bs-toggle="modal" data-bs-target="#templateModal">
+                            Créer un template
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Statistiques des rapports -->
+            <div class="clay-card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Statistiques</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="mb-3">
+                                <h4 class="mb-0 text-primary">{{ stats.total_reports }}</h4>
+                                <small class="text-muted">Rapports générés</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="mb-3">
+                                <h4 class="mb-0 text-success">{{ stats.this_month }}</h4>
+                                <small class="text-muted">Ce mois</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="mb-3">
+                                <h4 class="mb-0 text-warning">{{ stats.scheduled_count }}</h4>
+                                <small class="text-muted">Programmés</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="mb-3">
+                                <h4 class="mb-0 text-info">{{ stats.avg_generation_time }}s</h4>
+                                <small class="text-muted">Temps moyen</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal nouveau rapport -->
+<div class="modal fade" id="newReportModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nouveau Rapport</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Type de rapport</label>
+                                <select class="form-select clay-input" name="report_type" required>
+                                    <option value="">Sélectionner un type</option>
+                                    <option value="operational">Opérationnel</option>
+                                    <option value="financial">Financier</option>
+                                    <option value="performance">Performance</option>
+                                    <option value="customer">Client</option>
+                                    <option value="technical">Technique</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Période</label>
+                                <select class="form-select clay-input" name="period" required>
+                                    <option value="today">Aujourd'hui</option>
+                                    <option value="week">Cette semaine</option>
+                                    <option value="month">Ce mois</option>
+                                    <option value="quarter">Ce trimestre</option>
+                                    <option value="year">Cette année</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Titre du rapport</label>
+                        <input type="text" class="form-control clay-input" name="title" placeholder="Titre personnalisé">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Métriques à inclure</label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="metrics" value="interventions" checked>
+                                    <label class="form-check-label">Interventions</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="metrics" value="performance">
+                                    <label class="form-check-label">Performance</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="metrics" value="financials">
+                                    <label class="form-check-label">Données financières</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="metrics" value="technicians">
+                                    <label class="form-check-label">Techniciens</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="metrics" value="customers">
+                                    <label class="form-check-label">Clients</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="metrics" value="zones">
+                                    <label class="form-check-label">Zones</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Format de sortie</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="format" id="format-pdf" value="pdf" checked>
+                            <label class="btn btn-outline-primary" for="format-pdf">PDF</label>
+                            <input type="radio" class="btn-check" name="format" id="format-excel" value="excel">
+                            <label class="btn btn-outline-primary" for="format-excel">Excel</label>
+                            <input type="radio" class="btn-check" name="format" id="format-csv" value="csv">
+                            <label class="btn btn-outline-primary" for="format-csv">CSV</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary clay-button-primary">Générer le rapport</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Gestion des filtres
+function updatePeriod() {
+    const period = document.querySelector('[name="period"]').value;
+    const startDateCol = document.getElementById('startDateCol');
+    const endDateCol = document.getElementById('endDateCol');
+    
+    if (period === 'custom') {
+        startDateCol.style.display = 'block';
+        endDateCol.style.display = 'block';
+    } else {
+        startDateCol.style.display = 'none';
+        endDateCol.style.display = 'none';
+    }
+}
+
+function updateReportType() {
+    const type = document.querySelector('[name="report_type"]').value;
+    const rows = document.querySelectorAll('.report-row');
+    
+    rows.forEach(row => {
+        if (!type || row.dataset.type === type) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+// Gestion des vues
+function toggleView(viewType) {
+    const grid = document.getElementById('reportsGrid');
+    const list = document.getElementById('reportsList');
+    const buttons = document.querySelectorAll('[onclick^="toggleView"]');
+    
+    buttons.forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    if (viewType === 'grid') {
+        grid.style.display = 'block';
+        list.style.display = 'none';
+    } else {
+        grid.style.display = 'none';
+        list.style.display = 'block';
+    }
+}
+
+// Actions sur les rapports
+function generateReport(reportId) {
+    if (confirm('Générer ce rapport maintenant ?')) {
+        fetch(`{{ url_for('api.generate_report') }}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({report_id: reportId})
+        }).then(response => {
+            if (response.ok) {
+                alert('Génération du rapport en cours...');
+                location.reload();
+            } else {
+                alert('Erreur lors de la génération du rapport');
+            }
+        });
+    }
+}
+
+function viewReport(reportId) {
+    window.open(`{{ url_for('analytics.view_report') }}?id=${reportId}`, '_blank');
+}
+
+function downloadReport(reportId) {
+    window.location.href = `{{ url_for('analytics.download_report') }}?id=${reportId}`;
+}
+
+function configureReport(reportId) {
+    // Ouvrir modal de configuration
+    console.log('Configuration du rapport:', reportId);
+}
+
+function deleteReport(reportId) {
+    if (confirm('Supprimer ce rapport de l\'historique ?')) {
+        fetch(`{{ url_for('api.delete_report') }}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({report_id: reportId})
+        }).then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Erreur lors de la suppression');
+            }
+        });
+    }
+}
+
+// Programmation et templates
+function scheduleReport() {
+    console.log('Programmation de rapport');
+    // Ouvrir modal de programmation
+}
+
+function editSchedule(scheduleId) {
+    console.log('Édition du planning:', scheduleId);
+}
+
+function deleteSchedule(scheduleId) {
+    if (confirm('Supprimer cette programmation ?')) {
+        fetch(`{{ url_for('api.delete_schedule') }}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({schedule_id: scheduleId})
+        }).then(response => {
+            if (response.ok) {
+                location.reload();
+            }
+        });
+    }
+}
+
+function useTemplate(templateId) {
+    console.log('Utilisation du template:', templateId);
+}
+
+function editTemplate(templateId) {
+    console.log('Édition du template:', templateId);
+}
+
+// Export
+function exportReports(format) {
+    const params = new URLSearchParams(window.location.search);
+    params.append('export', format);
+    window.location.href = '{{ url_for("analytics.reports") }}?' + params.toString();
+}
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+    updatePeriod();
+    
+    // Vérification du statut des rapports en cours
+    setInterval(checkReportStatus, 30000); // Toutes les 30 secondes
+});
+
+function checkReportStatus() {
+    fetch('{{ url_for("api.report_status") }}')
+        .then(response => response.json())
+        .then(data => {
+            // Mettre à jour le statut des rapports en cours de génération
+            data.forEach(report => {
+                const statusElement = document.querySelector(`[data-report-id="${report.id}"] .badge`);
+                if (statusElement) {
+                    statusElement.className = `badge bg-${report.status === 'ready' ? 'success' : 'warning'}`;
+                    statusElement.textContent = report.status_label;
+                }
+            });
+        });
+}
+</script>
+
+<style>
+.icon-shape {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+}
+
+.report-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid #dee2e6;
+}
+
+.report-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0,123,255,0.05);
+}
+
+.btn-group .btn {
+    border-radius: 4px;
+}
+
+.form-check-input:checked {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+@media (max-width: 768px) {
+    .btn-group {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .btn-group .btn {
+        margin-bottom: 2px;
+    }
+}
+</style>
+{% endblock %}

@@ -1,180 +1,201 @@
-PRD Fusionné : Module Interventions & Travaux (ChronoTech)
-Version : 2.0
+# ChronoTech - Application de Gestion d'Interventions
 
-Date : Août 2025
+## Objectif Global
 
-Produit : SEI Web – Module Interventions
+Fournir un module complet pour la gestion des interventions et travaux terrain (atelier, mobile), intégrant :
 
-Auteur : Équipe Produit
+* une interface moderne et responsive (Claymorphism)
+* un moteur de synchronisation et d’IA (transcription, traduction, suggestions)
+* des APIs REST structurées
+* une architecture modulaire prête pour la production
 
-1. Objectif Global
-Problème à résoudre
-Le suivi des travaux et des interventions sur le terrain (atelier, service mobile) est actuellement fragmenté, reposant sur des notes papier, des appels et des fichiers Excel. Cette dispersion entraîne une perte d'informations critiques (pièces, temps réel), une communication inefficace entre les équipes et avec le client, des retards de facturation et une maintenance préventive compromise.
+## Installation et Démarrage Rapide
 
-Solution proposée
-Développer un module SaaS intégré à SEI Web, nommé ChronoTech, conçu pour centraliser et optimiser l'ensemble du cycle de vie des interventions. Le module offrira :
+### Prérequis
 
-Une centralisation des travaux à faire depuis toutes les sources.
+* Python 3.8 ou supérieur
+* MySQL 5.7+ ou MariaDB 10.3+
+* pip (gestionnaire de paquets Python)
 
-Une interface moderne et responsive (Claymorphism) pour les superviseurs et les techniciens.
+### Installation Automatique
 
-Des outils d'IA intégrés (transcription vocale, traduction trilingue, suggestions) pour minimiser la saisie manuelle et accélérer les opérations.
+```bash
+git clone <votre-repo> chronotech
+cd chronotech
+chmod +x start_chronotech.sh
+./start_chronotech.sh
+```
 
-Une traçabilité complète pour améliorer la communication interne et la transparence client.
+Ce script :
 
-2. Personas et Parcours Utilisateurs
-Personas Clés
-Marie – Technicienne : A besoin d'un accès rapide à ses tâches du jour. Veut passer moins de temps sur la saisie administrative et plus sur les réparations. Privilégie une interface rapide, mobile et utilisable au clavier.
+* vérifie les dépendances
+* installe les packages
+* configure la base de données
+* insère des données de test
+* démarre l'application
 
-Luc – Superviseur : Doit avoir une vue d'ensemble du planning, assigner les tâches efficacement, suivre la progression en temps réel et être alerté des urgences.
+### Configuration Manuelle
 
-Le Client : Souhaite suivre l'avancement des travaux sur son véhicule, comprendre les actions menées et être notifié des étapes clés.
+Copier et adapter `.env.example`, créer les tables MySQL, installer les dépendances Python (`requirements.txt`), puis lancer `app.py`.
 
-Parcours Utilisateur Typique (Technicien)
-Début de journée : Marie ouvre sa tablette et consulte la vue "Aujourd'hui" qui liste ses interventions priorisées.
+## Utilisation
 
-Lancement d'une tâche : Elle sélectionne un travail et clique sur "Démarrer".
+### Accès
 
-Capture d'informations : Elle dicte une note vocale ("Le roulement avant droit est bruyant, remplacement nécessaire"). La note est instantanément transcrite, corrigée et traduite. Elle prend une photo de la pièce défectueuse.
+* URL : [http://localhost:5000](http://localhost:5000)
+* Comptes tests : admin / marie / luc
 
-Ajout de pièces : Elle ajoute la nouvelle pièce utilisée depuis le catalogue intégré.
+### Modules
 
-Clôture : Une fois le travail terminé, elle le marque comme "Complété". Une notification est automatiquement envoyée au superviseur et au client.
+* Bons de travail
+* Clients
+* Interventions
+* Produits et pièces
+* Dashboard
+* Upload sécurisé et médias
 
-3. Sources des Travaux et Prérequis
-Sources des travaux à faire
-Demandes directes du client (via portail, formulaire, courriel).
+## Architecture Technique
 
-Travaux suggérés par les plans d'entretien préventif.
+### Structure du Projet
 
-Travaux archivés non terminés lors d'interventions précédentes.
+```
+ChronoTech/
+├── app.py
+├── config.py
+├── database.py
+├── models.py
+├── utils.py
+├── static/
+├── templates/
+├── uploads/
+├── requirements.txt
+├── start_chronotech.sh
+```
 
-Rendez-vous planifiés dans le calendrier.
+### Technologies Utilisées
 
-Création manuelle par un superviseur.
+* Flask (backend Python)
+* MySQL / MariaDB
+* HTML5, CSS3, JS, Bootstrap 5
+* Claymorphism pour le design
 
-Prérequis à la création d'entités
-Client : Nom complet / raison sociale, contact principal (nom, téléphone, courriel), adresse.
+### Modules Python
 
-Véhicule : Associé à un client, Année, Marque, Modèle, NIV (VIN).
+* Flask, PyMySQL, Pillow, python-dotenv
+* email-validator, phonenumbers, cryptography
 
-Bon de travail : Client et véhicule associés, travaux à faire définis, technicien(s) assigné(s).
+## Configuration Avancée
 
-4. Fonctionnalités Clés (UI/UX et IA)
-Interface et Expérience Utilisateur (Claymorphism)
-Vue Technicien : Liste des travaux du jour avec filtres (priorité, statut).
+Variables d'environnement (dans `.env`) :
 
-Navigation Efficace : Bascule rapide entre la vue tableau et la vue carte (F2), recherche globale (F4), et navigation clavier pour changer les statuts et valider (F8, F9, Entrée).
+* Configuration Flask, DB, upload, IA
+* Personnalisation via `static/css/claymorphism.css` et les templates HTML
 
-Design Moderne : Effets visuels soignés (ripple effect, ombres progressives) et badges de statut clairs.
+## API et Intégrations
 
-Accessibilité : Conforme aux standards (aria-label, focus visible) pour une utilisation avec des lecteurs d'écran.
+### API REST
 
-Responsive & Offline : Interface optimisée pour mobile, tablette et ordinateur. Un mode déconnecté avec synchronisation automatique est prévu.
+```bash
+GET /api/work-orders
+POST /api/work-orders
+GET /api/work-orders/{id}
+PUT /api/work-orders/{id}
+DELETE /api/work-orders/{id}
+```
 
-Intelligence Artificielle et Automatisation
-Saisie Vocale : Transcription des notes audio en texte via OpenAI Whisper, avec correction orthographique automatique.
+### Webhooks et Extensions
 
-Traduction Multilingue : Traduction instantanée des notes en Français, Anglais et Espagnol via DeepL API.
+* Notifications : push / mail / portail client
+* Services IA : transcription, traduction, suggestions
 
-Suggestions Contextuelles : L'IA proposera des actions pertinentes basées sur l'historique du véhicule (ex: pièces à prévoir, anomalies fréquentes).
+## Sécurité
 
-Notifications Intelligentes : Des notifications push (via OneSignal/Firebase), courriels ou alertes portail informent les parties prenantes de l'avancement (travail commencé, en attente de pièce, terminé).
+* RBAC : technicien, superviseur, admin
+* 2FA pour rôles critiques
+* Protection CSRF, XSS, injection
+* Journalisation complète
 
-5. Architecture Technique et API
-Entités SQL Principales
-En complément des tables existantes (users, work_orders, etc.), deux nouvelles tables seront créées pour structurer les données d'intervention.
+## Tests et Dépannage
 
-SQL
+### Tests
 
-CREATE TABLE intervention_notes (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  work_order_id INT NOT NULL,
-  technician_id INT NOT NULL,
-  note_type ENUM('public', 'private') NOT NULL DEFAULT 'private',
-  content TEXT NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (work_order_id) REFERENCES work_orders(id) ON DELETE CASCADE,
-  FOREIGN KEY (technician_id) REFERENCES users(id) ON DELETE CASCADE
-);
+```bash
+python -m pytest tests/
+python test_work_orders.py
+```
 
-CREATE TABLE intervention_media (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  work_order_id INT NOT NULL,
-  technician_id INT NOT NULL,
-  media_type ENUM('photo', 'video', 'audio') NOT NULL,
-  file_path VARCHAR(500) NOT NULL,
-  transcription TEXT NULL,
-  translation_fr TEXT NULL,
-  translation_en TEXT NULL,
-  translation_es TEXT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (work_order_id) REFERENCES work_orders(id) ON DELETE CASCADE,
-  FOREIGN KEY (technician_id) REFERENCES users(id) ON DELETE CASCADE
-);
-API REST Principales
-Gestion des Bons de Travail
+### Dépannage
 
-GET    /work_orders : Lister tous les bons de travail.
+* Logs : `/var/log/chronotech/app.log`
+* MySQL : tester avec `mysql -u chronotech_user -p chronotech`
+* Permissions : vérifier `static/uploads`
 
-POST   /work_orders : Créer un nouveau bon de travail.
+## Documentation Technique
 
-GET    /work_orders/:id/details : Récupérer les détails complets (travaux, notes, pièces, médias).
+* `WORK_ORDERS_DOCUMENTATION.md` : modèle de données
+* `ARCHITECTURE_TEMPLATES.md` : structure frontend
+* `WORK_ORDERS_UI_UX_GUIDE.md` : design
 
-POST   /work_orders/:id/assign : Assigner un ou plusieurs techniciens.
+## Contributions
 
-Gestion des Interventions
+* Fork > Branch > Commit > Pull Request
+* Respecter le style et les validations Python
 
-POST   /work_orders/:id/note : Ajouter une note (publique ou privée).
+## Synthèse Fonctionnelle (Version 2.0)
 
-POST   /work_orders/:id/media : Uploader un média (photo, vidéo, audio).
+### Infrastructures et Modèles
 
-POST   /work_orders/:id/products/add : Ajouter un produit/pièce utilisé.
+* start\_chronotech.sh (830 lignes)
+* database.py, models.py, utils.py (2400+ lignes)
+* config.py, fichiers SQL, templates
 
-Services IA
+### Fonctionnalités Implémentées
 
-POST   /media/:id/transcribe : Lancer la transcription d'un média audio.
+* Authentification
+* Bons de travail (CRUD)
+* Notes et médias d'intervention
+* Dashboard avec indicateurs
+* Produits liés
+* API REST
+* Upload sécurisé
+* Interface responsive + navigation clavier
+* IA : transcription, traduction, suggestions
 
-POST   /media/:id/translate : Traduire le contenu textuel d'une note ou d'une transcription.
+### Tables Clés :
 
-GET    /ai/suggestions : Obtenir des suggestions contextuelles pour un bon de travail.
+* `work_orders`, `work_order_products`, `work_order_status_history`
+* `intervention_notes`, `intervention_media`
 
-6. Sécurité et Permissions
-Un système de Rôles (RBAC) strict sera implémenté pour garantir la sécurité des données.
+### Exemples d’API IA
 
-Technicien : Peut voir et modifier uniquement les interventions qui lui sont assignées.
+* `POST /media/:id/transcribe`
+* `POST /media/:id/translate`
+* `GET /ai/suggestions?work_order_id=123`
 
-Superviseur (Manager) : Accès complet à la création, assignation et validation des travaux.
+## Indicateurs de Succès (KPI)
 
-Client / Autre : Lecture seule des informations publiques (notes publiques, statut, photos partagées) via le portail client.
+* Intervention complète saisie < 5 min
+* 90% des notes vocales traitées automatiquement
+* 80% satisfaction des techniciens
+* 30% de réduction d’erreurs / oublis
 
-Admin : Accès complet, incluant la suppression.
+## Roadmap
 
-Toutes les actions (création, modification, suppression) seront journalisées. Une authentification à deux facteurs (2FA) sera obligatoire pour les superviseurs et admins. Les protections standards (CSRF, XSS, requêtes préparées) seront appliquées.
+1. CRUD complet + UI Claymorphism
+2. Intégration IA (OpenAI + DeepL)
+3. Portail client
+4. Mode offline + vue calendrier
+5. Statistiques prédictives
 
-7. Indicateurs de Succès (KPI)
-Efficacité : Temps moyen de saisie d'une intervention complet (notes, pièces, temps) inférieur à 5 minutes.
+## Conclusion
 
-Adoption IA : 90% des notes vocales transcrites et traduites automatiquement avec succès.
+ChronoTech est une solution SaaS complète, moderne et sécurisée, prête pour :
 
-Satisfaction Utilisateur : 80% de satisfaction des techniciens mesurée après le premier mois d'utilisation.
+* utilisation immédiate en atelier ou sur le terrain
+* intégration dans SEI Web
+* déploiement en production
+* évolution avec modules IA, mobile, ou API partenaires
 
-Qualité : Réduction de 30% des travaux incomplets ou des oublis signalés.
-
-8. Roadmap
-Mois 1-2 : Développement du CRUD de base pour les interventions et de l'interface Claymorphism responsive avec filtres.
-
-Mois 3-4 : Intégration des API d'IA pour la transcription et la traduction.
-
-Mois 5-6 : Lancement du portail client et déploiement des suggestions contextuelles de l'IA.
-
-Mois 7 : Implémentation du mode offline avec synchronisation et de la vue calendrier (synchro Google/Outlook).
-
-9. Améliorations Futures
-Export PDF des bons de travail avec signatures numériques.
-
-Création de templates pour les travaux récurrents.
-
-Statistiques prédictives pour optimiser la maintenance préventive.
-
-Géolocalisation des techniciens mobiles.
+**Produit :** ChronoTech (Module Interventions – SEI Web)
+**Version :** 2.0
+**Date :** Août 2025

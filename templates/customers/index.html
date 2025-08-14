@@ -1,0 +1,539 @@
+{% extends "base.html" %}
+
+{% block title %}Gestion des Clients - ChronoTech{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-users me-2"></i>Gestion des Clients
+        </h1>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('customers.add_customer') }}" class="btn btn-primary clay-button-primary">
+                <i class="fas fa-plus me-2"></i>Nouveau Client
+            </a>
+            <button class="btn btn-outline-secondary clay-button" onclick="exportCustomers()">
+                <i class="fas fa-download me-2"></i>Exporter
+            </button>
+        </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="clay-card text-center">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-center">
+                        <div class="icon-shape bg-primary text-white rounded-circle me-3">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div>
+                            <h3 class="mb-0">{{ stats.total_customers }}</h3>
+                            <p class="text-muted mb-0">Total Clients</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="clay-card text-center">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-center">
+                        <div class="icon-shape bg-success text-white rounded-circle me-3">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <div>
+                            <h3 class="mb-0">{{ stats.active_customers }}</h3>
+                            <p class="text-muted mb-0">Clients Actifs</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="clay-card text-center">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-center">
+                        <div class="icon-shape bg-info text-white rounded-circle me-3">
+                            <i class="fas fa-tools"></i>
+                        </div>
+                        <div>
+                            <h3 class="mb-0">{{ stats.total_work_orders }}</h3>
+                            <p class="text-muted mb-0">Interventions</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="clay-card text-center">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-center">
+                        <div class="icon-shape bg-warning text-white rounded-circle me-3">
+                            <i class="fas fa-euro-sign"></i>
+                        </div>
+                        <div>
+                            <h3 class="mb-0">{{ stats.total_revenue|currency }}</h3>
+                            <p class="text-muted mb-0">Chiffre d'Affaires</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres et recherche -->
+    <div class="clay-card mb-4">
+        <div class="card-body">
+            <form method="GET" id="filterForm">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Recherche</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control clay-input" name="search" 
+                                   value="{{ request.args.get('search', '') }}" 
+                                   placeholder="Nom, email, téléphone...">
+                            <button class="btn btn-outline-secondary" type="submit">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Type</label>
+                        <select class="form-select clay-input" name="customer_type" onchange="submitFilter()">
+                            <option value="">Tous les types</option>
+                            <option value="individual" {{ 'selected' if request.args.get('customer_type') == 'individual' }}>
+                                Particulier
+                            </option>
+                            <option value="company" {{ 'selected' if request.args.get('customer_type') == 'company' }}>
+                                Entreprise
+                            </option>
+                            <option value="government" {{ 'selected' if request.args.get('customer_type') == 'government' }}>
+                                Administration
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Zone</label>
+                        <select class="form-select clay-input" name="zone" onchange="submitFilter()">
+                            <option value="">Toutes zones</option>
+                            {% for zone in zones %}
+                            <option value="{{ zone }}" {{ 'selected' if request.args.get('zone') == zone }}>
+                                {{ zone }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Statut</label>
+                        <select class="form-select clay-input" name="status" onchange="submitFilter()">
+                            <option value="">Tous statuts</option>
+                            <option value="active" {{ 'selected' if request.args.get('status') == 'active' }}>
+                                Actif
+                            </option>
+                            <option value="inactive" {{ 'selected' if request.args.get('status') == 'inactive' }}>
+                                Inactif
+                            </option>
+                            <option value="prospect" {{ 'selected' if request.args.get('status') == 'prospect' }}>
+                                Prospect
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Tri</label>
+                        <select class="form-select clay-input" name="sort" onchange="submitFilter()">
+                            <option value="name" {{ 'selected' if request.args.get('sort') == 'name' }}>
+                                Nom A-Z
+                            </option>
+                            <option value="name_desc" {{ 'selected' if request.args.get('sort') == 'name_desc' }}>
+                                Nom Z-A
+                            </option>
+                            <option value="created_date" {{ 'selected' if request.args.get('sort') == 'created_date' }}>
+                                Plus récents
+                            </option>
+                            <option value="last_order" {{ 'selected' if request.args.get('sort') == 'last_order' }}>
+                                Dernière commande
+                            </option>
+                        </select>
+                    </div>
+                </div>
+                
+                {% if request.args.get('search') or request.args.get('customer_type') or request.args.get('zone') or request.args.get('status') %}
+                <div class="mt-3">
+                    <a href="{{ url_for('customers.index') }}" class="btn btn-sm btn-outline-secondary clay-button">
+                        <i class="fas fa-times me-1"></i>Effacer les filtres
+                    </a>
+                </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <!-- Liste des clients -->
+    <div class="clay-card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-list me-2"></i>Liste des Clients 
+                <span class="badge bg-secondary">{{ pagination.total }} résultat(s)</span>
+            </h5>
+            <div class="d-flex gap-2">
+                <div class="btn-group" role="group">
+                    <input type="radio" class="btn-check" name="view" id="view-grid" autocomplete="off" checked>
+                    <label class="btn btn-outline-secondary btn-sm clay-button" for="view-grid" onclick="switchView('grid')">
+                        <i class="fas fa-th"></i>
+                    </label>
+                    <input type="radio" class="btn-check" name="view" id="view-list" autocomplete="off">
+                    <label class="btn btn-outline-secondary btn-sm clay-button" for="view-list" onclick="switchView('list')">
+                        <i class="fas fa-list"></i>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vue grille (par défaut) -->
+        <div class="card-body" id="gridView">
+            {% if customers %}
+            <div class="row">
+                {% for customer in customers %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100 customer-card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-circle me-3">
+                                        {% if customer.avatar %}
+                                        <img src="{{ url_for('static', filename='uploads/avatars/' + customer.avatar) }}" 
+                                             alt="{{ customer.name }}" class="rounded-circle" width="48" height="48">
+                                        {% else %}
+                                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" 
+                                             style="width: 48px; height: 48px;">
+                                            {{ customer.name[0].upper() }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1">{{ customer.name }}</h6>
+                                        <span class="badge {{ customer.customer_type|customer_type_badge }} mb-1">
+                                            {% if customer.customer_type == 'individual' %}Particulier
+                                            {% elif customer.customer_type == 'company' %}Entreprise
+                                            {% elif customer.customer_type == 'government' %}Administration
+                                            {% else %}{{ customer.customer_type }}{% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                            type="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="{{ url_for('customers.view', id=customer.id) }}">
+                                            <i class="fas fa-eye me-2"></i>Voir
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="{{ url_for('customers.edit', id=customer.id) }}">
+                                            <i class="fas fa-edit me-2"></i>Modifier
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="{{ url_for('work_orders.create_work_order', customer_id=customer.id) }}">
+                                            <i class="fas fa-plus me-2"></i>Nouvelle intervention
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        {% if current_user.role in ['admin', 'supervisor'] %}
+                                        <li><a class="dropdown-item text-danger" href="#" 
+                                               onclick="deleteCustomer({{ customer.id }})">
+                                            <i class="fas fa-trash me-2"></i>Supprimer
+                                        </a></li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="customer-info">
+                                {% if customer.email %}
+                                <p class="mb-1">
+                                    <i class="fas fa-envelope text-muted me-2"></i>
+                                    <a href="mailto:{{ customer.email }}">{{ customer.email }}</a>
+                                </p>
+                                {% endif %}
+                                {% if customer.phone %}
+                                <p class="mb-1">
+                                    <i class="fas fa-phone text-muted me-2"></i>
+                                    <a href="tel:{{ customer.phone }}">{{ customer.phone }}</a>
+                                </p>
+                                {% endif %}
+                                {% if customer.city %}
+                                <p class="mb-1">
+                                    <i class="fas fa-map-marker-alt text-muted me-2"></i>{{ customer.city }}
+                                </p>
+                                {% endif %}
+                                {% if customer.company %}
+                                <p class="mb-1">
+                                    <i class="fas fa-building text-muted me-2"></i>{{ customer.company }}
+                                </p>
+                                {% endif %}
+                            </div>
+
+                            <hr>
+
+                            <!-- Statistiques client -->
+                            <div class="row text-center">
+                                <div class="col-4">
+                                    <div class="stat-item">
+                                        <h6 class="mb-0">{{ customer.work_orders_count or 0 }}</h6>
+                                        <small class="text-muted">Interventions</small>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="stat-item">
+                                        <h6 class="mb-0">{{ customer.total_spent|currency if customer.total_spent else '0 €' }}</h6>
+                                        <small class="text-muted">Total</small>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="stat-item">
+                                        <h6 class="mb-0">
+                                            {% if customer.last_order_date %}
+                                            {{ customer.last_order_date|days_ago }}j
+                                            {% else %}
+                                            -
+                                            {% endif %}
+                                        </h6>
+                                        <small class="text-muted">Dernier</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge {{ customer.status|status_badge }}">
+                                    {% if customer.status == 'active' %}Actif
+                                    {% elif customer.status == 'inactive' %}Inactif
+                                    {% elif customer.status == 'prospect' %}Prospect
+                                    {% else %}{{ customer.status }}{% endif %}
+                                </span>
+                                <small class="text-muted">
+                                    Créé {{ customer.created_at|datetime_format('short') }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                <h5>Aucun client trouvé</h5>
+                <p class="text-muted">Commencez par ajouter votre premier client</p>
+                <a href="{{ url_for('customers.add_customer') }}" class="btn btn-primary clay-button-primary">
+                    <i class="fas fa-plus me-2"></i>Ajouter un client
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Vue liste (cachée par défaut) -->
+        <div class="table-responsive" id="listView" style="display: none;">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Client</th>
+                        <th>Type</th>
+                        <th>Contact</th>
+                        <th>Localisation</th>
+                        <th>Interventions</th>
+                        <th>Total</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for customer in customers %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                {% if customer.avatar %}
+                                <img src="{{ url_for('static', filename='uploads/avatars/' + customer.avatar) }}" 
+                                     alt="{{ customer.name }}" class="rounded-circle me-2" width="32" height="32">
+                                {% else %}
+                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" 
+                                     style="width: 32px; height: 32px; font-size: 14px;">
+                                    {{ customer.name[0].upper() }}
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <div class="fw-bold">{{ customer.name }}</div>
+                                    {% if customer.company %}
+                                    <small class="text-muted">{{ customer.company }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge {{ customer.customer_type|customer_type_badge }}">
+                                {% if customer.customer_type == 'individual' %}Particulier
+                                {% elif customer.customer_type == 'company' %}Entreprise
+                                {% elif customer.customer_type == 'government' %}Administration
+                                {% else %}{{ customer.customer_type }}{% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            {% if customer.email %}
+                            <div><a href="mailto:{{ customer.email }}">{{ customer.email }}</a></div>
+                            {% endif %}
+                            {% if customer.phone %}
+                            <div><a href="tel:{{ customer.phone }}">{{ customer.phone }}</a></div>
+                            {% endif %}
+                        </td>
+                        <td>{{ customer.city or '-' }}</td>
+                        <td>{{ customer.work_orders_count or 0 }}</td>
+                        <td>{{ customer.total_spent|currency if customer.total_spent else '0 €' }}</td>
+                        <td>
+                            <span class="badge {{ customer.status|status_badge }}">
+                                {% if customer.status == 'active' %}Actif
+                                {% elif customer.status == 'inactive' %}Inactif
+                                {% elif customer.status == 'prospect' %}Prospect
+                                {% else %}{{ customer.status }}{% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{{ url_for('customers.view', id=customer.id) }}" 
+                                   class="btn btn-sm btn-outline-primary clay-button">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ url_for('customers.edit', id=customer.id) }}" 
+                                   class="btn btn-sm btn-outline-secondary clay-button">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% if current_user.role in ['admin', 'supervisor'] %}
+                                <button class="btn btn-sm btn-outline-danger clay-button" 
+                                        onclick="deleteCustomer({{ customer.id }})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if pagination.pages > 1 %}
+        <div class="card-footer">
+            <nav aria-label="Pagination clients">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if pagination.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('customers.index', page=pagination.prev_num, **request.args) }}">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in pagination.iter_pages() %}
+                    {% if page_num %}
+                    {% if page_num != pagination.page %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('customers.index', page=page_num, **request.args) }}">
+                            {{ page_num }}
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ page_num }}</span>
+                    </li>
+                    {% endif %}
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    {% if pagination.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('customers.index', page=pagination.next_num, **request.args) }}">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function submitFilter() {
+    document.getElementById('filterForm').submit();
+}
+
+function switchView(viewType) {
+    const gridView = document.getElementById('gridView');
+    const listView = document.getElementById('listView');
+    
+    if (viewType === 'grid') {
+        gridView.style.display = 'block';
+        listView.style.display = 'none';
+    } else {
+        gridView.style.display = 'none';
+        listView.style.display = 'block';
+    }
+}
+
+function deleteCustomer(customerId) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer ce client ? Cette action supprimera également tous ses bons de travail associés.')) {
+        const url = `/customers/${customerId}/delete`;
+        fetch(url, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({customer_id: customerId})
+        }).then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Erreur lors de la suppression du client');
+            }
+        });
+    }
+}
+
+function exportCustomers() {
+    // window.location.href = `/customers/export?{{ request.query_string.decode() }}`;
+}
+
+// Style CSS pour les cartes clients
+const style = document.createElement('style');
+style.textContent = `
+.customer-card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    border: 1px solid rgba(0,0,0,0.08);
+}
+.customer-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.icon-shape {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.stat-item h6 {
+    color: #495057;
+    font-weight: 600;
+}
+.avatar-circle {
+    min-width: 48px;
+}
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

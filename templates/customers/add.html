@@ -1,0 +1,449 @@
+{% extends "base.html" %}
+
+{% block title %}Ajouter un Client - ChronoTech{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-user-plus me-2"></i>Ajouter un Client
+        </h1>
+        <a href="{{ url_for('customers.index') }}" class="btn btn-outline-secondary clay-button">
+            <i class="fas fa-arrow-left me-2"></i>Retour à la liste
+        </a>
+    </div>
+
+    <form id="customerForm" method="POST" enctype="multipart/form-data">
+        {% if form %}
+            {{ form.hidden_tag() }}
+        {% endif %}
+        
+        <div class="row">
+            <!-- Contenu principal -->
+            <div class="col-lg-8">
+                <!-- Informations de base -->
+                <div class="clay-card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-user me-2"></i>Informations de Base</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.name.label(class="form-label") }}
+                                    {{ form.name(class="form-control clay-input", placeholder="Nom complet ou raison sociale") }}
+                                    {% if form.name.errors %}
+                                    <div class="text-danger small">{{ form.name.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.customer_type.label(class="form-label") }}
+                                    {{ form.customer_type(class="form-select clay-input", onchange="updateFormFields()") }}
+                                    {% if form.customer_type.errors %}
+                                    <div class="text-danger small">{{ form.customer_type.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3" id="companyField" style="display: none;">
+                                    {{ form.company.label(class="form-label") }}
+                                    {{ form.company(class="form-control clay-input", placeholder="Nom de l'entreprise") }}
+                                    {% if form.company.errors %}
+                                    <div class="text-danger small">{{ form.company.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3" id="siretField" style="display: none;">
+                                    {{ form.siret.label(class="form-label") }}
+                                    {{ form.siret(class="form-control clay-input", placeholder="14 chiffres") }}
+                                    {% if form.siret.errors %}
+                                    <div class="text-danger small">{{ form.siret.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.email.label(class="form-label") }}
+                                    {{ form.email(class="form-control clay-input", placeholder="exemple@email.com") }}
+                                    {% if form.email.errors %}
+                                    <div class="text-danger small">{{ form.email.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.phone.label(class="form-label") }}
+                                    {{ form.phone(class="form-control clay-input", placeholder="0123456789") }}
+                                    {% if form.phone.errors %}
+                                    <div class="text-danger small">{{ form.phone.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.status.label(class="form-label") }}
+                                    {{ form.status(class="form-select clay-input") }}
+                                    {% if form.status.errors %}
+                                    <div class="text-danger small">{{ form.status.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Photo/Avatar -->
+                                <div class="mb-3">
+                                    <label class="form-label">Photo/Avatar</label>
+                                    <input type="file" class="form-control clay-input" id="avatar" 
+                                           name="avatar" accept="image/*">
+                                    <div class="form-text">
+                                        Formats supportés : JPG, PNG, GIF. Taille max : 2MB.
+                                    </div>
+                                    <div id="avatarPreview" class="mt-2" style="display: none;">
+                                        <img id="avatarImg" class="rounded-circle" width="80" height="80" 
+                                             style="object-fit: cover; border: 3px solid #dee2e6;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Adresse -->
+                <div class="clay-card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>Adresse</h5>
+                        <button type="button" class="btn btn-sm btn-outline-primary clay-button" onclick="searchAddress()">
+                            <i class="fas fa-search me-2"></i>Rechercher
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            {{ form.address.label(class="form-label") }}
+                            {{ form.address(class="form-control clay-input", rows="2", placeholder="Numéro, rue, avenue...") }}
+                            {% if form.address.errors %}
+                            <div class="text-danger small">{{ form.address.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    {{ form.postal_code.label(class="form-label") }}
+                                    {{ form.postal_code(class="form-control clay-input", placeholder="75000") }}
+                                    {% if form.postal_code.errors %}
+                                    <div class="text-danger small">{{ form.postal_code.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.city.label(class="form-label") }}
+                                    {{ form.city(class="form-control clay-input", placeholder="Paris") }}
+                                    {% if form.city.errors %}
+                                    <div class="text-danger small">{{ form.city.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    {{ form.country.label(class="form-label") }}
+                                    {{ form.country(class="form-control clay-input", value="France") }}
+                                    {% if form.country.errors %}
+                                    <div class="text-danger small">{{ form.country.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Carte si API disponible -->
+                        <div id="addressMap" style="height: 250px; border-radius: 8px; display: none;"></div>
+                    </div>
+                </div>
+
+                <!-- Informations additionnelles -->
+                <div class="clay-card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Informations Additionnelles</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.billing_address.label(class="form-label") }}
+                                    {{ form.billing_address(class="form-control clay-input", rows="3", placeholder="Si différente de l'adresse principale...") }}
+                                    {% if form.billing_address.errors %}
+                                    <div class="text-danger small">{{ form.billing_address.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.payment_terms.label(class="form-label") }}
+                                    {{ form.payment_terms(class="form-select clay-input") }}
+                                    {% if form.payment_terms.errors %}
+                                    <div class="text-danger small">{{ form.payment_terms.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.notes.label(class="form-label") }}
+                                    {{ form.notes(class="form-control clay-input", rows="4", placeholder="Notes internes sur le client...") }}
+                                    <div class="form-text">Ces notes sont visibles uniquement par l'équipe</div>
+                                    {% if form.notes.errors %}
+                                    <div class="text-danger small">{{ form.notes.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.tax_number.label(class="form-label") }}
+                                    {{ form.tax_number(class="form-control clay-input", placeholder="Numéro de TVA") }}
+                                    {% if form.tax_number.errors %}
+                                    <div class="text-danger small">{{ form.tax_number.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.preferred_contact_method.label(class="form-label") }}
+                                    {{ form.preferred_contact_method(class="form-select clay-input") }}
+                                    {% if form.preferred_contact_method.errors %}
+                                    <div class="text-danger small">{{ form.preferred_contact_method.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.zone.label(class="form-label") }}
+                                    {{ form.zone(class="form-control clay-input", placeholder="Zone géographique") }}
+                                    {% if form.zone.errors %}
+                                    <div class="text-danger small">{{ form.zone.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Actions -->
+                <div class="clay-card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-save me-2"></i>Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary clay-button-primary">
+                                <i class="fas fa-save me-2"></i>Créer le client
+                            </button>
+                            <button type="submit" name="save_and_add_order" value="1" 
+                                    class="btn btn-success clay-button">
+                                <i class="fas fa-plus me-2"></i>Créer et ajouter une intervention
+                            </button>
+                            <a href="{{ url_for('customers.index') }}" class="btn btn-outline-secondary clay-button">
+                                <i class="fas fa-times me-2"></i>Annuler
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Aide -->
+                <div class="clay-card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-question-circle me-2"></i>Aide</h5>
+                    </div>
+                    <div class="card-body">
+                        <h6>Types de clients :</h6>
+                        <ul class="list-unstyled small">
+                            <li><strong>Particulier :</strong> Client individuel</li>
+                            <li><strong>Entreprise :</strong> Société privée</li>
+                            <li><strong>Administration :</strong> Organisme public</li>
+                        </ul>
+                        
+                        <h6 class="mt-3">Statuts :</h6>
+                        <ul class="list-unstyled small">
+                            <li><strong>Prospect :</strong> Client potentiel</li>
+                            <li><strong>Actif :</strong> Client régulier</li>
+                            <li><strong>Inactif :</strong> Client en sommeil</li>
+                        </ul>
+
+                        <h6 class="mt-3">Conseils :</h6>
+                        <ul class="list-unstyled small">
+                            <li>• Vérifiez l'adresse email</li>
+                            <li>• Utilisez le numéro SIRET pour les entreprises</li>
+                            <li>• Renseignez la zone géographique</li>
+                            <li>• Ajoutez des notes pour l'équipe</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Validation en temps réel -->
+                <div class="clay-card" id="validationCard" style="display: none;">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i>Validation</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="validationResults">
+                            <!-- Résultats de validation dynamiques -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+// Mise à jour des champs selon le type de client
+function updateFormFields() {
+    const customerType = document.getElementById('customer_type').value;
+    const companyField = document.getElementById('companyField');
+    const siretField = document.getElementById('siretField');
+    
+    if (customerType === 'company' || customerType === 'government') {
+        companyField.style.display = 'block';
+        siretField.style.display = 'block';
+        document.getElementById('company').required = true;
+    } else {
+        companyField.style.display = 'none';
+        siretField.style.display = 'none';
+        document.getElementById('company').required = false;
+    }
+}
+
+// Aperçu de l'avatar
+document.getElementById('avatar').addEventListener('change', function() {
+    const file = this.files[0];
+    const preview = document.getElementById('avatarPreview');
+    const img = document.getElementById('avatarImg');
+    
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            img.src = e.target.result;
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    } else {
+        preview.style.display = 'none';
+    }
+});
+
+// Recherche d'adresse (simulation)
+function searchAddress() {
+    const address = document.getElementById('address').value;
+    const postalCode = document.getElementById('postal_code').value;
+    const city = document.getElementById('city').value;
+    
+    if (!address && !postalCode && !city) {
+        alert('Veuillez saisir au moins une partie de l\'adresse');
+        return;
+    }
+    
+    // Ici vous pourriez intégrer une API de géocodage
+    alert('Fonction de recherche d\'adresse à implémenter avec une API de géocodage');
+}
+
+// Validation en temps réel
+function validateField(fieldName, value) {
+    const validationResults = document.getElementById('validationResults');
+    const validationCard = document.getElementById('validationCard');
+    
+    let isValid = true;
+    let message = '';
+    
+    switch(fieldName) {
+        case 'email':
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            isValid = emailRegex.test(value);
+            message = isValid ? '✓ Email valide' : '✗ Format email invalide';
+            break;
+        case 'phone':
+            const phoneRegex = /^[0-9\s\-\+\(\)\.]{10,}$/;
+            isValid = phoneRegex.test(value);
+            message = isValid ? '✓ Téléphone valide' : '✗ Format téléphone invalide';
+            break;
+        case 'siret':
+            const siretRegex = /^[0-9]{14}$/;
+            isValid = siretRegex.test(value);
+            message = isValid ? '✓ SIRET valide' : '✗ SIRET doit contenir 14 chiffres';
+            break;
+        case 'postal_code':
+            const postalRegex = /^[0-9]{5}$/;
+            isValid = postalRegex.test(value);
+            message = isValid ? '✓ Code postal valide' : '✗ Code postal doit contenir 5 chiffres';
+            break;
+    }
+    
+    if (message) {
+        validationResults.innerHTML = `
+            <div class="alert ${isValid ? 'alert-success' : 'alert-warning'} alert-sm mb-2">
+                ${message}
+            </div>
+        `;
+        validationCard.style.display = 'block';
+    }
+}
+
+// Événements de validation
+['email', 'phone', 'siret', 'postal_code'].forEach(fieldName => {
+    const field = document.getElementById(fieldName);
+    if (field) {
+        field.addEventListener('blur', function() {
+            if (this.value) {
+                validateField(fieldName, this.value);
+            }
+        });
+    }
+});
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+    updateFormFields();
+    
+    // Auto-complétion de la ville basée sur le code postal (simulation)
+    document.getElementById('postal_code').addEventListener('blur', function() {
+        const postalCode = this.value;
+        if (postalCode.length === 5) {
+            // Ici vous pourriez intégrer une API de codes postaux
+            // Pour la démo, quelques exemples
+            const cities = {
+                '75001': 'Paris',
+                '69001': 'Lyon',
+                '13001': 'Marseille',
+                '31000': 'Toulouse',
+                '59000': 'Lille'
+            };
+            
+            if (cities[postalCode]) {
+                document.getElementById('city').value = cities[postalCode];
+            }
+        }
+    });
+});
+
+// Validation du formulaire avant soumission
+document.getElementById('customerForm').addEventListener('submit', function(e) {
+    const requiredFields = ['name', 'email'];
+    let isValid = true;
+    
+    requiredFields.forEach(fieldName => {
+        const field = document.getElementById(fieldName);
+        if (!field.value.trim()) {
+            field.classList.add('is-invalid');
+            isValid = false;
+        } else {
+            field.classList.remove('is-invalid');
+        }
+    });
+    
+    if (!isValid) {
+        e.preventDefault();
+        alert('Veuillez remplir tous les champs obligatoires');
+    }
+});
+</script>
+{% endblock %}

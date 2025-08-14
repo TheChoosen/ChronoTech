@@ -86,9 +86,9 @@ CREATE TABLE IF NOT EXISTS `work_order_lines` (
   CONSTRAINT `work_order_lines_ibfk_1` FOREIGN KEY (`work_order_id`) REFERENCES `work_orders` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Lignes détaillées des bons de travail avec codes, quantités et coûts';
 
--- Index composite pour optimiser les requêtes fréquentes
-CREATE INDEX `idx_work_order_status` ON `work_order_lines` (`work_order_id`, `STATUS`);
-CREATE INDEX `idx_work_order_order` ON `work_order_lines` (`work_order_id`, `line_order`);
+-- Index composite pour optimiser les requêtes fréquentes (utiliser des noms différents pour éviter les conflits)
+CREATE INDEX `idx_work_order_status_composite` ON `work_order_lines` (`work_order_id`, `STATUS`);
+CREATE INDEX `idx_work_order_line_order` ON `work_order_lines` (`work_order_id`, `line_order`);
 
 -- Trigger pour calculer automatiquement le MONTANT lors de l'insertion/mise à jour
 DELIMITER //

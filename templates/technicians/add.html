@@ -1,0 +1,596 @@
+{% extends "base.html" %}
+
+{% block title %}Ajouter un Technicien - ChronoTech{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-user-plus me-2"></i>Ajouter un Technicien
+        </h1>
+        <a href="{{ url_for('technicians.index') }}" class="btn btn-outline-secondary clay-button">
+            <i class="fas fa-arrow-left me-2"></i>Retour à la liste
+        </a>
+    </div>
+
+    <form id="technicianForm" method="POST" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+        
+        <div class="row">
+            <!-- Contenu principal -->
+            <div class="col-lg-8">
+                <!-- Informations personnelles -->
+                <div class="clay-card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-user me-2"></i>Informations Personnelles</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.name.label(class="form-label") }}
+                                    {{ form.name(class="form-control clay-input", placeholder="Nom complet du technicien") }}
+                                    {% if form.name.errors %}
+                                    <div class="text-danger small">{{ form.name.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.email.label(class="form-label") }}
+                                    {{ form.email(class="form-control clay-input", placeholder="email@chronotech.fr") }}
+                                    {% if form.email.errors %}
+                                    <div class="text-danger small">{{ form.email.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.phone.label(class="form-label") }}
+                                    {{ form.phone(class="form-control clay-input", placeholder="0123456789") }}
+                                    {% if form.phone.errors %}
+                                    <div class="text-danger small">{{ form.phone.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.employee_id.label(class="form-label") }}
+                                    {{ form.employee_id(class="form-control clay-input", placeholder="EMP001") }}
+                                    <div class="form-text">Identifiant unique employé</div>
+                                    {% if form.employee_id.errors %}
+                                    <div class="text-danger small">{{ form.employee_id.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <!-- Photo du technicien -->
+                                <div class="mb-3">
+                                    <label class="form-label">Photo du Technicien</label>
+                                    <input type="file" class="form-control clay-input" id="photo" 
+                                           name="photo" accept="image/*">
+                                    <div class="form-text">
+                                        Formats supportés : JPG, PNG, GIF. Taille max : 5MB.
+                                    </div>
+                                    <div id="photoPreview" class="mt-2" style="display: none;">
+                                        <img id="photoImg" class="rounded-circle" width="120" height="120" 
+                                             style="object-fit: cover; border: 3px solid #dee2e6;">
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.hire_date.label(class="form-label") }}
+                                    {{ form.hire_date(class="form-control clay-input", type="date") }}
+                                    {% if form.hire_date.errors %}
+                                    <div class="text-danger small">{{ form.hire_date.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.status.label(class="form-label") }}
+                                    {{ form.status(class="form-select clay-input") }}
+                                    {% if form.status.errors %}
+                                    <div class="text-danger small">{{ form.status.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Compétences et spécialisation -->
+                <div class="clay-card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-tools me-2"></i>Compétences et Spécialisation</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.specialization.label(class="form-label") }}
+                                    {{ form.specialization(class="form-select clay-input") }}
+                                    {% if form.specialization.errors %}
+                                    <div class="text-danger small">{{ form.specialization.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.experience_years.label(class="form-label") }}
+                                    <div class="input-group">
+                                        {{ form.experience_years(class="form-control clay-input", placeholder="5") }}
+                                        <span class="input-group-text">années</span>
+                                    </div>
+                                    {% if form.experience_years.errors %}
+                                    <div class="text-danger small">{{ form.experience_years.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.skill_level.label(class="form-label") }}
+                                    {{ form.skill_level(class="form-select clay-input") }}
+                                    {% if form.skill_level.errors %}
+                                    <div class="text-danger small">{{ form.skill_level.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.certifications.label(class="form-label") }}
+                                    {{ form.certifications(class="form-control clay-input", rows="3", placeholder="Liste des certifications, séparées par des virgules...") }}
+                                    <div class="form-text">Ex: HVAC, Électricité, Plomberie, ISO 9001</div>
+                                    {% if form.certifications.errors %}
+                                    <div class="text-danger small">{{ form.certifications.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.languages.label(class="form-label") }}
+                                    {{ form.languages(class="form-control clay-input", placeholder="Français, Anglais, Espagnol...") }}
+                                    {% if form.languages.errors %}
+                                    <div class="text-danger small">{{ form.languages.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Compétences spécifiques -->
+                        <div class="mb-3">
+                            <label class="form-label">Compétences Spécifiques</label>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="skill_electrical" name="skills[]" value="electrical">
+                                        <label class="form-check-label" for="skill_electrical">
+                                            <i class="fas fa-bolt text-warning me-2"></i>Électricité
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="skill_plumbing" name="skills[]" value="plumbing">
+                                        <label class="form-check-label" for="skill_plumbing">
+                                            <i class="fas fa-tint text-primary me-2"></i>Plomberie
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="skill_hvac" name="skills[]" value="hvac">
+                                        <label class="form-check-label" for="skill_hvac">
+                                            <i class="fas fa-snowflake text-info me-2"></i>HVAC
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="skill_networking" name="skills[]" value="networking">
+                                        <label class="form-check-label" for="skill_networking">
+                                            <i class="fas fa-network-wired text-success me-2"></i>Réseau
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="skill_security" name="skills[]" value="security">
+                                        <label class="form-check-label" for="skill_security">
+                                            <i class="fas fa-shield-alt text-danger me-2"></i>Sécurité
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="skill_automation" name="skills[]" value="automation">
+                                        <label class="form-check-label" for="skill_automation">
+                                            <i class="fas fa-robot text-secondary me-2"></i>Automatisation
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="skill_maintenance" name="skills[]" value="maintenance">
+                                        <label class="form-check-label" for="skill_maintenance">
+                                            <i class="fas fa-wrench text-dark me-2"></i>Maintenance
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="skill_installation" name="skills[]" value="installation">
+                                        <label class="form-check-label" for="skill_installation">
+                                            <i class="fas fa-hammer text-warning me-2"></i>Installation
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="skill_diagnostics" name="skills[]" value="diagnostics">
+                                        <label class="form-check-label" for="skill_diagnostics">
+                                            <i class="fas fa-search text-info me-2"></i>Diagnostic
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Informations de travail -->
+                <div class="clay-card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-briefcase me-2"></i>Informations de Travail</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.zone.label(class="form-label") }}
+                                    {{ form.zone(class="form-control clay-input", placeholder="Zone géographique d'intervention") }}
+                                    {% if form.zone.errors %}
+                                    <div class="text-danger small">{{ form.zone.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.hourly_rate.label(class="form-label") }}
+                                    <div class="input-group">
+                                        <span class="input-group-text">€</span>
+                                        {{ form.hourly_rate(class="form-control clay-input", placeholder="45.00", step="0.01") }}
+                                        <span class="input-group-text">/heure</span>
+                                    </div>
+                                    {% if form.hourly_rate.errors %}
+                                    <div class="text-danger small">{{ form.hourly_rate.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.availability_start.label(class="form-label") }}
+                                    {{ form.availability_start(class="form-control clay-input", type="time") }}
+                                    {% if form.availability_start.errors %}
+                                    <div class="text-danger small">{{ form.availability_start.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.supervisor_id.label(class="form-label") }}
+                                    <select class="form-select clay-input" name="supervisor_id" id="supervisor_id">
+                                        <option value="">Aucun superviseur</option>
+                                        {% for supervisor in supervisors %}
+                                        <option value="{{ supervisor.id }}">{{ supervisor.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    {% if form.supervisor_id.errors %}
+                                    <div class="text-danger small">{{ form.supervisor_id.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.max_daily_hours.label(class="form-label") }}
+                                    <div class="input-group">
+                                        {{ form.max_daily_hours(class="form-control clay-input", placeholder="8", value="8") }}
+                                        <span class="input-group-text">heures/jour</span>
+                                    </div>
+                                    {% if form.max_daily_hours.errors %}
+                                    <div class="text-danger small">{{ form.max_daily_hours.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.availability_end.label(class="form-label") }}
+                                    {{ form.availability_end(class="form-control clay-input", type="time") }}
+                                    {% if form.availability_end.errors %}
+                                    <div class="text-danger small">{{ form.availability_end.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Jours de travail -->
+                        <div class="mb-3">
+                            <label class="form-label">Jours de Travail</label>
+                            <div class="row">
+                                {% set days = [
+                                    ('monday', 'Lundi'),
+                                    ('tuesday', 'Mardi'),
+                                    ('wednesday', 'Mercredi'),
+                                    ('thursday', 'Jeudi'),
+                                    ('friday', 'Vendredi'),
+                                    ('saturday', 'Samedi'),
+                                    ('sunday', 'Dimanche')
+                                ] %}
+                                {% for day_key, day_name in days %}
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" 
+                                               id="work_{{ day_key }}" name="work_days[]" 
+                                               value="{{ day_key }}" {% if day_key in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] %}checked{% endif %}>
+                                        <label class="form-check-label" for="work_{{ day_key }}">
+                                            {{ day_name }}
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notes et commentaires -->
+                <div class="clay-card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-sticky-note me-2"></i>Notes et Commentaires</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            {{ form.notes.label(class="form-label") }}
+                            {{ form.notes(class="form-control clay-input", rows="4", placeholder="Notes internes sur le technicien, formations suivies, remarques particulières...") }}
+                            <div class="form-text">Ces notes sont visibles uniquement par l'équipe de gestion</div>
+                            {% if form.notes.errors %}
+                            <div class="text-danger small">{{ form.notes.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.emergency_contact.label(class="form-label") }}
+                            {{ form.emergency_contact(class="form-control clay-input", rows="2", placeholder="Contact d'urgence : Nom, relation, téléphone") }}
+                            {% if form.emergency_contact.errors %}
+                            <div class="text-danger small">{{ form.emergency_contact.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Actions -->
+                <div class="clay-card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-save me-2"></i>Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary clay-button-primary">
+                                <i class="fas fa-save me-2"></i>Créer le technicien
+                            </button>
+                            <button type="submit" name="create_and_assign" value="1" 
+                                    class="btn btn-success clay-button">
+                                <i class="fas fa-plus me-2"></i>Créer et assigner une intervention
+                            </button>
+                            <a href="{{ url_for('technicians.index') }}" class="btn btn-outline-secondary clay-button">
+                                <i class="fas fa-times me-2"></i>Annuler
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Aide et conseils -->
+                <div class="clay-card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-question-circle me-2"></i>Conseils</h5>
+                    </div>
+                    <div class="card-body">
+                        <h6>Spécialisations :</h6>
+                        <ul class="list-unstyled small">
+                            <li><strong>Électricité :</strong> Systèmes électriques</li>
+                            <li><strong>Plomberie :</strong> Canalisations, chauffage</li>
+                            <li><strong>HVAC :</strong> Climatisation, ventilation</li>
+                            <li><strong>Informatique :</strong> Réseaux, sécurité</li>
+                            <li><strong>Mécanique :</strong> Équipements industriels</li>
+                        </ul>
+                        
+                        <h6 class="mt-3">Niveaux de compétence :</h6>
+                        <ul class="list-unstyled small">
+                            <li><strong>Débutant :</strong> 0-2 ans d'exp.</li>
+                            <li><strong>Intermédiaire :</strong> 3-5 ans d'exp.</li>
+                            <li><strong>Avancé :</strong> 6-10 ans d'exp.</li>
+                            <li><strong>Expert :</strong> 10+ ans d'exp.</li>
+                        </ul>
+
+                        <h6 class="mt-3">Bonnes pratiques :</h6>
+                        <ul class="list-unstyled small">
+                            <li>• Ajoutez une photo professionnelle</li>
+                            <li>• Vérifiez les certifications</li>
+                            <li>• Définissez la zone d'intervention</li>
+                            <li>• Renseignez les disponibilités</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Génération automatique -->
+                <div class="clay-card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-magic me-2"></i>Génération Automatique</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="small text-muted">Générer automatiquement certains champs</p>
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-info clay-button" 
+                                    onclick="generateEmployeeId()">
+                                <i class="fas fa-id-card me-2"></i>ID Employé
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-info clay-button" 
+                                    onclick="generateEmail()">
+                                <i class="fas fa-envelope me-2"></i>Email Pro
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-info clay-button" 
+                                    onclick="setDefaultSchedule()">
+                                <i class="fas fa-clock me-2"></i>Horaires Standard
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Validation en temps réel -->
+                <div class="clay-card" id="validationCard" style="display: none;">
+                    <div class="card-header">
+                        <h5 class="mb-0 text-success">
+                            <i class="fas fa-check-circle me-2"></i>Validation
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="validationResults">
+                            <!-- Résultats de validation dynamiques -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+// Aperçu de la photo
+document.getElementById('photo').addEventListener('change', function() {
+    const file = this.files[0];
+    const preview = document.getElementById('photoPreview');
+    const img = document.getElementById('photoImg');
+    
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            img.src = e.target.result;
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    } else {
+        preview.style.display = 'none';
+    }
+});
+
+// Génération automatique d'ID employé
+function generateEmployeeId() {
+    const name = document.getElementById('name').value;
+    if (name) {
+        const names = name.split(' ');
+        const initials = names.map(n => n[0]).join('').toUpperCase();
+        const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+        document.getElementById('employee_id').value = `EMP${initials}${random}`;
+    } else {
+        const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+        document.getElementById('employee_id').value = `EMP${random}`;
+    }
+}
+
+// Génération d'email professionnel
+function generateEmail() {
+    const name = document.getElementById('name').value;
+    if (name) {
+        const cleanName = name.toLowerCase()
+                             .replace(/[^a-z\s]/g, '')
+                             .replace(/\s+/g, '.');
+        document.getElementById('email').value = `${cleanName}@chronotech.fr`;
+    }
+}
+
+// Définir les horaires standard
+function setDefaultSchedule() {
+    document.getElementById('availability_start').value = '08:00';
+    document.getElementById('availability_end').value = '17:00';
+    document.getElementById('max_daily_hours').value = '8';
+    
+    // Cocher les jours de semaine
+    ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].forEach(day => {
+        document.getElementById(`work_${day}`).checked = true;
+    });
+}
+
+// Validation en temps réel
+function validateField(fieldName, value) {
+    const validationResults = document.getElementById('validationResults');
+    const validationCard = document.getElementById('validationCard');
+    
+    let isValid = true;
+    let message = '';
+    
+    switch(fieldName) {
+        case 'email':
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            isValid = emailRegex.test(value);
+            message = isValid ? '✓ Email valide' : '✗ Format email invalide';
+            break;
+        case 'phone':
+            const phoneRegex = /^[0-9\s\-\+\(\)\.]{10,}$/;
+            isValid = phoneRegex.test(value);
+            message = isValid ? '✓ Téléphone valide' : '✗ Format téléphone invalide';
+            break;
+        case 'employee_id':
+            isValid = value.length >= 3;
+            message = isValid ? '✓ ID employé valide' : '✗ ID employé trop court';
+            break;
+        case 'hourly_rate':
+            const rate = parseFloat(value);
+            isValid = rate > 0 && rate < 200;
+            message = isValid ? '✓ Taux horaire valide' : '✗ Taux horaire invalide (0-200€)';
+            break;
+    }
+    
+    if (message) {
+        validationResults.innerHTML = `
+            <div class="alert ${isValid ? 'alert-success' : 'alert-warning'} alert-sm mb-2">
+                ${message}
+            </div>
+        `;
+        validationCard.style.display = 'block';
+    }
+}
+
+// Événements de validation
+['email', 'phone', 'employee_id', 'hourly_rate'].forEach(fieldName => {
+    const field = document.getElementById(fieldName);
+    if (field) {
+        field.addEventListener('blur', function() {
+            if (this.value) {
+                validateField(fieldName, this.value);
+            }
+        });
+    }
+});
+
+// Validation du formulaire avant soumission
+document.getElementById('technicianForm').addEventListener('submit', function(e) {
+    const requiredFields = ['name', 'email', 'specialization'];
+    let isValid = true;
+    
+    requiredFields.forEach(fieldName => {
+        const field = document.getElementById(fieldName);
+        if (!field.value.trim()) {
+            field.classList.add('is-invalid');
+            isValid = false;
+        } else {
+            field.classList.remove('is-invalid');
+        }
+    });
+    
+    // Vérifier qu'au moins un jour de travail est sélectionné
+    const workDays = document.querySelectorAll('input[name="work_days[]"]:checked');
+    if (workDays.length === 0) {
+        alert('Veuillez sélectionner au moins un jour de travail');
+        isValid = false;
+    }
+    
+    if (!isValid) {
+        e.preventDefault();
+        alert('Veuillez remplir tous les champs obligatoires');
+    }
+});
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+    // Définir la date d'embauche par défaut à aujourd'hui
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('hire_date').value = today;
+    
+    // Définir les horaires par défaut
+    setDefaultSchedule();
+});
+</script>
+{% endblock %}

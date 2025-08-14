@@ -1,0 +1,599 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier {{ customer.name }} - ChronoTech{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-user-edit me-2"></i>Modifier {{ customer.name }}
+        </h1>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('customers.view', id=customer.id) }}" class="btn btn-outline-primary clay-button">
+                <i class="fas fa-eye me-2"></i>Voir le profil
+            </a>
+            <a href="{{ url_for('customers.index') }}" class="btn btn-outline-secondary clay-button">
+                <i class="fas fa-arrow-left me-2"></i>Retour à la liste
+            </a>
+        </div>
+    </div>
+
+    <form id="customerForm" method="POST" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+        
+        <div class="row">
+            <!-- Contenu principal -->
+            <div class="col-lg-8">
+                <!-- Informations de base -->
+                <div class="clay-card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-user me-2"></i>Informations de Base</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.name.label(class="form-label") }}
+                                    {{ form.name(class="form-control clay-input", placeholder="Nom complet ou raison sociale") }}
+                                    {% if form.name.errors %}
+                                    <div class="text-danger small">{{ form.name.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.customer_type.label(class="form-label") }}
+                                    {{ form.customer_type(class="form-select clay-input", onchange="updateFormFields()") }}
+                                    {% if form.customer_type.errors %}
+                                    <div class="text-danger small">{{ form.customer_type.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3" id="companyField">
+                                    {{ form.company.label(class="form-label") }}
+                                    {{ form.company(class="form-control clay-input", placeholder="Nom de l'entreprise") }}
+                                    {% if form.company.errors %}
+                                    <div class="text-danger small">{{ form.company.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3" id="siretField">
+                                    {{ form.siret.label(class="form-label") }}
+                                    {{ form.siret(class="form-control clay-input", placeholder="14 chiffres") }}
+                                    {% if form.siret.errors %}
+                                    <div class="text-danger small">{{ form.siret.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.email.label(class="form-label") }}
+                                    {{ form.email(class="form-control clay-input", placeholder="exemple@email.com") }}
+                                    {% if form.email.errors %}
+                                    <div class="text-danger small">{{ form.email.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.phone.label(class="form-label") }}
+                                    {{ form.phone(class="form-control clay-input", placeholder="0123456789") }}
+                                    {% if form.phone.errors %}
+                                    <div class="text-danger small">{{ form.phone.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.status.label(class="form-label") }}
+                                    {{ form.status(class="form-select clay-input") }}
+                                    {% if form.status.errors %}
+                                    <div class="text-danger small">{{ form.status.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Photo/Avatar -->
+                                <div class="mb-3">
+                                    <label class="form-label">Photo/Avatar</label>
+                                    {% if customer.avatar %}
+                                    <div class="mb-2">
+                                        <img src="{{ url_for('static', filename='uploads/avatars/' + customer.avatar) }}" 
+                                             alt="{{ customer.name }}" class="rounded-circle" 
+                                             width="80" height="80" style="object-fit: cover;">
+                                        <div class="form-check mt-2">
+                                            <input class="form-check-input" type="checkbox" id="remove_avatar" 
+                                                   name="remove_avatar" value="1">
+                                            <label class="form-check-label" for="remove_avatar">
+                                                Supprimer la photo actuelle
+                                            </label>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    <input type="file" class="form-control clay-input" id="avatar" 
+                                           name="avatar" accept="image/*">
+                                    <div class="form-text">
+                                        Formats supportés : JPG, PNG, GIF. Taille max : 2MB.
+                                    </div>
+                                    <div id="avatarPreview" class="mt-2" style="display: none;">
+                                        <img id="avatarImg" class="rounded-circle" width="80" height="80" 
+                                             style="object-fit: cover; border: 3px solid #dee2e6;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Adresse -->
+                <div class="clay-card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>Adresse</h5>
+                        <button type="button" class="btn btn-sm btn-outline-primary clay-button" onclick="searchAddress()">
+                            <i class="fas fa-search me-2"></i>Rechercher
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            {{ form.address.label(class="form-label") }}
+                            {{ form.address(class="form-control clay-input", rows="2", placeholder="Numéro, rue, avenue...") }}
+                            {% if form.address.errors %}
+                            <div class="text-danger small">{{ form.address.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    {{ form.postal_code.label(class="form-label") }}
+                                    {{ form.postal_code(class="form-control clay-input", placeholder="75000") }}
+                                    {% if form.postal_code.errors %}
+                                    <div class="text-danger small">{{ form.postal_code.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.city.label(class="form-label") }}
+                                    {{ form.city(class="form-control clay-input", placeholder="Paris") }}
+                                    {% if form.city.errors %}
+                                    <div class="text-danger small">{{ form.city.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    {{ form.country.label(class="form-label") }}
+                                    {{ form.country(class="form-control clay-input") }}
+                                    {% if form.country.errors %}
+                                    <div class="text-danger small">{{ form.country.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Informations additionnelles -->
+                <div class="clay-card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Informations Additionnelles</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.billing_address.label(class="form-label") }}
+                                    {{ form.billing_address(class="form-control clay-input", rows="3", placeholder="Si différente de l'adresse principale...") }}
+                                    {% if form.billing_address.errors %}
+                                    <div class="text-danger small">{{ form.billing_address.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.payment_terms.label(class="form-label") }}
+                                    {{ form.payment_terms(class="form-select clay-input") }}
+                                    {% if form.payment_terms.errors %}
+                                    <div class="text-danger small">{{ form.payment_terms.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.notes.label(class="form-label") }}
+                                    {{ form.notes(class="form-control clay-input", rows="4", placeholder="Notes internes sur le client...") }}
+                                    <div class="form-text">Ces notes sont visibles uniquement par l'équipe</div>
+                                    {% if form.notes.errors %}
+                                    <div class="text-danger small">{{ form.notes.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.tax_number.label(class="form-label") }}
+                                    {{ form.tax_number(class="form-control clay-input", placeholder="Numéro de TVA") }}
+                                    {% if form.tax_number.errors %}
+                                    <div class="text-danger small">{{ form.tax_number.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.preferred_contact_method.label(class="form-label") }}
+                                    {{ form.preferred_contact_method(class="form-select clay-input") }}
+                                    {% if form.preferred_contact_method.errors %}
+                                    <div class="text-danger small">{{ form.preferred_contact_method.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.zone.label(class="form-label") }}
+                                    {{ form.zone(class="form-control clay-input", placeholder="Zone géographique") }}
+                                    {% if form.zone.errors %}
+                                    <div class="text-danger small">{{ form.zone.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Historique des modifications -->
+                <div class="clay-card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-history me-2"></i>Historique des Modifications</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if modification_history %}
+                        <div class="timeline">
+                            {% for modification in modification_history %}
+                            <div class="timeline-item">
+                                <div class="timeline-marker">
+                                    <i class="fas fa-circle"></i>
+                                </div>
+                                <div class="timeline-content">
+                                    <h6 class="mb-1">{{ modification.action }}</h6>
+                                    <p class="mb-1 text-muted">{{ modification.created_at|datetime_format }}</p>
+                                    {% if modification.changes %}
+                                    <p class="mb-0 small">{{ modification.changes }}</p>
+                                    {% endif %}
+                                    <small class="text-muted">Par {{ modification.user_name }}</small>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-muted">Aucune modification antérieure enregistrée.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Actions -->
+                <div class="clay-card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-save me-2"></i>Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary clay-button-primary">
+                                <i class="fas fa-save me-2"></i>Enregistrer les modifications
+                            </button>
+                            <button type="submit" name="save_and_add_order" value="1" 
+                                    class="btn btn-success clay-button">
+                                <i class="fas fa-plus me-2"></i>Enregistrer et créer une intervention
+                            </button>
+                            <a href="{{ url_for('customers.view', id=customer.id) }}" 
+                               class="btn btn-outline-secondary clay-button">
+                                <i class="fas fa-times me-2"></i>Annuler
+                            </a>
+                            {% if current_user.role in ['admin', 'supervisor'] %}
+                            <hr>
+                            <button type="button" class="btn btn-outline-danger clay-button" 
+                                    onclick="deleteCustomer()">
+                                <i class="fas fa-trash me-2"></i>Supprimer le client
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Informations système -->
+                <div class="clay-card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-info me-2"></i>Informations Système</h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-borderless table-sm">
+                            <tr>
+                                <td><strong>ID Client :</strong></td>
+                                <td>{{ customer.id }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Créé le :</strong></td>
+                                <td>{{ customer.created_at|datetime_format }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Créé par :</strong></td>
+                                <td>{{ customer.created_by_name or 'Système' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Modifié le :</strong></td>
+                                <td>{{ customer.updated_at|datetime_format }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Dernière modification :</strong></td>
+                                <td>{{ customer.last_modified_by_name or 'Système' }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Statistiques rapides -->
+                <div class="clay-card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Statistiques</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="stat-item">
+                                    <h5 class="mb-0">{{ customer.work_orders_count or 0 }}</h5>
+                                    <small class="text-muted">Interventions</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="stat-item">
+                                    <h5 class="mb-0">{{ customer.total_spent|currency if customer.total_spent else '0 €' }}</h5>
+                                    <small class="text-muted">Total dépensé</small>
+                                </div>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="stat-item">
+                                    <h5 class="mb-0">
+                                        {% if customer.last_order_date %}
+                                        {{ customer.last_order_date|days_ago }}j
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </h5>
+                                    <small class="text-muted">Dernière commande</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="stat-item">
+                                    <h5 class="mb-0">{{ customer.satisfaction_score or '-' }}</h5>
+                                    <small class="text-muted">Satisfaction</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Changements détectés -->
+                <div class="clay-card" id="changesCard" style="display: none;">
+                    <div class="card-header">
+                        <h5 class="mb-0 text-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Changements Détectés
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="changesList">
+                            <!-- Liste des changements détectés -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+// Variables pour détecter les changements
+let originalFormData = {};
+
+// Mise à jour des champs selon le type de client
+function updateFormFields() {
+    const customerType = document.getElementById('customer_type').value;
+    const companyField = document.getElementById('companyField');
+    const siretField = document.getElementById('siretField');
+    
+    if (customerType === 'company' || customerType === 'government') {
+        companyField.style.display = 'block';
+        siretField.style.display = 'block';
+        document.getElementById('company').required = true;
+    } else {
+        companyField.style.display = 'none';
+        siretField.style.display = 'none';
+        document.getElementById('company').required = false;
+    }
+}
+
+// Aperçu de l'avatar
+document.getElementById('avatar').addEventListener('change', function() {
+    const file = this.files[0];
+    const preview = document.getElementById('avatarPreview');
+    const img = document.getElementById('avatarImg');
+    
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            img.src = e.target.result;
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    } else {
+        preview.style.display = 'none';
+    }
+});
+
+// Recherche d'adresse
+function searchAddress() {
+    const address = document.getElementById('address').value;
+    const postalCode = document.getElementById('postal_code').value;
+    const city = document.getElementById('city').value;
+    
+    if (!address && !postalCode && !city) {
+        alert('Veuillez saisir au moins une partie de l\'adresse');
+        return;
+    }
+    
+    alert('Fonction de recherche d\'adresse à implémenter avec une API de géocodage');
+}
+
+// Suppression du client
+function deleteCustomer() {
+    if (confirm('Êtes-vous sûr de vouloir supprimer ce client ? Cette action supprimera également tous ses bons de travail associés.')) {
+        fetch(`{{ url_for('customers.delete', id=customer.id) }}`, {
+            method: 'DELETE',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        }).then(response => {
+            if (response.ok) {
+                window.location.href = `{{ url_for('customers.index') }}`;
+            } else {
+                alert('Erreur lors de la suppression du client');
+            }
+        });
+    }
+}
+
+// Détection des changements
+function detectChanges() {
+    const currentFormData = new FormData(document.getElementById('customerForm'));
+    const changes = [];
+    
+    // Comparer les valeurs actuelles avec les originales
+    for (let [key, value] of currentFormData.entries()) {
+        if (originalFormData[key] !== value) {
+            changes.push(key);
+        }
+    }
+    
+    const changesCard = document.getElementById('changesCard');
+    const changesList = document.getElementById('changesList');
+    
+    if (changes.length > 0) {
+        changesList.innerHTML = '<ul class="list-unstyled mb-0">' + 
+            changes.map(field => `<li><i class="fas fa-circle fa-xs text-warning me-2"></i>${field}</li>`).join('') +
+            '</ul>';
+        changesCard.style.display = 'block';
+    } else {
+        changesCard.style.display = 'none';
+    }
+}
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+    updateFormFields();
+    
+    // Capturer les données initiales du formulaire
+    const formData = new FormData(document.getElementById('customerForm'));
+    for (let [key, value] of formData.entries()) {
+        originalFormData[key] = value;
+    }
+    
+    // Écouter les changements
+    document.getElementById('customerForm').addEventListener('input', detectChanges);
+    document.getElementById('customerForm').addEventListener('change', detectChanges);
+    
+    // Auto-complétion de la ville basée sur le code postal
+    document.getElementById('postal_code').addEventListener('blur', function() {
+        const postalCode = this.value;
+        if (postalCode.length === 5) {
+            const cities = {
+                '75001': 'Paris',
+                '69001': 'Lyon',
+                '13001': 'Marseille',
+                '31000': 'Toulouse',
+                '59000': 'Lille'
+            };
+            
+            if (cities[postalCode] && !document.getElementById('city').value) {
+                document.getElementById('city').value = cities[postalCode];
+            }
+        }
+    });
+});
+
+// Validation avant soumission
+document.getElementById('customerForm').addEventListener('submit', function(e) {
+    const requiredFields = ['name', 'email'];
+    let isValid = true;
+    
+    requiredFields.forEach(fieldName => {
+        const field = document.getElementById(fieldName);
+        if (!field.value.trim()) {
+            field.classList.add('is-invalid');
+            isValid = false;
+        } else {
+            field.classList.remove('is-invalid');
+        }
+    });
+    
+    if (!isValid) {
+        e.preventDefault();
+        alert('Veuillez remplir tous les champs obligatoires');
+    }
+});
+
+// Timeline CSS
+const style = document.createElement('style');
+style.textContent = `
+.timeline {
+    position: relative;
+    padding-left: 30px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+.timeline-marker {
+    position: absolute;
+    left: -22px;
+    top: 5px;
+    width: 14px;
+    height: 14px;
+    background: #fff;
+    border: 2px solid #007bff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.timeline-marker i {
+    font-size: 6px;
+    color: #007bff;
+}
+.timeline-content {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+}
+.stat-item {
+    padding: 0.5rem;
+}
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

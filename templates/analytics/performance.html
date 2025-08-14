@@ -1,0 +1,578 @@
+{% extends "base.html" %}
+
+{% block title %}Analyse de Performance - ChronoTech{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-tachometer-alt me-2"></i>Analyse de Performance
+        </h1>
+        <div class="d-flex gap-2">
+            <select class="form-select clay-input" style="width: auto;" onchange="updateTimeFrame(this.value)">
+                <option value="month" {{ 'selected' if timeframe == 'month' }}>30 derniers jours</option>
+                <option value="quarter" {{ 'selected' if timeframe == 'quarter' }}>3 derniers mois</option>
+                <option value="year" {{ 'selected' if timeframe == 'year' }}>12 derniers mois</option>
+            </select>
+            <button class="btn btn-outline-primary clay-button" onclick="comparePerformance()">
+                <i class="fas fa-balance-scale me-2"></i>Comparer
+            </button>
+            <button class="btn btn-outline-success clay-button" onclick="exportPerformance()">
+                <i class="fas fa-download me-2"></i>Exporter
+            </button>
+        </div>
+    </div>
+
+    <!-- Indicateurs de performance globaux -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="clay-card text-center">
+                <div class="card-body">
+                    <div class="performance-indicator mb-2">
+                        <div class="circular-progress" data-percentage="{{ kpis.efficiency }}">
+                            <span class="percentage">{{ kpis.efficiency }}%</span>
+                        </div>
+                    </div>
+                    <h6 class="mb-0">Efficacité Globale</h6>
+                    <small class="text-muted">{{ kpis.efficiency_trend }}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="clay-card text-center">
+                <div class="card-body">
+                    <div class="performance-indicator mb-2">
+                        <div class="circular-progress" data-percentage="{{ kpis.customer_satisfaction }}">
+                            <span class="percentage">{{ kpis.customer_satisfaction }}%</span>
+                        </div>
+                    </div>
+                    <h6 class="mb-0">Satisfaction Client</h6>
+                    <small class="text-muted">{{ kpis.satisfaction_trend }}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="clay-card text-center">
+                <div class="card-body">
+                    <div class="performance-indicator mb-2">
+                        <div class="circular-progress" data-percentage="{{ kpis.first_call_resolution }}">
+                            <span class="percentage">{{ kpis.first_call_resolution }}%</span>
+                        </div>
+                    </div>
+                    <h6 class="mb-0">Résolution 1er Contact</h6>
+                    <small class="text-muted">{{ kpis.fcr_trend }}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="clay-card text-center">
+                <div class="card-body">
+                    <div class="performance-indicator mb-2">
+                        <div class="circular-progress" data-percentage="{{ kpis.sla_compliance }}">
+                            <span class="percentage">{{ kpis.sla_compliance }}%</span>
+                        </div>
+                    </div>
+                    <h6 class="mb-0">Respect SLA</h6>
+                    <small class="text-muted">{{ kpis.sla_trend }}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="clay-card text-center">
+                <div class="card-body">
+                    <div class="performance-indicator mb-2">
+                        <div class="circular-progress" data-percentage="{{ kpis.utilization_rate }}">
+                            <span class="percentage">{{ kpis.utilization_rate }}%</span>
+                        </div>
+                    </div>
+                    <h6 class="mb-0">Taux d'Utilisation</h6>
+                    <small class="text-muted">{{ kpis.utilization_trend }}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="clay-card text-center">
+                <div class="card-body">
+                    <div class="performance-indicator mb-2">
+                        <div class="circular-progress" data-percentage="{{ kpis.cost_efficiency }}">
+                            <span class="percentage">{{ kpis.cost_efficiency }}%</span>
+                        </div>
+                    </div>
+                    <h6 class="mb-0">Efficacité Coût</h6>
+                    <small class="text-muted">{{ kpis.cost_trend }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Évolution des performances -->
+            <div class="clay-card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Évolution des Performances</h5>
+                    <div class="btn-group" role="group">
+                        {% for metric in ['efficiency', 'satisfaction', 'sla', 'cost'] %}
+                        <input type="radio" class="btn-check" name="perfMetric" id="metric-{{ metric }}" 
+                               autocomplete="off" {{ 'checked' if loop.first }}>
+                        <label class="btn btn-outline-secondary btn-sm" for="metric-{{ metric }}">
+                            {{ metric.title() }}
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <canvas id="performanceChart" height="300"></canvas>
+                </div>
+            </div>
+
+            <!-- Performance par technicien -->
+            <div class="clay-card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-users me-2"></i>Performance par Technicien</h5>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-sm btn-outline-secondary" onclick="sortTechnicians('name')">
+                            <i class="fas fa-sort-alpha-down"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="sortTechnicians('performance')">
+                            <i class="fas fa-sort-numeric-down"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="sortTechnicians('efficiency')">
+                            <i class="fas fa-tachometer-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="techniciansPerformanceTable">
+                            <thead>
+                                <tr>
+                                    <th>Technicien</th>
+                                    <th>Interventions</th>
+                                    <th>Taux Réussite</th>
+                                    <th>Temps Moyen</th>
+                                    <th>Note Client</th>
+                                    <th>Efficacité</th>
+                                    <th>Performance</th>
+                                    <th>Tendance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for tech in technician_performance %}
+                                <tr data-performance="{{ tech.overall_score }}">
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if tech.photo %}
+                                            <img src="{{ url_for('static', filename='uploads/photos/' + tech.photo) }}" 
+                                                 alt="{{ tech.name }}" class="rounded-circle me-2" width="32" height="32">
+                                            {% else %}
+                                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" 
+                                                 style="width: 32px; height: 32px; font-size: 12px;">
+                                                {{ tech.name[0].upper() }}
+                                            </div>
+                                            {% endif %}
+                                            <div>
+                                                <div class="fw-bold">{{ tech.name }}</div>
+                                                <small class="text-muted">{{ tech.specialization }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ tech.total_interventions }}</span>
+                                        <small class="text-muted d-block">{{ tech.completed_interventions }} terminées</small>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress me-2" style="width: 60px; height: 6px;">
+                                                <div class="progress-bar bg-{{ 'success' if tech.success_rate >= 90 else 'warning' if tech.success_rate >= 70 else 'danger' }}" 
+                                                     style="width: {{ tech.success_rate }}%"></div>
+                                            </div>
+                                            <span class="small">{{ tech.success_rate }}%</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold">{{ tech.avg_resolution_time }}h</span>
+                                        <small class="text-muted d-block">
+                                            {% if tech.time_improvement > 0 %}
+                                            <i class="fas fa-arrow-down text-success"></i> -{{ tech.time_improvement }}%
+                                            {% elif tech.time_improvement < 0 %}
+                                            <i class="fas fa-arrow-up text-danger"></i> +{{ tech.time_improvement|abs }}%
+                                            {% else %}
+                                            <i class="fas fa-minus text-muted"></i> stable
+                                            {% endif %}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% for i in range(1, 6) %}
+                                            <i class="fas fa-star {{ 'text-warning' if i <= tech.customer_rating else 'text-muted' }}"></i>
+                                            {% endfor %}
+                                            <span class="ms-2 small">({{ tech.customer_rating }}/5)</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="efficiency-gauge" data-value="{{ tech.efficiency_score }}">
+                                            <div class="gauge-fill"></div>
+                                            <span class="gauge-value">{{ tech.efficiency_score }}%</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="performance-badge bg-{{ 'success' if tech.overall_score >= 80 else 'warning' if tech.overall_score >= 60 else 'danger' }}">
+                                            {{ tech.overall_score }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="trend-indicator">
+                                            {% if tech.performance_trend > 0 %}
+                                            <i class="fas fa-trend-up text-success"></i>
+                                            <span class="text-success">+{{ tech.performance_trend }}%</span>
+                                            {% elif tech.performance_trend < 0 %}
+                                            <i class="fas fa-trend-down text-danger"></i>
+                                            <span class="text-danger">{{ tech.performance_trend }}%</span>
+                                            {% else %}
+                                            <i class="fas fa-minus text-muted"></i>
+                                            <span class="text-muted">stable</span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Objectifs vs Réalisé -->
+            <div class="clay-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-bullseye me-2"></i>Objectifs vs Réalisé</h5>
+                </div>
+                <div class="card-body">
+                    {% for objective in objectives %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold">{{ objective.name }}</span>
+                            <span class="text-{{ 'success' if objective.achieved >= objective.target else 'warning' if objective.achieved >= objective.target * 0.8 else 'danger' }}">
+                                {{ objective.achieved }}/{{ objective.target }}
+                            </span>
+                        </div>
+                        <div class="progress mb-1" style="height: 8px;">
+                            <div class="progress-bar bg-{{ 'success' if objective.percentage >= 100 else 'warning' if objective.percentage >= 80 else 'danger' }}" 
+                                 style="width: {{ objective.percentage }}%"></div>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <small class="text-muted">{{ objective.period }}</small>
+                            <small class="text-{{ 'success' if objective.percentage >= 100 else 'warning' if objective.percentage >= 80 else 'danger' }}">
+                                {{ objective.percentage }}% atteint
+                            </small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Top zones performantes -->
+            <div class="clay-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-map-marked-alt me-2"></i>Zones Performantes</h5>
+                </div>
+                <div class="card-body">
+                    {% for zone in top_zones %}
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="d-flex align-items-center">
+                            <div class="zone-rank bg-{{ 'success' if loop.index <= 2 else 'warning' if loop.index <= 4 else 'secondary' }} text-white rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                 style="width: 24px; height: 24px; font-size: 12px;">
+                                {{ loop.index }}
+                            </div>
+                            <div>
+                                <div class="fw-bold">{{ zone.name }}</div>
+                                <small class="text-muted">{{ zone.intervention_count }} interventions</small>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-bold text-{{ 'success' if zone.performance_score >= 80 else 'warning' if zone.performance_score >= 60 else 'danger' }}">
+                                {{ zone.performance_score }}%
+                            </div>
+                            <small class="text-muted">performance</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Indicateurs d'alerte -->
+            <div class="clay-card">
+                <div class="card-header">
+                    <h5 class="mb-0 text-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Alertes Performance
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if performance_alerts %}
+                    {% for alert in performance_alerts %}
+                    <div class="alert alert-{{ alert.severity }} p-2 mb-2">
+                        <div class="d-flex align-items-start">
+                            <i class="fas fa-{{ alert.icon }} me-2 mt-1"></i>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">{{ alert.title }}</div>
+                                <small>{{ alert.description }}</small>
+                                <div class="mt-1">
+                                    <span class="badge bg-{{ alert.severity }}">{{ alert.metric_value }}</span>
+                                    <small class="text-muted">{{ alert.threshold_text }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="text-center text-muted">
+                        <i class="fas fa-check-circle fa-2x mb-2 text-success"></i>
+                        <p>Toutes les performances sont dans les normes</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analyse comparative -->
+    <div class="row mt-4">
+        <div class="col-lg-6">
+            <div class="clay-card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Comparaison par Spécialité</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="specializationComparisonChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6">
+            <div class="clay-card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Analyse Temporelle</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="timeAnalysisChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Mise à jour de la période
+function updateTimeFrame(timeframe) {
+    const url = new URL(window.location);
+    url.searchParams.set('timeframe', timeframe);
+    window.location.href = url.toString();
+}
+
+// Comparaison de performance
+function comparePerformance() {
+    // Ouvrir modal de comparaison ou rediriger vers page de comparaison
+    console.log('Comparaison de performance');
+}
+
+// Export des données de performance
+function exportPerformance() {
+    const params = new URLSearchParams(window.location.search);
+    params.append('export', 'xlsx');
+    window.location.href = '{{ url_for("analytics.performance") }}?' + params.toString();
+}
+
+// Tri du tableau des techniciens
+function sortTechnicians(criteria) {
+    const table = document.getElementById('techniciansPerformanceTable');
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    
+    rows.sort((a, b) => {
+        let aValue, bValue;
+        
+        switch(criteria) {
+            case 'name':
+                aValue = a.querySelector('.fw-bold').textContent;
+                bValue = b.querySelector('.fw-bold').textContent;
+                return aValue.localeCompare(bValue);
+                
+            case 'performance':
+                aValue = parseInt(a.dataset.performance);
+                bValue = parseInt(b.dataset.performance);
+                return bValue - aValue;
+                
+            case 'efficiency':
+                aValue = parseInt(a.querySelector('.gauge-value').textContent);
+                bValue = parseInt(b.querySelector('.gauge-value').textContent);
+                return bValue - aValue;
+        }
+    });
+    
+    rows.forEach(row => tbody.appendChild(row));
+}
+
+// Initialisation des graphiques
+document.addEventListener('DOMContentLoaded', function() {
+    initCircularProgress();
+    initPerformanceChart();
+    initSpecializationChart();
+    initTimeAnalysisChart();
+    initEfficiencyGauges();
+});
+
+function initCircularProgress() {
+    document.querySelectorAll('.circular-progress').forEach(circle => {
+        const percentage = circle.dataset.percentage;
+        const radius = 40;
+        const circumference = 2 * Math.PI * radius;
+        const offset = circumference - (percentage / 100) * circumference;
+        
+        circle.innerHTML = `
+            <svg width="100" height="100" class="progress-ring">
+                <circle class="progress-ring-circle" 
+                        cx="50" cy="50" r="${radius}"
+                        stroke-dasharray="${circumference} ${circumference}"
+                        stroke-dashoffset="${offset}">
+                </circle>
+            </svg>
+            <span class="percentage">${percentage}%</span>
+        `;
+    });
+}
+
+function initPerformanceChart() {
+    const ctx = document.getElementById('performanceChart').getContext('2d');
+    // Implémentation du graphique de performance
+    console.log('Graphique de performance à implémenter');
+}
+
+function initSpecializationChart() {
+    const ctx = document.getElementById('specializationComparisonChart').getContext('2d');
+    // Implémentation du graphique de comparaison par spécialité
+    console.log('Graphique de spécialité à implémenter');
+}
+
+function initTimeAnalysisChart() {
+    const ctx = document.getElementById('timeAnalysisChart').getContext('2d');
+    // Implémentation du graphique d'analyse temporelle
+    console.log('Graphique temporel à implémenter');
+}
+
+function initEfficiencyGauges() {
+    document.querySelectorAll('.efficiency-gauge').forEach(gauge => {
+        const value = gauge.dataset.value;
+        const fill = gauge.querySelector('.gauge-fill');
+        const percentage = Math.min(100, Math.max(0, value));
+        fill.style.width = percentage + '%';
+        
+        // Couleur basée sur la performance
+        if (percentage >= 80) {
+            fill.style.backgroundColor = '#28a745';
+        } else if (percentage >= 60) {
+            fill.style.backgroundColor = '#ffc107';
+        } else {
+            fill.style.backgroundColor = '#dc3545';
+        }
+    });
+}
+
+// Gestion du changement de métrique
+document.querySelectorAll('input[name="perfMetric"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        updatePerformanceChart(this.value);
+    });
+});
+
+function updatePerformanceChart(metric) {
+    fetch(`{{ url_for('api.performance_data') }}?metric=${metric}`)
+        .then(response => response.json())
+        .then(data => {
+            // Mettre à jour le graphique
+            console.log('Mise à jour métrique:', metric, data);
+        });
+}
+</script>
+
+<style>
+.circular-progress {
+    position: relative;
+    display: inline-block;
+}
+
+.progress-ring {
+    transform: rotate(-90deg);
+}
+
+.progress-ring-circle {
+    fill: transparent;
+    stroke: #007bff;
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.5s ease-in-out;
+}
+
+.percentage {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.efficiency-gauge {
+    position: relative;
+    width: 60px;
+    height: 8px;
+    background-color: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.gauge-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+    border-radius: 4px;
+}
+
+.gauge-value {
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    font-weight: bold;
+}
+
+.performance-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    color: white;
+    font-weight: bold;
+    font-size: 12px;
+}
+
+.trend-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.zone-rank {
+    font-weight: bold;
+}
+
+.progress {
+    background-color: #e9ecef;
+}
+
+.alert {
+    border: none;
+    border-radius: 8px;
+}
+</style>
+{% endblock %}

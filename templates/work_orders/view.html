@@ -1,0 +1,459 @@
+{% extends "base.html" %}
+
+{% block title %}Bon de Travail {{ work_order.claim_number }} - ChronoTech{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-eye me-2"></i>Bon de Travail {{ work_order.claim_number }}
+        </h1>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('work_orders.edit_work_order', id=work_order.id) }}" class="btn btn-outline-primary clay-button">
+                <i class="fas fa-edit me-2"></i>Modifier
+            </a>
+                        <a href="{{ url_for('work_orders.list_work_orders') }}" class="btn btn-outline-secondary clay-button">
+                <i class="fas fa-arrow-left me-2"></i>Retour à la liste
+            </a>
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary clay-button dropdown-toggle" type="button" 
+                        data-bs-toggle="dropdown">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#" onclick="printWorkOrder()">
+                        <i class="fas fa-print me-2"></i>Imprimer
+                    </a></li>
+                    <li><a class="dropdown-item" href="#" onclick="exportPDF()">
+                        <i class="fas fa-file-pdf me-2"></i>Export PDF
+                    </a></li>
+                    <li><a class="dropdown-item" href="#" onclick="duplicateWorkOrder()">
+                        <i class="fas fa-copy me-2"></i>Dupliquer
+                    </a></li>
+                    {% if current_user.role in ['admin', 'supervisor'] %}
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" href="#" onclick="deleteWorkOrder()">
+                        <i class="fas fa-trash me-2"></i>Supprimer
+                    </a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Contenu principal -->
+        <div class="col-lg-8">
+            <!-- Informations principales -->
+            <div class="clay-card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Informations Principales</h5>
+                    <span class="badge {{ work_order.status|status_badge }} fs-6">
+                        {% if work_order.status == 'draft' %}Brouillon
+                        {% elif work_order.status == 'pending' %}En attente
+                        {% elif work_order.status == 'assigned' %}Assigné
+                        {% elif work_order.status == 'in_progress' %}En cours
+                        {% elif work_order.status == 'completed' %}Terminé
+                        {% elif work_order.status == 'cancelled' %}Annulé
+                        {% else %}{{ work_order.status }}{% endif %}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Client :</strong></td>
+                                    <td>
+                                        {% if work_order.customer_id %}
+                                        <a href="{{ url_for('customers.view', id=work_order.customer_id) }}">
+                                            {{ work_order.customer_name }}
+                                        </a>
+                                        {% else %}
+                                        Non spécifié
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Priorité :</strong></td>
+                                    <td>
+                                        <span class="badge {{ work_order.priority|priority_badge }}">
+                                            {% if work_order.priority == 'low' %}Faible
+                                            {% elif work_order.priority == 'medium' %}Moyenne
+                                            {% elif work_order.priority == 'high' %}Élevée
+                                            {% elif work_order.priority == 'urgent' %}Urgente
+                                            {% else %}{{ work_order.priority }}{% endif %}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Technicien :</strong></td>
+                                    <td>
+                                        {% if work_order.assigned_technician_id %}
+                                        <a href="{{ url_for('technicians.view_technician', technician_id=work_order.assigned_technician_id) }}">
+                                            {{ work_order.technician_name }}
+                                        </a>
+                                        {% else %}
+                                        <span class="text-muted">Non assigné</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Créé le :</strong></td>
+                                    <td>{{ work_order.created_at|datetime_format }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Modifié le :</strong></td>
+                                    <td>{{ work_order.updated_at|datetime_format }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Date prévue :</strong></td>
+                                    <td>
+                                        {% if work_order.scheduled_date %}
+                                        {{ work_order.scheduled_date|datetime_format }}
+                                        {% else %}
+                                        <span class="text-muted">Non planifiée</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <h6><i class="fas fa-align-left me-2"></i>Description</h6>
+                    <p class="mb-3">{{ work_order.description|nl2br }}</p>
+                    
+                    {% if work_order.internal_notes %}
+                    <h6><i class="fas fa-sticky-note me-2"></i>Notes Internes</h6>
+                    <div class="alert alert-info">
+                        {{ work_order.internal_notes|nl2br }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Localisation -->
+            {% if work_order.location_address or work_order.location_latitude %}
+            <div class="clay-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>Localisation</h5>
+                </div>
+                <div class="card-body">
+                    {% if work_order.location_address %}
+                    <p><strong>Adresse :</strong><br>{{ work_order.location_address|nl2br }}</p>
+                    {% endif %}
+                    
+                    {% if work_order.location_latitude and work_order.location_longitude %}
+                    <p><strong>Coordonnées :</strong> {{ work_order.location_latitude }}, {{ work_order.location_longitude }}</p>
+                    <div id="map" style="height: 300px; border-radius: 8px;"></div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Progression et historique -->
+            <div class="clay-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Historique et Progression</h5>
+                </div>
+                <div class="card-body">
+                    {% if work_order.status != 'draft' and work_order.status != 'cancelled' %}
+                    <!-- Barre de progression -->
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between mb-2">
+                            <small>Progression</small>
+                            <small>{{ progress_percentage }}%</small>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-primary" role="progressbar" 
+                                 style="width: {{ progress_percentage }}%" 
+                                 aria-valuenow="{{ progress_percentage }}" aria-valuemin="0" aria-valuemax="100">
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Timeline -->
+                    <div class="timeline">
+                        {% for entry in status_history %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker">
+                                <i class="fas fa-circle"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <h6 class="mb-1">{{ entry.status_display }}</h6>
+                                <p class="mb-1 text-muted">{{ entry.created_at|datetime_format }}</p>
+                                {% if entry.comment %}
+                                <p class="mb-0">{{ entry.comment }}</p>
+                                {% endif %}
+                                {% if entry.user_name %}
+                                <small class="text-muted">Par {{ entry.user_name }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notes d'intervention -->
+            <div class="clay-card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-comments me-2"></i>Notes d'Intervention</h5>
+                    <button class="btn btn-sm btn-primary clay-button-primary" 
+                            onclick="showAddNoteModal()">
+                        <i class="fas fa-plus me-2"></i>Ajouter une note
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% if intervention_notes %}
+                    {% for note in intervention_notes %}
+                    <div class="border rounded p-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="mb-0">
+                                {% if note.note_type == 'private' %}
+                                <i class="fas fa-lock text-warning me-2"></i>Note privée
+                                {% elif note.note_type == 'internal' %}
+                                <i class="fas fa-users text-info me-2"></i>Note interne
+                                {% else %}
+                                <i class="fas fa-user text-success me-2"></i>Note client
+                                {% endif %}
+                            </h6>
+                            <small class="text-muted">{{ note.created_at|datetime_format }}</small>
+                        </div>
+                        <p class="mb-2">{{ note.content|nl2br }}</p>
+                        <small class="text-muted">Par {{ note.user_name }}</small>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <p class="text-muted">Aucune note d'intervention pour le moment.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Actions rapides -->
+            <div class="clay-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-bolt me-2"></i>Actions Rapides</h5>
+                </div>
+                <div class="card-body">
+                    {% if work_order.status == 'pending' and current_user.role in ['admin', 'supervisor', 'technician'] %}
+                    <div class="d-grid gap-2 mb-3">
+                        <button class="btn btn-success clay-button" onclick="updateStatus('assigned')">
+                            <i class="fas fa-user-check me-2"></i>Prendre en charge
+                        </button>
+                    </div>
+                    {% endif %}
+
+                    {% if work_order.status == 'assigned' and current_user.id == work_order.assigned_technician_id %}
+                    <div class="d-grid gap-2 mb-3">
+                        <button class="btn btn-primary clay-button-primary" onclick="updateStatus('in_progress')">
+                            <i class="fas fa-play me-2"></i>Commencer l'intervention
+                        </button>
+                    </div>
+                    {% endif %}
+
+                    {% if work_order.status == 'in_progress' and current_user.id == work_order.assigned_technician_id %}
+                    <div class="d-grid gap-2 mb-3">
+                        <button class="btn btn-success clay-button" onclick="updateStatus('completed')">
+                            <i class="fas fa-check me-2"></i>Marquer comme terminé
+                        </button>
+                    </div>
+                    {% endif %}
+
+                    {% if current_user.role in ['admin', 'supervisor'] %}
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-warning clay-button" onclick="showAssignModal()">
+                            <i class="fas fa-user-cog me-2"></i>Réassigner
+                        </button>
+                        <button class="btn btn-outline-danger clay-button" onclick="updateStatus('cancelled')">
+                            <i class="fas fa-ban me-2"></i>Annuler
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Temps et coûts -->
+            <div class="clay-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Temps et Coûts</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <td><strong>Durée estimée :</strong></td>
+                            <td>{{ work_order.estimated_duration|duration_format if work_order.estimated_duration else 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Temps passé :</strong></td>
+                            <td>{{ actual_duration|duration_format if actual_duration else '0:00' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Coût estimé :</strong></td>
+                            <td>{{ total_estimated_cost|currency if total_estimated_cost else '0,00 €' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Coût réel :</strong></td>
+                            <td>{{ total_actual_cost|currency if total_actual_cost else '0,00 €' }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Documents et médias -->
+            <div class="clay-card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-paperclip me-2"></i>Documents</h5>
+                    <button class="btn btn-sm btn-outline-primary clay-button" onclick="showUploadModal()">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% if media_files %}
+                    <div class="list-group list-group-flush">
+                        {% for media in media_files %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <div>
+                                <i class="fas fa-{{ 'image' if media.file_type.startswith('image') else 'file' }} me-2"></i>
+                                <a href="{{ url_for('static', filename='uploads/' + media.filename) }}" 
+                                   target="_blank">{{ media.original_filename }}</a>
+                                <br><small class="text-muted">{{ media.created_at|datetime_format }}</small>
+                            </div>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteMedia({{ media.id }})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Aucun document joint.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Informations de contact -->
+            {% if work_order.customer_id %}
+            <div class="clay-card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-address-book me-2"></i>Contact Client</h5>
+                </div>
+                <div class="card-body">
+                    {% if customer %}
+                    <p><strong>{{ customer.name }}</strong></p>
+                    {% if customer.email %}
+                    <p><i class="fas fa-envelope me-2"></i><a href="mailto:{{ customer.email }}">{{ customer.email }}</a></p>
+                    {% endif %}
+                    {% if customer.phone %}
+                    <p><i class="fas fa-phone me-2"></i><a href="tel:{{ customer.phone }}">{{ customer.phone }}</a></p>
+                    {% endif %}
+                    {% if customer.address %}
+                    <p><i class="fas fa-map-marker-alt me-2"></i>{{ customer.address|nl2br }}</p>
+                    {% endif %}
+                    {% else %}
+                    <p class="text-muted">Informations client non disponibles.</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modales et scripts seront ajoutés ici -->
+<script>
+function updateStatus(newStatus) {
+    if (confirm('Êtes-vous sûr de vouloir changer le statut ?')) {
+        fetch(`{{ url_for('work_orders.update_status', id=work_order.id) }}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({status: newStatus})
+        }).then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Erreur lors de la mise à jour du statut');
+            }
+        });
+    }
+}
+
+function printWorkOrder() {
+    window.print();
+}
+
+function exportPDF() {
+    // TODO: Implémenter l'export PDF
+    alert('Fonctionnalité d\'export PDF à implémenter');
+}
+
+function deleteWorkOrder() {
+    if (confirm('Êtes-vous sûr de vouloir supprimer ce bon de travail ? Cette action est irréversible.')) {
+        // TODO: Implémenter la suppression
+        alert('Fonctionnalité de suppression à implémenter');
+    }
+
+// Timeline CSS
+const style = document.createElement('style');
+style.textContent = `
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+.timeline-marker {
+    position: absolute;
+    left: -22px;
+    top: 5px;
+    width: 14px;
+    height: 14px;
+    background: #fff;
+    border: 2px solid #007bff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.timeline-marker i {
+    font-size: 6px;
+    color: #007bff;
+}
+.timeline-content {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+}
+`;
+document.head.appendChild(style);
+
+function duplicateWorkOrder() {
+    // TODO: Implémenter la duplication
+    alert('Fonctionnalité de duplication à implémenter');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,469 @@
+{% extends "base.html" %}
+
+{% block title %}Interventions - ChronoTech{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/interventions.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="interventions-container">
+    <!-- En-tête avec statistiques en temps réel -->
+    <div class="clay-card stats-header">
+        <div class="stats-grid">
+            <div class="stat-item urgent">
+                <span class="stat-number">{{ interventions | selectattr('priority', 'equalto', 'urgent') | list | length }}</span>
+                <span class="stat-label">Urgents</span>
+            </div>
+            <div class="stat-item progress">
+                <span class="stat-number">{{ interventions | selectattr('status', 'equalto', 'in_progress') | list | length }}</span>
+                <span class="stat-label">En cours</span>
+            </div>
+            <div class="stat-item scheduled">
+                <span class="stat-number">{{ interventions | selectattr('status', 'equalto', 'scheduled') | list | length }}</span>
+                <span class="stat-label">Planifiés</span>
+            </div>
+            <div class="stat-item media">
+                <span class="stat-number">{{ interventions | sum(attribute='media_count') }}</span>
+                <span class="stat-label">Médias</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres intelligents -->
+    <div class="clay-card filters-panel">
+        <div class="filters-header">
+            <h3>🎯 Filtres Intelligents</h3>
+            <div class="ai-toggle">
+                <input type="checkbox" id="ai-filter" checked>
+                <label for="ai-filter">Tri IA Automatique</label>
+            </div>
+        </div>
+        <div class="filters-grid">
+            <div class="filter-group">
+                <label>Priorité</label>
+                <select id="priority-filter" class="clay-select">
+                    <option value="">Toutes</option>
+                    <option value="urgent">🔴 Urgent</option>
+                    <option value="high">🟠 Élevée</option>
+                    <option value="medium">🟡 Moyenne</option>
+                    <option value="low">🟢 Faible</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Statut</label>
+                <select id="status-filter" class="clay-select">
+                    <option value="">Tous</option>
+                    <option value="pending">⏳ En attente</option>
+                    <option value="in_progress">⚡ En cours</option>
+                    <option value="completed">✅ Terminé</option>
+                    <option value="scheduled">📅 Planifié</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Technicien</label>
+                <select id="technician-filter" class="clay-select">
+                    <option value="">Tous</option>
+                    {% for intervention in interventions %}
+                        {% if intervention.technician_name %}
+                            <option value="{{ intervention.technician_name }}">{{ intervention.technician_name }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Recherche</label>
+                <input type="text" id="search-filter" class="clay-input" placeholder="Client, description...">
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des interventions avec IA -->
+    <div class="interventions-grid" id="interventions-grid">
+        {% for intervention in interventions %}
+        <div class="intervention-card clay-card {{ intervention.priority }}-priority {{ intervention.status }}-status"
+             data-priority="{{ intervention.priority }}"
+             data-status="{{ intervention.status }}"
+             data-technician="{{ intervention.technician_name or '' }}"
+             data-search="{{ (intervention.customer_name + ' ' + intervention.description) | lower }}">
+            
+            <!-- En-tête de la carte -->
+            <div class="card-header">
+                <div class="card-title">
+                    <h4>{{ intervention.claim_number }}</h4>
+                    <div class="priority-badge {{ intervention.priority }}">
+                        {% if intervention.priority == 'urgent' %}🔴{% endif %}
+                        {% if intervention.priority == 'high' %}🟠{% endif %}
+                        {% if intervention.priority == 'medium' %}🟡{% endif %}
+                        {% if intervention.priority == 'low' %}🟢{% endif %}
+                        {{ intervention.priority | title }}
+                    </div>
+                </div>
+                <div class="card-status">
+                    <span class="status-badge {{ intervention.status }}">
+                        {% if intervention.status == 'pending' %}⏳{% endif %}
+                        {% if intervention.status == 'in_progress' %}⚡{% endif %}
+                        {% if intervention.status == 'completed' %}✅{% endif %}
+                        {% if intervention.status == 'scheduled' %}📅{% endif %}
+                        {{ intervention.status | replace('_', ' ') | title }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Informations client -->
+            <div class="customer-info">
+                <div class="customer-name">
+                    <strong>👤 {{ intervention.customer_name or 'Client non assigné' }}</strong>
+                </div>
+                {% if intervention.customer_phone %}
+                <div class="customer-contact">
+                    📞 {{ intervention.customer_phone }}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Description avec IA -->
+            <div class="description-section">
+                <p class="description-text">{{ intervention.description | truncate(150) }}</p>
+                {% if intervention.description | length > 150 %}
+                <button class="expand-btn clay-btn-ghost" onclick="expandDescription(this)">
+                    Voir plus
+                </button>
+                {% endif %}
+            </div>
+
+            <!-- Indicateurs IA et médias -->
+            <div class="ai-indicators">
+                {% if intervention.notes_count > 0 %}
+                <div class="indicator notes">
+                    <span class="icon">📝</span>
+                    <span class="count">{{ intervention.notes_count }}</span>
+                    <span class="label">Notes</span>
+                </div>
+                {% endif %}
+                
+                {% if intervention.media_count > 0 %}
+                <div class="indicator media">
+                    <span class="icon">📷</span>
+                    <span class="count">{{ intervention.media_count }}</span>
+                    <span class="label">Médias</span>
+                </div>
+                {% endif %}
+
+                <!-- Indicateur de dernière activité IA -->
+                {% if intervention.last_note_date %}
+                <div class="indicator activity">
+                    <span class="icon">🕒</span>
+                    <span class="time">{{ moment(intervention.last_note_date).fromNow() }}</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Informations temps et durée -->
+            <div class="time-info">
+                {% if intervention.scheduled_date %}
+                <div class="scheduled-time">
+                    📅 Planifié: {{ moment(intervention.scheduled_date).format('DD/MM/YYYY HH:mm') }}
+                </div>
+                {% endif %}
+                
+                {% if intervention.estimated_duration %}
+                <div class="duration-info">
+                    ⏱️ Durée estimée: {{ intervention.estimated_duration }}h
+                    {% if intervention.actual_duration %}
+                    <span class="actual-duration">(Réel: {{ (intervention.actual_duration / 60) | round(1) }}h)</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Actions rapides -->
+            <div class="card-actions">
+                <a href="{{ url_for('interventions.intervention_details', work_order_id=intervention.id) }}" 
+                   class="clay-btn clay-btn-primary">
+                    🔍 Détails
+                </a>
+                
+                {% if session.user_role == 'technician' and intervention.assigned_technician_id == session.user_id %}
+                    {% if intervention.status == 'pending' %}
+                    <button class="clay-btn clay-btn-success quick-action" 
+                            data-action="start_work" 
+                            data-work-order="{{ intervention.id }}">
+                        ▶️ Démarrer
+                    </button>
+                    {% elif intervention.status == 'in_progress' %}
+                    <button class="clay-btn clay-btn-warning quick-action" 
+                            data-action="complete_work" 
+                            data-work-order="{{ intervention.id }}">
+                        ✅ Terminer
+                    </button>
+                    {% endif %}
+                {% endif %}
+                
+                <!-- Menu contextuel avec IA -->
+                <div class="dropdown">
+                    <button class="clay-btn clay-btn-ghost dropdown-toggle" data-toggle="dropdown">
+                        ⚙️
+                    </button>
+                    <div class="dropdown-menu">
+                        <a href="#" class="dropdown-item ai-analyze" data-work-order="{{ intervention.id }}">
+                            🤖 Analyse IA
+                        </a>
+                        <a href="#" class="dropdown-item voice-note" data-work-order="{{ intervention.id }}">
+                            🎤 Note vocale
+                        </a>
+                        <a href="#" class="dropdown-item photo-capture" data-work-order="{{ intervention.id }}">
+                            📷 Photo rapide
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a href="{{ url_for('work_orders.edit_work_order', id=intervention.id) }}" class="dropdown-item">
+                            ✏️ Modifier
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Suggestions IA en aperçu -->
+            <div class="ai-preview" id="ai-preview-{{ intervention.id }}" style="display: none;">
+                <div class="ai-loading">
+                    <div class="spinner"></div>
+                    <span>🤖 Analyse IA en cours...</span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Interface de capture rapide (overlay mobile) -->
+    <div id="quick-capture-overlay" class="capture-overlay" style="display: none;">
+        <div class="capture-panel clay-card">
+            <div class="capture-header">
+                <h3>📷 Capture Rapide</h3>
+                <button class="close-btn" onclick="closeQuickCapture()">✕</button>
+            </div>
+            
+            <div class="capture-tabs">
+                <button class="tab-btn active" data-tab="photo">📷 Photo</button>
+                <button class="tab-btn" data-tab="voice">🎤 Audio</button>
+                <button class="tab-btn" data-tab="note">📝 Note</button>
+            </div>
+            
+            <div class="capture-content">
+                <!-- Contenu dynamique selon l'onglet -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal d'analyse IA -->
+<div id="ai-analysis-modal" class="clay-modal" style="display: none;">
+    <div class="clay-modal-content">
+        <div class="clay-modal-header">
+            <h3>🤖 Analyse IA - Intervention</h3>
+            <button class="clay-modal-close" onclick="closeAiAnalysis()">&times;</button>
+        </div>
+        <div class="clay-modal-body">
+            <div id="ai-analysis-content">
+                <!-- Contenu chargé dynamiquement -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/interventions.js') }}"></script>
+<script>
+// Initialisation de l'interface
+document.addEventListener('DOMContentLoaded', function() {
+    initializeFilters();
+    initializeQuickActions();
+    initializeAiFeatures();
+    
+    // Tri IA automatique si activé
+    if (document.getElementById('ai-filter').checked) {
+        applyAiSorting();
+    }
+});
+
+// Filtrage intelligent
+function initializeFilters() {
+    const filters = ['priority-filter', 'status-filter', 'technician-filter', 'search-filter'];
+    
+    filters.forEach(filterId => {
+        const filter = document.getElementById(filterId);
+        if (filter) {
+            filter.addEventListener('change', applyFilters);
+            if (filterId === 'search-filter') {
+                filter.addEventListener('keyup', debounce(applyFilters, 300));
+            }
+        }
+    });
+}
+
+function applyFilters() {
+    const cards = document.querySelectorAll('.intervention-card');
+    const priority = document.getElementById('priority-filter').value;
+    const status = document.getElementById('status-filter').value;
+    const technician = document.getElementById('technician-filter').value;
+    const search = document.getElementById('search-filter').value.toLowerCase();
+    
+    cards.forEach(card => {
+        const matchesPriority = !priority || card.dataset.priority === priority;
+        const matchesStatus = !status || card.dataset.status === status;
+        const matchesTechnician = !technician || card.dataset.technician === technician;
+        const matchesSearch = !search || card.dataset.search.includes(search);
+        
+        if (matchesPriority && matchesStatus && matchesTechnician && matchesSearch) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
+// Tri IA basé sur priorité et urgence
+function applyAiSorting() {
+    const grid = document.getElementById('interventions-grid');
+    const cards = Array.from(grid.children);
+    
+    cards.sort((a, b) => {
+        // Poids des priorités
+        const priorityWeight = { urgent: 4, high: 3, medium: 2, low: 1 };
+        const statusWeight = { in_progress: 3, pending: 2, scheduled: 1, completed: 0 };
+        
+        const aScore = (priorityWeight[a.dataset.priority] || 0) + (statusWeight[a.dataset.status] || 0);
+        const bScore = (priorityWeight[b.dataset.priority] || 0) + (statusWeight[b.dataset.status] || 0);
+        
+        return bScore - aScore;
+    });
+    
+    cards.forEach(card => grid.appendChild(card));
+}
+
+// Actions rapides
+function initializeQuickActions() {
+    document.querySelectorAll('.quick-action').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const action = this.dataset.action;
+            const workOrderId = this.dataset.workOrder;
+            
+            fetch(`/interventions/${workOrderId}/quick_actions`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `action=${action}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                    location.reload(); // Recharger pour mettre à jour l'état
+                } else {
+                    showNotification(data.message, 'error');
+                }
+            });
+        });
+    });
+}
+
+// Fonctionnalités IA
+function initializeAiFeatures() {
+    // Analyse IA
+    document.querySelectorAll('.ai-analyze').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            showAiAnalysis(this.dataset.workOrder);
+        });
+    });
+    
+    // Capture vocale
+    document.querySelectorAll('.voice-note').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            startVoiceCapture(this.dataset.workOrder);
+        });
+    });
+    
+    // Capture photo
+    document.querySelectorAll('.photo-capture').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            openQuickCapture('photo', this.dataset.workOrder);
+        });
+    });
+}
+
+function showAiAnalysis(workOrderId) {
+    const modal = document.getElementById('ai-analysis-modal');
+    const content = document.getElementById('ai-analysis-content');
+    
+    content.innerHTML = '<div class="loading-spinner">🤖 Analyse en cours...</div>';
+    modal.style.display = 'flex';
+    
+    fetch(`/interventions/ai/suggestions/${workOrderId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayAiSuggestions(data.suggestions, content);
+            } else {
+                content.innerHTML = '<div class="error">Erreur lors de l\'analyse IA</div>';
+            }
+        });
+}
+
+function displayAiSuggestions(suggestions, container) {
+    let html = '<div class="ai-suggestions-list">';
+    
+    suggestions.forEach(suggestion => {
+        html += `
+            <div class="ai-suggestion ${suggestion.type}">
+                <div class="suggestion-header">
+                    <h4>${suggestion.title}</h4>
+                    <span class="confidence">${Math.round(suggestion.confidence * 100)}%</span>
+                </div>
+                <div class="suggestion-content">
+                    ${suggestion.content}
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// Utilitaires
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+function expandDescription(btn) {
+    const card = btn.closest('.intervention-card');
+    const description = card.querySelector('.description-text');
+    description.style.webkitLineClamp = 'unset';
+    btn.style.display = 'none';
+}
+
+function showNotification(message, type) {
+    // Implémentation de notification toast
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,665 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier Technicien - ChronoTech{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-user-edit me-2"></i>Modifier Technicien
+        </h1>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('technicians.view_technician', id=technician.id) }}" class="btn btn-outline-secondary clay-button">
+                <i class="fas fa-eye me-2"></i>Voir
+            </a>
+            <a href="{{ url_for('technicians.index') }}" class="btn btn-outline-secondary clay-button">
+                <i class="fas fa-arrow-left me-2"></i>Retour
+            </a>
+        </div>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data" id="editTechnicianForm">
+        {{ form.hidden_tag() }}
+        
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- Informations personnelles -->
+                <div class="clay-card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-user me-2"></i>Informations Personnelles</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.name.label(class="form-label required-field") }}
+                                    {{ form.name(class="form-control clay-input", value=technician.name) }}
+                                    {% if form.name.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.name.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.employee_id.label(class="form-label required-field") }}
+                                    {{ form.employee_id(class="form-control clay-input", value=technician.employee_id) }}
+                                    {% if form.employee_id.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.employee_id.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.email.label(class="form-label required-field") }}
+                                    {{ form.email(class="form-control clay-input", value=technician.email) }}
+                                    {% if form.email.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.email.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.phone.label(class="form-label") }}
+                                    {{ form.phone(class="form-control clay-input", value=technician.phone) }}
+                                    {% if form.phone.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.phone.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.hire_date.label(class="form-label") }}
+                                    {{ form.hire_date(class="form-control clay-input", value=technician.hire_date.strftime('%Y-%m-%d') if technician.hire_date else '') }}
+                                    {% if form.hire_date.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.hire_date.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.birth_date.label(class="form-label") }}
+                                    {{ form.birth_date(class="form-control clay-input", value=technician.birth_date.strftime('%Y-%m-%d') if technician.birth_date else '') }}
+                                    {% if form.birth_date.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.birth_date.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.emergency_contact.label(class="form-label") }}
+                                    {{ form.emergency_contact(class="form-control clay-input", value=technician.emergency_contact) }}
+                                    {% if form.emergency_contact.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.emergency_contact.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.address.label(class="form-label") }}
+                            {{ form.address(class="form-control clay-input", rows="2", value=technician.address) }}
+                            {% if form.address.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.address.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Compétences et spécialisations -->
+                <div class="clay-card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-tools me-2"></i>Compétences et Spécialisations</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.specialization.label(class="form-label required-field") }}
+                                    <select class="form-select clay-input" name="specialization" required>
+                                        <option value="">Sélectionner une spécialité</option>
+                                        {% for spec in specializations %}
+                                        <option value="{{ spec }}" {{ 'selected' if technician.specialization == spec }}>
+                                            {{ spec }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    {% if form.specialization.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.specialization.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.certification_level.label(class="form-label") }}
+                                    <select class="form-select clay-input" name="certification_level">
+                                        <option value="">Niveau de certification</option>
+                                        {% for level in certification_levels %}
+                                        <option value="{{ level }}" {{ 'selected' if technician.certification_level == level }}>
+                                            {{ level }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    {% if form.certification_level.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.certification_level.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Compétences Techniques</label>
+                            <div class="row">
+                                {% for skill in technical_skills %}
+                                <div class="col-md-4 mb-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" 
+                                               name="technical_skills" value="{{ skill.id }}"
+                                               {% if skill.id in technician.skills %}checked{% endif %}>
+                                        <label class="form-check-label">{{ skill.name }}</label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.experience_years.label(class="form-label") }}
+                                    {{ form.experience_years(class="form-control clay-input", type="number", min="0", max="50", value=technician.experience_years) }}
+                                    {% if form.experience_years.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.experience_years.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.hourly_rate.label(class="form-label") }}
+                                    <div class="input-group">
+                                        {{ form.hourly_rate(class="form-control clay-input", type="number", step="0.01", min="0", value=technician.hourly_rate) }}
+                                        <span class="input-group-text">€/h</span>
+                                    </div>
+                                    {% if form.hourly_rate.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.hourly_rate.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Affectation et planning -->
+                <div class="clay-card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Affectation et Planning</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.zone.label(class="form-label") }}
+                                    <select class="form-select clay-input" name="zone">
+                                        <option value="">Sélectionner une zone</option>
+                                        {% for zone in zones %}
+                                        <option value="{{ zone }}" {{ 'selected' if technician.zone == zone }}>
+                                            {{ zone }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    {% if form.zone.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.zone.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.max_weekly_hours.label(class="form-label") }}
+                                    <div class="input-group">
+                                        {{ form.max_weekly_hours(class="form-control clay-input", type="number", min="1", max="60", value=technician.max_weekly_hours or 40) }}
+                                        <span class="input-group-text">heures</span>
+                                    </div>
+                                    {% if form.max_weekly_hours.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.max_weekly_hours.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Disponibilité Hebdomadaire</label>
+                            <div class="row">
+                                {% set current_schedule = technician.schedule_json or {} %}
+                                {% for day in ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'] %}
+                                <div class="col-md-6 col-lg-4 mb-3">
+                                    <div class="card border">
+                                        <div class="card-body p-2">
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" 
+                                                       name="work_days" value="{{ day }}"
+                                                       id="day_{{ day }}" 
+                                                       {% if current_schedule.get(day, {}).get('enabled', False) %}checked{% endif %}>
+                                                <label class="form-check-label fw-bold" for="day_{{ day }}">
+                                                    {{ day.title() }}
+                                                </label>
+                                            </div>
+                                            <div class="schedule-hours" style="display: {{ 'block' if current_schedule.get(day, {}).get('enabled', False) else 'none' }};">
+                                                <div class="row g-1">
+                                                    <div class="col-6">
+                                                        <input type="time" class="form-control form-control-sm" 
+                                                               name="{{ day }}_start" 
+                                                               value="{{ current_schedule.get(day, {}).get('start', '08:00') }}">
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <input type="time" class="form-control form-control-sm" 
+                                                               name="{{ day }}_end" 
+                                                               value="{{ current_schedule.get(day, {}).get('end', '17:00') }}">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.vehicle_assigned.label(class="form-label") }}
+                                    {{ form.vehicle_assigned(class="form-control clay-input", value=technician.vehicle_assigned) }}
+                                    {% if form.vehicle_assigned.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.vehicle_assigned.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.tools_assigned.label(class="form-label") }}
+                                    {{ form.tools_assigned(class="form-control clay-input", rows="2", value=technician.tools_assigned) }}
+                                    {% if form.tools_assigned.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.tools_assigned.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Informations supplémentaires -->
+                <div class="clay-card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Informations Supplémentaires</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            {{ form.notes.label(class="form-label") }}
+                            {{ form.notes(class="form-control clay-input", rows="4", value=technician.notes) }}
+                            {% if form.notes.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.notes.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="active" 
+                                           {% if technician.active %}checked{% endif %}>
+                                    <label class="form-check-label">Technicien actif</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="on_call" 
+                                           {% if technician.on_call %}checked{% endif %}>
+                                    <label class="form-check-label">Disponible pour urgences</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <!-- Photo du technicien -->
+                <div class="clay-card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-camera me-2"></i>Photo</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <div class="photo-upload-area">
+                            {% if technician.photo %}
+                            <img id="photoPreview" src="{{ url_for('static', filename='uploads/photos/' + technician.photo) }}" 
+                                 alt="{{ technician.name }}" class="img-fluid rounded-circle mb-3" 
+                                 style="width: 150px; height: 150px; object-fit: cover;">
+                            {% else %}
+                            <div id="photoPreview" class="bg-light rounded-circle d-flex align-items-center justify-content-center mb-3" 
+                                 style="width: 150px; height: 150px; margin: 0 auto;">
+                                <i class="fas fa-user fa-4x text-muted"></i>
+                            </div>
+                            {% endif %}
+                            <div>
+                                {{ form.photo.label(class="btn btn-outline-primary clay-button") }}
+                                {{ form.photo(style="display: none;", accept="image/*") }}
+                                {% if form.photo.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.photo.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                                {% if technician.photo %}
+                                <div class="mt-2">
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removePhoto()">
+                                        <i class="fas fa-trash me-1"></i>Supprimer
+                                    </button>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistiques rapides -->
+                <div class="clay-card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Statistiques</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="mb-3">
+                                    <h4 class="mb-0 text-primary">{{ technician.total_interventions or 0 }}</h4>
+                                    <small class="text-muted">Interventions</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="mb-3">
+                                    <h4 class="mb-0 text-success">{{ technician.completion_rate or 0 }}%</h4>
+                                    <small class="text-muted">Taux de réussite</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="mb-3">
+                                    <h4 class="mb-0 text-warning">{{ technician.current_workload or 0 }}%</h4>
+                                    <small class="text-muted">Charge actuelle</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="mb-3">
+                                    <h4 class="mb-0 text-info">{{ technician.efficiency_score or 0 }}%</h4>
+                                    <small class="text-muted">Efficacité</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="clay-card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-cogs me-2"></i>Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary clay-button-primary">
+                                <i class="fas fa-save me-2"></i>Enregistrer les modifications
+                            </button>
+                            <button type="button" class="btn btn-outline-info clay-button" onclick="previewChanges()">
+                                <i class="fas fa-eye me-2"></i>Prévisualiser
+                            </button>
+                            <hr>
+                            <a href="{{ url_for('technicians.schedule', id=technician.id) }}" 
+                               class="btn btn-outline-secondary clay-button">
+                                <i class="fas fa-calendar me-2"></i>Voir planning
+                            </a>
+                            <a href="{{ url_for('work_orders.list_work_orders', technician_id=technician.id) }}" 
+                               class="btn btn-outline-secondary clay-button">
+                                <i class="fas fa-tasks me-2"></i>Interventions
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+// Gestion de l'upload de photo
+document.getElementById('photo').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('photoPreview');
+            preview.innerHTML = `<img src="${e.target.result}" alt="Aperçu" class="img-fluid rounded-circle" style="width: 150px; height: 150px; object-fit: cover;">`;
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+// Gestion des jours de travail
+document.querySelectorAll('input[name="work_days"]').forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+        const scheduleHours = this.closest('.card-body').querySelector('.schedule-hours');
+        scheduleHours.style.display = this.checked ? 'block' : 'none';
+    });
+});
+
+// Suppression de photo
+function removePhoto() {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette photo ?')) {
+        document.getElementById('photoPreview').innerHTML = `
+            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" 
+                 style="width: 150px; height: 150px;">
+                <i class="fas fa-user fa-4x text-muted"></i>
+            </div>
+        `;
+        // Ajouter un champ caché pour indiquer la suppression
+        const form = document.getElementById('editTechnicianForm');
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'remove_photo';
+        input.value = 'true';
+        form.appendChild(input);
+    }
+}
+
+// Génération automatique de l'email
+document.querySelector('[name="name"]').addEventListener('blur', function() {
+    const emailField = document.querySelector('[name="email"]');
+    if (!emailField.value && this.value) {
+        const name = this.value.toLowerCase()
+            .replace(/[àáâãäå]/g, 'a')
+            .replace(/[èéêë]/g, 'e')
+            .replace(/[ìíîï]/g, 'i')
+            .replace(/[òóôõö]/g, 'o')
+            .replace(/[ùúûü]/g, 'u')
+            .replace(/[ç]/g, 'c')
+            .replace(/[ñ]/g, 'n')
+            .replace(/\s+/g, '.')
+            .replace(/[^a-z.]/g, '');
+        emailField.value = name + '@chronotech.com';
+    }
+});
+
+// Validation du formulaire
+function validateForm() {
+    const requiredFields = document.querySelectorAll('[required]');
+    let isValid = true;
+    
+    requiredFields.forEach(field => {
+        if (!field.value.trim()) {
+            field.classList.add('is-invalid');
+            isValid = false;
+        } else {
+            field.classList.remove('is-invalid');
+        }
+    });
+    
+    // Validation de l'email
+    const emailField = document.querySelector('[name="email"]');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (emailField.value && !emailRegex.test(emailField.value)) {
+        emailField.classList.add('is-invalid');
+        isValid = false;
+    }
+    
+    // Validation du planning
+    const workDays = document.querySelectorAll('input[name="work_days"]:checked');
+    if (workDays.length === 0) {
+        alert('Veuillez sélectionner au moins un jour de travail.');
+        isValid = false;
+    }
+    
+    return isValid;
+}
+
+// Prévisualisation des modifications
+function previewChanges() {
+    const formData = new FormData(document.getElementById('editTechnicianForm'));
+    const changes = [];
+    
+    // Comparer avec les valeurs originales
+    // Cette fonction peut être étendue pour détecter les changements
+    
+    if (changes.length > 0) {
+        const changesList = changes.map(change => `• ${change}`).join('\n');
+        alert(`Modifications détectées :\n\n${changesList}`);
+    } else {
+        alert('Aucune modification détectée.');
+    }
+}
+
+// Soumission du formulaire
+document.getElementById('editTechnicianForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    if (validateForm()) {
+        // Confirmation avant sauvegarde
+        if (confirm('Êtes-vous sûr de vouloir enregistrer ces modifications ?')) {
+            this.submit();
+        }
+    } else {
+        alert('Veuillez corriger les erreurs dans le formulaire.');
+    }
+});
+
+// Sauvegarde automatique en brouillon
+let autoSaveTimer;
+function autoSave() {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(() => {
+        const formData = new FormData(document.getElementById('editTechnicianForm'));
+        formData.append('auto_save', 'true');
+        
+        fetch(window.location.href, {
+            method: 'POST',
+            body: formData
+        }).then(response => {
+            if (response.ok) {
+                console.log('Sauvegarde automatique effectuée');
+            }
+        }).catch(err => {
+            console.log('Erreur de sauvegarde automatique:', err);
+        });
+    }, 30000); // Sauvegarde toutes les 30 secondes
+}
+
+// Déclencher la sauvegarde automatique sur les changements
+document.querySelectorAll('input, select, textarea').forEach(field => {
+    field.addEventListener('change', autoSave);
+});
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+    // Mettre à jour l'affichage des horaires selon les jours sélectionnés
+    document.querySelectorAll('input[name="work_days"]').forEach(checkbox => {
+        const scheduleHours = checkbox.closest('.card-body').querySelector('.schedule-hours');
+        scheduleHours.style.display = checkbox.checked ? 'block' : 'none';
+    });
+});
+</script>
+
+<style>
+.required-field::after {
+    content: " *";
+    color: #dc3545;
+}
+
+.photo-upload-area {
+    border: 2px dashed #dee2e6;
+    border-radius: 10px;
+    padding: 20px;
+    transition: all 0.3s ease;
+}
+
+.photo-upload-area:hover {
+    border-color: #007bff;
+    background-color: #f8f9fa;
+}
+
+.schedule-hours input {
+    font-size: 12px;
+}
+
+.card.border {
+    border: 1px solid #dee2e6 !important;
+}
+
+.form-check-input:checked {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.is-invalid {
+    border-color: #dc3545;
+}
+
+.invalid-feedback {
+    color: #dc3545;
+    font-size: 0.875em;
+}
+</style>
+{% endblock %}

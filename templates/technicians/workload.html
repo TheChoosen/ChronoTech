@@ -1,0 +1,535 @@
+{% extends "base.html" %}
+
+{% block title %}Analyse Charge de Travail - ChronoTech{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-chart-line me-2"></i>Analyse de la Charge de Travail
+        </h1>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary clay-button" onclick="refreshData()">
+                <i class="fas fa-sync me-2"></i>Actualiser
+            </button>
+            <button class="btn btn-outline-secondary clay-button" onclick="exportWorkload()">
+                <i class="fas fa-download me-2"></i>Exporter
+            </button>
+            <a href="{{ url_for('technicians.index') }}" class="btn btn-outline-secondary clay-button">
+                <i class="fas fa-arrow-left me-2"></i>Retour
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtres de période -->
+    <div class="clay-card mb-4">
+        <div class="card-body">
+            <form method="GET" id="periodForm">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">Période</label>
+                        <select class="form-select clay-input" name="period" onchange="updatePeriod()">
+                            <option value="week" {{ 'selected' if request.args.get('period') == 'week' }}>Cette semaine</option>
+                            <option value="month" {{ 'selected' if request.args.get('period') == 'month' }}>Ce mois</option>
+                            <option value="quarter" {{ 'selected' if request.args.get('period') == 'quarter' }}>Ce trimestre</option>
+                            <option value="custom" {{ 'selected' if request.args.get('period') == 'custom' }}>Personnalisée</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2" id="startDateCol" style="display: none;">
+                        <label class="form-label">Date début</label>
+                        <input type="date" class="form-control clay-input" name="start_date" 
+                               value="{{ request.args.get('start_date', '') }}">
+                    </div>
+                    <div class="col-md-2" id="endDateCol" style="display: none;">
+                        <label class="form-label">Date fin</label>
+                        <input type="date" class="form-control clay-input" name="end_date" 
+                               value="{{ request.args.get('end_date', '') }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Zone</label>
+                        <select class="form-select clay-input" name="zone" onchange="submitForm()">
+                            <option value="">Toutes zones</option>
+                            {% for zone in zones %}
+                            <option value="{{ zone }}" {{ 'selected' if request.args.get('zone') == zone }}>
+                                {{ zone }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Spécialité</label>
+                        <select class="form-select clay-input" name="specialization" onchange="submitForm()">
+                            <option value="">Toutes</option>
+                            {% for spec in specializations %}
+                            <option value="{{ spec }}" {{ 'selected' if request.args.get('specialization') == spec }}>
+                                {{ spec }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <button type="submit" class="btn btn-primary clay-button-primary">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Métriques globales -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="clay-card text-center">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-center">
+                        <div class="icon-shape bg-primary text-white rounded-circle me-3">
+                            <i class="fas fa-users-cog"></i>
+                        </div>
+                        <div>
+                            <h3 class="mb-0">{{ metrics.total_technicians }}</h3>
+                            <p class="text-muted mb-0">Techniciens Actifs</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="clay-card text-center">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-center">
+                        <div class="icon-shape bg-success text-white rounded-circle me-3">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div>
+                            <h3 class="mb-0">{{ metrics.total_hours|round }}</h3>
+                            <p class="text-muted mb-0">Heures Planifiées</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="clay-card text-center">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-center">
+                        <div class="icon-shape bg-warning text-white rounded-circle me-3">
+                            <i class="fas fa-percentage"></i>
+                        </div>
+                        <div>
+                            <h3 class="mb-0">{{ metrics.average_utilization|round }}%</h3>
+                            <p class="text-muted mb-0">Utilisation Moyenne</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="clay-card text-center">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-center">
+                        <div class="icon-shape bg-danger text-white rounded-circle me-3">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div>
+                            <h3 class="mb-0">{{ metrics.overloaded_count }}</h3>
+                            <p class="text-muted mb-0">Surchargés</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Graphique charge globale -->
+        <div class="col-lg-8">
+            <div class="clay-card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-chart-area me-2"></i>Évolution de la Charge</h5>
+                    <div class="btn-group" role="group">
+                        <input type="radio" class="btn-check" name="chartType" id="chart-daily" autocomplete="off" checked>
+                        <label class="btn btn-outline-secondary btn-sm" for="chart-daily">Jour</label>
+                        <input type="radio" class="btn-check" name="chartType" id="chart-weekly" autocomplete="off">
+                        <label class="btn btn-outline-secondary btn-sm" for="chart-weekly">Semaine</label>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <canvas id="workloadChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Répartition par spécialité -->
+        <div class="col-lg-4">
+            <div class="clay-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Répartition par Spécialité</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="specializationChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste détaillée des techniciens -->
+    <div class="clay-card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-list me-2"></i>Charge par Technicien</h5>
+            <div class="btn-group" role="group">
+                <button class="btn btn-sm btn-outline-secondary" onclick="sortTechnicians('name')">
+                    <i class="fas fa-sort-alpha-down"></i> Nom
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="sortTechnicians('workload')">
+                    <i class="fas fa-sort-numeric-down"></i> Charge
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="sortTechnicians('efficiency')">
+                    <i class="fas fa-tachometer-alt"></i> Efficacité
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover" id="techniciansTable">
+                    <thead>
+                        <tr>
+                            <th>Technicien</th>
+                            <th>Spécialité</th>
+                            <th>Zone</th>
+                            <th>Charge Actuelle</th>
+                            <th>Heures/Semaine</th>
+                            <th>Interventions</th>
+                            <th>Efficacité</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for technician in technicians_workload %}
+                        <tr class="technician-row" data-workload="{{ technician.workload_percentage }}">
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-circle me-2">
+                                        {% if technician.photo %}
+                                        <img src="{{ url_for('static', filename='uploads/photos/' + technician.photo) }}" 
+                                             alt="{{ technician.name }}" class="rounded-circle" width="32" height="32">
+                                        {% else %}
+                                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" 
+                                             style="width: 32px; height: 32px; font-size: 12px;">
+                                            {{ technician.name[0].upper() }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">{{ technician.name }}</div>
+                                        <small class="text-muted">{{ technician.employee_id }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ technician.specialization }}</span>
+                            </td>
+                            <td>{{ technician.zone or '-' }}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="progress me-2" style="width: 80px; height: 8px;">
+                                        <div class="progress-bar 
+                                                    {% if technician.workload_percentage < 60 %}bg-success
+                                                    {% elif technician.workload_percentage < 80 %}bg-warning
+                                                    {% elif technician.workload_percentage < 100 %}bg-info
+                                                    {% else %}bg-danger{% endif %}" 
+                                             style="width: {{ technician.workload_percentage }}%">
+                                        </div>
+                                    </div>
+                                    <span class="small fw-bold">{{ technician.workload_percentage }}%</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="fw-bold">{{ technician.weekly_hours or 0 }}</span> 
+                                <small class="text-muted">/ {{ technician.max_weekly_hours or 40 }}h</small>
+                            </td>
+                            <td>
+                                <div class="text-center">
+                                    <span class="badge bg-primary">{{ technician.active_interventions }}</span>
+                                    <small class="text-muted d-block">actives</small>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {% if technician.efficiency_score %}
+                                    {% set efficiency = technician.efficiency_score %}
+                                    <div class="progress me-2" style="width: 60px; height: 6px;">
+                                        <div class="progress-bar 
+                                                    {% if efficiency >= 90 %}bg-success
+                                                    {% elif efficiency >= 70 %}bg-warning
+                                                    {% else %}bg-danger{% endif %}" 
+                                             style="width: {{ efficiency }}%">
+                                        </div>
+                                    </div>
+                                    <span class="small">{{ efficiency }}%</span>
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                {% if technician.workload_percentage > 100 %}
+                                <span class="badge bg-danger">Surchargé</span>
+                                {% elif technician.workload_percentage > 80 %}
+                                <span class="badge bg-warning">Occupé</span>
+                                {% elif technician.workload_percentage > 40 %}
+                                <span class="badge bg-success">Optimal</span>
+                                {% else %}
+                                <span class="badge bg-info">Disponible</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{{ url_for('technicians.view_technician', id=technician.id) }}" 
+                                       class="btn btn-sm btn-outline-primary clay-button">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <button class="btn btn-sm btn-outline-info clay-button" 
+                                            onclick="showScheduleModal({{ technician.id }})">
+                                        <i class="fas fa-calendar"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary clay-button" 
+                                            onclick="rebalanceWorkload({{ technician.id }})">
+                                        <i class="fas fa-balance-scale"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alertes et recommandations -->
+    {% if alerts %}
+    <div class="clay-card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0 text-warning">
+                <i class="fas fa-exclamation-triangle me-2"></i>Alertes et Recommandations
+            </h5>
+        </div>
+        <div class="card-body">
+            {% for alert in alerts %}
+            <div class="alert alert-{{ alert.type }} d-flex align-items-center mb-2">
+                <i class="fas fa-{{ alert.icon }} me-3"></i>
+                <div class="flex-grow-1">
+                    <strong>{{ alert.title }}</strong><br>
+                    {{ alert.message }}
+                </div>
+                {% if alert.action_url %}
+                <a href="{{ alert.action_url }}" class="btn btn-sm btn-outline-{{ alert.type }}">
+                    {{ alert.action_text }}
+                </a>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Prévisions -->
+    <div class="clay-card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-crystal-ball me-2"></i>Prévisions de Charge</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Semaine Prochaine</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Jour</th>
+                                    <th>Charge Prévue</th>
+                                    <th>Techniciens Disponibles</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for forecast in weekly_forecast %}
+                                <tr>
+                                    <td>{{ forecast.day_name }}</td>
+                                    <td>
+                                        <div class="progress" style="height: 6px;">
+                                            <div class="progress-bar 
+                                                        {% if forecast.load_percentage < 70 %}bg-success
+                                                        {% elif forecast.load_percentage < 90 %}bg-warning
+                                                        {% else %}bg-danger{% endif %}" 
+                                                 style="width: {{ forecast.load_percentage }}%">
+                                            </div>
+                                        </div>
+                                        <small>{{ forecast.load_percentage }}%</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ forecast.available_technicians }}</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <h6>Recommandations</h6>
+                    <ul class="list-unstyled">
+                        {% for recommendation in recommendations %}
+                        <li class="mb-2">
+                            <i class="fas fa-{{ recommendation.icon }} text-{{ recommendation.type }} me-2"></i>
+                            {{ recommendation.text }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Gestion des périodes personnalisées
+function updatePeriod() {
+    const period = document.querySelector('[name="period"]').value;
+    const startDateCol = document.getElementById('startDateCol');
+    const endDateCol = document.getElementById('endDateCol');
+    
+    if (period === 'custom') {
+        startDateCol.style.display = 'block';
+        endDateCol.style.display = 'block';
+    } else {
+        startDateCol.style.display = 'none';
+        endDateCol.style.display = 'none';
+        submitForm();
+    }
+}
+
+function submitForm() {
+    document.getElementById('periodForm').submit();
+}
+
+// Tri des techniciens
+function sortTechnicians(criteria) {
+    const table = document.getElementById('techniciansTable');
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    
+    rows.sort((a, b) => {
+        let aValue, bValue;
+        
+        switch(criteria) {
+            case 'name':
+                aValue = a.querySelector('.fw-bold').textContent;
+                bValue = b.querySelector('.fw-bold').textContent;
+                return aValue.localeCompare(bValue);
+                
+            case 'workload':
+                aValue = parseInt(a.dataset.workload);
+                bValue = parseInt(b.dataset.workload);
+                return bValue - aValue; // Décroissant
+                
+            case 'efficiency':
+                aValue = parseInt(a.querySelector('.progress-bar').parentElement.nextElementSibling.textContent);
+                bValue = parseInt(b.querySelector('.progress-bar').parentElement.nextElementSibling.textContent);
+                return (bValue || 0) - (aValue || 0); // Décroissant
+        }
+    });
+    
+    // Réappliquer les lignes triées
+    rows.forEach(row => tbody.appendChild(row));
+}
+
+// Actions sur les techniciens
+function showScheduleModal(technicianId) {
+    // Ouvrir le planning du technicien
+    window.open(`{{ url_for('technicians.schedule') }}?id=${technicianId}`, '_blank');
+}
+
+function rebalanceWorkload(technicianId) {
+    if (confirm('Voulez-vous rééquilibrer automatiquement la charge de ce technicien ?')) {
+        fetch(`{{ url_for('technicians.rebalance_workload') }}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({technician_id: technicianId})
+        }).then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Erreur lors du rééquilibrage');
+            }
+        });
+    }
+}
+
+function refreshData() {
+    location.reload();
+}
+
+function exportWorkload() {
+    const params = new URLSearchParams(window.location.search);
+    params.append('export', 'true');
+    window.location.href = `{{ url_for('technicians.workload') }}?${params.toString()}`;
+}
+
+// Graphiques (à implémenter avec Chart.js)
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialiser les graphiques si Chart.js est disponible
+    if (typeof Chart !== 'undefined') {
+        initWorkloadChart();
+        initSpecializationChart();
+    }
+    
+    // Mettre à jour la période si nécessaire
+    updatePeriod();
+});
+
+function initWorkloadChart() {
+    const ctx = document.getElementById('workloadChart').getContext('2d');
+    // Implémentation du graphique de charge
+    console.log('Graphique de charge à implémenter');
+}
+
+function initSpecializationChart() {
+    const ctx = document.getElementById('specializationChart').getContext('2d');
+    // Implémentation du graphique de répartition
+    console.log('Graphique de répartition à implémenter');
+}
+
+// Mise en évidence des techniciens surchargés
+document.addEventListener('DOMContentLoaded', function() {
+    const rows = document.querySelectorAll('.technician-row');
+    rows.forEach(row => {
+        const workload = parseInt(row.dataset.workload);
+        if (workload > 100) {
+            row.classList.add('table-danger');
+        } else if (workload > 80) {
+            row.classList.add('table-warning');
+        }
+    });
+});
+</script>
+
+<style>
+.progress {
+    background-color: #e9ecef;
+}
+.table-warning {
+    background-color: rgba(255, 193, 7, 0.1);
+}
+.table-danger {
+    background-color: rgba(220, 53, 69, 0.1);
+}
+.avatar-circle {
+    min-width: 32px;
+}
+</style>
+{% endblock %}

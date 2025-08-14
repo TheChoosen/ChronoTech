@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+
+{% block title %}Accueil - ChronoTech{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Hero Section -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="hero-section text-center py-5">
+                <h1 class="display-4 mb-4">
+                    <i class="fas fa-tools text-primary me-3"></i>
+                    ChronoTech
+                </h1>
+                <p class="lead mb-4">
+                    Plateforme professionnelle de gestion d'interventions et de travaux
+                </p>
+                <p class="text-muted mb-4">
+                    Gérez efficacement vos bons de travail, suivez vos interventions et optimisez votre équipe technique avec des outils d'analyse avancés
+                </p>
+                <div class="d-flex gap-3 justify-content-center flex-wrap">
+                    {% if session.user_id %}
+                                        <a href="{{ url_for('work_orders.list_work_orders') }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-clipboard-list me-2"></i>Bons de Travail
+                    </a>
+                    <a href="{{ url_for('analytics.dashboard') }}" class="btn btn-outline-primary btn-lg">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        Tableau de Bord
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('auth_login') }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-sign-in-alt me-2"></i>
+                        Se connecter
+                    </a>
+                    <a href="#features" class="btn btn-outline-primary btn-lg">
+                        <i class="fas fa-info-circle me-2"></i>
+                        En savoir plus
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div id="features" class="row mb-5">
+        <div class="col-12">
+            <h2 class="text-center mb-5">Fonctionnalités principales</h2>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="icon-wrapper mb-3">
+                        <i class="fas fa-clipboard-list fa-3x text-primary"></i>
+                    </div>
+                    <h5 class="card-title">Gestion des Bons de Travail</h5>
+                    <p class="card-text">
+                        Créez, assignez et suivez vos bons de travail en temps réel. 
+                        Organisation optimale de vos interventions.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="icon-wrapper mb-3">
+                        <i class="fas fa-users fa-3x text-success"></i>
+                    </div>
+                    <h5 class="card-title">Gestion d'Équipe</h5>
+                    <p class="card-text">
+                        Gérez vos techniciens, assignez les tâches et suivez 
+                        les performances de votre équipe.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="icon-wrapper mb-3">
+                        <i class="fas fa-chart-bar fa-3x text-warning"></i>
+                    </div>
+                    <h5 class="card-title">Analyses & Rapports</h5>
+                    <p class="card-text">
+                        Obtenez des insights détaillés sur vos opérations 
+                        avec des tableaux de bord et rapports personnalisés.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="icon-wrapper mb-3">
+                        <i class="fas fa-mobile-alt fa-3x text-info"></i>
+                    </div>
+                    <h5 class="card-title">Interface Moderne</h5>
+                    <p class="card-text">
+                        Interface responsive et intuitive 
+                        pour une expérience utilisateur optimale.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="icon-wrapper mb-3">
+                        <i class="fas fa-clock fa-3x text-danger"></i>
+                    </div>
+                    <h5 class="card-title">Suivi Temps Réel</h5>
+                    <p class="card-text">
+                        Suivez l'avancement de vos interventions en temps réel 
+                        avec des notifications intelligentes.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="icon-wrapper mb-3">
+                        <i class="fas fa-shield-alt fa-3x text-secondary"></i>
+                    </div>
+                    <h5 class="card-title">Sécurité & Fiabilité</h5>
+                    <p class="card-text">
+                        Données sécurisées, sauvegardes automatiques et 
+                        système fiable pour vos opérations critiques.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Access Section -->
+    {% if session.user_id %}
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h3 class="text-center mb-4">Accès Rapide</h3>
+                    <div class="row text-center">
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('work_orders.list_work_orders') }}" class="text-decoration-none">
+                                <div class="quick-access-item">
+                                    <i class="fas fa-clipboard-list fa-2x mb-2 text-primary"></i>
+                                    <p class="mb-0">Bons de Travail</p>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('analytics.dashboard') }}" class="text-decoration-none">
+                                <div class="quick-access-item">
+                                    <i class="fas fa-tachometer-alt fa-2x mb-2 text-success"></i>
+                                    <p class="mb-0">Tableau de Bord</p>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('technicians.index') }}" class="text-decoration-none">
+                                <div class="quick-access-item">
+                                    <i class="fas fa-users fa-2x mb-2 text-warning"></i>
+                                    <p class="mb-0">Équipe</p>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('customers.index') }}" class="text-decoration-none">
+                                <div class="quick-access-item">
+                                    <i class="fas fa-handshake fa-2x mb-2 text-info"></i>
+                                    <p class="mb-0">Clients</p>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- Demo Account Info for non-logged users -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm bg-light">
+                <div class="card-body text-center">
+                    <h4 class="mb-3">
+                        <i class="fas fa-user-cog me-2"></i>
+                        Comptes de Démonstration
+                    </h4>
+                    <p class="mb-3">
+                        Utilisez les identifiants suivants pour tester l'application :
+                    </p>
+                    <div class="row justify-content-center">
+                        <div class="col-md-6">
+                            <div class="alert alert-info">
+                                <strong>Email :</strong> admin@chronotech.fr<br>
+                                <strong>Mot de passe :</strong> admin123<br>
+                                <small class="text-muted">Rôle : Administrateur</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="alert alert-warning">
+                                <strong>Email :</strong> tech@chronotech.fr<br>
+                                <strong>Mot de passe :</strong> tech123<br>
+                                <small class="text-muted">Rôle : Technicien</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% block scripts %}
+<style>
+.hero-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    margin-bottom: 2rem;
+}
+
+.hero-section .display-4 {
+    color: white !important;
+    font-weight: 300;
+}
+
+.icon-wrapper {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-radius: 50%;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    transition: all 0.3s ease;
+}
+
+.icon-wrapper:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+.quick-access-item {
+    padding: 20px;
+    border-radius: 10px;
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: 1px solid #dee2e6;
+}
+
+.quick-access-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    background: #ffffff;
+}
+
+.card {
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important;
+}
+
+@media (max-width: 768px) {
+    .display-4 {
+        font-size: 2.5rem;
+    }
+    
+    .icon-wrapper {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .icon-wrapper i {
+        font-size: 1.5rem !important;
+    }
+    
+    .hero-section {
+        padding: 2rem 1rem !important;
+    }
+}
+</style>
+{% endblock %}
+
+{% endblock content %}

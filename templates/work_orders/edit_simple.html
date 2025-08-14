@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier Bon de Travail {{ work_order.claim_number }} - ChronoTech{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-edit me-2"></i>Modifier Bon de Travail {{ work_order.claim_number }}
+        </h1>
+        <a href="{{ url_for('work_orders.view_work_order', id=work_order.id) }}" class="btn btn-outline-secondary clay-button">
+            <i class="fas fa-arrow-left me-2"></i>Retour
+        </a>
+    </div>
+
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        Page d'édition en cours de construction. Les colonnes is_active ont été ajoutées avec succès.
+    </div>
+
+    <div class="clay-card">
+        <div class="card-body">
+            <h5>Bon de travail #{{ work_order.claim_number }}</h5>
+            <p><strong>Client:</strong> {{ work_order.customer_name }}</p>
+            <p><strong>Statut:</strong> {{ work_order.status }}</p>
+            <p><strong>Technicien:</strong> {{ work_order.technician_name or 'Non assigné' }}</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

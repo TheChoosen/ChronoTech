@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block title %}Tableau de bord - ChronoTech{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">
+        <i class="fas fa-tachometer-alt me-2"></i>Tableau de bord
+    </h1>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('work_orders.create_work_order') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i>Nouveau bon
+        </a>
+    </div>
+</div>
+
+<!-- Statistiques principales -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Bons actifs</h6>
+                        <h3 class="mb-0">{{ stats.get('active_orders', 0) }}</h3>
+                    </div>
+                    <div class="opacity-75">
+                        <i class="fas fa-clipboard-list fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Complétés aujourd'hui</h6>
+                        <h3 class="mb-0">{{ stats.get('completed_today', 0) }}</h3>
+                    </div>
+                    <div class="opacity-75">
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Urgents</h6>
+                        <h3 class="mb-0">{{ stats.get('urgent_orders', 0) }}</h3>
+                    </div>
+                    <div class="opacity-75">
+                        <i class="fas fa-exclamation-triangle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Techniciens actifs</h6>
+                        <h3 class="mb-0">{{ stats.get('active_technicians', 0) }}</h3>
+                    </div>
+                    <div class="opacity-75">
+                        <i class="fas fa-user-hard-hat fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Bons de travail récents -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-clipboard-list me-2"></i>Bons de travail récents
+                </h5>
+                <a href="{{ url_for('work_orders.list_work_orders') }}" class="btn btn-sm btn-outline-primary">
+                    Voir tout
+                </a>
+            </div>
+            <div class="card-body">
+                {% if recent_orders %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>N° Bon</th>
+                                    <th>Client</th>
+                                    <th>Statut</th>
+                                    <th>Priorité</th>
+                                    <th>Technicien</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in recent_orders %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('work_orders.view_work_order', id=order.id) }}" class="text-decoration-none">
+                                            {{ order.claim_number }}
+                                        </a>
+                                    </td>
+                                    <td>{{ order.customer_name }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if order.status == 'completed' else 'primary' if order.status == 'in_progress' else 'secondary' }}">
+                                            {{ order.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'danger' if order.priority == 'urgent' else 'warning' if order.priority == 'high' else 'info' }}">
+                                            {{ order.priority }}
+                                        </span>
+                                    </td>
+                                    <td>{{ order.technician_name or 'Non assigné' }}</td>
+                                    <td>{{ order.created_at.strftime('%d/%m %H:%M') if order.created_at else '-' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="fas fa-clipboard-list fa-3x mb-3"></i>
+                        <p>Aucun bon de travail récent</p>
+                        <a href="{{ url_for('work_orders.create_work_order') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>Créer le premier bon
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Activités récentes -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-history me-2"></i>Activité récente
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_activities %}
+                    <div class="timeline">
+                        {% for activity in recent_activities %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-primary"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-1">{{ activity.description }}</h6>
+                                <small class="text-muted">
+                                    <i class="fas fa-clock me-1"></i>
+                                    {{ activity.created_at.strftime('%d/%m %H:%M') if activity.created_at else '-' }}
+                                </small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="fas fa-history fa-3x mb-3"></i>
+                        <p>Aucune activité récente</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Actions rapides -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-bolt me-2"></i>Actions rapides
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('work_orders.create_work_order') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>Nouveau bon de travail
+                    </a>
+                    <a href="{{ url_for('customers.add_customer') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-user-plus me-1"></i>Nouveau client
+                    </a>
+                    <a href="#" class="btn btn-outline-info">
+                        <i class="fas fa-chart-bar me-1"></i>Voir les statistiques
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -35px;
+    top: 5px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.timeline-item:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: -31px;
+    top: 15px;
+    width: 2px;
+    height: calc(100% + 10px);
+    background-color: #dee2e6;
+}
+</style>
+{% endblock %}
