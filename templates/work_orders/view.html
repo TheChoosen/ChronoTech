@@ -66,7 +66,7 @@
                                     <td><strong>Client :</strong></td>
                                     <td>
                                         {% if work_order.customer_id %}
-                                        <a href="{{ url_for('customers.view', id=work_order.customer_id) }}">
+                                        <a href="{{ url_for('customers.view_customer', customer_id=work_order.customer_id) }}">
                                             {{ work_order.customer_name }}
                                         </a>
                                         {% else %}
@@ -128,6 +128,12 @@
                     
                     <h6><i class="fas fa-align-left me-2"></i>Description</h6>
                     <p class="mb-3">{{ work_order.description|nl2br }}</p>
+                    {% if work_order.notes %}
+                    <h6><i class="fas fa-sticky-note me-2"></i>Notes</h6>
+                    <div class="alert alert-light">
+                        {{ work_order.notes|nl2br }}
+                    </div>
+                    {% endif %}
                     
                     {% if work_order.internal_notes %}
                     <h6><i class="fas fa-sticky-note me-2"></i>Notes Internes</h6>
@@ -172,7 +178,7 @@
                         </div>
                         <div class="progress" style="height: 8px;">
                             <div class="progress-bar bg-primary" role="progressbar" 
-                                 style="width: {{ progress_percentage }}%" 
+                                 data-progress="{{ progress_percentage }}" 
                                  aria-valuenow="{{ progress_percentage }}" aria-valuemin="0" aria-valuemax="100">
                             </div>
                         </div>
@@ -329,7 +335,7 @@
                                    target="_blank">{{ media.original_filename }}</a>
                                 <br><small class="text-muted">{{ media.created_at|datetime_format }}</small>
                             </div>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteMedia({{ media.id }})">
+                            <button class="btn btn-sm btn-outline-danger" data-action="delete-media" data-media-id="{{ media.id }}">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
@@ -338,6 +344,55 @@
                     {% else %}
                     <p class="text-muted">Aucun document joint.</p>
                     {% endif %}
+                </div>
+            </div>
+
+            <!-- Pièces / Produits associés -->
+            <div class="clay-card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-boxes me-2"></i>Pièces & Produits</h5>
+                </div>
+                <div class="card-body">
+                    {% if products %}
+                    <ul class="list-group mb-3">
+                        {% for p in products %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ p.product_name }}</strong>
+                                {% if p.product_reference %}<br><small class="text-muted">Réf: {{ p.product_reference }}</small>{% endif %}
+                                <div class="small text-muted">Qté: {{ p.quantity }} · PU: {{ p.unit_price or '-' }} · Total: {{ p.total_price or '-' }}</div>
+                            </div>
+                            <div>
+                                <!-- future: bouton supprimer -->
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted">Aucune pièce associée.</p>
+                    {% endif %}
+
+                    <!-- Formulaire rapide d'ajout de pièce -->
+                    <form method="POST" action="{{ url_for('work_orders.add_work_order_product', id=work_order.id) }}" class="row g-2">
+                        <div class="col-12">
+                            <input type="text" name="product_name" class="form-control" placeholder="Nom de la pièce" required>
+                        </div>
+                        <div class="col-6">
+                            <input type="text" name="product_reference" class="form-control" placeholder="Référence">
+                        </div>
+                        <div class="col-3">
+                            <input type="number" step="0.01" name="quantity" class="form-control" placeholder="Quantité" value="1">
+                        </div>
+                        <div class="col-3">
+                            <input type="number" step="0.01" name="unit_price" class="form-control" placeholder="Prix unité">
+                        </div>
+                        <div class="col-12">
+                            <input type="text" name="notes" class="form-control" placeholder="Notes (optionnel)">
+                        </div>
+                        <div class="col-12 text-end">
+                            <button class="btn btn-sm btn-primary" type="submit">Ajouter la pièce</button>
+                        </div>
+                    </form>
                 </div>
             </div>
 
@@ -455,5 +510,27 @@ function duplicateWorkOrder() {
     // TODO: Implémenter la duplication
     alert('Fonctionnalité de duplication à implémenter');
 }
+
+// Set progress bar widths from data-progress attribute
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('[data-progress]').forEach(function(el) {
+        const val = parseFloat(el.getAttribute('data-progress')) || 0;
+        el.style.width = val + '%';
+    });
+
+    // Delegate delete media
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('[data-action="delete-media"]');
+        if (!btn) return;
+        const mediaId = btn.dataset.mediaId;
+        if (mediaId && confirm('Êtes-vous sûr de vouloir supprimer ce fichier ?')) {
+            fetch("{{ url_for('work_orders.delete_media') }}", {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
+                body: JSON.stringify({media_id: mediaId})
+            }).then(r => { if (r.ok) location.reload(); else alert('Erreur lors de la suppression'); }).catch(() => alert('Erreur de connexion'));
+        }
+    });
+});
 </script>
 {% endblock %}

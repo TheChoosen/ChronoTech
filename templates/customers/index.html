@@ -227,10 +227,10 @@
                                         <i class="fas fa-ellipsis-v"></i>
                                     </button>
                                     <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item" href="{{ url_for('customers.view', id=customer.id) }}">
+                                        <li><a class="dropdown-item" href="{{ url_for('customers.view_customer', customer_id=customer.id) }}">
                                             <i class="fas fa-eye me-2"></i>Voir
                                         </a></li>
-                                        <li><a class="dropdown-item" href="{{ url_for('customers.edit', id=customer.id) }}">
+                                        <li><a class="dropdown-item" href="{{ url_for('customers.edit_customer', customer_id=customer.id) }}">
                                             <i class="fas fa-edit me-2"></i>Modifier
                                         </a></li>
                                         <li><a class="dropdown-item" href="{{ url_for('work_orders.create_work_order', customer_id=customer.id) }}">
@@ -397,11 +397,11 @@
                         </td>
                         <td>
                             <div class="btn-group" role="group">
-                                <a href="{{ url_for('customers.view', id=customer.id) }}" 
+                                <a href="{{ url_for('customers.view_customer', customer_id=customer.id) }}" 
                                    class="btn btn-sm btn-outline-primary clay-button">
                                     <i class="fas fa-eye"></i>
                                 </a>
-                                <a href="{{ url_for('customers.edit', id=customer.id) }}" 
+                                <a href="{{ url_for('customers.edit_customer', customer_id=customer.id) }}" 
                                    class="btn btn-sm btn-outline-secondary clay-button">
                                     <i class="fas fa-edit"></i>
                                 </a>

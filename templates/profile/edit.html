@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier mon profil - ChronoTech{% endblock %}
+
+{% block head %}
+<style>
+.edit-profile-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    margin-bottom: 2rem;
+}
+
+.form-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    border-left: 4px solid #2563eb;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+}
+
+.form-control {
+    border-radius: 8px;
+    border: 2px solid #e5e7eb;
+    padding: 0.75rem;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.btn-save {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-save:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+}
+
+.info-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.required {
+    color: #dc2626;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- En-tête -->
+    <div class="edit-profile-header p-4">
+        <div class="row align-items-center">
+            <div class="col">
+                <h1 class="mb-2">
+                    <i class="fas fa-user-edit me-3"></i>Modifier mon profil
+                </h1>
+                <p class="mb-0 opacity-90">
+                    Mettez à jour vos informations personnelles
+                </p>
+            </div>
+            <div class="col-auto">
+                <a href="{{ url_for('user_profile') }}" class="btn btn-light">
+                    <i class="fas fa-arrow-left me-2"></i>Retour au profil
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="form-card p-4">
+                <div class="info-box">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-info-circle text-primary me-3"></i>
+                        <div>
+                            <strong>Information :</strong> Les champs marqués d'un astérisque (<span class="required">*</span>) sont obligatoires.
+                        </div>
+                    </div>
+                </div>
+
+                <form method="POST" action="{{ url_for('edit_profile') }}" id="profileForm">
+                    <div class="row">
+                        <!-- Nom complet -->
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="full_name" class="form-label">
+                                    Nom complet <span class="required">*</span>
+                                </label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="full_name" 
+                                       name="full_name" 
+                                       value="{{ user.name or '' }}" 
+                                       required>
+                                <small class="form-text text-muted">
+                                    Votre nom et prénom complets
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Email -->
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="email" class="form-label">
+                                    Adresse email <span class="required">*</span>
+                                </label>
+                                <input type="email" 
+                                       class="form-control" 
+                                       id="email" 
+                                       name="email" 
+                                       value="{{ user.email or '' }}" 
+                                       required>
+                                <small class="form-text text-muted">
+                                    Adresse email de contact
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Informations en lecture seule -->
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label class="form-label">Informations du compte</label>
+                                <div class="info-box">
+                                    <div class="small">
+                                        <strong>Rôle :</strong> {{ user.role|title }}<br>
+                                        <strong>Statut :</strong> {{ 'Actif' if user.is_active else 'Inactif' }}
+                                    </div>
+                                    <small class="text-muted">
+                                        Ces informations ne peuvent pas être modifiées depuis cette page.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <button type="submit" class="btn btn-primary btn-save me-3">
+                                        <i class="fas fa-save me-2"></i>Enregistrer les modifications
+                                    </button>
+                                    <a href="{{ url_for('user_profile') }}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-times me-2"></i>Annuler
+                                    </a>
+                                </div>
+                                <div class="text-muted small">
+                                    <i class="fas fa-shield-alt me-1"></i>
+                                    Vos données sont sécurisées
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Validation du formulaire
+    const form = document.getElementById('profileForm');
+    const fullNameInput = document.getElementById('full_name');
+    const emailInput = document.getElementById('email');
+    const phoneInput = document.getElementById('phone');
+
+    // Validation en temps réel
+    fullNameInput.addEventListener('input', function() {
+        if (this.value.trim().length < 2) {
+            this.setCustomValidity('Le nom complet doit contenir au moins 2 caractères');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+
+    emailInput.addEventListener('input', function() {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(this.value)) {
+            this.setCustomValidity('Veuillez entrer une adresse email valide');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+
+    phoneInput.addEventListener('input', function() {
+        // Validation optionnelle du téléphone
+        if (this.value.trim() !== '') {
+            const phoneRegex = /^[\+]?[0-9\s\-\(\)\.]{10,}$/;
+            if (!phoneRegex.test(this.value)) {
+                this.setCustomValidity('Veuillez entrer un numéro de téléphone valide');
+            } else {
+                this.setCustomValidity('');
+            }
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+
+    // Confirmation avant soumission
+    form.addEventListener('submit', function(e) {
+        if (!form.checkValidity()) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    });
+
+    // Animation du bouton de sauvegarde
+    const saveBtn = document.querySelector('.btn-save');
+    saveBtn.addEventListener('click', function() {
+        if (form.checkValidity()) {
+            this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Enregistrement...';
+            this.disabled = true;
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -12,7 +12,7 @@
             </span>
         </h1>
         <div class="d-flex gap-2">
-            <a href="{{ url_for('technicians.edit', id=technician.id) }}" class="btn btn-primary clay-button-primary">
+            <a href="{{ url_for('technicians.edit_technician', technician_id=technician.id) }}" class="btn btn-primary clay-button-primary">
                 <i class="fas fa-edit me-2"></i>Modifier
             </a>
             <button class="btn btn-outline-success clay-button" onclick="contactTechnician()">
@@ -24,10 +24,10 @@
                     <i class="fas fa-ellipsis-v"></i>
                 </button>
                 <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="{{ url_for('technicians.schedule', id=technician.id) }}">
+                    <li><a class="dropdown-item" href="{{ url_for('technicians.schedule', technician_id=technician.id) }}">
                         <i class="fas fa-calendar me-2"></i>Planning
                     </a></li>
-                    <li><a class="dropdown-item" href="{{ url_for('technicians.workload') }}?technician={{ technician.id }}">
+                    <li><a class="dropdown-item" href="{{ url_for('technicians.technician_workload', technician_id=technician.id) }}">
                         <i class="fas fa-chart-line me-2"></i>Charge de travail
                     </a></li>
                     <li><a class="dropdown-item" href="{{ url_for('work_orders.list_work_orders') }}?technician={{ technician.id }}">
@@ -290,7 +290,7 @@
             <div class="clay-card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-calendar me-2"></i>Planning de Travail</h5>
-                    <a href="{{ url_for('technicians.schedule', id=technician.id) }}" 
+                    <a href="{{ url_for('technicians.schedule', technician_id=technician.id) }}" 
                        class="btn btn-sm btn-outline-primary clay-button">
                         <i class="fas fa-external-link-alt me-1"></i>Voir détail
                     </a>
@@ -552,7 +552,7 @@ document.addEventListener('keydown', function(e) {
         switch(e.key) {
             case 'e':
                 e.preventDefault();
-                window.location.href = '{{ url_for("technicians.edit", id=technician.id) }}';
+                window.location.href = '{{ url_for("technicians.edit_technician", technician_id=technician.id) }}';
                 break;
             case 'p':
                 e.preventDefault();

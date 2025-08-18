@@ -1,0 +1,468 @@
+{% extends "base.html" %}
+
+{% block title %}Paramètres - ChronoTech{% endblock %}
+
+{% block head %}
+<style>
+.settings-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    margin-bottom: 2rem;
+}
+
+.settings-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    border-left: 4px solid #2563eb;
+    margin-bottom: 1.5rem;
+}
+
+.settings-section {
+    border-bottom: 1px solid #e5e7eb;
+    padding: 1.5rem 0;
+}
+
+.settings-section:last-child {
+    border-bottom: none;
+}
+
+.setting-item {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    padding: 1rem 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.setting-item:last-child {
+    border-bottom: none;
+}
+
+.setting-info {
+    flex: 1;
+}
+
+.setting-title {
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.25rem;
+}
+
+.setting-description {
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+
+.setting-control {
+    margin-left: 1rem;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #2563eb;
+}
+
+input:checked + .slider:before {
+    transform: translateX(26px);
+}
+
+.info-box {
+    background: #f0f9ff;
+    border: 1px solid #0ea5e9;
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1rem 0;
+}
+
+.warning-box {
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1rem 0;
+}
+
+.category-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    font-size: 1.2rem;
+    color: white;
+}
+
+.icon-notifications {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+}
+
+.icon-display {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.icon-privacy {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.icon-account {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- En-tête -->
+    <div class="settings-header p-4">
+        <div class="row align-items-center">
+            <div class="col">
+                <h1 class="mb-2">
+                    <i class="fas fa-cog me-3"></i>Paramètres
+                </h1>
+                <p class="mb-0 opacity-90">
+                    Personnalisez votre expérience ChronoTech
+                </p>
+            </div>
+            <div class="col-auto">
+                <a href="{{ url_for('user_profile') }}" class="btn btn-light">
+                    <i class="fas fa-user me-2"></i>Mon profil
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Notifications -->
+        <div class="col-md-6 mb-4">
+            <div class="settings-card p-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="category-icon icon-notifications">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <h4 class="mb-0">Notifications</h4>
+                </div>
+
+                <form method="POST" action="{{ url_for('update_settings') }}">
+                    <input type="hidden" name="setting_type" value="notifications">
+                    
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <div class="setting-title">Notifications par email</div>
+                            <div class="setting-description">
+                                Recevoir des notifications importantes par email
+                            </div>
+                        </div>
+                        <div class="setting-control">
+                            <label class="switch">
+                                <input type="checkbox" name="email_notifications" 
+                                       {{ 'checked' if settings.notifications.email_notifications }}>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <div class="setting-title">Notifications SMS</div>
+                            <div class="setting-description">
+                                Recevoir des alertes urgentes par SMS
+                            </div>
+                        </div>
+                        <div class="setting-control">
+                            <label class="switch">
+                                <input type="checkbox" name="sms_notifications" 
+                                       {{ 'checked' if settings.notifications.sms_notifications }}>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <div class="setting-title">Notifications bureau</div>
+                            <div class="setting-description">
+                                Afficher des notifications dans le navigateur
+                            </div>
+                        </div>
+                        <div class="setting-control">
+                            <label class="switch">
+                                <input type="checkbox" name="desktop_notifications" 
+                                       {{ 'checked' if settings.notifications.desktop_notifications }}>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Affichage -->
+        <div class="col-md-6 mb-4">
+            <div class="settings-card p-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="category-icon icon-display">
+                        <i class="fas fa-palette"></i>
+                    </div>
+                    <h4 class="mb-0">Affichage</h4>
+                </div>
+
+                <form method="POST" action="{{ url_for('update_settings') }}">
+                    <input type="hidden" name="setting_type" value="display">
+                    
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <div class="setting-title">Thème</div>
+                            <div class="setting-description">
+                                Choisir l'apparence de l'interface
+                            </div>
+                        </div>
+                        <div class="setting-control">
+                            <select class="form-select" name="theme" style="width: auto;">
+                                <option value="light" {{ 'selected' if settings.display.theme == 'light' }}>Clair</option>
+                                <option value="dark" {{ 'selected' if settings.display.theme == 'dark' }}>Sombre</option>
+                                <option value="auto" {{ 'selected' if settings.display.theme == 'auto' }}>Automatique</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <div class="setting-title">Langue</div>
+                            <div class="setting-description">
+                                Langue de l'interface utilisateur
+                            </div>
+                        </div>
+                        <div class="setting-control">
+                            <select class="form-select" name="language" style="width: auto;">
+                                <option value="fr" {{ 'selected' if settings.display.language == 'fr' }}>Français</option>
+                                <option value="en" {{ 'selected' if settings.display.language == 'en' }}>English</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <div class="setting-title">Fuseau horaire</div>
+                            <div class="setting-description">
+                                Fuseau horaire pour l'affichage des dates
+                            </div>
+                        </div>
+                        <div class="setting-control">
+                            <select class="form-select" name="timezone" style="width: auto;">
+                                <option value="Europe/Paris" {{ 'selected' if settings.display.timezone == 'Europe/Paris' }}>Paris (CET)</option>
+                                <option value="UTC" {{ 'selected' if settings.display.timezone == 'UTC' }}>UTC</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Confidentialité -->
+        <div class="col-md-6 mb-4">
+            <div class="settings-card p-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="category-icon icon-privacy">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h4 class="mb-0">Confidentialité</h4>
+                </div>
+
+                <form method="POST" action="{{ url_for('update_settings') }}">
+                    <input type="hidden" name="setting_type" value="privacy">
+                    
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <div class="setting-title">Profil visible</div>
+                            <div class="setting-description">
+                                Permettre aux autres utilisateurs de voir votre profil
+                            </div>
+                        </div>
+                        <div class="setting-control">
+                            <label class="switch">
+                                <input type="checkbox" name="show_profile" 
+                                       {{ 'checked' if settings.privacy.show_profile }}>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <div class="setting-title">Activité visible</div>
+                            <div class="setting-description">
+                                Afficher votre activité aux autres utilisateurs
+                            </div>
+                        </div>
+                        <div class="setting-control">
+                            <label class="switch">
+                                <input type="checkbox" name="show_activity" 
+                                       {{ 'checked' if settings.privacy.show_activity }}>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Compte -->
+        <div class="col-md-6 mb-4">
+            <div class="settings-card p-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="category-icon icon-account">
+                        <i class="fas fa-user-cog"></i>
+                    </div>
+                    <h4 class="mb-0">Compte</h4>
+                </div>
+
+                <div class="info-box">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-info-circle text-primary me-3"></i>
+                        <div>
+                            <strong>Informations du compte</strong><br>
+                            <small>Connecté en tant que : <strong>{{ user.name or 'Utilisateur' }}</strong></small><br>
+                            <small>Email : <strong>{{ user.email }}</strong></small><br>
+                            <small>Rôle : <strong>{{ user.role|title }}</strong></small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('edit_profile') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-edit me-2"></i>Modifier le profil
+                    </a>
+                    <button type="button" class="btn btn-outline-warning" onclick="changePassword()">
+                        <i class="fas fa-key me-2"></i>Changer le mot de passe
+                    </button>
+                </div>
+
+                <div class="warning-box mt-3">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-exclamation-triangle text-warning me-3"></i>
+                        <div>
+                            <strong>Zone dangereuse</strong><br>
+                            <small>Pour des actions sensibles comme la suppression du compte, contactez votre administrateur.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions rapides -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-lightning-bolt me-2 text-primary"></i>Actions rapides
+                    </h5>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="{{ url_for('user_profile') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-user me-2"></i>Mon profil
+                        </a>
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-home me-2"></i>Tableau de bord
+                        </a>
+                        <button type="button" class="btn btn-outline-info" onclick="exportSettings()">
+                            <i class="fas fa-download me-2"></i>Exporter les paramètres
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function changePassword() {
+    alert('Fonctionnalité de changement de mot de passe à venir.\nContactez votre administrateur pour le moment.');
+}
+
+function exportSettings() {
+    alert('Fonctionnalité d\'export des paramètres à venir.');
+}
+
+// Gestion des notifications bureau
+document.addEventListener('DOMContentLoaded', function() {
+    const desktopNotifSwitch = document.querySelector('input[name="desktop_notifications"]');
+    
+    if (desktopNotifSwitch) {
+        desktopNotifSwitch.addEventListener('change', function() {
+            if (this.checked && 'Notification' in window) {
+                if (Notification.permission === 'default') {
+                    Notification.requestPermission().then(permission => {
+                        if (permission !== 'granted') {
+                            this.checked = false;
+                            alert('Permission de notification refusée. Veuillez autoriser les notifications dans votre navigateur.');
+                        }
+                    });
+                } else if (Notification.permission === 'denied') {
+                    this.checked = false;
+                    alert('Les notifications sont bloquées. Veuillez les autoriser dans les paramètres de votre navigateur.');
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

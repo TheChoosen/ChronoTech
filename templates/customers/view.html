@@ -9,7 +9,7 @@
             <i class="fas fa-user me-2"></i>{{ customer.name }}
         </h1>
         <div class="d-flex gap-2">
-            <a href="{{ url_for('customers.edit', id=customer.id) }}" class="btn btn-outline-primary clay-button">
+            <a href="{{ url_for('customers.edit_customer', customer_id=customer.id) }}" class="btn btn-outline-primary clay-button">
                 <i class="fas fa-edit me-2"></i>Modifier
             </a>
             <a href="{{ url_for('work_orders.create_work_order', customer_id=customer.id) }}" class="btn btn-primary clay-button-primary">

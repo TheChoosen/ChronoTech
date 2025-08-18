@@ -5,7 +5,7 @@ Classes pour représenter les entités de l'application
 
 from datetime import datetime
 from typing import Dict, List, Any, Optional
-from database import db_manager
+from .database import db_manager
 import logging
 
 logger = logging.getLogger(__name__)

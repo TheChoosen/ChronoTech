@@ -14,7 +14,7 @@
     </div>
 
     <form id="workOrderForm" method="POST" enctype="multipart/form-data">
-        {{ form.hidden_tag() }}
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}"/>
         
         <div class="row">
             <!-- Contenu principal -->
@@ -28,50 +28,53 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    {{ form.claim_number.label(class="form-label") }}
-                                    {{ form.claim_number(class="form-control clay-input", readonly=true) }}
+                                    <label for="claim_number" class="form-label">Numéro de réclamation</label>
+                                    <input type="text" class="form-control clay-input" name="claim_number" 
+                                           value="{{ work_order.claim_number or '' }}" readonly>
                                     <div class="form-text">Le numéro de réclamation ne peut pas être modifié</div>
                                 </div>
                                 
                                 <div class="mb-3">
-                                    {{ form.customer_id.label(class="form-label") }}
+                                    <label for="customer_id" class="form-label">Client</label>
                                     <select class="form-select clay-input" name="customer_id" id="customer_id">
                                         <option value="">Sélectionner un client</option>
                                         {% for customer in customers %}
                                         <option value="{{ customer.id }}" 
                                                 {% if customer.id == work_order.customer_id %}selected{% endif %}
-                                                data-email="{{ customer.email }}" 
-                                                data-phone="{{ customer.phone }}"
-                                                data-address="{{ customer.address }}">
+                                                data-email="{{ customer.email or '' }}" 
+                                                data-phone="{{ customer.phone or '' }}"
+                                                data-address="{{ customer.address or '' }}">
                                             {{ customer.name }}
                                         </option>
                                         {% endfor %}
                                     </select>
-                                    {% if form.customer_id.errors %}
-                                    <div class="text-danger small">{{ form.customer_id.errors[0] }}</div>
-                                    {% endif %}
                                 </div>
 
                                 <div class="mb-3">
-                                    {{ form.priority.label(class="form-label") }}
-                                    {{ form.priority(class="form-select clay-input") }}
-                                    {% if form.priority.errors %}
-                                    <div class="text-danger small">{{ form.priority.errors[0] }}</div>
-                                    {% endif %}
+                                    <label for="priority" class="form-label">Priorité</label>
+                                    <select class="form-select clay-input" name="priority" id="priority">
+                                        <option value="low" {% if work_order.priority == 'low' %}selected{% endif %}>Faible</option>
+                                        <option value="medium" {% if work_order.priority == 'medium' %}selected{% endif %}>Moyenne</option>
+                                        <option value="high" {% if work_order.priority == 'high' %}selected{% endif %}>Élevée</option>
+                                        <option value="urgent" {% if work_order.priority == 'urgent' %}selected{% endif %}>Urgente</option>
+                                    </select>
                                 </div>
                             </div>
                             
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    {{ form.status.label(class="form-label") }}
-                                    {{ form.status(class="form-select clay-input") }}
-                                    {% if form.status.errors %}
-                                    <div class="text-danger small">{{ form.status.errors[0] }}</div>
-                                    {% endif %}
+                                    <label for="status" class="form-label">Statut</label>
+                                    <select class="form-select clay-input" name="status" id="status">
+                                        <option value="pending" {% if work_order.status == 'pending' %}selected{% endif %}>En attente</option>
+                                        <option value="assigned" {% if work_order.status == 'assigned' %}selected{% endif %}>Assigné</option>
+                                        <option value="in_progress" {% if work_order.status == 'in_progress' %}selected{% endif %}>En cours</option>
+                                        <option value="completed" {% if work_order.status == 'completed' %}selected{% endif %}>Terminé</option>
+                                        <option value="cancelled" {% if work_order.status == 'cancelled' %}selected{% endif %}>Annulé</option>
+                                    </select>
                                 </div>
 
                                 <div class="mb-3">
-                                    {{ form.assigned_technician_id.label(class="form-label") }}
+                                    <label for="assigned_technician_id" class="form-label">Technicien assigné</label>
                                     <select class="form-select clay-input" name="assigned_technician_id" id="assigned_technician_id">
                                         <option value="">Non assigné</option>
                                         {% for technician in technicians %}
@@ -81,36 +84,34 @@
                                         </option>
                                         {% endfor %}
                                     </select>
-                                    {% if form.assigned_technician_id.errors %}
-                                    <div class="text-danger small">{{ form.assigned_technician_id.errors[0] }}</div>
-                                    {% endif %}
                                 </div>
 
                                 <div class="mb-3">
-                                    {{ form.scheduled_date.label(class="form-label") }}
-                                    {{ form.scheduled_date(class="form-control clay-input", type="datetime-local") }}
-                                    {% if form.scheduled_date.errors %}
-                                    <div class="text-danger small">{{ form.scheduled_date.errors[0] }}</div>
-                                    {% endif %}
+                                    <label for="scheduled_date" class="form-label">Date prévue</label>
+                                    <input type="datetime-local" class="form-control clay-input" name="scheduled_date" 
+                                           id="scheduled_date" value="{{ work_order.scheduled_date.strftime('%Y-%m-%dT%H:%M') if work_order.scheduled_date else '' }}">
                                 </div>
                             </div>
                         </div>
 
                         <div class="mb-3">
-                            {{ form.description.label(class="form-label") }}
-                            {{ form.description(class="form-control clay-input", rows="4", placeholder="Description détaillée du problème ou de l'intervention à effectuer...") }}
-                            {% if form.description.errors %}
-                            <div class="text-danger small">{{ form.description.errors[0] }}</div>
-                            {% endif %}
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control clay-input" name="description" id="description" rows="4" 
+                                      placeholder="Description détaillée du problème ou de l'intervention à effectuer...">{{ work_order.description or '' }}</textarea>
                         </div>
 
                         <div class="mb-3">
-                            {{ form.internal_notes.label(class="form-label") }}
-                            {{ form.internal_notes(class="form-control clay-input", rows="3", placeholder="Notes internes, non visibles par le client...") }}
+                            <label for="notes" class="form-label">Notes (visibles client)</label>
+                            <textarea class="form-control clay-input" name="notes" id="notes" rows="3" 
+                                      placeholder="Notes visibles par le client...">{{ work_order.notes or '' }}</textarea>
+                            <div class="form-text">Ces notes seront visibles par le client</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="internal_notes" class="form-label">Notes internes</label>
+                            <textarea class="form-control clay-input" name="internal_notes" id="internal_notes" rows="3" 
+                                      placeholder="Notes internes, non visibles par le client...">{{ work_order.internal_notes or '' }}</textarea>
                             <div class="form-text">Ces notes ne sont visibles que par l'équipe interne</div>
-                            {% if form.internal_notes.errors %}
-                            <div class="text-danger small">{{ form.internal_notes.errors[0] }}</div>
-                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -119,36 +120,32 @@
                 <div class="clay-card mb-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>Localisation</h5>
-                        <button type="button" class="btn btn-sm btn-outline-primary clay-button" onclick="getCurrentLocation()">
+                        <button type="button" class="btn btn-sm btn-outline-primary clay-button" data-action="location">
                             <i class="fas fa-crosshairs me-2"></i>Position actuelle
                         </button>
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
-                            {{ form.location_address.label(class="form-label") }}
-                            {{ form.location_address(class="form-control clay-input", rows="3", placeholder="Adresse complète de l'intervention...") }}
-                            {% if form.location_address.errors %}
-                            <div class="text-danger small">{{ form.location_address.errors[0] }}</div>
-                            {% endif %}
+                            <label for="location_address" class="form-label">Adresse</label>
+                            <textarea class="form-control clay-input" name="location_address" id="location_address" rows="3" 
+                                      placeholder="Adresse complète de l'intervention...">{{ work_order.location_address or '' }}</textarea>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    {{ form.location_latitude.label(class="form-label") }}
-                                    {{ form.location_latitude(class="form-control clay-input", step="any", placeholder="Latitude") }}
-                                    {% if form.location_latitude.errors %}
-                                    <div class="text-danger small">{{ form.location_latitude.errors[0] }}</div>
-                                    {% endif %}
+                                    <label for="location_latitude" class="form-label">Latitude</label>
+                                    <input type="number" class="form-control clay-input" name="location_latitude" 
+                                           id="location_latitude" step="any" placeholder="Latitude"
+                                           value="{{ work_order.location_latitude or '' }}">
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    {{ form.location_longitude.label(class="form-label") }}
-                                    {{ form.location_longitude(class="form-control clay-input", step="any", placeholder="Longitude") }}
-                                    {% if form.location_longitude.errors %}
-                                    <div class="text-danger small">{{ form.location_longitude.errors[0] }}</div>
-                                    {% endif %}
+                                    <label for="location_longitude" class="form-label">Longitude</label>
+                                    <input type="number" class="form-control clay-input" name="location_longitude" 
+                                           id="location_longitude" step="any" placeholder="Longitude"
+                                           value="{{ work_order.location_longitude or '' }}">
                                 </div>
                             </div>
                         </div>
@@ -187,7 +184,7 @@
                                         <div class="d-flex justify-content-between align-items-center">
                                             <small class="text-muted">{{ media.created_at|datetime_format }}</small>
                                             <button type="button" class="btn btn-sm btn-outline-danger" 
-                                                    onclick="removeMedia({{ media.id }})">
+                                                    data-action="remove-media" data-media-id="{{ media.id }}">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </div>
@@ -234,7 +231,7 @@
                             {% if current_user.role in ['admin', 'supervisor'] %}
                             <hr>
                             <button type="button" class="btn btn-outline-danger clay-button" 
-                                    onclick="deleteWorkOrder()">
+                                    data-action="delete">
                                 <i class="fas fa-trash me-2"></i>Supprimer
                             </button>
                             {% endif %}
@@ -276,31 +273,29 @@
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
-                            {{ form.estimated_duration.label(class="form-label") }}
+                            <label for="estimated_duration" class="form-label">Durée estimée</label>
                             <div class="input-group">
-                                {{ form.estimated_duration(class="form-control clay-input", placeholder="0") }}
+                                <input type="number" class="form-control clay-input" name="estimated_duration" 
+                                       id="estimated_duration" placeholder="0" step="0.1" min="0"
+                                       value="{{ work_order.estimated_duration or '' }}">
                                 <span class="input-group-text">heures</span>
                             </div>
-                            {% if form.estimated_duration.errors %}
-                            <div class="text-danger small">{{ form.estimated_duration.errors[0] }}</div>
-                            {% endif %}
                         </div>
 
                         <div class="mb-3">
-                            {{ form.estimated_cost.label(class="form-label") }}
+                            <label for="estimated_cost" class="form-label">Coût estimé</label>
                             <div class="input-group">
                                 <span class="input-group-text">€</span>
-                                {{ form.estimated_cost(class="form-control clay-input", placeholder="0.00", step="0.01") }}
+                                <input type="number" class="form-control clay-input" name="estimated_cost" 
+                                       id="estimated_cost" placeholder="0.00" step="0.01" min="0"
+                                       value="{{ work_order.estimated_cost or '' }}">
                             </div>
-                            {% if form.estimated_cost.errors %}
-                            <div class="text-danger small">{{ form.estimated_cost.errors[0] }}</div>
-                            {% endif %}
                         </div>
 
                         <!-- Calcul automatique -->
                         <div class="mt-3">
                             <button type="button" class="btn btn-sm btn-outline-info clay-button" 
-                                    onclick="calculateEstimate()">
+                                    data-action="calculate">
                                 <i class="fas fa-calculator me-2"></i>Calculer automatiquement
                             </button>
                             <div class="form-text">
@@ -371,81 +366,67 @@ function updateMap() {
     const lng = document.getElementById('location_longitude').value;
     
     if (lat && lng) {
-        document.getElementById('editMapContainer').style.display = 'block';
-        // Ici vous pourriez intégrer une vraie carte (Google Maps, OpenStreetMap, etc.)
-        console.log('Afficher carte aux coordonnées:', lat, lng);
+        const mapContainer = document.getElementById('editMapContainer');
+        if (mapContainer) {
+            mapContainer.style.display = 'block';
+            console.log('Afficher carte aux coordonnées:', lat, lng);
+        }
     }
 }
 
 // Aperçu des fichiers
-document.getElementById('new_files').addEventListener('change', function() {
-    const preview = document.getElementById('newFilesPreview');
-    preview.innerHTML = '';
-    
-    if (this.files.length > 0) {
-        preview.style.display = 'flex';
+const fileInput = document.getElementById('new_files');
+if (fileInput) {
+    fileInput.addEventListener('change', function() {
+        const preview = document.getElementById('newFilesPreview');
+        if (!preview) return;
         
-        Array.from(this.files).forEach((file, index) => {
-            const col = document.createElement('div');
-            col.className = 'col-md-6 col-lg-4 mb-3';
+        preview.innerHTML = '';
+        
+        if (this.files.length > 0) {
+            preview.style.display = 'flex';
             
-            const isImage = file.type.startsWith('image/');
-            let content = '';
-            
-            if (isImage) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
+            Array.from(this.files).forEach((file) => {
+                const col = document.createElement('div');
+                col.className = 'col-md-6 col-lg-4 mb-3';
+                
+                const isImage = file.type.startsWith('image/');
+                
+                if (isImage) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        col.innerHTML = `
+                            <div class="card">
+                                <img src="${e.target.result}" class="card-img-top" style="height: 120px; object-fit: cover;">
+                                <div class="card-body p-2">
+                                    <h6 class="card-title small mb-1">${file.name}</h6>
+                                    <small class="text-muted">${(file.size / 1024).toFixed(1)} KB</small>
+                                </div>
+                            </div>
+                        `;
+                    };
+                    reader.readAsDataURL(file);
+                } else {
                     col.innerHTML = `
                         <div class="card">
-                            <img src="${e.target.result}" class="card-img-top" style="height: 120px; object-fit: cover;">
+                            <div class="card-img-top d-flex align-items-center justify-content-center" 
+                                 style="height: 120px; background-color: #f8f9fa;">
+                                <i class="fas fa-file fa-3x text-muted"></i>
+                            </div>
                             <div class="card-body p-2">
                                 <h6 class="card-title small mb-1">${file.name}</h6>
                                 <small class="text-muted">${(file.size / 1024).toFixed(1)} KB</small>
                             </div>
                         </div>
                     `;
-                };
-                reader.readAsDataURL(file);
-            } else {
-                col.innerHTML = `
-                    <div class="card">
-                        <div class="card-img-top d-flex align-items-center justify-content-center" 
-                             style="height: 120px; background-color: #f8f9fa;">
-                            <i class="fas fa-file fa-3x text-muted"></i>
-                        </div>
-                        <div class="card-body p-2">
-                            <h6 class="card-title small mb-1">${file.name}</h6>
-                            <small class="text-muted">${(file.size / 1024).toFixed(1)} KB</small>
-                        </div>
-                    </div>
-                `;
-            }
-            
-            preview.appendChild(col);
-        });
-    } else {
-        preview.style.display = 'none';
-    }
-});
-
-// Suppression de média existant
-function removeMedia(mediaId) {
-    if (confirm("Êtes-vous sûr de vouloir supprimer ce fichier ?")) {
-        fetch(`{{ url_for('work_orders.delete_media') }}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify({media_id: mediaId})
-        }).then(response => {
-            if (response.ok) {
-                location.reload();
-            } else {
-                alert('Erreur lors de la suppression du fichier');
-            }
-        });
-    }
+                }
+                
+                preview.appendChild(col);
+            });
+        } else {
+            preview.style.display = 'none';
+        }
+    });
 }
 
 // Calcul automatique des estimations
@@ -453,7 +434,6 @@ function calculateEstimate() {
     const priority = document.getElementById('priority').value;
     const description = document.getElementById('description').value;
     
-    // Logique de calcul basique (à adapter selon vos besoins)
     let baseDuration = 2; // heures
     let baseRate = 80; // €/heure
     
@@ -468,27 +448,66 @@ function calculateEstimate() {
             break;
     }
     
-    // Ajustement selon la longueur de la description
     if (description.length > 200) {
         baseDuration *= 1.3;
     }
     
-    document.getElementById('estimated_duration').value = baseDuration.toFixed(1);
-    document.getElementById('estimated_cost').value = (baseDuration * baseRate).toFixed(2);
+    const durationField = document.getElementById('estimated_duration');
+    const costField = document.getElementById('estimated_cost');
+    if (durationField) durationField.value = baseDuration.toFixed(1);
+    if (costField) costField.value = (baseDuration * baseRate).toFixed(2);
 }
 
-// Suppression du bon de travail
-function deleteWorkOrder() {
-    if (confirm("Êtes-vous sûr de vouloir supprimer ce bon de travail ? Cette action est irréversible.")) {
-        // TODO: Implémenter la suppression
-        alert('Fonctionnalité de suppression à implémenter');
+// Event listeners pour les boutons avec data-action
+document.addEventListener('click', function(e) {
+    const action = e.target.closest('[data-action]')?.dataset.action;
+    
+    switch(action) {
+        case 'location':
+            getCurrentLocation();
+            break;
+            
+        case 'calculate':
+            calculateEstimate();
+            break;
+            
+        case 'remove-media':
+            const mediaId = e.target.closest('[data-media-id]')?.dataset.mediaId;
+            if (mediaId && confirm("Êtes-vous sûr de vouloir supprimer ce fichier ?")) {
+                fetch(`{{ url_for('work_orders.delete_media') }}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({media_id: mediaId})
+                }).then(response => {
+                    if (response.ok) {
+                        location.reload();
+                    } else {
+                        alert('Erreur lors de la suppression du fichier');
+                    }
+                }).catch(() => {
+                    alert('Erreur de connexion');
+                });
+            }
+            break;
+            
+        case 'delete':
+            if (confirm("Êtes-vous sûr de vouloir supprimer ce bon de travail ? Cette action est irréversible.")) {
+                alert('Fonctionnalité de suppression à implémenter');
+            }
+            break;
     }
-}
+});
 
 // Initialisation
 document.addEventListener('DOMContentLoaded', function() {
     // Déclencher l'affichage des infos client si un client est déjà sélectionné
-    document.getElementById('customer_id').dispatchEvent(new Event('change'));
+    const customerSelect = document.getElementById('customer_id');
+    if (customerSelect) {
+        customerSelect.dispatchEvent(new Event('change'));
+    }
     
     // Déclencher l'affichage de la carte si coordonnées présentes
     updateMap();

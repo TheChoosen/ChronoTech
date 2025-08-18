@@ -52,11 +52,13 @@
                                 </div>
 
                                 <div class="mb-3">
+                                    {% if form.employee_id is defined %}
                                     {{ form.employee_id.label(class="form-label") }}
                                     {{ form.employee_id(class="form-control clay-input", placeholder="EMP001") }}
                                     <div class="form-text">Identifiant unique employé</div>
                                     {% if form.employee_id.errors %}
                                     <div class="text-danger small">{{ form.employee_id.errors[0] }}</div>
+                                    {% endif %}
                                     {% endif %}
                                 </div>
                             </div>
@@ -106,7 +108,14 @@
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     {{ form.specialization.label(class="form-label") }}
-                                    {{ form.specialization(class="form-select clay-input") }}
+                                    <select class="form-select clay-input" name="specialization" id="specializationSelectAdd">
+                                        <option value="">Sélectionner une spécialité</option>
+                                        {% for spec in specializations %}
+                                        <option value="{{ spec }}">{{ spec }}</option>
+                                        {% endfor %}
+                                        <option value="__other__">Autre...</option>
+                                    </select>
+                                    <input type="text" id="specializationCustomAdd" name="specialization_custom" class="form-control mt-2" placeholder="Entrez une spécialité personnalisée" style="display:none;">
                                     {% if form.specialization.errors %}
                                     <div class="text-danger small">{{ form.specialization.errors[0] }}</div>
                                     {% endif %}
@@ -591,6 +600,29 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Définir les horaires par défaut
     setDefaultSchedule();
+
+    // Specialization custom handling (added by backend)
+    const selectAdd = document.getElementById('specializationSelectAdd');
+    const customAdd = document.getElementById('specializationCustomAdd');
+    if (selectAdd) {
+        selectAdd.addEventListener('change', function() {
+            if (this.value === '__other__') {
+                customAdd.style.display = 'block';
+                customAdd.required = true;
+            } else {
+                customAdd.style.display = 'none';
+                customAdd.required = false;
+            }
+        });
+    }
+    const formAdd = document.getElementById('technicianForm');
+    if (formAdd) {
+        formAdd.addEventListener('submit', function() {
+            if (customAdd && customAdd.style.display !== 'none' && customAdd.value.trim()) {
+                selectAdd.value = customAdd.value.trim();
+            }
+        });
+    }
 });
 </script>
 {% endblock %}

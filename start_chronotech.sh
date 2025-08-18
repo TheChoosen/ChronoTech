@@ -54,6 +54,39 @@ print_info() {
     echo -e "${BLUE}ℹ️  $1${NC}"
 }
 
+# Kill process listening on given port (uses lsof/ss fallback)
+kill_port() {
+    local port=${1:-$DEFAULT_PORT}
+    # Try lsof first
+    if command -v lsof &> /dev/null; then
+        local pid
+        pid=$(lsof -ti tcp:$port || true)
+        if [ -n "$pid" ]; then
+            print_warning "Port $port utilisé par PID(s): $pid — fermeture en cours..."
+            kill -9 $pid || true
+            sleep 0.5
+            print_success "Processus sur le port $port tué"
+            return 0
+        fi
+    fi
+
+    # Fallback to ss
+    if command -v ss &> /dev/null; then
+        local pids
+        pids=$(ss -ltnp 2>/dev/null | awk -vP=":$port" '$4 ~ P {print $0}' | sed -n 's/.*pid=\([0-9]*\),.*/\1/p' | tr '\n' ' ')
+        if [ -n "$pids" ]; then
+            print_warning "Port $port utilisé par PID(s): $pids — fermeture en cours..."
+            kill -9 $pids || true
+            sleep 0.5
+            print_success "Processus sur le port $port tué"
+            return 0
+        fi
+    fi
+
+    # No process found
+    return 1
+}
+
 # Fonction pour tester la connexion MySQL de façon sécurisée
 test_mysql_connection() {
     local test_user="$1"
@@ -534,6 +567,15 @@ start_application() {
     echo -e "${CYAN}Appuyez sur Ctrl+C pour arrêter le serveur${NC}"
     
     # Démarrage du serveur Flask
+        # Try to free the configured port before starting the app (if helper exists)
+        if declare -f kill_port >/dev/null 2>&1; then
+            print_info "Vérification du port $DEFAULT_PORT avant démarrage..."
+            # Attempt to kill any process listening on the port; don't fail the script if this fails
+            kill_port "$DEFAULT_PORT" || print_warning "Impossible de libérer le port $DEFAULT_PORT automatiquement"
+            # Give the OS a moment to release the socket
+            sleep 1
+        fi
+
     python app.py
 }
 

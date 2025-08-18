@@ -5,8 +5,8 @@ Endpoints pour l'intégration mobile et externe
 
 from flask import Blueprint, request, jsonify, session
 import pymysql
-from config import get_db_config
-from utils import log_info, log_error, log_warning
+from core.config import get_db_config
+from core.utils import log_info, log_error, log_warning
 from datetime import datetime
 import json
 
@@ -76,9 +76,9 @@ def get_work_orders():
         conn = get_db_connection()
         if not conn:
             return jsonify({'error': 'Database connection failed'}), 500
-        
-        cursor = conn.cursor(dictionary=True)
-        
+
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+
         # Paramètres de filtrage
         status = request.args.get('status')
         priority = request.args.get('priority')
@@ -170,6 +170,58 @@ def get_work_orders():
         log_error(f"Erreur API lors de la récupération des bons de travail: {e}")
         return jsonify({'error': 'Internal server error'}), 500
 
+
+@bp.route('/dashboard', methods=['GET'])
+@require_auth
+def get_dashboard_stats():
+    """Renvoie les statistiques principales pour le tableau de bord en JSON"""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'error': 'Database connection failed'}), 500
+
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+
+        # active_orders
+        cursor.execute("SELECT COUNT(*) AS active_orders FROM work_orders WHERE status = 'in_progress'")
+        active_row = cursor.fetchone() or {}
+
+        # completed_today (prefer completion_date, fallback to updated_at)
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS completed_today
+            FROM work_orders
+            WHERE status = 'completed'
+            AND (
+                (completion_date IS NOT NULL AND DATE(completion_date) = CURDATE())
+                OR DATE(updated_at) = CURDATE()
+            )
+            """
+        )
+        completed_row = cursor.fetchone() or {}
+
+        # urgent_orders
+        cursor.execute("SELECT COUNT(*) AS urgent_orders FROM work_orders WHERE priority = 'urgent' AND status NOT IN ('completed','cancelled')")
+        urgent_row = cursor.fetchone() or {}
+
+        # active_technicians
+        cursor.execute("SELECT COUNT(*) AS active_technicians FROM users WHERE role = 'technician' AND is_active = 1")
+        tech_row = cursor.fetchone() or {}
+
+        cursor.close()
+        conn.close()
+
+        return jsonify({
+            'active_orders': int(active_row.get('active_orders') or 0),
+            'completed_today': int(completed_row.get('completed_today') or 0),
+            'urgent_orders': int(urgent_row.get('urgent_orders') or 0),
+            'active_technicians': int(tech_row.get('active_technicians') or 0)
+        })
+
+    except Exception as e:
+        log_error(f"Erreur API lors de la récupération des stats dashboard: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
 @bp.route('/work_orders/<int:work_order_id>', methods=['GET'])
 @require_auth
 def get_work_order(work_order_id):
@@ -178,8 +230,8 @@ def get_work_order(work_order_id):
         conn = get_db_connection()
         if not conn:
             return jsonify({'error': 'Database connection failed'}), 500
-        
-        cursor = conn.cursor(dictionary=True)
+
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
         cursor.execute("""
             SELECT 
                 w.*,
@@ -333,8 +385,8 @@ def get_technicians():
         conn = get_db_connection()
         if not conn:
             return jsonify({'error': 'Database connection failed'}), 500
-        
-        cursor = conn.cursor(dictionary=True)
+
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
         cursor.execute("""
             SELECT 
                 u.id,
@@ -369,6 +421,68 @@ def get_technicians():
         log_error(f"Erreur API lors de la récupération des techniciens: {e}")
         return jsonify({'error': 'Internal server error'}), 500
 
+
+@bp.route('/technicians/<int:id>/stats', methods=['GET'])
+def technician_stats(id):
+    """Récupérer des statistiques ciblées pour un technicien (utilisé par l'UI interne)."""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'error': 'Database connection failed'}), 500
+
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+
+        # Nombre total d'interventions et complétées
+        cursor.execute(
+            """
+            SELECT
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed
+            FROM work_orders
+            WHERE assigned_technician_id = %s
+            """,
+            (id,),
+        )
+        row = cursor.fetchone() or {}
+        total = int(row.get('total') or 0)
+        completed = int(row.get('completed') or 0)
+        completion_rate = round((completed / total) * 100) if total > 0 else 0
+
+        # Charge actuelle (minutes) pour assigned/in_progress
+        cursor.execute(
+            "SELECT COALESCE(SUM(estimated_duration),0) as total_minutes FROM work_orders WHERE assigned_technician_id = %s AND status IN ('assigned','in_progress')",
+            (id,),
+        )
+        mm = cursor.fetchone() or {}
+        total_minutes = int(mm.get('total_minutes') or 0)
+
+        # Récupérer le plafond d'heures hebdomadaire si présent
+        cursor.execute("SELECT COALESCE(max_weekly_hours, max_hours, 40) as max_hours FROM users WHERE id = %s", (id,))
+        mh = cursor.fetchone() or {}
+        max_hours = float(mh.get('max_hours') or 40)
+
+        current_workload = 0
+        if max_hours and total_minutes:
+            current_workload = round((total_minutes / 60.0) / max_hours * 100)
+
+        # Pour l'instant, utiliser le taux de complétion comme proxy d'efficacité
+        efficiency_score = completion_rate
+
+        cursor.close()
+        conn.close()
+
+        return jsonify({
+            'total_interventions': total,
+            'completed_interventions': completed,
+            'completion_rate': completion_rate,
+            'current_workload': current_workload,
+            'efficiency_score': efficiency_score,
+        })
+
+    except Exception as e:
+        log_error(f"Erreur API technician_stats pour {id}: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
 @bp.route('/customers', methods=['GET'])
 @require_auth
 def get_customers():
@@ -377,9 +491,9 @@ def get_customers():
         conn = get_db_connection()
         if not conn:
             return jsonify({'error': 'Database connection failed'}), 500
-        
-        cursor = conn.cursor(dictionary=True)
-        
+
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+
         # Paramètres de recherche
         search = request.args.get('search', '').strip()
         limit = min(int(request.args.get('limit', 50)), 100)
@@ -428,9 +542,9 @@ def get_stats():
         conn = get_db_connection()
         if not conn:
             return jsonify({'error': 'Database connection failed'}), 500
-        
-        cursor = conn.cursor(dictionary=True)
-        
+
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+
         stats = {}
         
         # Statistiques des bons de travail
@@ -477,6 +591,112 @@ def get_stats():
         
     except Exception as e:
         log_error(f"Erreur API lors de la récupération des statistiques: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@bp.route('/trend_data', methods=['GET'])
+@require_auth
+def get_trend_data():
+    """Récupérer les données de tendance pour les graphiques"""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'error': 'Database connection failed'}), 500
+
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+
+        # Type de données demandé (par défaut: monthly)
+        data_type = request.args.get('type', 'monthly')
+        
+        if data_type == 'monthly':
+            # Données mensuelles des 12 derniers mois
+            cursor.execute("""
+                SELECT 
+                    DATE_FORMAT(created_at, '%Y-%m') as period,
+                    COUNT(*) as count,
+                    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
+                    SUM(CASE WHEN priority = 'urgent' THEN 1 ELSE 0 END) as urgent
+                FROM work_orders 
+                WHERE created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
+                GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+                ORDER BY period
+            """)
+        elif data_type == 'weekly':
+            # Données hebdomadaires des 8 dernières semaines
+            cursor.execute("""
+                SELECT 
+                    CONCAT(YEAR(created_at), '-W', LPAD(WEEK(created_at), 2, '0')) as period,
+                    COUNT(*) as count,
+                    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
+                    SUM(CASE WHEN priority = 'urgent' THEN 1 ELSE 0 END) as urgent
+                FROM work_orders 
+                WHERE created_at >= DATE_SUB(NOW(), INTERVAL 8 WEEK)
+                GROUP BY YEAR(created_at), WEEK(created_at)
+                ORDER BY period
+            """)
+        elif data_type == 'daily':
+            # Données quotidiennes des 30 derniers jours
+            cursor.execute("""
+                SELECT 
+                    DATE(created_at) as period,
+                    COUNT(*) as count,
+                    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
+                    SUM(CASE WHEN priority = 'urgent' THEN 1 ELSE 0 END) as urgent
+                FROM work_orders 
+                WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                GROUP BY DATE(created_at)
+                ORDER BY period
+            """)
+        else:
+            return jsonify({'error': 'Invalid type parameter'}), 400
+        
+        trend_data = cursor.fetchall()
+        
+        # Formatage des données pour Chart.js
+        labels = []
+        total_data = []
+        completed_data = []
+        urgent_data = []
+        
+        for row in trend_data:
+            labels.append(str(row['period']))
+            total_data.append(row['count'])
+            completed_data.append(row['completed'])
+            urgent_data.append(row['urgent'])
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'labels': labels,
+            'datasets': [
+                {
+                    'label': 'Total',
+                    'data': total_data,
+                    'borderColor': 'rgb(75, 192, 192)',
+                    'backgroundColor': 'rgba(75, 192, 192, 0.2)',
+                    'tension': 0.1
+                },
+                {
+                    'label': 'Complétés',
+                    'data': completed_data,
+                    'borderColor': 'rgb(54, 162, 235)',
+                    'backgroundColor': 'rgba(54, 162, 235, 0.2)',
+                    'tension': 0.1
+                },
+                {
+                    'label': 'Urgents',
+                    'data': urgent_data,
+                    'borderColor': 'rgb(255, 99, 132)',
+                    'backgroundColor': 'rgba(255, 99, 132, 0.2)',
+                    'tension': 0.1
+                }
+            ],
+            'type': data_type,
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        log_error(f"Erreur API lors de la récupération des données de tendance: {e}")
         return jsonify({'error': 'Internal server error'}), 500
 
 @bp.errorhandler(404)

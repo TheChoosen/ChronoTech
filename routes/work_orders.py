@@ -3,7 +3,7 @@ Routes pour la gestion des bons de travail (Work Orders)
 Basé sur le PRD Fusionné v2.0 - Architecture moderne avec IA
 """
 from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify, flash
-from forms import WorkOrderForm
+from core.forms import WorkOrderForm
 import pymysql
 from datetime import datetime, timedelta
 import json
@@ -151,6 +151,46 @@ def list_work_orders():
     finally:
         conn.close()
 
+
+@bp.route('/<int:id>/products', methods=['POST'])
+def add_work_order_product(id):
+    """Endpoint simple pour ajouter une pièce à un bon de travail via formulaire POST."""
+    try:
+        product_name = request.form.get('product_name')
+        product_reference = request.form.get('product_reference')
+        quantity = request.form.get('quantity') or 1
+        unit_price = request.form.get('unit_price') or None
+        notes = request.form.get('notes') or None
+
+        if not product_name:
+            flash('Le nom de la pièce est requis', 'error')
+            return redirect(url_for('work_orders.view_work_order', id=id))
+
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO work_order_products (work_order_id, product_name, product_reference, quantity, unit_price, total_price, notes)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    id,
+                    product_name,
+                    product_reference,
+                    float(quantity),
+                    float(unit_price) if unit_price else None,
+                    (float(quantity) * float(unit_price)) if unit_price else None,
+                    notes,
+                ),
+            )
+            conn.commit()
+        conn.close()
+        flash('Pièce ajoutée au bon de travail', 'success')
+        return redirect(url_for('work_orders.view_work_order', id=id))
+    except Exception as e:
+        flash(f"Erreur lors de l'ajout de la pièce: {e}", 'error')
+        return redirect(url_for('work_orders.view_work_order', id=id))
+
 @bp.route('/create', methods=['GET', 'POST'])
 def create_work_order():
     """Créer un nouveau bon de travail"""
@@ -173,12 +213,13 @@ def create_work_order():
                 cursor.execute("SELECT COUNT(*) as count FROM work_orders WHERE DATE(created_at) = CURDATE()")
                 daily_count = cursor.fetchone()['count'] + 1
                 claim_number = f"WO{datetime.now().strftime('%Y%m%d')}-{daily_count:03d}"
+                internal_notes_value = request.form.get('internal_notes') if request.form.get('internal_notes') is not None else ''
                 cursor.execute("""
                     INSERT INTO work_orders (
                         claim_number, customer_id, description, priority, 
                         estimated_duration, estimated_cost, scheduled_date,
-                        assigned_technician_id, created_by_user_id, notes
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        assigned_technician_id, created_by_user_id, notes, internal_notes
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, (
                     claim_number,
                     form.customer_id.data,
@@ -189,7 +230,8 @@ def create_work_order():
                     form.due_date.data,
                     form.technician_id.data or None,
                     session.get('user_id'),
-                    form.notes.data or ''
+                    form.notes.data or '',
+                    internal_notes_value or ''
                 ))
                 work_order_id = cursor.lastrowid
                 cursor.execute("""
@@ -328,6 +370,52 @@ def view_work_order(id):
     finally:
         conn.close()
 
+@bp.route('/delete_media', methods=['POST'])
+def delete_media():
+    """Supprimer un fichier média d'un bon de travail"""
+    try:
+        media_id = request.json.get('media_id')
+        if not media_id:
+            return jsonify({'success': False, 'message': 'ID du média manquant'})
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Récupérer les informations du fichier avant suppression
+        cursor.execute("""
+            SELECT file_path, work_order_id 
+            FROM work_order_media 
+            WHERE id = %s
+        """, (media_id,))
+        
+        media_info = cursor.fetchone()
+        if not media_info:
+            return jsonify({'success': False, 'message': 'Média non trouvé'})
+        
+        file_path, work_order_id = media_info
+        
+        # Supprimer le fichier physique
+        try:
+            import os
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        except Exception as e:
+            print(f"Erreur suppression fichier: {e}")
+        
+        # Supprimer l'enregistrement de la base de données
+        cursor.execute("DELETE FROM work_order_media WHERE id = %s", (media_id,))
+        conn.commit()
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'Média supprimé avec succès'})
+        
+    except Exception as e:
+        print(f"Erreur lors de la suppression du média: {e}")
+        return jsonify({'success': False, 'message': 'Erreur lors de la suppression'})
+
+
 @bp.route('/<int:id>/edit', methods=['GET', 'POST'])
 def edit_work_order(id):
     """Modifier un bon de travail existant"""
@@ -337,16 +425,30 @@ def edit_work_order(id):
             # Traitement de la modification
             description = request.form.get('description')
             priority = request.form.get('priority', 'medium')
+            status = request.form.get('status')
             assigned_technician_id = request.form.get('assigned_technician_id')
             customer_id = request.form.get('customer_id')
+            scheduled_date = request.form.get('scheduled_date')
+            location_address = request.form.get('location_address')
+            location_latitude = request.form.get('location_latitude')
+            location_longitude = request.form.get('location_longitude')
+            internal_notes = request.form.get('internal_notes')
+            public_notes = request.form.get('notes')
+            estimated_duration = request.form.get('estimated_duration')
+            estimated_cost = request.form.get('estimated_cost')
             
             with conn.cursor() as cursor:
                 cursor.execute("""
                     UPDATE work_orders 
-                    SET description = %s, priority = %s, assigned_technician_id = %s, 
-                        customer_id = %s, updated_at = NOW()
+                    SET description = %s, priority = %s, status = %s, assigned_technician_id = %s, 
+                        customer_id = %s, scheduled_date = %s, location_address = %s,
+                        location_latitude = %s, location_longitude = %s, internal_notes = %s,
+                        notes = %s, estimated_duration = %s, estimated_cost = %s, updated_at = NOW()
                     WHERE id = %s
-                """, (description, priority, assigned_technician_id or None, customer_id or None, id))
+                """, (description, priority, status, assigned_technician_id or None, 
+                      customer_id or None, scheduled_date or None, location_address,
+                      location_latitude or None, location_longitude or None, internal_notes,
+                      public_notes or '', estimated_duration or None, estimated_cost or None, id))
                 conn.commit()
                 
             flash('Bon de travail modifié avec succès', 'success')
@@ -354,26 +456,104 @@ def edit_work_order(id):
         
         # GET - Affichage du formulaire d'édition
         with conn.cursor() as cursor:
-            # Récupération du bon de travail
-            cursor.execute("SELECT * FROM work_orders WHERE id = %s", (id,))
+            # Récupération du bon de travail avec toutes les informations
+            cursor.execute("""
+                SELECT wo.*, c.name as customer_name, u.name as technician_name,
+                       creator.name as created_by_name
+                FROM work_orders wo
+                LEFT JOIN customers c ON wo.customer_id = c.id
+                LEFT JOIN users u ON wo.assigned_technician_id = u.id
+                LEFT JOIN users creator ON wo.created_by_user_id = creator.id
+                WHERE wo.id = %s
+            """, (id,))
             work_order = cursor.fetchone()
             
             if not work_order:
                 flash('Bon de travail introuvable', 'error')
                 return redirect(url_for('work_orders.list_work_orders'))
             
-            # Récupération des techniciens
-            cursor.execute("SELECT id, name FROM users WHERE role IN ('technician', 'supervisor') AND is_active = 1")
+            # Récupération des techniciens actifs
+            cursor.execute("""
+                SELECT id, name, email, 
+                       CASE 
+                           WHEN role = 'technician' THEN 'Technicien'
+                           WHEN role = 'supervisor' THEN 'Superviseur'
+                           ELSE role 
+                       END as specialization
+                FROM users 
+                WHERE role IN ('technician', 'supervisor') AND is_active = 1
+                ORDER BY name
+            """)
             technicians = cursor.fetchall()
             
-            # Récupération des clients
-            cursor.execute("SELECT id, name FROM customers WHERE is_active = 1 ORDER BY name")
+            # Récupération des clients actifs
+            cursor.execute("""
+                SELECT id, name, email, phone, address 
+                FROM customers 
+                WHERE is_active = 1 
+                ORDER BY name
+            """)
             customers = cursor.fetchall()
             
-            return render_template('work_orders/edit_simple.html',
+            # Récupération des fichiers médias associés (avec gestion d'erreur)
+            media_files = []
+            try:
+                cursor.execute("""
+                    SELECT id, filename, original_filename, file_type, created_at
+                    FROM work_order_media 
+                    WHERE work_order_id = %s
+                    ORDER BY created_at DESC
+                """, (id,))
+                media_files = cursor.fetchall()
+            except Exception as e:
+                print(f"Erreur lors de la récupération des médias: {e}")
+                media_files = []
+            
+            # Création d'un objet form factice pour compatibilité avec le template
+            class FakeForm:
+                def __init__(self):
+                    self.hidden_tag = lambda: ''
+                    
+                def create_field(self, name, value=''):
+                    class Field:
+                        def __init__(self, name, value):
+                            self.name = name
+                            self.data = value
+                            self.errors = []
+                        def __call__(self, **kwargs):
+                            attrs = ' '.join([f'{k}="{v}"' for k, v in kwargs.items()])
+                            if 'class' in kwargs and 'form-control' in kwargs['class']:
+                                return f'<input name="{self.name}" value="{self.data}" {attrs}>'
+                            elif 'class' in kwargs and 'form-select' in kwargs['class']:
+                                return f'<select name="{self.name}" {attrs}></select>'
+                            else:
+                                return f'<textarea name="{self.name}" {attrs}>{self.data}</textarea>'
+                        def label(self, **kwargs):
+                            label_text = self.name.replace('_', ' ').title()
+                            return f'<label for="{self.name}" {" ".join([f"{k}=\"{v}\"" for k, v in kwargs.items()])}>{label_text}</label>'
+                    return Field(name, value)
+                    
+            form = FakeForm()
+            form.claim_number = form.create_field('claim_number', work_order.get('claim_number', ''))
+            form.customer_id = form.create_field('customer_id', work_order.get('customer_id', ''))
+            form.priority = form.create_field('priority', work_order.get('priority', 'medium'))
+            form.status = form.create_field('status', work_order.get('status', 'pending'))
+            form.assigned_technician_id = form.create_field('assigned_technician_id', work_order.get('assigned_technician_id', ''))
+            form.scheduled_date = form.create_field('scheduled_date', work_order.get('scheduled_date', ''))
+            form.description = form.create_field('description', work_order.get('description', ''))
+            form.internal_notes = form.create_field('internal_notes', work_order.get('internal_notes', ''))
+            form.location_address = form.create_field('location_address', work_order.get('location_address', ''))
+            form.location_latitude = form.create_field('location_latitude', work_order.get('location_latitude', ''))
+            form.location_longitude = form.create_field('location_longitude', work_order.get('location_longitude', ''))
+            form.estimated_duration = form.create_field('estimated_duration', work_order.get('estimated_duration', ''))
+            form.estimated_cost = form.create_field('estimated_cost', work_order.get('estimated_cost', ''))
+            
+            return render_template('work_orders/edit.html',
                                  work_order=work_order,
+                                 form=form,
                                  technicians=technicians,
-                                 customers=customers)
+                                 customers=customers,
+                                 media_files=media_files)
     finally:
         conn.close()
 

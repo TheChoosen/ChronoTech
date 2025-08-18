@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, SelectField, TextAreaField, SubmitField, DateField, IntegerField
+from wtforms import StringField, SelectField, TextAreaField, SubmitField, DateField, IntegerField, BooleanField, FileField
 from wtforms.validators import DataRequired, Email, Length, Optional
 
 class CustomerForm(FlaskForm):
@@ -26,9 +26,34 @@ class TechnicianForm(FlaskForm):
     name = StringField('Nom', validators=[DataRequired(), Length(max=255)])
     email = StringField('Email', validators=[DataRequired(), Email(), Length(max=255)])
     phone = StringField('Téléphone', validators=[Optional(), Length(max=20)])
+    # Extended fields to match the technicians add/edit templates
+    employee_id = StringField('Identifiant employé', validators=[Optional(), Length(max=50)])
+    hire_date = DateField('Date d\'embauche', validators=[Optional()])
+    birth_date = DateField('Date de naissance', validators=[Optional()])
+    # allow both 'specialty' and 'specialization' to avoid template mismatch
     specialty = StringField('Spécialité', validators=[Optional(), Length(max=100)])
+    specialization = StringField('Spécialisation', validators=[Optional(), Length(max=100)])
+    experience_years = IntegerField('Années d\'expérience', validators=[Optional()])
+    skill_level = SelectField('Niveau', choices=[('', '---'), ('beginner', 'Débutant'), ('intermediate', 'Intermédiaire'), ('advanced', 'Avancé'), ('expert', 'Expert')], validators=[Optional()])
+    certifications = TextAreaField('Certifications', validators=[Optional(), Length(max=500)])
+    address = TextAreaField('Adresse', validators=[Optional(), Length(max=255)])
+    languages = StringField('Langues', validators=[Optional(), Length(max=200)])
+    zone = StringField('Zone', validators=[Optional(), Length(max=100)])
+    hourly_rate = StringField('Taux horaire', validators=[Optional(), Length(max=20)])
+    availability_start = StringField('Disponibilité début', validators=[Optional(), Length(max=10)])
+    availability_end = StringField('Disponibilité fin', validators=[Optional(), Length(max=10)])
+    supervisor_id = IntegerField('Superviseur', validators=[Optional()])
+    max_daily_hours = IntegerField('Max heures / jour', validators=[Optional()])
+    max_weekly_hours = IntegerField('Max heures / semaine', validators=[Optional()])
+    emergency_contact = TextAreaField('Contact d\'urgence', validators=[Optional(), Length(max=250)])
     status = SelectField('Statut', choices=[('actif', 'Actif'), ('inactif', 'Inactif')], validators=[Optional()])
     notes = TextAreaField('Notes', validators=[Optional(), Length(max=500)])
+    certification_level = SelectField('Niveau de certification', choices=[('', '---'), ('level1','Niveau 1'), ('level2','Niveau 2'), ('level3','Niveau 3')], validators=[Optional()])
+    vehicle_assigned = StringField('Véhicule assigné', validators=[Optional(), Length(max=100)])
+    tools_assigned = TextAreaField('Outils assignés', validators=[Optional(), Length(max=500)])
+    photo = FileField('Photo')
+    active = BooleanField('Actif')
+    on_call = BooleanField('Disponible pour urgences')
     submit = SubmitField('Ajouter')
 
 class WorkOrderForm(FlaskForm):

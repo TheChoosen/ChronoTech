@@ -9,7 +9,7 @@
             <i class="fas fa-user-edit me-2"></i>Modifier Technicien
         </h1>
         <div class="d-flex gap-2">
-            <a href="{{ url_for('technicians.view_technician', id=technician.id) }}" class="btn btn-outline-secondary clay-button">
+            <a href="{{ url_for('technicians.view_technician', technician_id=technician.id) }}" class="btn btn-outline-secondary clay-button">
                 <i class="fas fa-eye me-2"></i>Voir
             </a>
             <a href="{{ url_for('technicians.index') }}" class="btn btn-outline-secondary clay-button">
@@ -137,14 +137,16 @@
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     {{ form.specialization.label(class="form-label required-field") }}
-                                    <select class="form-select clay-input" name="specialization" required>
+                                    <select class="form-select clay-input" name="specialization" id="specializationSelect" required>
                                         <option value="">Sélectionner une spécialité</option>
                                         {% for spec in specializations %}
                                         <option value="{{ spec }}" {{ 'selected' if technician.specialization == spec }}>
                                             {{ spec }}
                                         </option>
                                         {% endfor %}
+                                        <option value="__other__">Autre...</option>
                                     </select>
+                                    <input type="text" id="specializationCustom" name="specialization_custom" class="form-control mt-2" placeholder="Entrez une spécialité personnalisée" style="display:none;" value="{{ technician.specialization if technician.specialization and technician.specialization not in specializations else '' }}">
                                     {% if form.specialization.errors %}
                                         <div class="invalid-feedback d-block">
                                             {% for error in form.specialization.errors %}{{ error }}{% endfor %}
@@ -449,7 +451,7 @@
                                 <i class="fas fa-eye me-2"></i>Prévisualiser
                             </button>
                             <hr>
-                            <a href="{{ url_for('technicians.schedule', id=technician.id) }}" 
+                            <a href="{{ url_for('technicians.schedule', technician_id=technician.id) }}" 
                                class="btn btn-outline-secondary clay-button">
                                 <i class="fas fa-calendar me-2"></i>Voir planning
                             </a>
@@ -466,6 +468,33 @@
 </div>
 
 <script>
+// Specialization custom input handling
+document.addEventListener('DOMContentLoaded', function() {
+    const select = document.getElementById('specializationSelect');
+    const custom = document.getElementById('specializationCustom');
+    if (select) {
+        select.addEventListener('change', function() {
+            if (this.value === '__other__') {
+                custom.style.display = 'block';
+                custom.required = true;
+            } else {
+                custom.style.display = 'none';
+                custom.required = false;
+            }
+        });
+        // trigger change to set initial state
+        select.dispatchEvent(new Event('change'));
+    }
+    // Before form submit, if custom value present, copy it into the specialization field
+    const form = document.getElementById('editTechnicianForm');
+    if (form) {
+        form.addEventListener('submit', function() {
+            if (custom && custom.style.display !== 'none' && custom.value.trim()) {
+                select.value = custom.value.trim();
+            }
+        });
+    }
+});
 // Gestion de l'upload de photo
 document.getElementById('photo').addEventListener('change', function(e) {
     const file = e.target.files[0];
@@ -619,6 +648,17 @@ document.addEventListener('DOMContentLoaded', function() {
         const scheduleHours = checkbox.closest('.card-body').querySelector('.schedule-hours');
         scheduleHours.style.display = checkbox.checked ? 'block' : 'none';
     });
+    // Ensure custom specialization (if visible) is copied into select on submit
+    const select = document.getElementById('specializationSelect');
+    const custom = document.getElementById('specializationCustom');
+    const form = document.getElementById('editTechnicianForm');
+    if (form && select && custom) {
+        form.addEventListener('submit', function() {
+            if (custom.style.display !== 'none' && custom.value.trim()) {
+                select.value = custom.value.trim();
+            }
+        });
+    }
 });
 </script>
 

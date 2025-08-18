@@ -408,7 +408,7 @@ function initTrendsChart() {
             labels: {{ trend_data.labels|tojson }},
             datasets: [{
                 label: 'Interventions',
-                data: {{ trend_data.values|tojson }},
+                data: {{ trend_data.data|tojson }},
                 borderColor: '#007bff',
                 backgroundColor: 'rgba(0, 123, 255, 0.1)',
                 tension: 0.4
@@ -438,7 +438,7 @@ function initStatusChart() {
         data: {
             labels: {{ status_chart.labels|tojson }},
             datasets: [{
-                data: {{ status_chart.values|tojson }},
+                data: {{ status_chart.data|tojson }},
                 backgroundColor: {{ status_chart.colors|tojson }}
             }]
         },
@@ -462,7 +462,7 @@ function initInterventionTypesChart() {
             labels: {{ intervention_types.labels|tojson }},
             datasets: [{
                 label: 'Nombre',
-                data: {{ intervention_types.values|tojson }},
+                data: {{ intervention_types.data|tojson }},
                 backgroundColor: '#28a745'
             }]
         },
@@ -521,7 +521,7 @@ document.querySelectorAll('input[name="trendType"]').forEach(radio => {
 
 function updateTrendsChart(type) {
     // Mettre à jour le graphique selon le type sélectionné
-    fetch(`{{ url_for('api.trend_data') }}?type=${type}`)
+    fetch(`{{ url_for('api.get_trend_data') }}?type=${type}`)
         .then(response => response.json())
         .then(data => {
             // Mettre à jour les données du graphique

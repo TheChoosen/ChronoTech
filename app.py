@@ -14,11 +14,11 @@ import json
 from functools import wraps
 
 # Import des modules ChronoTech
-from config import Config
-from database import db_manager, setup_database, migrate_database, seed_database, log_activity, is_database_ready, quick_db_test
-from models import User, Customer, WorkOrder, WorkOrderLine, InterventionNote, InterventionMedia, Notification
-from models import get_dashboard_stats, get_recent_activities
-from utils import (
+from core.config import Config
+from core.database import db_manager, setup_database, migrate_database, seed_database, log_activity, is_database_ready, quick_db_test
+from core.models import User, Customer, WorkOrder, WorkOrderLine, InterventionNote, InterventionMedia, Notification
+from core.models import get_dashboard_stats, get_recent_activities
+from core.utils import (
     validate_work_order_data, validate_user_data, validate_file_upload,
     generate_claim_number, hash_password, verify_password, init_template_filters,
     setup_upload_folders, ValidationError, FileUploadError, sanitize_html
@@ -111,7 +111,7 @@ def role_required(allowed_roles):
 
 def allowed_file(filename):
     """Vérifier les extensions de fichiers autorisées - Wrapper pour compatibilité"""
-    from utils import allowed_file as utils_allowed_file
+    from core.utils import allowed_file as utils_allowed_file
     return utils_allowed_file(filename)
 
 # Configuration des uploads - Pour compatibilité avec l'ancien code
@@ -284,6 +284,186 @@ def dashboard():
     finally:
         if conn:
             conn.close()
+
+# Routes pour le profil utilisateur et paramètres
+@app.route('/profile')
+@login_required
+def user_profile():
+    """Page de profil utilisateur"""
+    try:
+        conn = get_db_connection()
+        if conn is None:
+            flash('Service de base de données temporairement indisponible', 'error')
+            return redirect(url_for('dashboard'))
+            
+        with conn.cursor() as cursor:
+            # Récupérer les informations complètes de l'utilisateur
+            cursor.execute("""
+                SELECT id, name, email, role, is_active
+                FROM users 
+                WHERE id = %s
+            """, (session.get('user_id'),))
+            
+            user = cursor.fetchone()
+            if not user:
+                flash('Utilisateur non trouvé', 'error')
+                return redirect(url_for('dashboard'))
+            
+            # Statistiques de l'utilisateur si c'est un technicien
+            user_stats = {}
+            if user.get('role') in ['technician', 'supervisor']:
+                cursor.execute("""
+                    SELECT 
+                        COUNT(*) as total_work_orders,
+                        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_orders,
+                        SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as current_orders
+                    FROM work_orders 
+                    WHERE assigned_to = %s
+                """, (user['id'],))
+                user_stats = cursor.fetchone() or {}
+                
+        return render_template('profile/index.html', user=user, stats=user_stats)
+        
+    except Exception as e:
+        logger.error(f"Erreur profil utilisateur: {e}")
+        flash('Erreur lors du chargement du profil', 'error')
+        return redirect(url_for('dashboard'))
+    finally:
+        if conn:
+            conn.close()
+
+@app.route('/profile/edit', methods=['GET', 'POST'])
+@login_required
+def edit_profile():
+    """Modifier le profil utilisateur"""
+    try:
+        conn = get_db_connection()
+        if conn is None:
+            flash('Service de base de données temporairement indisponible', 'error')
+            return redirect(url_for('user_profile'))
+            
+        if request.method == 'POST':
+            # Traitement de la modification du profil
+            full_name = request.form.get('full_name', '').strip()
+            email = request.form.get('email', '').strip()
+            
+            if not full_name or not email:
+                flash('Le nom complet et l\'email sont obligatoires', 'error')
+                return redirect(url_for('edit_profile'))
+            
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    UPDATE users 
+                    SET name = %s, email = %s
+                    WHERE id = %s
+                """, (full_name, email, session.get('user_id')))
+                
+                conn.commit()
+                
+                # Mettre à jour la session
+                session['user_name'] = full_name
+                session['user_email'] = email
+                
+            flash('Profil mis à jour avec succès', 'success')
+            return redirect(url_for('user_profile'))
+        
+        # GET request - afficher le formulaire
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT id, name, email, role
+                FROM users 
+                WHERE id = %s
+            """, (session.get('user_id'),))
+            
+            user = cursor.fetchone()
+            if not user:
+                flash('Utilisateur non trouvé', 'error')
+                return redirect(url_for('dashboard'))
+                
+        return render_template('profile/edit.html', user=user)
+        
+    except Exception as e:
+        logger.error(f"Erreur modification profil: {e}")
+        flash('Erreur lors de la modification du profil', 'error')
+        return redirect(url_for('user_profile'))
+    finally:
+        if conn:
+            conn.close()
+
+@app.route('/settings')
+@login_required
+def settings():
+    """Page des paramètres utilisateur"""
+    try:
+        conn = get_db_connection()
+        if conn is None:
+            flash('Service de base de données temporairement indisponible', 'error')
+            return redirect(url_for('dashboard'))
+            
+        with conn.cursor() as cursor:
+            # Récupérer les paramètres utilisateur
+            cursor.execute("""
+                SELECT id, name, email, role, is_active
+                FROM users 
+                WHERE id = %s
+            """, (session.get('user_id'),))
+            
+            user = cursor.fetchone()
+            if not user:
+                flash('Utilisateur non trouvé', 'error')
+                return redirect(url_for('dashboard'))
+                
+        # Paramètres par défaut (on peut les stocker en DB plus tard)
+        settings_data = {
+            'notifications': {
+                'email_notifications': True,
+                'sms_notifications': False,
+                'desktop_notifications': True
+            },
+            'display': {
+                'theme': 'light',
+                'language': 'fr',
+                'timezone': 'Europe/Paris'
+            },
+            'privacy': {
+                'show_profile': True,
+                'show_activity': False
+            }
+        }
+        
+        return render_template('settings/index.html', user=user, settings=settings_data)
+        
+    except Exception as e:
+        logger.error(f"Erreur paramètres: {e}")
+        flash('Erreur lors du chargement des paramètres', 'error')
+        return redirect(url_for('dashboard'))
+    finally:
+        if conn:
+            conn.close()
+
+@app.route('/settings/update', methods=['POST'])
+@login_required
+def update_settings():
+    """Mettre à jour les paramètres utilisateur"""
+    try:
+        # Pour l'instant, on simule la mise à jour des paramètres
+        setting_type = request.form.get('setting_type')
+        
+        if setting_type == 'notifications':
+            flash('Paramètres de notifications mis à jour', 'success')
+        elif setting_type == 'display':
+            flash('Paramètres d\'affichage mis à jour', 'success')
+        elif setting_type == 'privacy':
+            flash('Paramètres de confidentialité mis à jour', 'success')
+        else:
+            flash('Paramètres mis à jour', 'success')
+            
+        return redirect(url_for('settings'))
+        
+    except Exception as e:
+        logger.error(f"Erreur mise à jour paramètres: {e}")
+        flash('Erreur lors de la mise à jour des paramètres', 'error')
+        return redirect(url_for('settings'))
 
 # Import des modules de routes
 from routes import work_orders, interventions, customers, technicians, analytics, api
