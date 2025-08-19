@@ -55,6 +55,7 @@ ENV/
 env.bak/
 venv.bak/
 chronotech_env/
+.env
 
 # IDEs
 .vscode/
@@ -102,3 +103,5 @@ production_deployment.conf
 # Logs
 logs/
 *.log
+
+credentials.json
