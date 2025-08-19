@@ -584,16 +584,23 @@
         // window.location.href = `/customers/export?{{ request.query_string.decode() }}`;
     }
 
-    // Style CSS pour les cartes clients
+    // Style CSS pour les cartes clients (prévenir chevauchement et gérer z-index)
     const style = document.createElement('style');
     style.textContent = `
 .customer-card {
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
     border: 1px solid rgba(0,0,0,0.08);
+    position: relative; /* create stacking context */
+    z-index: 1;
 }
 .customer-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transform: translateY(-6px);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.18);
+    z-index: 50; /* bring hovered card above neighbors */
+}
+/* Ensure dropdown menus and popovers appear above cards */
+.dropdown-menu {
+    z-index: 1050; /* above typical Bootstrap modals */
 }
 .icon-shape {
     width: 48px;

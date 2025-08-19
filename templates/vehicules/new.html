@@ -10,7 +10,19 @@
                 <div class="card-header"><h5>Créer un véhicule</h5></div>
                 <div class="card-body">
                     <form method="POST" action="{{ url_for('vehicles.create') }}">
+                        {% if not customer_id %}
+                        <div class="mb-3">
+                            <label class="form-label">Client <small class="text-muted">(sélectionner pour associer le véhicule)</small></label>
+                            <select name="customer_id" class="form-control" required>
+                                <option value="">-- Choisir un client --</option>
+                                {% for c in customers %}
+                                <option value="{{ c.id }}">{{ c.name }}{% if c.company %} — {{ c.company }}{% endif %}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% else %}
                         <input type="hidden" name="customer_id" value="{{ customer_id }}">
+                        {% endif %}
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
 
                         <div class="mb-3">
@@ -40,7 +52,11 @@
 
                         <div class="d-flex gap-2">
                             <button type="submit" class="btn btn-primary clay-button-primary">Créer</button>
+                            {% if customer_id %}
                             <a href="{{ url_for('customers.view_customer', customer_id=customer_id) }}" class="btn btn-outline-secondary clay-button">Annuler</a>
+                            {% else %}
+                            <a href="{{ url_for('customers.index') }}" class="btn btn-outline-secondary clay-button">Annuler</a>
+                            {% endif %}
                         </div>
                     </form>
                 </div>

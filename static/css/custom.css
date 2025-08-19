@@ -1,0 +1,36 @@
+/* Custom CSS fixes for dropdown visibility inside cards */
+/* Ensures dropdown menus are not clipped by card containers and sit above other content */
+
+/* Allow overflow for card-like containers where dropdowns may live */
+.clay-card,
+.card,
+.card-body,
+.card-header,
+.card-footer {
+  overflow: visible !important;
+}
+
+/* Ensure bootstrap dropdown menus stack above other elements (higher than default) */
+.dropdown-menu {
+  z-index: 2050 !important;
+}
+
+/* Safety: keep dropdown positioning relative to the toggle */
+.dropdown,
+.dropdown-toggle {
+  position: relative;
+}
+
+/* If any global rule uses transform on ancestor elements it may create a new stacking context.
+   This rule nudges dropdowns to use fixed positioning when needed (keeps them above). */
+.dropdown-menu[data-flip='true'] {
+  position: fixed !important;
+}
+
+/* Small visual tweak to match existing theme */
+.dropdown-menu {
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(30, 41, 59, 0.12);
+}
+
+/* End of custom.css */

@@ -204,8 +204,13 @@ def get_dashboard_stats():
         cursor.execute("SELECT COUNT(*) AS urgent_orders FROM work_orders WHERE priority = 'urgent' AND status NOT IN ('completed','cancelled')")
         urgent_row = cursor.fetchone() or {}
 
-        # active_technicians
-        cursor.execute("SELECT COUNT(*) AS active_technicians FROM users WHERE role = 'technician' AND is_active = 1")
+        # active_technicians (case-insensitive role match, fallback to status if is_active missing)
+        cursor.execute("""
+            SELECT COUNT(*) AS active_technicians
+            FROM users
+            WHERE LOWER(COALESCE(role, '')) = 'technician'
+                AND (is_active = 1 OR LOWER(COALESCE(status, '')) = 'active')
+        """)
         tech_row = cursor.fetchone() or {}
 
         cursor.close()

@@ -10,7 +10,7 @@ set -e  # Arrêt en cas d'erreur
 PROJECT_NAME="ChronoTech"
 PYTHON_VERSION="3.8"
 VENV_NAME="venv"
-DEFAULT_PORT=5011
+DEFAULT_PORT=5012
 DB_NAME="bdm"
 DB_USER="gsicloud"
 DB_PASSWORD="TCOChoosenOne204$"
@@ -594,7 +594,7 @@ show_help() {
     echo "  --setup-only        Effectuer seulement la configuration sans démarrer"
     echo "  --skip-db           Ignorer la configuration de la base de données"
     echo "  --skip-test-data    Ignorer l'insertion des données de test"
-    echo "  --port PORT         Spécifier un port différent (défaut: 5011)"
+    echo "  --port PORT         Spécifier un port différent (défaut: 5012)"
     echo "  --db-user USER      Spécifier l'utilisateur MySQL (défaut: root)"
     echo "  --db-password PASS  Spécifier le mot de passe MySQL"
     echo ""
