@@ -150,8 +150,13 @@ def dashboard():
             row = cursor.fetchone() or {}
             stats['urgent_orders'] = int(row.get('urgent_orders') or 0)
 
-            # 4) Active technicians (users with role technician and is_active)
-            cursor.execute("SELECT COUNT(*) AS active_technicians FROM users WHERE role = 'technician' AND is_active = 1")
+            # 4) Active technicians (case-insensitive role match and tolerant to NULL is_active)
+            cursor.execute("""
+                SELECT COUNT(*) AS active_technicians
+                FROM users
+                WHERE LOWER(COALESCE(role, '')) = 'technician'
+                    AND (is_active = 1 OR LOWER(COALESCE(status, '')) = 'active')
+            """)
             row = cursor.fetchone() or {}
             stats['active_technicians'] = int(row.get('active_technicians') or 0)
 

@@ -21,7 +21,7 @@
             <div class="dropdown">
                 <button class="btn btn-outline-secondary clay-button dropdown-toggle" type="button" 
                         data-bs-toggle="dropdown">
-                    <i class="fa-solid fa-ellipsis-v"></i>
+                    <i class="fa-solid fa-ellipsis-vertical"></i>
                 </button>
                 <ul class="dropdown-menu">
                     <li><a class="dropdown-item" href="{{ url_for('technicians.schedule', technician_id=technician.id) }}">
@@ -38,7 +38,7 @@
                         <i class="fa-solid fa-print me-2"></i>Imprimer
                     </a></li>
                     <li><a class="dropdown-item" href="#" onclick="exportProfile()">
-                        <i class="fas fa-download me-2"></i>Exporter
+                        <i class="fa-solid fa-download me-2"></i>Exporter
                     </a></li>
                 </ul>
             </div>
@@ -78,16 +78,16 @@
                     <div class="d-flex justify-content-center gap-2 mt-3">
                         {% if technician.email %}
                         <a href="mailto:{{ technician.email }}" class="btn btn-sm btn-outline-primary clay-button">
-                            <i class="fas fa-envelope"></i>
+                            <i class="fa-solid fa-envelope"></i>
                         </a>
                         {% endif %}
                         {% if technician.phone %}
                         <a href="tel:{{ technician.phone }}" class="btn btn-sm btn-outline-success clay-button">
-                            <i class="fas fa-phone"></i>
+                            <i class="fa-solid fa-phone"></i>
                         </a>
                         {% endif %}
                         <button class="btn btn-sm btn-outline-info clay-button" onclick="showLocationOnMap()">
-                            <i class="fas fa-map-marker-alt"></i>
+                            <i class="fa-solid fa-map-marker-alt"></i>
                         </button>
                     </div>
                 </div>
@@ -96,7 +96,7 @@
             <!-- Informations de contact -->
             <div class="clay-card mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-address-book me-2"></i>Contact</h5>
+                    <h5 class="mb-0"><i class="fa-solid fa-address-book me-2"></i>Contact</h5>
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
@@ -177,7 +177,7 @@
             <!-- Statut actuel -->
             <div class="clay-card">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Statut Actuel</h5>
+                        <h5 class="mb-0"><i class="fa-solid fa-info-circle me-2"></i>Statut Actuel</h5>
                 </div>
                 <div class="card-body">
                     <div class="d-flex align-items-center mb-2">
@@ -211,7 +211,7 @@
             <!-- Informations professionnelles -->
             <div class="clay-card mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-briefcase me-2"></i>Informations Professionnelles</h5>
+                    <h5 class="mb-0"><i class="fa-solid fa-briefcase me-2"></i>Informations Professionnelles</h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -289,10 +289,10 @@
             <!-- Planning de travail -->
             <div class="clay-card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fas fa-calendar me-2"></i>Planning de Travail</h5>
+                    <h5 class="mb-0"><i class="fa-solid fa-calendar me-2"></i>Planning de Travail</h5>
                     <a href="{{ url_for('technicians.schedule', technician_id=technician.id) }}" 
                        class="btn btn-sm btn-outline-primary clay-button">
-                        <i class="fas fa-external-link-alt me-1"></i>Voir détail
+                        <i class="fa-solid fa-up-right-from-square me-1"></i>Voir détail
                     </a>
                 </div>
                 <div class="card-body">
@@ -322,7 +322,7 @@
             <!-- Équipements assignés -->
             <div class="clay-card mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-truck me-2"></i>Équipements Assignés</h5>
+                    <h5 class="mb-0"><i class="fa-solid fa-truck me-2"></i>Équipements Assignés</h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -351,10 +351,10 @@
             <!-- Interventions récentes -->
             <div class="clay-card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Interventions Récentes</h5>
+                    <h5 class="mb-0"><i class="fa-solid fa-history me-2"></i>Interventions Récentes</h5>
                     <a href="{{ url_for('work_orders.list_work_orders') }}?technician={{ technician.id }}" 
                        class="btn btn-sm btn-outline-primary clay-button">
-                        <i class="fas fa-external-link-alt me-1"></i>Voir toutes
+                        <i class="fa-solid fa-up-right-from-square me-1"></i>Voir toutes
                     </a>
                 </div>
                 <div class="card-body">
@@ -411,9 +411,9 @@
 
             <!-- Notes -->
             {% if technician.notes %}
-            <div class="clay-card">
+                <div class="clay-card">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-sticky-note me-2"></i>Notes</h5>
+                    <h5 class="mb-0"><i class="fa-solid fa-sticky-note me-2"></i>Notes</h5>
                 </div>
                 <div class="card-body">
                     <p class="mb-0">{{ technician.notes }}</p>
@@ -436,7 +436,7 @@
                 <div id="map" style="height: 400px; background: #f8f9fa; border-radius: 8px;">
                     <div class="d-flex align-items-center justify-content-center h-100">
                         <div class="text-center">
-                            <i class="fas fa-map-marker-alt fa-3x text-muted mb-3"></i>
+                            <i class="fa-solid fa-map-marker-alt fa-3x text-muted mb-3"></i>
                             <p class="text-muted">Carte à implémenter</p>
                             {% if technician.address %}
                             <p><strong>Adresse:</strong> {{ technician.address }}</p>

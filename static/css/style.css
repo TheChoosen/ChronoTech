@@ -131,3 +131,23 @@ body {
         font-size: 2.5rem;
     }
 }
+
+/* Fix stacking issues for customer cards and ensure dropdowns appear above cards */
+.customer-card {
+    position: relative; /* create stacking context */
+    z-index: 1;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+.customer-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.18);
+    z-index: 50; /* bring hovered card above neighbors */
+}
+
+/* Ensure dropdowns and popovers render above cards */
+.dropdown-menu,
+.popover,
+.modal {
+    z-index: 2000;
+}
+

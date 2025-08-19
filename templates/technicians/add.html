@@ -6,7 +6,7 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0">
-            <i class="fas fa-user-plus me-2"></i>Ajouter un Technicien
+            <i class="fa-solid fa-user-plus me-2"></i>Ajouter un Technicien
         </h1>
         <a href="{{ url_for('technicians.index') }}" class="btn btn-outline-secondary clay-button">
             <i class="fa-solid fa-arrow-left me-2"></i>Retour à la liste
@@ -169,19 +169,19 @@
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" id="skill_electrical" name="skills[]" value="electrical">
                                         <label class="form-check-label" for="skill_electrical">
-                                            <i class="fas fa-bolt text-warning me-2"></i>Électricité
+                                            <i class="fa-solid fa-bolt text-warning me-2"></i>Électricité
                                         </label>
                                     </div>
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" id="skill_plumbing" name="skills[]" value="plumbing">
                                         <label class="form-check-label" for="skill_plumbing">
-                                            <i class="fas fa-tint text-primary me-2"></i>Plomberie
+                                            <i class="fa-solid fa-tint text-primary me-2"></i>Plomberie
                                         </label>
                                     </div>
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" id="skill_hvac" name="skills[]" value="hvac">
                                         <label class="form-check-label" for="skill_hvac">
-                                            <i class="fas fa-snowflake text-info me-2"></i>HVAC
+                                            <i class="fa-solid fa-snowflake text-info me-2"></i>HVAC
                                         </label>
                                     </div>
                                 </div>
@@ -189,19 +189,19 @@
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" id="skill_networking" name="skills[]" value="networking">
                                         <label class="form-check-label" for="skill_networking">
-                                            <i class="fas fa-network-wired text-success me-2"></i>Réseau
+                                            <i class="fa-solid fa-network-wired text-success me-2"></i>Réseau
                                         </label>
                                     </div>
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" id="skill_security" name="skills[]" value="security">
                                         <label class="form-check-label" for="skill_security">
-                                            <i class="fas fa-shield-alt text-danger me-2"></i>Sécurité
+                                            <i class="fa-solid fa-shield-alt text-danger me-2"></i>Sécurité
                                         </label>
                                     </div>
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" id="skill_automation" name="skills[]" value="automation">
                                         <label class="form-check-label" for="skill_automation">
-                                            <i class="fas fa-robot text-secondary me-2"></i>Automatisation
+                                            <i class="fa-solid fa-robot text-secondary me-2"></i>Automatisation
                                         </label>
                                     </div>
                                 </div>
@@ -209,19 +209,19 @@
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" id="skill_maintenance" name="skills[]" value="maintenance">
                                         <label class="form-check-label" for="skill_maintenance">
-                                            <i class="fas fa-wrench text-dark me-2"></i>Maintenance
+                                            <i class="fa-solid fa-wrench text-dark me-2"></i>Maintenance
                                         </label>
                                     </div>
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" id="skill_installation" name="skills[]" value="installation">
                                         <label class="form-check-label" for="skill_installation">
-                                            <i class="fas fa-hammer text-warning me-2"></i>Installation
+                                            <i class="fa-solid fa-hammer text-warning me-2"></i>Installation
                                         </label>
                                     </div>
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" id="skill_diagnostics" name="skills[]" value="diagnostics">
                                         <label class="form-check-label" for="skill_diagnostics">
-                                            <i class="fas fa-search text-info me-2"></i>Diagnostic
+                                            <i class="fa-solid fa-search text-info me-2"></i>Diagnostic
                                         </label>
                                     </div>
                                 </div>
@@ -233,7 +233,7 @@
                 <!-- Informations de travail -->
                 <div class="clay-card mb-4">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-briefcase me-2"></i>Informations de Travail</h5>
+                        <h5 class="mb-0"><i class="fa-solid fa-briefcase me-2"></i>Informations de Travail</h5>
                     </div>
                     <div class="card-body">
                         <div class="row">
@@ -335,7 +335,7 @@
                 <!-- Notes et commentaires -->
                 <div class="clay-card mb-4">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-sticky-note me-2"></i>Notes et Commentaires</h5>
+                        <h5 class="mb-0"><i class="fa-solid fa-sticky-note me-2"></i>Notes et Commentaires</h5>
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
@@ -372,10 +372,10 @@
                             </button>
                             <button type="submit" name="create_and_assign" value="1" 
                                     class="btn btn-success clay-button">
-                                <i class="fas fa-plus me-2"></i>Créer et assigner une intervention
+                                <i class="fa-solid fa-plus me-2"></i>Créer et assigner une intervention
                             </button>
                             <a href="{{ url_for('technicians.index') }}" class="btn btn-outline-secondary clay-button">
-                                <i class="fas fa-times me-2"></i>Annuler
+                                <i class="fa-solid fa-times me-2"></i>Annuler
                             </a>
                         </div>
                     </div>
@@ -384,7 +384,7 @@
                 <!-- Aide et conseils -->
                 <div class="clay-card mb-4">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-question-circle me-2"></i>Conseils</h5>
+                        <h5 class="mb-0"><i class="fa-solid fa-question-circle me-2"></i>Conseils</h5>
                     </div>
                     <div class="card-body">
                         <h6>Spécialisations :</h6>
@@ -417,22 +417,22 @@
                 <!-- Génération automatique -->
                 <div class="clay-card mb-4">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-magic me-2"></i>Génération Automatique</h5>
+                        <h5 class="mb-0"><i class="fa-solid fa-magic me-2"></i>Génération Automatique</h5>
                     </div>
                     <div class="card-body">
                         <p class="small text-muted">Générer automatiquement certains champs</p>
                         <div class="d-grid gap-2">
-                            <button type="button" class="btn btn-sm btn-outline-info clay-button" 
+                                <button type="button" class="btn btn-sm btn-outline-info clay-button" 
                                     onclick="generateEmployeeId()">
-                                <i class="fas fa-id-card me-2"></i>ID Employé
+                                <i class="fa-solid fa-id-card me-2"></i>ID Employé
                             </button>
                             <button type="button" class="btn btn-sm btn-outline-info clay-button" 
                                     onclick="generateEmail()">
-                                <i class="fas fa-envelope me-2"></i>Email Pro
+                                <i class="fa-solid fa-envelope me-2"></i>Email Pro
                             </button>
                             <button type="button" class="btn btn-sm btn-outline-info clay-button" 
                                     onclick="setDefaultSchedule()">
-                                <i class="fas fa-clock me-2"></i>Horaires Standard
+                                <i class="fa-solid fa-clock me-2"></i>Horaires Standard
                             </button>
                         </div>
                     </div>
@@ -442,7 +442,7 @@
                 <div class="clay-card" id="validationCard" style="display: none;">
                     <div class="card-header">
                         <h5 class="mb-0 text-success">
-                            <i class="fas fa-check-circle me-2"></i>Validation
+                            <i class="fa-solid fa-check-circle me-2"></i>Validation
                         </h5>
                     </div>
                     <div class="card-body">
