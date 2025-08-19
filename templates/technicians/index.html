@@ -6,18 +6,18 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0">
-            <i class="fas fa-users-cog me-2"></i>Gestion des Techniciens
+                <i class="fa-solid fa-users-cog me-2"></i>Gestion des Techniciens
         </h1>
         <div class="d-flex gap-2">
             <a href="{{ url_for('technicians.add_technician') }}" class="btn btn-primary clay-button-primary">
-                <i class="fas fa-user-plus me-2"></i>Nouveau Technicien
+                <i class="fa-solid fa-user-plus me-2"></i>Nouveau Technicien
             </a>
             {# Correction : il faut un id pour accéder à la charge de travail d’un technicien #}
             <a href="#" class="btn btn-outline-info clay-button" onclick="alert('Sélectionnez un technicien pour voir sa charge de travail.')">
-                <i class="fas fa-chart-line me-2"></i>Charge de travail
+                    <i class="fa-solid fa-chart-line me-2"></i>Charge de travail
             </a>
             <button class="btn btn-outline-secondary clay-button" onclick="exportTechnicians()">
-                <i class="fas fa-download me-2"></i>Exporter
+                    <i class="fa-solid fa-download me-2"></i>Exporter
             </button>
         </div>
     </div>
@@ -29,7 +29,7 @@
                 <div class="card-body">
                     <div class="d-flex align-items-center justify-content-center">
                         <div class="icon-shape bg-primary text-white rounded-circle me-3">
-                            <i class="fas fa-users-cog"></i>
+                                <i class="fa-solid fa-users-cog"></i>
                         </div>
                         <div>
                             <h3 class="mb-0">{{ stats.total_technicians }}</h3>
@@ -44,7 +44,7 @@
                 <div class="card-body">
                     <div class="d-flex align-items-center justify-content-center">
                         <div class="icon-shape bg-success text-white rounded-circle me-3">
-                            <i class="fas fa-user-check"></i>
+                                <i class="fa-solid fa-user-check"></i>
                         </div>
                         <div>
                             <h3 class="mb-0">{{ stats.active_technicians }}</h3>
@@ -74,7 +74,7 @@
                 <div class="card-body">
                     <div class="d-flex align-items-center justify-content-center">
                         <div class="icon-shape bg-info text-white rounded-circle me-3">
-                            <i class="fas fa-star"></i>
+                                <i class="fa-solid fa-star"></i>
                         </div>
                         <div>
                             <h3 class="mb-0">{{ stats.average_rating|round(1) if stats.average_rating else '-' }}</h3>
@@ -98,7 +98,7 @@
                                    value="{{ request.args.get('search', '') }}" 
                                    placeholder="Nom, email, spécialité...">
                             <button class="btn btn-outline-secondary" type="submit">
-                                <i class="fas fa-search"></i>
+                                    <i class="fa-solid fa-search"></i>
                             </button>
                         </div>
                     </div>
@@ -176,7 +176,7 @@
                 {% if request.args.get('search') or request.args.get('specialization') or request.args.get('status') or request.args.get('zone') or request.args.get('availability') %}
                 <div class="mt-3">
                     <a href="{{ url_for('technicians.index') }}" class="btn btn-sm btn-outline-secondary clay-button">
-                        <i class="fas fa-times me-1"></i>Effacer les filtres
+                            <i class="fa-solid fa-times me-1"></i>Effacer les filtres
                     </a>
                 </div>
                 {% endif %}
@@ -188,18 +188,18 @@
     <div class="clay-card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">
-                <i class="fas fa-list me-2"></i>Liste des Techniciens 
+                <i class="fa-solid fa-list me-2"></i>Liste des Techniciens 
                 <span class="badge bg-secondary">{{ pagination.total }} résultat(s)</span>
             </h5>
             <div class="d-flex gap-2">
                 <div class="btn-group" role="group">
                     <input type="radio" class="btn-check" name="view" id="view-cards" autocomplete="off" checked>
                     <label class="btn btn-outline-secondary btn-sm clay-button" for="view-cards" onclick="switchView('cards')">
-                        <i class="fas fa-th"></i>
+                            <i class="fa-solid fa-th"></i>
                     </label>
                     <input type="radio" class="btn-check" name="view" id="view-table" autocomplete="off">
                     <label class="btn btn-outline-secondary btn-sm clay-button" for="view-table" onclick="switchView('table')">
-                        <i class="fas fa-list"></i>
+                            <i class="fa-solid fa-list"></i>
                     </label>
                 </div>
             </div>
@@ -211,7 +211,7 @@
             <div class="row">
                 {% for technician in technicians %}
                 <div class="col-md-6 col-lg-4 mb-4">
-                    <div class="card h-100 technician-card">
+                    <div class="card h-100 customer-card">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-start mb-3">
                                 <div class="d-flex align-items-center">
@@ -244,27 +244,27 @@
                                 <div class="dropdown">
                                     <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
                                             type="button" data-bs-toggle="dropdown">
-                                        <i class="fas fa-ellipsis-v"></i>
+                                            <i class="fa-solid fa-ellipsis-vertical"></i>
                                     </button>
                                     <ul class="dropdown-menu">
                                         <li><a class="dropdown-item" href="{{ url_for('technicians.view_technician', technician_id=technician.id) }}">
                                             <i class="fa-solid fa-eye me-2"></i>Voir profil
                                         </a></li>
                                         <li><a class="dropdown-item" href="{{ url_for('technicians.edit_technician', technician_id=technician.id) }}">
-                                            <i class="fas fa-edit me-2"></i>Modifier
+                                            <i class="fa-solid fa-edit me-2"></i>Modifier
                                         </a></li>
                                         <li><a class="dropdown-item" href="{{ url_for('work_orders.create_work_order', technician_id=technician.id) }}">
-                                            <i class="fas fa-plus me-2"></i>Assigner intervention
+                                            <i class="fa-solid fa-plus me-2"></i>Assigner intervention
                                         </a></li>
                                         <li><hr class="dropdown-divider"></li>
                                         <li><a class="dropdown-item" href="{{ url_for('technicians.schedule', technician_id=technician.id) }}">
-                                            <i class="fas fa-calendar me-2"></i>Planning
+                                            <i class="fa-solid fa-calendar me-2"></i>Planning
                                         </a></li>
                                         {% if current_user.role in ['admin', 'supervisor'] %}
                                         <li><hr class="dropdown-divider"></li>
                                         <li><a class="dropdown-item text-danger" href="#" 
                                                onclick="deleteTechnician({{ technician.id }})">
-                                            <i class="fas fa-trash me-2"></i>Supprimer
+                                            <i class="fa-solid fa-trash me-2"></i>Supprimer
                                         </a></li>
                                         {% endif %}
                                     </ul>
@@ -274,19 +274,19 @@
                             <div class="technician-info">
                                 {% if technician.email %}
                                 <p class="mb-1">
-                                    <i class="fas fa-envelope text-muted me-2"></i>
+                                    <i class="fa-solid fa-envelope text-muted me-2"></i>
                                     <a href="mailto:{{ technician.email }}">{{ technician.email }}</a>
                                 </p>
                                 {% endif %}
                                 {% if technician.phone %}
                                 <p class="mb-1">
-                                    <i class="fas fa-phone text-muted me-2"></i>
+                                    <i class="fa-solid fa-phone text-muted me-2"></i>
                                     <a href="tel:{{ technician.phone }}">{{ technician.phone }}</a>
                                 </p>
                                 {% endif %}
                                 {% if technician.zone %}
                                 <p class="mb-1">
-                                    <i class="fas fa-map-marker-alt text-muted me-2"></i>{{ technician.zone }}
+                                    <i class="fa-solid fa-map-marker-alt text-muted me-2"></i>{{ technician.zone }}
                                 </p>
                                 {% endif %}
                                 
@@ -363,11 +363,11 @@
                                     </a>
                                     <a href="mailto:{{ technician.email }}" 
                                        class="btn btn-sm btn-outline-success clay-button">
-                                        <i class="fas fa-envelope"></i>
+                                        <i class="fa-solid fa-envelope"></i>
                                     </a>
                                     <a href="tel:{{ technician.phone }}" 
                                        class="btn btn-sm btn-outline-info clay-button">
-                                        <i class="fas fa-phone"></i>
+                                        <i class="fa-solid fa-phone"></i>
                                     </a>
                                 </div>
                             </div>
@@ -378,11 +378,11 @@
             </div>
             {% else %}
             <div class="text-center py-4">
-                <i class="fas fa-users-cog fa-3x text-muted mb-3"></i>
+                <i class="fa-solid fa-users-cog fa-3x text-muted mb-3"></i>
                 <h5>Aucun technicien trouvé</h5>
                 <p class="text-muted">Commencez par ajouter votre premier technicien</p>
                 <a href="{{ url_for('technicians.add_technician') }}" class="btn btn-primary clay-button-primary">
-                    <i class="fas fa-user-plus me-2"></i>Ajouter un technicien
+                    <i class="fa-solid fa-user-plus me-2"></i>Ajouter un technicien
                 </a>
             </div>
             {% endif %}
@@ -479,12 +479,14 @@
                                 </a>
                                 <a href="{{ url_for('technicians.edit_technician', technician_id=technician.id) }}" 
                                    class="btn btn-sm btn-outline-secondary clay-button">
-                                    <i class="fas fa-edit"></i>
+                                    <i class="fa-solid fa-edit"></i>
+                                        <i class="fa-solid fa-edit"></i>
                                 </a>
                                 {% if current_user.role in ['admin', 'supervisor'] %}
                                 <button class="btn btn-sm btn-outline-danger clay-button" 
                                         onclick="deleteTechnician({{ technician.id }})">
-                                    <i class="fas fa-trash"></i>
+                                    <i class="fa-solid fa-trash"></i>
+                                        <i class="fa-solid fa-trash"></i>
                                 </button>
                                 {% endif %}
                             </div>
@@ -503,7 +505,7 @@
                     {% if pagination.has_prev %}
                     <li class="page-item">
                         <a class="page-link" href="{{ url_for('technicians.index', page=pagination.prev_num, **request.args) }}">
-                            <i class="fas fa-chevron-left"></i>
+                            <i class="fa-solid fa-chevron-left"></i>
                         </a>
                     </li>
                     {% endif %}
@@ -531,7 +533,7 @@
                     {% if pagination.has_next %}
                     <li class="page-item">
                         <a class="page-link" href="{{ url_for('technicians.index', page=pagination.next_num, **request.args) }}">
-                            <i class="fas fa-chevron-right"></i>
+                                <i class="fa-solid fa-chevron-right"></i>
                         </a>
                     </li>
                     {% endif %}
@@ -610,6 +612,9 @@ style.textContent = `
 .avatar-circle {
     min-width: 56px;
 }
+/* Allow dropdowns to overflow card boundaries and appear on top */
+.technician-card { overflow: visible; }
+.dropdown-menu { z-index: 1200; }
 `;
 document.head.appendChild(style);
 </script>

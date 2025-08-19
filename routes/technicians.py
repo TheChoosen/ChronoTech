@@ -161,12 +161,37 @@ def index():
 
         wrapped_technicians = [RowWrapper(t) for t in technicians]
 
-        # Calcul des stats
+        # Calcul des stats (robuste: gère différences de casse et colonne `status` vs `is_active`)
+        def _role_is(row, role_name):
+            role = row.get('role')
+            if role is None:
+                return False
+            try:
+                return str(role).strip().lower() == role_name
+            except Exception:
+                return False
+
+        def _row_is_active(row):
+            # Priorité à la colonne is_active si présente
+            ia = row.get('is_active')
+            if ia is not None:
+                # MySQL may return 0/1 or True/False
+                try:
+                    return bool(int(ia))
+                except Exception:
+                    return bool(ia)
+            # Fallback: utiliser la colonne 'status' si elle contient 'active'
+            status = row.get('status') or ''
+            try:
+                return str(status).strip().lower() == 'active'
+            except Exception:
+                return False
+
         stats = {
-            'total_technicians': len([t for t in technicians if t.get('role') == 'technician']),
-            'active_technicians': len([t for t in technicians if t.get('role') == 'technician' and t.get('is_active', True)]),
-            'supervisors': len([t for t in technicians if t.get('role') == 'supervisor']),
-            'managers': len([t for t in technicians if t.get('role') == 'manager']),
+            'total_technicians': len([t for t in technicians if _role_is(t, 'technician')]),
+            'active_technicians': len([t for t in technicians if _role_is(t, 'technician') and _row_is_active(t)]),
+            'supervisors': len([t for t in technicians if _role_is(t, 'supervisor')]),
+            'managers': len([t for t in technicians if _role_is(t, 'manager')]),
         }
 
         log_info(f"Récupération de {len(technicians)} techniciens | filtres: status='{status_filter}' specialization='{specialization_filter}' zone='{zone_filter}' search='{search_filter}' availability='{availability_filter}' sort='{sort}'")

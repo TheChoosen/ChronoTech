@@ -2,6 +2,8 @@ from flask import Blueprint, request, render_template, redirect, url_for, flash,
 from core.config import get_db_config
 import pymysql
 from core.utils import log_error, log_info
+from core.models import Vehicle, Customer
+from core.database import db_manager
 
 bp = Blueprint('vehicles', __name__)
 
@@ -27,7 +29,37 @@ def create():
     notes = request.form.get('notes')
 
     if not customer_id:
-        return jsonify({'success': False, 'message': 'customer_id manquant'}), 400
+        # missing customer_id
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'customer_id manquant'}), 400
+        else:
+            flash('Client manquant', 'error')
+            return redirect(url_for('customers.index'))
+
+    # validate customer exists
+    try:
+        cid = int(customer_id)
+    except Exception:
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'customer_id invalide'}), 400
+        else:
+            flash('Client invalide', 'error')
+            return redirect(url_for('customers.index'))
+
+    try:
+        customer_obj = Customer.find_by_id(cid)
+    except Exception:
+        customer_obj = None
+
+    if not customer_obj:
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'Client introuvable'}), 400
+        else:
+            flash('Client introuvable', 'error')
+            return redirect(url_for('customers.index'))
 
     conn = get_db_connection()
     if not conn:
@@ -69,22 +101,122 @@ def create():
 def new():
     """Render a simple vehicle creation form. Uses POST /vehicles/create to submit."""
     customer_id = request.args.get('customer_id')
-    return render_template('customers/vehicles_new.html', customer_id=customer_id)
+    customers = []
+    try:
+        customers = Customer.get_all()
+    except Exception:
+        customers = []
+    return render_template('vehicules/new.html', customer_id=customer_id, customers=customers)
+
+
+@bp.route('/')
+def index():
+    """Page d'index interactive pour les véhicules.
+
+    Cette page charge un tableau vide côté client et appelle l'API JSON
+    pour récupérer les lignes filtrées/paginées.
+    """
+    return render_template('vehicules/index.html')
+
+
+@bp.route('/api')
+def api_vehicles():
+    """API JSON pour récupérer les véhicules avec filtres et pagination.
+
+    Accessible sous /vehicles/api (blueprint monté sur /vehicles)
+    Query params : q, make, model, year, page, per_page
+    """
+    q = (request.args.get('q') or '').strip()
+    make = (request.args.get('make') or '').strip()
+    model = (request.args.get('model') or '').strip()
+    year = (request.args.get('year') or '').strip()
+    try:
+        page = max(1, int(request.args.get('page', 1)))
+    except Exception:
+        page = 1
+    try:
+        per_page = min(100, max(1, int(request.args.get('per_page', 20))))
+    except Exception:
+        per_page = 20
+
+    # Build dynamic WHERE clause
+    where = ["1=1"]
+    params = []
+    if q:
+        where.append("(vin LIKE %s OR license_plate LIKE %s OR notes LIKE %s)")
+        qpat = f"%{q}%"
+        params.extend([qpat, qpat, qpat])
+    if make:
+        where.append("make LIKE %s")
+        params.append(f"%{make}%")
+    if model:
+        where.append("model LIKE %s")
+        params.append(f"%{model}%")
+    if year:
+        try:
+            y = int(year)
+            where.append("year >= %s")
+            params.append(y)
+        except ValueError:
+            pass
+
+    where_clause = " AND ".join(where)
+
+    # total count
+    try:
+        count_query = f"SELECT COUNT(*) as total FROM vehicles WHERE {where_clause}"
+        total_row = db_manager.execute_query(count_query, params, fetch_one=True)
+        total = int(total_row.get('total', 0)) if total_row else 0
+    except Exception as e:
+        log_error(f"Erreur count vehicles API: {e}")
+        return jsonify({'error': 'Erreur serveur'}), 500
+
+    # pagination
+    offset = (page - 1) * per_page
+    try:
+        data_query = f"SELECT * FROM vehicles WHERE {where_clause} ORDER BY id DESC LIMIT %s OFFSET %s"
+        data_params = params + [per_page, offset]
+        items = db_manager.execute_query(data_query, data_params)
+    except Exception as e:
+        log_error(f"Erreur fetch vehicles API: {e}")
+        return jsonify({'error': 'Erreur serveur'}), 500
+
+    # normalize datetimes for JSON
+    for row in items:
+        for k, v in list(row.items()):
+            if hasattr(v, 'isoformat'):
+                row[k] = v.isoformat()
+
+    pages = (total + per_page - 1) // per_page if per_page else 1
+
+    return jsonify({
+        'page': page,
+        'pages': pages,
+        'total': total,
+        'items': items
+    })
 
 
 @bp.route('/<int:id>/delete', methods=['POST'])
 def delete(id):
     conn = get_db_connection()
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
     if not conn:
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'Erreur de connexion DB'}), 500
         flash('Erreur de connexion DB', 'error')
         return redirect(request.referrer or url_for('customers.index'))
     try:
         with conn.cursor() as cursor:
             cursor.execute("DELETE FROM vehicles WHERE id = %s", (id,))
             conn.commit()
+            if is_ajax:
+                return jsonify({'success': True})
             flash('Véhicule supprimé', 'success')
     except Exception as e:
         log_error(f"Erreur suppression véhicule {id}: {e}")
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'Erreur lors de la suppression'}), 500
         flash('Erreur lors de la suppression', 'error')
     finally:
         conn.close()
@@ -109,7 +241,7 @@ def list_for_customer(customer_id):
             except Exception:
                 pass
 
-    return render_template('customers/vehicles_list.html', vehicles=vehicles, customer_id=customer_id)
+    return render_template('vehicules/list.html', vehicles=vehicles, customer_id=customer_id)
 
 
 @bp.route('/<int:id>/edit', methods=['GET', 'POST'])
@@ -164,7 +296,7 @@ def edit(id):
             flash('Véhicule non trouvé', 'error')
             return redirect(request.referrer or url_for('customers.index'))
 
-        return render_template('customers/vehicles_edit.html', vehicle=vehicle)
+        return render_template('vehicules/edit.html', vehicle=vehicle)
     finally:
         try:
             conn.close()

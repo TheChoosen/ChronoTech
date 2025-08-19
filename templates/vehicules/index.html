@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Véhicules - Client{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Véhicules</h3>
+    <div>
+      <a href="{{ url_for('vehicles.new') }}" class="btn btn-success" id="btn-new-vehicle">Nouveau véhicule</a>
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <div class="col-md-3">
+      <input id="filter-search" class="form-control" placeholder="Recherche (VIN, plaque, notes...)">
+    </div>
+    <div class="col-md-2">
+      <input id="filter-make" class="form-control" placeholder="Marque">
+    </div>
+    <div class="col-md-2">
+      <input id="filter-model" class="form-control" placeholder="Modèle">
+    </div>
+    <div class="col-md-2">
+      <input id="filter-year" type="number" class="form-control" placeholder="Année min">
+    </div>
+    <div class="col-md-3 text-end">
+      <button id="btn-filter" class="btn btn-primary">Filtrer</button>
+      <button id="btn-reset" class="btn btn-outline-secondary">Réinitialiser</button>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-hover" id="vehicles-table">
+      <thead>
+        <tr>
+          <th data-sort="id">#</th>
+          <th data-sort="make">Marque</th>
+          <th data-sort="model">Modèle</th>
+          <th data-sort="year">Année</th>
+          <th>Immat.</th>
+          <th>VIN</th>
+          <th>Notes</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- remplissage via JS -->
+      </tbody>
+    </table>
+  </div>
+
+  <nav>
+    <ul class="pagination" id="vehicles-pagination"></ul>
+  </nav>
+</div>
+{% include 'vehicules/_vehicles_modal.html' %}
+
+<script src="{{ url_for('static', filename='js/vehicles.js') }}"></script>
+
+{% endblock %}

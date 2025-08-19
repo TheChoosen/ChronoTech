@@ -5,15 +5,15 @@
 {% block content %}
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0">
-            <i class="fas fa-user-edit me-2"></i>Modifier Technicien
+            <h1 class="h3 mb-0">
+            <i class="fa-solid fa-user-edit me-2"></i>Modifier Technicien
         </h1>
         <div class="d-flex gap-2">
             <a href="{{ url_for('technicians.view_technician', technician_id=technician.id) }}" class="btn btn-outline-secondary clay-button">
-                <i class="fas fa-eye me-2"></i>Voir
+                <i class="fa-solid fa-eye me-2"></i>Voir
             </a>
             <a href="{{ url_for('technicians.index') }}" class="btn btn-outline-secondary clay-button">
-                <i class="fas fa-arrow-left me-2"></i>Retour
+                <i class="fa-solid fa-arrow-left me-2"></i>Retour
             </a>
         </div>
     </div>
@@ -26,7 +26,7 @@
                 <!-- Informations personnelles -->
                 <div class="clay-card mb-4">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-user me-2"></i>Informations Personnelles</h5>
+                        <h5 class="mb-0"><i class="fa-solid fa-user me-2"></i>Informations Personnelles</h5>
                     </div>
                     <div class="card-body">
                         <div class="row">
@@ -130,7 +130,7 @@
                 <!-- Compétences et spécialisations -->
                 <div class="clay-card mb-4">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-tools me-2"></i>Compétences et Spécialisations</h5>
+                        <h5 class="mb-0"><i class="fa-solid fa-tools me-2"></i>Compétences et Spécialisations</h5>
                     </div>
                     <div class="card-body">
                         <div class="row">
@@ -223,7 +223,7 @@
                 <!-- Affectation et planning -->
                 <div class="clay-card mb-4">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Affectation et Planning</h5>
+                        <h5 class="mb-0"><i class="fa-solid fa-calendar-alt me-2"></i>Affectation et Planning</h5>
                     </div>
                     <div class="card-body">
                         <div class="row">
@@ -278,7 +278,7 @@
                                                     {{ day.title() }}
                                                 </label>
                                             </div>
-                                            <div class="schedule-hours" style="display: {{ 'block' if current_schedule.get(day, {}).get('enabled', False) else 'none' }};">
+                                            <div class="schedule-hours {{ 'd-block' if current_schedule.get(day, {}).get('enabled', False) else 'd-none' }}">
                                                 <div class="row g-1">
                                                     <div class="col-6">
                                                         <input type="time" class="form-control form-control-sm" 
@@ -329,7 +329,7 @@
                 <!-- Informations supplémentaires -->
                 <div class="clay-card mb-4">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Informations Supplémentaires</h5>
+                        <h5 class="mb-0"><i class="fa-solid fa-info-circle me-2"></i>Informations Supplémentaires</h5>
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
@@ -366,7 +366,7 @@
                 <!-- Photo du technicien -->
                 <div class="clay-card mb-4">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-camera me-2"></i>Photo</h5>
+                        <h5 class="mb-0"><i class="fa-solid fa-camera me-2"></i>Photo</h5>
                     </div>
                     <div class="card-body text-center">
                         <div class="photo-upload-area">
@@ -377,7 +377,7 @@
                             {% else %}
                             <div id="photoPreview" class="bg-light rounded-circle d-flex align-items-center justify-content-center mb-3" 
                                  style="width: 150px; height: 150px; margin: 0 auto;">
-                                <i class="fas fa-user fa-4x text-muted"></i>
+                                <i class="fa-solid fa-user fa-4x text-muted"></i>
                             </div>
                             {% endif %}
                             <div>
@@ -391,7 +391,7 @@
                                 {% if technician.photo %}
                                 <div class="mt-2">
                                     <button type="button" class="btn btn-sm btn-outline-danger" onclick="removePhoto()">
-                                        <i class="fas fa-trash me-1"></i>Supprimer
+                                        <i class="fa-solid fa-trash me-1"></i>Supprimer
                                     </button>
                                 </div>
                                 {% endif %}
@@ -403,7 +403,7 @@
                 <!-- Statistiques rapides -->
                 <div class="clay-card mb-4">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Statistiques</h5>
+                        <h5 class="mb-0"><i class="fa-solid fa-chart-bar me-2"></i>Statistiques</h5>
                     </div>
                     <div class="card-body">
                         <div class="row text-center">
@@ -440,24 +440,24 @@
                 <!-- Actions -->
                 <div class="clay-card">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-cogs me-2"></i>Actions</h5>
+                        <h5 class="mb-0"><i class="fa-solid fa-cogs me-2"></i>Actions</h5>
                     </div>
                     <div class="card-body">
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary clay-button-primary">
-                                <i class="fas fa-save me-2"></i>Enregistrer les modifications
+                                <i class="fa-solid fa-save me-2"></i>Enregistrer les modifications
                             </button>
                             <button type="button" class="btn btn-outline-info clay-button" onclick="previewChanges()">
-                                <i class="fas fa-eye me-2"></i>Prévisualiser
+                                <i class="fa-solid fa-eye me-2"></i>Prévisualiser
                             </button>
                             <hr>
                             <a href="{{ url_for('technicians.schedule', technician_id=technician.id) }}" 
                                class="btn btn-outline-secondary clay-button">
-                                <i class="fas fa-calendar me-2"></i>Voir planning
+                                <i class="fa-solid fa-calendar me-2"></i>Voir planning
                             </a>
                             <a href="{{ url_for('work_orders.list_work_orders', technician_id=technician.id) }}" 
                                class="btn btn-outline-secondary clay-button">
-                                <i class="fas fa-tasks me-2"></i>Interventions
+                                <i class="fa-solid fa-tasks me-2"></i>Interventions
                             </a>
                         </div>
                     </div>
@@ -522,7 +522,7 @@ function removePhoto() {
         document.getElementById('photoPreview').innerHTML = `
             <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" 
                  style="width: 150px; height: 150px;">
-                <i class="fas fa-user fa-4x text-muted"></i>
+                                <i class="fa-solid fa-user fa-4x text-muted"></i>
             </div>
         `;
         // Ajouter un champ caché pour indiquer la suppression
