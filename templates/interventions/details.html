@@ -1,3 +1,5 @@
+<!-- details.html -->
+
 {% extends "base.html" %}
 
 {% block title %}Intervention {{ work_order.claim_number }} - ChronoTech{% endblock %}
@@ -8,399 +10,181 @@
 
 {% block content %}
 <div class="intervention-details-container">
-    <!-- En-tête de l'intervention avec IA -->
     <div class="intervention-header clay-card">
         <div class="header-main">
             <div class="title-section">
                 <h1>{{ work_order.claim_number }}</h1>
-                <div class="status-priority">
-                    <span class="status-badge {{ work_order.status }}">
-                        {% if work_order.status == 'pending' %}⏳{% endif %}
-                        {% if work_order.status == 'in_progress' %}⚡{% endif %}
-                        {% if work_order.status == 'completed' %}✅{% endif %}
-                        {% if work_order.status == 'scheduled' %}📅{% endif %}
-                        {{ work_order.status | replace('_', ' ') | title }}
-                    </span>
-                    <span class="priority-badge {{ work_order.priority }}">
-                        {% if work_order.priority == 'urgent' %}🔴{% endif %}
-                        {% if work_order.priority == 'high' %}🟠{% endif %}
-                        {% if work_order.priority == 'medium' %}🟡{% endif %}
-                        {% if work_order.priority == 'low' %}🟢{% endif %}
-                        {{ work_order.priority | title }}
-                    </span>
-                </div>
+                <div class="subline">{{ work_order.customer_name }} · {{ work_order.vehicle_registration or work_order.vehicle_vin or '' }}</div>
             </div>
-            
-            <div class="ai-summary">
-                <div class="ai-indicator">
-                    <span class="ai-icon">🤖</span>
-                    <span class="ai-label">Assistant IA Actif</span>
-                </div>
-                <div class="quick-stats">
-                    <div class="stat">
-                        <span class="number">{{ notes | length }}</span>
-                        <span class="label">Notes</span>
-                    </div>
-                    <div class="stat">
-                        <span class="number">{{ media | length }}</span>
-                        <span class="label">Médias</span>
-                    </div>
-                    <div class="stat">
-                        <span class="number">{{ work_order_lines | length }}</span>
-                        <span class="label">Lignes</span>
-                    </div>
-                </div>
+            <div class="header-actions">
+                <button class="clay-btn clay-btn-primary" onclick="openAiAssistant()">Assistant IA</button>
+                <button class="clay-btn clay-btn-primary" onclick="openPhotoCapture()">Photo</button>
+                <button class="clay-btn clay-btn-primary" onclick="startVoiceNote()">Enregistrer</button>
             </div>
         </div>
-
-        <!-- Actions principales -->
-        <div class="header-actions">
-            {% if session.user_role == 'technician' and work_order.assigned_technician_id == session.user_id %}
-                {% if work_order.status == 'pending' %}
-                <button class="clay-btn clay-btn-success" onclick="quickAction('start_work')">
-                    ▶️ Démarrer l'intervention
-                </button>
-                {% elif work_order.status == 'in_progress' %}
-                <button class="clay-btn clay-btn-warning" onclick="quickAction('complete_work')">
-                    ✅ Terminer l'intervention
-                </button>
-                {% endif %}
-            {% endif %}
-            
-            <button class="clay-btn clay-btn-primary" onclick="startVoiceNote()">
-                🎤 Note vocale
-            </button>
-            <button class="clay-btn clay-btn-primary" onclick="openPhotoCapture()">
-                📷 Photo
-            </button>
-            <button class="clay-btn clay-btn-ghost" onclick="openAiAssistant()">
-                🤖 Assistant IA
-            </button>
+        <div class="ai-summary small">
+            <span class="ai-icon">IA</span>
+            <span class="label">IA: {{ notes | length }} notes · {{ media | length }} médias</span>
         </div>
     </div>
 
-    <!-- Layout principal avec colonnes adaptatives -->
     <div class="intervention-layout">
-        <!-- Colonne principale (contenu) -->
+        <!-- Left: Vehicle info and AI summary -->
         <div class="main-column">
-            <!-- Informations client -->
-            <div class="client-info clay-card">
-                <h3>👤 Informations Client</h3>
-                <div class="client-details">
-                    <div class="detail-row">
-                        <strong>Nom:</strong> {{ work_order.customer_name }}
-                    </div>
-                    {% if work_order.customer_phone %}
-                    <div class="detail-row">
-                        <strong>Téléphone:</strong> 
-                        <a href="tel:{{ work_order.customer_phone }}">{{ work_order.customer_phone }}</a>
-                    </div>
-                    {% endif %}
-                    {% if work_order.customer_email %}
-                    <div class="detail-row">
-                        <strong>Email:</strong> 
-                        <a href="mailto:{{ work_order.customer_email }}">{{ work_order.customer_email }}</a>
-                    </div>
-                    {% endif %}
-                    {% if work_order.customer_address %}
-                    <div class="detail-row">
-                        <strong>Adresse:</strong> {{ work_order.customer_address }}
-                    </div>
-                    {% endif %}
+            <div class="vehicle-info clay-card">
+                <h3>Véhicule</h3>
+                <div class="vehicle-grid">
+                    <div><strong>Marque:</strong> {{ work_order.vehicle_make or '—' }}</div>
+                    <div><strong>Modèle:</strong> {{ work_order.vehicle_model or '—' }}</div>
+                    <div><strong>Année:</strong> {{ work_order.vehicle_year or '—' }}</div>
+                    <div><strong>Immatriculation / VIN:</strong> {{ work_order.vehicle_registration or work_order.vehicle_vin or '—' }}</div>
+                    <div><strong>Kilométrage:</strong> {{ work_order.vehicle_mileage or '—' }}</div>
                 </div>
             </div>
 
-            <!-- Description de l'intervention -->
-            <div class="description-section clay-card">
-                <h3>📋 Description de l'intervention</h3>
-                <div class="description-content">
-                    <p>{{ work_order.description }}</p>
-                    {% if work_order.estimated_duration %}
-                    <div class="duration-info">
-                        <strong>Durée estimée:</strong> {{ work_order.estimated_duration }}h
-                        {% if work_order.actual_duration %}
-                        <span class="actual-duration">(Réel: {{ (work_order.actual_duration / 60) | round(1) }}h)</span>
-                        {% endif %}
+            <div class="ai-summary-panel clay-card">
+                <h3>AI-Assisted Summary</h3>
+                <p class="muted">L'IA lit les notes, médias et enregistrements liés et propose un résumé des pièces, actions et temps estimé.</p>
+                <div>
+                    <textarea id="ai-input" class="clay-textarea" rows="6" placeholder="Ajoutez des instructions supplémentaires pour l'IA (optionnel)"></textarea>
+                    <div class="form-actions mt-2">
+                        <button class="clay-btn clay-btn-primary" id="generateSummaryBtn">Générer le résumé IA</button>
+                        <button class="clay-btn clay-btn-ghost" id="clearSummaryBtn">Effacer</button>
                     </div>
-                    {% endif %}
+                </div>
+
+                <div id="ai-summary-result" style="margin-top:1rem; display:none;">
+                    <h4>Résumé IA</h4>
+                    <div id="ai-summary-text" class="ai-output clay-card-nested"></div>
+                    <div class="mt-2">
+                        <button class="clay-btn clay-btn-success" id="acceptAiSummary">Accepter et ajouter aux notes</button>
+                    </div>
                 </div>
             </div>
 
-            <!-- Lignes de travail -->
-            {% if work_order_lines %}
-            <div class="work-lines clay-card">
-                <h3>🔧 Lignes de travail</h3>
-                <div class="lines-list">
-                    {% for line in work_order_lines %}
-                    <div class="work-line">
-                        <div class="line-header">
-                            <strong>{{ line.description }}</strong>
-                            <span class="line-status">{{ line.status | title }}</span>
-                        </div>
-                        {% if line.notes %}
-                        <div class="line-notes">{{ line.notes }}</div>
-                        {% endif %}
-                        <div class="line-details">
-                            {% if line.quantity %}
-                            <span>Quantité: {{ line.quantity }}</span>
-                            {% endif %}
-                            {% if line.unit_price %}
-                            <span>Prix unitaire: {{ "%.2f"|format(line.unit_price) }}€</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Interface d'ajout de notes avec IA -->
             <div class="notes-interface clay-card">
-                <h3>📝 Notes d'intervention</h3>
-                
-                <!-- Formulaire de nouvelle note -->
-                <div class="note-form">
-                    <div class="form-header">
-                        <div class="form-tabs">
-                            <button class="tab-btn active" data-tab="text">✏️ Texte</button>
-                            <button class="tab-btn" data-tab="voice">🎤 Vocal</button>
-                            <button class="tab-btn" data-tab="ai">🤖 IA</button>
-                        </div>
-                        <div class="note-type-selector">
-                            <select id="note-type" class="clay-select">
-                                <option value="private">🔒 Privée</option>
-                                <option value="internal">👥 Interne</option>
-                                <option value="customer">👤 Client</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="form-content">
-                        <!-- Onglet texte -->
-                        <div class="tab-content active" data-tab="text">
-                            <textarea id="note-content" class="clay-textarea" 
-                                      placeholder="Décrivez l'état des travaux, les observations, les problèmes rencontrés..."></textarea>
-                            <div class="form-actions">
-                                <button class="clay-btn clay-btn-primary" onclick="addNote()">
-                                    📝 Ajouter la note
-                                </button>
-                                <button class="clay-btn clay-btn-ghost" onclick="translateNote()">
-                                    🌐 Traduire automatiquement
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <!-- Onglet vocal -->
-                        <div class="tab-content" data-tab="voice">
-                            <div class="voice-interface">
-                                <div class="voice-status" id="voice-status">
-                                    <span class="status-text">Prêt pour l'enregistrement</span>
-                                </div>
-                                <div class="voice-controls">
-                                    <button id="record-btn" class="clay-btn clay-btn-success" onclick="toggleRecording()">
-                                        🎤 Démarrer l'enregistrement
-                                    </button>
-                                    <button id="stop-btn" class="clay-btn clay-btn-danger" style="display:none;" onclick="stopRecording()">
-                                        ⏹️ Arrêter
-                                    </button>
-                                </div>
-                                <div class="transcription-preview" id="transcription-preview" style="display:none;">
-                                    <h4>📝 Transcription automatique:</h4>
-                                    <div class="transcription-text"></div>
-                                    <div class="transcription-actions">
-                                        <button class="clay-btn clay-btn-primary" onclick="useTranscription()">
-                                            ✅ Utiliser cette transcription
-                                        </button>
-                                        <button class="clay-btn clay-btn-ghost" onclick="retryRecording()">
-                                            🔄 Nouvel enregistrement
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Onglet IA -->
-                        <div class="tab-content" data-tab="ai">
-                            <div class="ai-assistant">
-                                <div class="ai-suggestions" id="ai-suggestions">
-                                    <!-- Suggestions chargées dynamiquement -->
-                                </div>
-                                <div class="ai-prompt">
-                                    <input type="text" id="ai-prompt-input" class="clay-input" 
-                                           placeholder="Demandez à l'IA de générer une note...">
-                                    <button class="clay-btn clay-btn-primary" onclick="generateAiNote()">
-                                        🤖 Générer
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <h3>Notes</h3>
+                <textarea id="note-content" class="clay-textarea" rows="4" placeholder="Ajouter une note..."></textarea>
+                <div class="form-actions mt-2">
+                    <button class="clay-btn clay-btn-primary" onclick="addNote()">Ajouter la note</button>
                 </div>
 
-                <!-- Liste des notes existantes -->
-                <div class="notes-list">
+                <div class="notes-list mt-3">
                     {% for note in notes %}
-                    <div class="note-item clay-card-nested {{ note.note_type }}">
-                        <div class="note-header">
-                            <div class="note-meta">
-                                <strong>{{ note.technician_name }}</strong>
-                                <span class="note-date">{{ moment(note.created_at).format('DD/MM/YYYY HH:mm') }}</span>
-                                <span class="note-type-badge {{ note.note_type }}">
-                                    {% if note.note_type == 'private' %}🔒{% endif %}
-                                    {% if note.note_type == 'internal' %}👥{% endif %}
-                                    {% if note.note_type == 'customer' %}👤{% endif %}
-                                    {{ note.note_type | title }}
-                                </span>
-                            </div>
-                            {% if note.translation_en or note.translation_es %}
-                            <div class="translation-indicator">
-                                <button class="clay-btn clay-btn-ghost" onclick="toggleTranslations({{ note.id }})">
-                                    🌐 Traductions
-                                </button>
-                            </div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="note-content">
-                            {{ note.content }}
-                        </div>
-                        
-                        <!-- Traductions (masquées par défaut) -->
-                        {% if note.translation_en or note.translation_es %}
-                        <div class="translations" id="translations-{{ note.id }}" style="display:none;">
-                            {% if note.translation_en %}
-                            <div class="translation en">
-                                <strong>🇬🇧 English:</strong>
-                                <p>{{ note.translation_en }}</p>
-                            </div>
-                            {% endif %}
-                            {% if note.translation_es %}
-                            <div class="translation es">
-                                <strong>🇪🇸 Español:</strong>
-                                <p>{{ note.translation_es }}</p>
-                            </div>
-                            {% endif %}
-                        </div>
-                        {% endif %}
+                    <div class="note-item clay-card-nested">
+                        <div class="note-header"><strong>{{ note.technician_name }}</strong> · <span class="muted">{{ moment(note.created_at).fromNow() }}</span></div>
+                        <div class="note-content">{{ note.content }}</div>
                     </div>
                     {% endfor %}
                 </div>
             </div>
         </div>
 
-        <!-- Colonne latérale (médias et outils) -->
+        <!-- Right: Photo upload, audio, and media gallery -->
         <div class="sidebar-column">
-            <!-- Galerie de médias avec IA -->
-            <div class="media-gallery clay-card">
-                <div class="gallery-header">
-                    <h3>📷 Médias</h3>
-                    <div class="upload-actions">
-                        <button class="clay-btn clay-btn-primary" onclick="openPhotoCapture()">
-                            📷 Photo
-                        </button>
-                        <label for="file-upload" class="clay-btn clay-btn-ghost">
-                            📁 Fichier
-                        </label>
-                        <input type="file" id="file-upload" style="display:none;" 
-                               accept="image/*,video/*,audio/*,.pdf" onchange="uploadFile(this)">
+            <div class="photo-uploader clay-card">
+                <h3>Photos</h3>
+                <div class="uploader-area">
+                    <input type="file" id="photoInput" accept="image/*" multiple style="display:none;" onchange="handlePhotoFiles(this.files)">
+                    <div class="uploader-dropzone" id="photoDropzone" onclick="document.getElementById('photoInput').click()">
+                        <div class="dz-text">Cliquez ou déposez des photos ici</div>
+                        <div class="dz-sub">JPG, PNG — Plusieurs sélection possibles</div>
+                    </div>
+                    <div id="photoPreview" class="photo-preview-grid mt-2"></div>
+                    <div class="form-actions mt-2">
+                        <button class="clay-btn clay-btn-primary" onclick="uploadSelectedPhotos()">Téléverser photos</button>
                     </div>
                 </div>
-                
+            </div>
+
+            <div class="voice-uploader clay-card">
+                <h3>Audio / Enregistrement</h3>
+
+                <div class="mb-3">
+                    <label class="form-label">Source</label>
+                    <div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="source" id="sourceFile" value="file" checked>
+                            <label class="form-check-label" for="sourceFile">Upload file</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="source" id="sourceMic" value="mic">
+                            <label class="form-check-label" for="sourceMic">Use microphone</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3" id="fileRow">
+                    <label for="fileInput" class="form-label">Audio file</label>
+                    <input class="form-control" type="file" id="fileInput" accept="audio/*">
+                </div>
+
+                <div class="mb-3" id="micRow" style="display:none;">
+                    <label class="form-label">Microphone</label>
+                    <div>
+                        <button type="button" id="startRec" class="btn btn-outline-primary btn-sm">Start Recording</button>
+                        <button type="button" id="stopRec" class="btn btn-outline-danger btn-sm" disabled>Stop</button>
+                        <button type="button" id="playRec" class="btn btn-outline-secondary btn-sm" disabled>Play</button>
+                        <span id="recStatus" class="ms-2 text-muted">Not recording</span>
+                    </div>
+                    <div class="mt-2">
+                        <audio id="audioPreview" controls style="width:100%; display:none;"></audio>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="mode" class="form-label">Mode</label>
+                    <select id="mode" class="form-select">
+                        <option value="transcribe">Transcribe</option>
+                        <option value="translate">Translate</option>
+                    </select>
+                </div>
+
+                <div class="mb-3" id="langRow" style="display:none;">
+                    <label for="target_lang" class="form-label">Target language (e.g. French, Spanish, de)</label>
+                    <input type="text" id="target_lang" class="form-control">
+                </div>
+
+                <button class="btn btn-primary" type="submit" id="submitBtn">Upload</button>
+
+                <hr />
+                <h4>Result</h4>
+                <pre id="result" style="white-space:pre-wrap;">No results yet.</pre>
+            </div>
+
+            <div class="media-gallery clay-card mt-2">
+                <h3>Galerie</h3>
                 <div class="media-grid">
                     {% for item in media %}
                     <div class="media-item {{ item.media_type }}">
                         {% if item.media_type == 'photo' %}
-                        <div class="media-thumbnail">
-                            <img src="{{ url_for('static', filename=item.file_path) }}" 
-                                 alt="Photo d'intervention" onclick="openMediaViewer('{{ item.file_path }}', 'photo')">
-                        </div>
-                        {% elif item.media_type == 'video' %}
-                        <div class="media-thumbnail video">
-                            <video onclick="openMediaViewer('{{ item.file_path }}', 'video')">
-                                <source src="{{ url_for('static', filename=item.file_path) }}">
-                            </video>
-                            <div class="play-overlay">▶️</div>
-                        </div>
+                        <img src="{{ url_for('static', filename=item.file_path) }}" alt="photo" onclick="openMediaViewer('{{ item.file_path }}')">
                         {% elif item.media_type == 'audio' %}
-                        <div class="media-thumbnail audio">
-                            <div class="audio-icon">🎵</div>
-                            <button onclick="playAudio('{{ item.file_path }}')">▶️</button>
-                        </div>
+                        <div class="audio-row">Audio <button class="clay-btn clay-btn-ghost" onclick="playMedia('{{ item.file_path }}')">Play</button></div>
+                        {% else %}
+                        <div class="media-row">{{ item.file_path }}</div>
                         {% endif %}
-                        
-                        <div class="media-info">
-                            <div class="media-meta">
-                                <span class="technician">{{ item.technician_name }}</span>
-                                <span class="date">{{ moment(item.created_at).fromNow() }}</span>
-                            </div>
-                            
-                            {% if item.transcription %}
-                            <div class="transcription-preview">
-                                <strong>📝 Transcription:</strong>
-                                <p>{{ item.transcription | truncate(100) }}</p>
-                                {% if item.translation_en or item.translation_es %}
-                                <button class="show-translations" onclick="showMediaTranslations({{ item.id }})">
-                                    🌐 Voir traductions
-                                </button>
-                                {% endif %}
-                            </div>
-                            {% endif %}
-                        </div>
                     </div>
                     {% endfor %}
-                </div>
-            </div>
-
-            <!-- Suggestions IA contextuelles -->
-            <div class="ai-suggestions-panel clay-card">
-                <h3>🤖 Suggestions IA</h3>
-                <div class="suggestions-list" id="contextual-suggestions">
-                    {% for suggestion in ai_suggestions %}
-                    <div class="suggestion-item {{ suggestion.type }}">
-                        <div class="suggestion-header">
-                            <strong>{{ suggestion.title }}</strong>
-                            <span class="confidence">{{ (suggestion.confidence * 100) | round }}%</span>
-                        </div>
-                        <div class="suggestion-content">
-                            {{ suggestion.content }}
-                        </div>
-                        <div class="suggestion-actions">
-                            <button class="clay-btn clay-btn-ghost" onclick="applySuggestion('{{ suggestion.type }}', '{{ suggestion.content }}')">
-                                ✅ Appliquer
-                            </button>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-
-            <!-- Outils rapides -->
-            <div class="quick-tools clay-card">
-                <h3>⚡ Outils rapides</h3>
-                <div class="tools-grid">
-                    <button class="tool-btn" onclick="generateReport()">
-                        📊 Rapport auto
-                    </button>
-                    <button class="tool-btn" onclick="scheduleFollowUp()">
-                        📅 Planifier suivi
-                    </button>
-                    <button class="tool-btn" onclick="requestParts()">
-                        🔧 Demander pièces
-                    </button>
-                    <button class="tool-btn" onclick="customerNotification()">
-                        📧 Notifier client
-                    </button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal de visualisation de média -->
+<!-- Simple media viewer modal -->
 <div id="media-viewer-modal" class="clay-modal" style="display:none;">
+    <div class="clay-modal-content">
+        <div class="clay-modal-header">
+            <h3>Visualiseur média</h3>
+            <button class="clay-modal-close" onclick="closeMediaViewer()">&times;</button>
+        </div>
+        <div class="clay-modal-body" id="media-viewer-body"></div>
+    </div>
+</div>
     <div class="clay-modal-content large">
         <div class="clay-modal-header">
-            <h3>📷 Visualisation média</h3>
+            <h3>Visualisation média</h3>
             <button class="clay-modal-close" onclick="closeMediaViewer()">&times;</button>
         </div>
         <div class="clay-modal-body">
@@ -415,7 +199,7 @@
 <div id="photo-capture-modal" class="clay-modal" style="display:none;">
     <div class="clay-modal-content">
         <div class="clay-modal-header">
-            <h3>📷 Capture photo</h3>
+            <h3>Capture photo</h3>
             <button class="clay-modal-close" onclick="closePhotoCapture()">&times;</button>
         </div>
         <div class="clay-modal-body">
@@ -423,9 +207,9 @@
                 <video id="camera-feed" autoplay playsinline></video>
                 <canvas id="photo-canvas" style="display:none;"></canvas>
                 <div class="camera-controls">
-                    <button id="capture-btn" class="clay-btn clay-btn-primary">📷 Capturer</button>
-                    <button id="retake-btn" class="clay-btn clay-btn-ghost" style="display:none;">🔄 Reprendre</button>
-                    <button id="save-photo-btn" class="clay-btn clay-btn-success" style="display:none;">💾 Sauvegarder</button>
+                    <button id="capture-btn" class="clay-btn clay-btn-primary">Capturer</button>
+                    <button id="retake-btn" class="clay-btn clay-btn-ghost" style="display:none;">Reprendre</button>
+                    <button id="save-photo-btn" class="clay-btn clay-btn-success" style="display:none;">Sauvegarder</button>
                 </div>
             </div>
         </div>
@@ -434,180 +218,301 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="{{ url_for('static', filename='js/intervention-details.js') }}"></script>
 <script>
-// Variables globales
 const workOrderId = {{ work_order.id }};
-let mediaRecorder;
-let recordedChunks = [];
-let isRecording = false;
 
-// Initialisation
-document.addEventListener('DOMContentLoaded', function() {
-    initializeTabs();
-    loadAiSuggestions();
-    setupFileUpload();
-    
-    // Mise à jour périodique des suggestions IA
-    setInterval(refreshAiSuggestions, 30000); // Toutes les 30 secondes
-});
+// --- Photo upload handling ---
+let selectedPhotos = [];
+function handlePhotoFiles(files) {
+    selectedPhotos = Array.from(files);
+    const preview = document.getElementById('photoPreview');
+    preview.innerHTML = '';
+    selectedPhotos.forEach((f, i) => {
+        const url = URL.createObjectURL(f);
+        const img = document.createElement('img');
+        img.src = url;
+        img.style.maxWidth = '120px';
+        img.style.margin = '4px';
+        preview.appendChild(img);
+    });
+}
 
-// Gestion des onglets
-function initializeTabs() {
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const tabName = this.dataset.tab;
-            switchTab(tabName);
+async function uploadSelectedPhotos() {
+    if (!selectedPhotos.length) return alert('Aucune photo sélectionnée');
+    const fd = new FormData();
+    selectedPhotos.forEach((f, i) => fd.append('photos', f, f.name));
+    const resp = await fetch(`/interventions/${workOrderId}/upload_photos`, { method: 'POST', body: fd });
+    const json = await resp.json();
+    if (json.success) location.reload(); else alert('Upload failed');
+}
+
+// --- Audio / recording handling (new implementation) ---
+
+// Initialize audio interface after DOM is loaded
+function initAudioInterface() {
+    // UI toggles
+    const sourceFile = document.getElementById('sourceFile');
+    const sourceMic = document.getElementById('sourceMic');
+    const fileRow = document.getElementById('fileRow');
+    const micRow = document.getElementById('micRow');
+    const modeEl = document.getElementById('mode');
+    const langRow = document.getElementById('langRow');
+
+    if (sourceFile && sourceMic && fileRow && micRow) {
+        sourceFile.addEventListener('change', () => { 
+            fileRow.style.display = 'block'; 
+            micRow.style.display = 'none'; 
         });
-    });
+        
+        sourceMic.addEventListener('change', () => { 
+            fileRow.style.display = 'none'; 
+            micRow.style.display = 'block'; 
+        });
+    }
+
+    if (modeEl && langRow) {
+        modeEl.addEventListener('change', function(e) {
+            langRow.style.display = e.target.value === 'translate' ? 'block' : 'none';
+        });
+    }
+
+    // Initialize recording functionality
+    initRecording();
 }
 
-function switchTab(tabName) {
-    // Mise à jour des boutons
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
-    
-    // Mise à jour du contenu
-    document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.remove('active');
-    });
-    document.querySelector(`.tab-content[data-tab="${tabName}"]`).classList.add('active');
-}
+function initRecording() {
 
-// Gestion des notes
-function addNote() {
-    const content = document.getElementById('note-content').value.trim();
-    const noteType = document.getElementById('note-type').value;
-    
-    if (!content) {
-        showNotification('Veuillez saisir le contenu de la note', 'error');
+function initRecording() {
+    // Microphone recording logic
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let recordedBlob = null;
+
+    const startBtn = document.getElementById('startRec');
+    const stopBtn = document.getElementById('stopRec');
+    const playBtn = document.getElementById('playRec');
+    const recStatus = document.getElementById('recStatus');
+    const audioPreview = document.getElementById('audioPreview');
+
+    if (!startBtn || !stopBtn || !playBtn || !recStatus || !audioPreview) {
+        console.warn('Audio recording elements not found');
         return;
     }
-    
-    const formData = new FormData();
-    formData.append('content', content);
-    formData.append('note_type', noteType);
-    
-    fetch(`/interventions/${workOrderId}/add_note`, {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showNotification('Note ajoutée avec succès', 'success');
-            document.getElementById('note-content').value = '';
-            location.reload(); // Recharger pour afficher la nouvelle note
-        } else {
-            showNotification(data.message, 'error');
-        }
-    });
-}
 
-// Enregistrement vocal
-function toggleRecording() {
-    if (isRecording) {
-        stopRecording();
-    } else {
-        startRecording();
-    }
-}
-
-function startRecording() {
-    navigator.mediaDevices.getUserMedia({ audio: true })
-        .then(stream => {
+    startBtn.addEventListener('click', async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            audioChunks = [];
             mediaRecorder = new MediaRecorder(stream);
-            recordedChunks = [];
-            
-            mediaRecorder.ondataavailable = event => {
-                if (event.data.size > 0) {
-                    recordedChunks.push(event.data);
+            mediaRecorder.addEventListener('dataavailable', e => {
+                if (e.data && e.data.size > 0) audioChunks.push(e.data);
+            });
+            mediaRecorder.addEventListener('start', () => {
+                recordedBlob = null;
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                playBtn.disabled = true;
+                recStatus.textContent = 'Recording...';
+                // Show live preview while recording
+                try {
+                    audioPreview.style.display = 'block';
+                    audioPreview.src = '';
+                    audioPreview.autoplay = true;
+                    audioPreview.srcObject = stream;
+                } catch (err) {
+                    console.warn('Live preview not available for this browser/codec.', err);
                 }
-            };
-            
-            mediaRecorder.onstop = () => {
-                const blob = new Blob(recordedChunks, { type: 'audio/wav' });
-                processVoiceRecording(blob);
-            };
-            
+            });
+            mediaRecorder.addEventListener('stop', () => {
+                recordedBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                const url = URL.createObjectURL(recordedBlob);
+                // Stop live preview and show recorded blob
+                try {
+                    audioPreview.srcObject = null;
+                    audioPreview.autoplay = false;
+                } catch (err) {
+                    // ignore
+                }
+                audioPreview.src = url;
+                audioPreview.style.display = 'block';
+                playBtn.disabled = false;
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+                recStatus.textContent = 'Recording stopped';
+            });
             mediaRecorder.start();
-            isRecording = true;
-            
-            document.getElementById('record-btn').style.display = 'none';
-            document.getElementById('stop-btn').style.display = 'inline-block';
-            document.getElementById('voice-status').innerHTML = 
-                '<span class="recording">🔴 Enregistrement en cours...</span>';
-        })
-        .catch(err => {
-            showNotification('Erreur d\'accès au microphone', 'error');
-        });
-}
-
-function stopRecording() {
-    if (mediaRecorder && isRecording) {
-        mediaRecorder.stop();
-        isRecording = false;
-        
-        document.getElementById('record-btn').style.display = 'inline-block';
-        document.getElementById('stop-btn').style.display = 'none';
-        document.getElementById('voice-status').innerHTML = 
-            '<span class="processing">⚡ Traitement en cours...</span>';
-    }
-}
-
-function processVoiceRecording(audioBlob) {
-    const formData = new FormData();
-    formData.append('audio_data', audioBlob, 'voice_note.wav');
-    
-    fetch(`/interventions/${workOrderId}/voice_note`, {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            displayTranscription(data.transcription, data.confidence);
-        } else {
-            showNotification('Erreur lors de la transcription', 'error');
+        } catch (err) {
+            recStatus.textContent = 'Microphone access denied or unavailable';
+            console.error(err);
         }
     });
-}
 
-function displayTranscription(transcription, confidence) {
-    const preview = document.getElementById('transcription-preview');
-    preview.querySelector('.transcription-text').textContent = transcription;
-    preview.style.display = 'block';
-    
-    document.getElementById('voice-status').innerHTML = 
-        `<span class="success">✅ Transcription terminée (${Math.round(confidence * 100)}%)</span>`;
-}
+    stopBtn.addEventListener('click', () => {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+        }
+    });
 
-// Fonctions utilitaires
-function showNotification(message, type) {
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.textContent = message;
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.remove();
-    }, 3000);
-}
+    playBtn.addEventListener('click', () => {
+        if (audioPreview.src) {
+            audioPreview.play();
+        }
+    });
 
-function loadAiSuggestions() {
-    fetch(`/interventions/ai/suggestions/${workOrderId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                updateSuggestionsDisplay(data.suggestions);
+    // Form submit handler
+    const uploadBtn = document.getElementById('uploadAudioBtn');
+    if (uploadBtn) {
+        uploadBtn.addEventListener('click', async function(e) {
+            e.preventDefault();
+            const resultEl = document.getElementById('result');
+            if (!resultEl) return;
+            
+            resultEl.textContent = 'Preparing upload...';
+
+            const formData = new FormData();
+            const sourceRadio = document.querySelector('input[name="source"]:checked');
+            const modeSelect = document.getElementById('mode');
+            const targetLangInput = document.getElementById('target_lang');
+            
+            if (!sourceRadio || !modeSelect) {
+                resultEl.textContent = 'Interface elements not found';
+                return;
+            }
+            
+            const source = sourceRadio.value;
+            const mode = modeSelect.value;
+            const target_lang = targetLangInput ? targetLangInput.value : '';
+
+            formData.append('mode', mode);
+            // Attach selected company and bon_id if present
+            const urlParams = new URLSearchParams(window.location.search);
+            const qCompany = urlParams.get('company');
+            const qBon = urlParams.get('bon_id');
+            if (qCompany) formData.append('company', qCompany);
+            if (qBon) formData.append('bon_id', qBon);
+            if (target_lang) formData.append('target_lang', target_lang);
+
+            if (source === 'mic') {
+                if (!recordedBlob) {
+                    resultEl.textContent = 'No recording available. Please record audio first.';
+                    return;
+                }
+                // Provide a filename and ensure a compatible MIME (webm/ogg) - OpenAI accepts many formats
+                formData.append('file', recordedBlob, 'microphone.webm');
+            } else {
+                const fileInput = document.getElementById('fileInput');
+                if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+                    resultEl.textContent = 'No file selected.';
+                    return;
+                }
+                formData.append('file', fileInput.files[0]);
+            }
+
+            resultEl.textContent = 'Uploading...';
+            try {
+                const resp = await fetch('/api/openai/audio', { method: 'POST', body: formData });
+                const json = await resp.json();
+                if (!resp.ok) {
+                    resultEl.textContent = 'Error: ' + JSON.stringify(json, null, 2);
+                    return;
+                }
+                resultEl.textContent = JSON.stringify(json, null, 2);
+            } catch (err) {
+                resultEl.textContent = 'Network error: ' + err.message;
             }
         });
+    }
 }
 
-function refreshAiSuggestions() {
-    loadAiSuggestions();
+// --- AI Summary interaction ---
+const generateSummaryBtn = document.getElementById('generateSummaryBtn');
+const clearSummaryBtn = document.getElementById('clearSummaryBtn');
+const acceptAiSummary = document.getElementById('acceptAiSummary');
+
+if (generateSummaryBtn) {
+    generateSummaryBtn.addEventListener('click', generateAiSummary);
+}
+
+if (clearSummaryBtn) {
+    clearSummaryBtn.addEventListener('click', () => {
+        document.getElementById('ai-input').value = '';
+        document.getElementById('ai-summary-result').style.display = 'none';
+    });
+}
+
+if (acceptAiSummary) {
+    acceptAiSummary.addEventListener('click', acceptAiSummaryHandler);
+}
+
+async function generateAiSummary() {
+    const extra = document.getElementById('ai-input').value.trim();
+    document.getElementById('ai-summary-text').textContent = 'Generating...';
+    document.getElementById('ai-summary-result').style.display = 'block';
+    try {
+        const resp = await fetch(`/interventions/ai/generate_summary/${workOrderId}`, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ extra }) 
+        });
+        const j = await resp.json();
+        if (j.success) document.getElementById('ai-summary-text').textContent = j.summary;
+        else document.getElementById('ai-summary-text').textContent = 'AI generation failed';
+    } catch (err) { 
+        document.getElementById('ai-summary-text').textContent = 'Network error'; 
+    }
+}
+
+async function acceptAiSummaryHandler() {
+    const summary = document.getElementById('ai-summary-text').textContent || '';
+    if (!summary) return alert('No summary to accept');
+    const fd = new FormData(); 
+    fd.append('content', summary); 
+    fd.append('note_type', 'internal');
+    const resp = await fetch(`/interventions/${workOrderId}/add_note`, { method: 'POST', body: fd });
+    const j = await resp.json(); 
+    if (j.success) location.reload(); 
+    else alert('Failed to save note');
+}
+
+// --- Media viewer helpers ---
+function openMediaViewer(path) { 
+    document.getElementById('media-viewer-body').innerHTML = `<img src='${path}' style='max-width:100%'>`; 
+    document.getElementById('media-viewer-modal').style.display = 'block'; 
+}
+
+function closeMediaViewer() { 
+    document.getElementById('media-viewer-modal').style.display = 'none'; 
+}
+
+function playMedia(path) { 
+    const a = new Audio(path); 
+    a.play(); 
+}
+
+// --- Notes ---
+async function addNote() {
+    const content = document.getElementById('note-content').value.trim();
+    if (!content) return alert('Veuillez saisir une note');
+    const fd = new FormData(); 
+    fd.append('content', content); 
+    fd.append('note_type', 'internal');
+    const resp = await fetch(`/interventions/${workOrderId}/add_note`, { method: 'POST', body: fd });
+    const j = await resp.json(); 
+    if (j.success) location.reload(); 
+    else alert('Failed to add note');
+}
+
+// --- Placeholder functions for buttons that might not have implementations yet ---
+function openAiAssistant() {
+    alert('AI Assistant functionality to be implemented');
+}
+
+function openPhotoCapture() {
+    alert('Photo capture functionality to be implemented');
+}
+
+function startVoiceNote() {
+    alert('Voice note functionality to be implemented');
 }
 </script>
 {% endblock %}
