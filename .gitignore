@@ -102,3 +102,18 @@ production_deployment.conf
 # Logs
 logs/
 *.log
+
+# Local environment and runtime outputs
+.env
+chronotech.out
+server.log
+
+# Uploaded user content (do not commit uploads)
+uploads/
+static/uploads/
+
+# Optional caches
+.mypy_cache/
+
+# macOS Finder
+.DS_Store
