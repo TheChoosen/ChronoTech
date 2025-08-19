@@ -75,7 +75,7 @@
         <div class="row align-items-center">
             <div class="col">
                 <h1 class="mb-2">
-                    <i class="fas fa-user-edit me-3"></i>Modifier mon profil
+                    <i class="fa-solid fa-user-edit me-3"></i>Modifier mon profil
                 </h1>
                 <p class="mb-0 opacity-90">
                     Mettez à jour vos informations personnelles
@@ -83,7 +83,7 @@
             </div>
             <div class="col-auto">
                 <a href="{{ url_for('user_profile') }}" class="btn btn-light">
-                    <i class="fas fa-arrow-left me-2"></i>Retour au profil
+                    <i class="fa-solid fa-arrow-left me-2"></i>Retour au profil
                 </a>
             </div>
         </div>
@@ -94,7 +94,7 @@
             <div class="form-card p-4">
                 <div class="info-box">
                     <div class="d-flex align-items-center">
-                        <i class="fas fa-info-circle text-primary me-3"></i>
+                        <i class="fa-solid fa-info-circle text-primary me-3"></i>
                         <div>
                             <strong>Information :</strong> Les champs marqués d'un astérisque (<span class="required">*</span>) sont obligatoires.
                         </div>
@@ -164,14 +164,14 @@
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
                                     <button type="submit" class="btn btn-primary btn-save me-3">
-                                        <i class="fas fa-save me-2"></i>Enregistrer les modifications
+                                        <i class="fa-solid fa-save me-2"></i>Enregistrer les modifications
                                     </button>
                                     <a href="{{ url_for('user_profile') }}" class="btn btn-outline-secondary">
-                                        <i class="fas fa-times me-2"></i>Annuler
+                                        <i class="fa-solid fa-times me-2"></i>Annuler
                                     </a>
                                 </div>
                                 <div class="text-muted small">
-                                    <i class="fas fa-shield-alt me-1"></i>
+                                    <i class="fa-solid fa-shield-alt me-1"></i>
                                     Vos données sont sécurisées
                                 </div>
                             </div>
@@ -236,7 +236,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const saveBtn = document.querySelector('.btn-save');
     saveBtn.addEventListener('click', function() {
         if (form.checkValidity()) {
-            this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Enregistrement...';
+            this.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Enregistrement...';
             this.disabled = true;
         }
     });

@@ -6,14 +6,14 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0">
-            <i class="fas fa-user-edit me-2"></i>Modifier {{ customer.name }}
+                <i class="fa-solid fa-user-edit me-2"></i>Modifier {{ customer.name }}
         </h1>
         <div class="d-flex gap-2">
             <a href="{{ url_for('customers.view_customer', customer_id=customer.id) }}" class="btn btn-outline-primary clay-button">
-                <i class="fas fa-eye me-2"></i>Voir le profil
+                    <i class="fa-solid fa-eye me-2"></i>Voir le profil
             </a>
             <a href="{{ url_for('customers.index') }}" class="btn btn-outline-secondary clay-button">
-                <i class="fas fa-arrow-left me-2"></i>Retour à la liste
+                    <i class="fa-solid fa-arrow-left me-2"></i>Retour à la liste
             </a>
         </div>
     </div>
@@ -28,6 +28,7 @@
                 <div class="clay-card mb-4">
                     <div class="card-header">
                         <h5 class="mb-0"><i class="fas fa-user me-2"></i>Informations de Base</h5>
+                            <h5 class="mb-0"><i class="fa-solid fa-user me-2"></i>Informations de Base</h5>
                     </div>
                     <div class="card-body">
                         <div class="row">
@@ -126,8 +127,10 @@
                 <div class="clay-card mb-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>Adresse</h5>
+                            <h5 class="mb-0"><i class="fa-solid fa-map-marker-alt me-2"></i>Adresse</h5>
                         <button type="button" class="btn btn-sm btn-outline-primary clay-button" onclick="searchAddress()">
                             <i class="fas fa-search me-2"></i>Rechercher
+                                <i class="fa-solid fa-search me-2"></i>Rechercher
                         </button>
                     </div>
                     <div class="card-body">
@@ -175,6 +178,7 @@
                 <div class="clay-card mb-4">
                     <div class="card-header">
                         <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Informations Additionnelles</h5>
+                            <h5 class="mb-0"><i class="fa-solid fa-info-circle me-2"></i>Informations Additionnelles</h5>
                     </div>
                     <div class="card-body">
                         <div class="row">
@@ -244,6 +248,7 @@
                 <div class="clay-card mb-4">
                     <div class="card-header">
                         <h5 class="mb-0"><i class="fas fa-history me-2"></i>Historique des Modifications</h5>
+                            <h5 class="mb-0"><i class="fa-solid fa-history me-2"></i>Historique des Modifications</h5>
                     </div>
                     <div class="card-body">
                         {% if modification_history %}
@@ -252,6 +257,7 @@
                             <div class="timeline-item">
                                 <div class="timeline-marker">
                                     <i class="fas fa-circle"></i>
+                                        <i class="fa-solid fa-circle"></i>
                                 </div>
                                 <div class="timeline-content">
                                     <h6 class="mb-1">{{ modification.action }}</h6>
@@ -277,25 +283,30 @@
                 <div class="clay-card mb-4">
                     <div class="card-header">
                         <h5 class="mb-0"><i class="fas fa-save me-2"></i>Actions</h5>
+                            <h5 class="mb-0"><i class="fa-solid fa-save me-2"></i>Actions</h5>
                     </div>
                     <div class="card-body">
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary clay-button-primary">
                                 <i class="fas fa-save me-2"></i>Enregistrer les modifications
+                                    <i class="fa-solid fa-save me-2"></i>Enregistrer les modifications
                             </button>
                             <button type="submit" name="save_and_add_order" value="1" 
                                     class="btn btn-success clay-button">
-                                <i class="fas fa-plus me-2"></i>Enregistrer et créer une intervention
+                                    <i class="fas fa-plus me-2"></i>Enregistrer et créer un bon de travail
+                                        <i class="fa-solid fa-plus me-2"></i>Enregistrer et créer un bon de travail
                             </button>
                             <a href="{{ url_for('customers.view', id=customer.id) }}" 
                                class="btn btn-outline-secondary clay-button">
                                 <i class="fas fa-times me-2"></i>Annuler
+                                    <i class="fa-solid fa-times me-2"></i>Annuler
                             </a>
                             {% if current_user.role in ['admin', 'supervisor'] %}
                             <hr>
                             <button type="button" class="btn btn-outline-danger clay-button" 
                                     onclick="deleteCustomer()">
                                 <i class="fas fa-trash me-2"></i>Supprimer le client
+                                    <i class="fa-solid fa-trash me-2"></i>Supprimer le client
                             </button>
                             {% endif %}
                         </div>
@@ -306,6 +317,7 @@
                 <div class="clay-card mb-4">
                     <div class="card-header">
                         <h5 class="mb-0"><i class="fas fa-info me-2"></i>Informations Système</h5>
+                            <h5 class="mb-0"><i class="fa-solid fa-info me-2"></i>Informations Système</h5>
                     </div>
                     <div class="card-body">
                         <table class="table table-borderless table-sm">
@@ -337,6 +349,7 @@
                 <div class="clay-card mb-4">
                     <div class="card-header">
                         <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Statistiques</h5>
+                            <h5 class="mb-0"><i class="fa-solid fa-chart-bar me-2"></i>Statistiques</h5>
                     </div>
                     <div class="card-body">
                         <div class="row text-center">
@@ -382,6 +395,7 @@
                     <div class="card-header">
                         <h5 class="mb-0 text-warning">
                             <i class="fas fa-exclamation-triangle me-2"></i>Changements Détectés
+                                <i class="fa-solid fa-exclamation-triangle me-2"></i>Changements Détectés
                         </h5>
                     </div>
                     <div class="card-body">

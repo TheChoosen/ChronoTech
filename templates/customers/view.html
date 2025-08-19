@@ -12,9 +12,20 @@
             <a href="{{ url_for('customers.edit_customer', customer_id=customer.id) }}" class="btn btn-outline-primary clay-button">
                 <i class="fas fa-edit me-2"></i>Modifier
             </a>
-            <a href="{{ url_for('work_orders.create_work_order', customer_id=customer.id) }}" class="btn btn-primary clay-button-primary">
-                <i class="fas fa-plus me-2"></i>Nouvelle intervention
-            </a>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('work_orders.create_work_order', customer_id=customer.id) }}" class="btn btn-primary clay-button-primary">
+                    <i class="fas fa-plus me-2"></i>Créer un bon de travail
+                </a>
+                <a href="{{ url_for('appointments.create', customer_id=customer.id) }}" class="btn btn-outline-primary clay-button">
+                    <i class="fas fa-calendar-plus me-2"></i>Créer un rendez-vous
+                </a>
+                <button class="btn btn-outline-secondary clay-button" data-bs-toggle="modal" data-bs-target="#vehiclesModal">
+                    <i class="fas fa-car me-2"></i>Véhicules
+                </button>
+                <a href="{{ url_for('parts.create_order', customer_id=customer.id) }}" class="btn btn-outline-secondary clay-button">
+                    <i class="fas fa-box-open me-2"></i>Commander des pièces
+                </a>
+            </div>
             <a href="{{ url_for('customers.index') }}" class="btn btn-outline-secondary clay-button">
                 <i class="fas fa-arrow-left me-2"></i>Retour
             </a>
@@ -43,6 +54,9 @@
             </div>
         </div>
     </div>
+
+    {# include vehicles modal partial #}
+    {% include 'customers/_vehicles_modal.html' %}
 
     <div class="row">
         <!-- Contenu principal -->
@@ -341,7 +355,13 @@
                     <div class="d-grid gap-2">
                         <a href="{{ url_for('work_orders.create_work_order', customer_id=customer.id) }}" 
                            class="btn btn-primary clay-button-primary">
-                            <i class="fas fa-plus me-2"></i>Nouvelle intervention
+                            <i class="fas fa-plus me-2"></i>Créer un bon de travail
+                        </a>
+                        <a href="{{ url_for('appointments.create', customer_id=customer.id) }}" class="btn btn-outline-primary clay-button">
+                            <i class="fas fa-calendar-plus me-2"></i>Créer un rendez-vous
+                        </a>
+                        <a href="{{ url_for('parts.create_order', customer_id=customer.id) }}" class="btn btn-outline-secondary clay-button">
+                            <i class="fas fa-box-open me-2"></i>Commander des pièces
                         </a>
                         <a href="mailto:{{ customer.email }}" class="btn btn-outline-primary clay-button"
                            {% if not customer.email %}style="display: none;"{% endif %}>

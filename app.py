@@ -23,19 +23,60 @@ from core.utils import (
     generate_claim_number, hash_password, verify_password, init_template_filters,
     setup_upload_folders, ValidationError, FileUploadError, sanitize_html
 )
+# Import and register optional blueprints
+from routes.appointments import bp as appointments_bp
+from routes.vehicles import bp as vehicles_bp
+
 
 # Configuration du logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
+# Suppress noisy scanner/probe requests from werkzeug access logs
+class _ProbeFilter(logging.Filter):
+    def __init__(self, patterns=None):
+        super().__init__()
+        # simple substrings matching common probe filenames
+        self.patterns = patterns or [
+            '/wp-', '/wp-content', 'wp_filemanager', '/php', '/shell.php', '/fm.php',
+            '/admin.php', '/log.php', '/upload.php', '/info.php', '/ini.php', '/0x.php'
+        ]
+
+    def filter(self, record):
+        try:
+            msg = record.getMessage()
+        except Exception:
+            return True
+        # if any probe pattern appears in the log message, suppress it
+        for p in self.patterns:
+            if p in msg:
+                return False
+        return True
+
 def create_app(config_class=Config):
     """Factory pattern pour créer l'application Flask"""
     app = Flask(__name__)
     app.config.from_object(config_class)
+    # Attach probe filter to werkzeug access logger to reduce noise
+    try:
+        werk_logger = logging.getLogger('werkzeug')
+        werk_logger.addFilter(_ProbeFilter())
+    except Exception:
+        logger.exception('Impossible d’ajouter le filtre de probe au logger werkzeug')
     
     # Initialisation des composants
     init_template_filters(app)
     setup_upload_folders(app.root_path)
+    # Register small blueprints
+    try:
+        app.register_blueprint(appointments_bp, url_prefix='/appointments')
+    except Exception as e:
+        logger.warning(f"Impossible d'enregistrer appointments blueprint: {e}")
+    try:
+        app.register_blueprint(vehicles_bp, url_prefix='/vehicles')
+    except Exception as e:
+        logger.warning(f"Impossible d'enregistrer vehicles blueprint: {e}")
     
     # Configuration de la base de données
     with app.app_context():

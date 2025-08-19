@@ -214,6 +214,42 @@ class Customer(BaseModel):
             logger.error(f"Erreur lors de la sauvegarde du client: {e}")
             return False
 
+
+class Vehicle(BaseModel):
+    """Modèle pour les véhicules liés aux clients"""
+    def __init__(self, id=None, customer_id=None, make=None, model=None, year=None, vin=None, license_plate=None, notes=None, created_at=None, updated_at=None, **kwargs):
+        self.id = id
+        self.customer_id = customer_id
+        self.make = make
+        self.model = model
+        self.year = year
+        self.vin = vin
+        self.license_plate = license_plate
+        self.notes = notes
+        self.created_at = created_at
+        self.updated_at = updated_at
+        super().__init__(**kwargs)
+
+    @classmethod
+    def find_by_customer(cls, customer_id):
+        try:
+            query = "SELECT * FROM vehicles WHERE customer_id = %s ORDER BY created_at DESC"
+            result = db_manager.execute_query(query, (customer_id,))
+            return [cls.from_dict(row) for row in result] if result else []
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération des véhicules pour le client {customer_id}: {e}")
+            return []
+
+    @classmethod
+    def find_by_id(cls, vehicle_id):
+        try:
+            query = "SELECT * FROM vehicles WHERE id = %s"
+            result = db_manager.execute_query(query, (vehicle_id,), fetch_one=True)
+            return cls.from_dict(result) if result else None
+        except Exception as e:
+            logger.error(f"Erreur lors de la recherche du véhicule {vehicle_id}: {e}")
+            return None
+
 class WorkOrder(BaseModel):
     """Modèle pour les bons de travail"""
     

@@ -5,11 +5,11 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1 class="h3 mb-0">
-        <i class="fas fa-tachometer-alt me-2"></i>Tableau de bord
+    <i class="fa-solid fa-tachometer-alt me-2"></i>Tableau de bord
     </h1>
     <div class="d-flex gap-2">
         <a href="{{ url_for('work_orders.create_work_order') }}" class="btn btn-primary">
-            <i class="fas fa-plus me-1"></i>Nouveau bon
+            <i class="fa-solid fa-plus me-1"></i>Nouveau bon
         </a>
     </div>
 </div>
@@ -25,7 +25,7 @@
                         <h3 class="mb-0">{{ stats.get('active_orders', 0) }}</h3>
                     </div>
                     <div class="opacity-75">
-                        <i class="fas fa-clipboard-list fa-2x"></i>
+                        <i class="fa-solid fa-clipboard-list fa-2x"></i>
                     </div>
                 </div>
             </div>
@@ -41,7 +41,7 @@
                         <h3 class="mb-0">{{ stats.get('completed_today', 0) }}</h3>
                     </div>
                     <div class="opacity-75">
-                        <i class="fas fa-check-circle fa-2x"></i>
+                        <i class="fa-solid fa-check-circle fa-2x"></i>
                     </div>
                 </div>
             </div>
@@ -57,7 +57,7 @@
                         <h3 class="mb-0">{{ stats.get('urgent_orders', 0) }}</h3>
                     </div>
                     <div class="opacity-75">
-                        <i class="fas fa-exclamation-triangle fa-2x"></i>
+                        <i class="fa-solid fa-exclamation-triangle fa-2x"></i>
                     </div>
                 </div>
             </div>
@@ -73,7 +73,7 @@
                         <h3 class="mb-0">{{ stats.get('active_technicians', 0) }}</h3>
                     </div>
                     <div class="opacity-75">
-                        <i class="fas fa-user-hard-hat fa-2x"></i>
+                        <i class="fa-solid fa-user-hard-hat fa-2x"></i>
                     </div>
                 </div>
             </div>
@@ -87,7 +87,7 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0">
-                    <i class="fas fa-clipboard-list me-2"></i>Bons de travail récents
+                    <i class="fa-solid fa-clipboard-list me-2"></i>Bons de travail récents
                 </h5>
                 <a href="{{ url_for('work_orders.list_work_orders') }}" class="btn btn-sm btn-outline-primary">
                     Voir tout
@@ -135,10 +135,10 @@
                     </div>
                 {% else %}
                     <div class="text-center py-4 text-muted">
-                        <i class="fas fa-clipboard-list fa-3x mb-3"></i>
+                        <i class="fa-solid fa-clipboard-list fa-3x mb-3"></i>
                         <p>Aucun bon de travail récent</p>
                         <a href="{{ url_for('work_orders.create_work_order') }}" class="btn btn-primary">
-                            <i class="fas fa-plus me-1"></i>Créer le premier bon
+                            <i class="fa-solid fa-plus me-1"></i>Créer le premier bon
                         </a>
                     </div>
                 {% endif %}
@@ -151,7 +151,7 @@
         <div class="card">
             <div class="card-header">
                 <h5 class="card-title mb-0">
-                    <i class="fas fa-history me-2"></i>Activité récente
+                    <i class="fa-solid fa-history me-2"></i>Activité récente
                 </h5>
             </div>
             <div class="card-body">
@@ -163,7 +163,7 @@
                             <div class="timeline-content">
                                 <h6 class="mb-1">{{ activity.description }}</h6>
                                 <small class="text-muted">
-                                    <i class="fas fa-clock me-1"></i>
+                                    <i class="fa-solid fa-clock me-1"></i>
                                     {{ activity.created_at.strftime('%d/%m %H:%M') if activity.created_at else '-' }}
                                 </small>
                             </div>
@@ -172,7 +172,7 @@
                     </div>
                 {% else %}
                     <div class="text-center py-4 text-muted">
-                        <i class="fas fa-history fa-3x mb-3"></i>
+                        <i class="fa-solid fa-history fa-3x mb-3"></i>
                         <p>Aucune activité récente</p>
                     </div>
                 {% endif %}
@@ -183,19 +183,19 @@
         <div class="card mt-4">
             <div class="card-header">
                 <h5 class="card-title mb-0">
-                    <i class="fas fa-bolt me-2"></i>Actions rapides
+                    <i class="fa-solid fa-bolt me-2"></i>Actions rapides
                 </h5>
             </div>
             <div class="card-body">
                 <div class="d-grid gap-2">
                     <a href="{{ url_for('work_orders.create_work_order') }}" class="btn btn-primary">
-                        <i class="fas fa-plus me-1"></i>Nouveau bon de travail
+                        <i class="fa-solid fa-plus me-1"></i>Nouveau bon de travail
                     </a>
                     <a href="{{ url_for('customers.add_customer') }}" class="btn btn-outline-primary">
-                        <i class="fas fa-user-plus me-1"></i>Nouveau client
+                        <i class="fa-solid fa-user-plus me-1"></i>Nouveau client
                     </a>
                     <a href="{{ url_for('analytics.dashboard') }}" class="btn btn-outline-info">
-                        <i class="fas fa-chart-bar me-1"></i>Voir les statistiques
+                        <i class="fa-solid fa-chart-bar me-1"></i>Voir les statistiques
                     </a>
                 </div>
             </div>

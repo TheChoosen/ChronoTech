@@ -8,10 +8,19 @@ import pymysql
 from core.config import get_db_config
 from core.utils import log_info, log_error, log_warning
 import os
+import json
 from werkzeug.utils import secure_filename
 
 # Création du blueprint
 bp = Blueprint('technicians', __name__)
+
+
+def _debug(msg):
+    try:
+        # simple stdout print for quick debugging in dev environment
+        print(f"[DEBUG technicians] {msg}")
+    except Exception:
+        pass
 
 
 def get_db_connection():
@@ -46,16 +55,57 @@ def index():
             pagination = DummyPagination()
             return render_template('technicians/index.html', technicians=[], stats=stats, pagination=pagination)
 
-        cursor = conn.cursor(pymysql.cursors.DictCursor)
-        cursor.execute(
-            """
-            SELECT id, name, email, role, created_at, is_active
-            FROM users
-            WHERE role IN ('technician', 'supervisor', 'manager') AND is_active = TRUE
-            ORDER BY role ASC, name ASC
-            """
-        )
+        # Lire les filtres depuis la querystring
+        status_filter = request.args.get('status', '').strip()
+        specialization_filter = request.args.get('specialization', '').strip()
+        zone_filter = request.args.get('zone', '').strip()
+        search_filter = request.args.get('search', '').strip()
+        availability_filter = request.args.get('availability', '').strip()
+        sort = request.args.get('sort', 'name')
 
+        # Construire dynamiquement la clause WHERE selon les filtres
+        where_clauses = ["role IN ('technician', 'supervisor', 'manager')"]
+        params = []
+
+        # status filter: empty => Tous statuts -> ne pas filtrer par is_active
+        if status_filter:
+            # map UI values to DB column 'status' or to is_active if needed
+            if status_filter == 'active':
+                where_clauses.append('is_active = TRUE')
+            elif status_filter == 'inactive':
+                where_clauses.append('is_active = FALSE')
+            else:
+                # support status values stored in 'status' column
+                where_clauses.append('status = %s')
+                params.append(status_filter)
+
+        # specialization (optional column 'specialization' or 'specialty')
+        if specialization_filter:
+            where_clauses.append("(specialization = %s OR specialty = %s)")
+            params.extend([specialization_filter, specialization_filter])
+
+        if zone_filter:
+            where_clauses.append('zone = %s')
+            params.append(zone_filter)
+
+        if search_filter:
+            where_clauses.append("(name LIKE %s OR email LIKE %s OR specialty LIKE %s)")
+            pattern = f"%{search_filter}%"
+            params.extend([pattern, pattern, pattern])
+
+        # order by
+        sort_map = {
+            'name': 'name ASC',
+            'workload': 'name ASC',  # workload requires extra calculation - fallback to name
+            'rating': 'name ASC',
+            'last_activity': 'updated_at DESC',
+        }
+        order_clause = sort_map.get(sort, 'name ASC')
+
+        # Use SELECT * to avoid errors if optional columns (specialization, specialty, zone) are absent
+        sql = f"SELECT * FROM users WHERE {' AND '.join(where_clauses)} ORDER BY {order_clause}"
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        cursor.execute(sql, tuple(params) if params else None)
         technicians = cursor.fetchall()
         cursor.close()
         conn.close()
@@ -65,9 +115,27 @@ def index():
             # experience_years used in several templates
             if 'experience_years' not in t or t.get('experience_years') is None:
                 t['experience_years'] = 0
-            # schedule_json may be present or absent
-            if 'schedule_json' not in t or t.get('schedule_json') is None:
+
+            # Normalize schedule_json: it may be stored as JSON text, bytes, dict, or null
+            raw_sched = t.get('schedule_json')
+            if raw_sched is None:
                 t['schedule_json'] = {}
+            else:
+                if isinstance(raw_sched, str):
+                    try:
+                        t['schedule_json'] = json.loads(raw_sched)
+                    except Exception:
+                        t['schedule_json'] = {}
+                elif isinstance(raw_sched, (bytes, bytearray)):
+                    try:
+                        t['schedule_json'] = json.loads(raw_sched.decode())
+                    except Exception:
+                        t['schedule_json'] = {}
+                elif isinstance(raw_sched, dict):
+                    # already a dict
+                    pass
+                else:
+                    t['schedule_json'] = {}
 
         # Wrap rows to provide attribute-style access with safe defaults for templates
         class RowWrapper:
@@ -101,7 +169,7 @@ def index():
             'managers': len([t for t in technicians if t.get('role') == 'manager']),
         }
 
-        log_info(f"Récupération de {len(technicians)} techniciens")
+        log_info(f"Récupération de {len(technicians)} techniciens | filtres: status='{status_filter}' specialization='{specialization_filter}' zone='{zone_filter}' search='{search_filter}' availability='{availability_filter}' sort='{sort}'")
 
         class DummyPagination:
             total = len(technicians)
@@ -203,12 +271,32 @@ def view_technician(technician_id):
         cursor.execute(
             """
             SELECT * FROM users
-            WHERE id = %s AND role IN ('technician', 'supervisor', 'manager', 'admin') AND is_active = TRUE
+            WHERE id = %s AND role IN ('technician', 'supervisor', 'manager', 'admin')
             """,
             (technician_id,),
         )
 
         technician = cursor.fetchone()
+        # Defensive parse: ensure schedule_json is a dict to avoid template .items() errors
+        if technician:
+            raw = technician.get('schedule_json')
+            if raw is None:
+                technician['schedule_json'] = {}
+            else:
+                if isinstance(raw, str):
+                    try:
+                        technician['schedule_json'] = json.loads(raw)
+                    except Exception:
+                        technician['schedule_json'] = {}
+                elif isinstance(raw, (bytes, bytearray)):
+                    try:
+                        technician['schedule_json'] = json.loads(raw.decode())
+                    except Exception:
+                        technician['schedule_json'] = {}
+                elif isinstance(raw, dict):
+                    pass
+                else:
+                    technician['schedule_json'] = {}
         if not technician:
             cursor.close()
             conn.close()
@@ -300,6 +388,7 @@ def edit_technician(technician_id):
     """Modifier un technicien"""
     if request.method == 'POST':
         try:
+            _debug(f"POST /technicians/{technician_id}/edit - entering POST handler")
             # Prefer WTForms validation when possible (handles CSRF)
             form = TechnicianForm()
 
@@ -310,13 +399,18 @@ def edit_technician(technician_id):
 
             # Build schedule JSON from checkbox inputs
             days = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche']
-            work_days = request.form.getlist('work_days') if request.form else []
+            # Accept both 'work_days' and 'work_days[]' names (templates differ)
+            if request.form:
+                work_days = request.form.getlist('work_days') or request.form.getlist('work_days[]') or []
+            else:
+                work_days = []
             schedule = {}
             for day in days:
                 enabled = day in work_days
                 start = request.form.get(f"{day}_start", '08:00')
                 end = request.form.get(f"{day}_end", '17:00')
                 schedule[day] = {'enabled': enabled, 'start': start, 'end': end}
+            _debug(f"Built schedule: {json.dumps(schedule)}")
 
             # Photo handling
             photo_filename = None
@@ -331,6 +425,7 @@ def edit_technician(technician_id):
                 save_path = os.path.join(photos_dir, filename)
                 f.save(save_path)
                 photo_filename = filename
+                _debug(f"Saved uploaded photo to {save_path}")
 
             conn = get_db_connection()
             if not conn:
@@ -362,6 +457,7 @@ def edit_technician(technician_id):
                     has_schedule_col = bool(col_info and col_info[0])
             except Exception:
                 has_schedule_col = False
+            _debug(f"has_schedule_col={has_schedule_col}")
 
             # Choose values from WTForm when validated, otherwise fallback to request.form
             def gv(name, default=None):
@@ -405,10 +501,8 @@ def edit_technician(technician_id):
             if params.get('on_call') is None:
                 params['on_call'] = 0
 
-            # Attach schedule JSON if possible
+            # Attach schedule JSON if possible (use module-level json to avoid shadowing)
             try:
-                import json
-
                 params['schedule_json'] = json.dumps(schedule)
             except Exception:
                 params['schedule_json'] = None
@@ -442,58 +536,81 @@ def edit_technician(technician_id):
                 if col:
                     existing_cols.add(col)
 
-            col_map = {
-                'name': 'name',
-                'email': 'email',
-                'role': 'role',
-                'phone': 'phone',
-                'employee_id': 'employee_id',
-                'hire_date': 'hire_date',
-                'birth_date': 'birth_date',
-                'emergency_contact': 'emergency_contact',
-                'address': 'address',
-                'specialization': 'specialization',
-                'certification_level': 'certification_level',
-                'experience_years': 'experience_years',
-                'hourly_rate': 'hourly_rate',
-                'zone': 'zone',
-                'max_weekly_hours': 'max_weekly_hours',
-                'vehicle_assigned': 'vehicle_assigned',
-                'tools_assigned': 'tools_assigned',
-                'notes': 'notes',
-                'is_active': 'is_active',
-                'on_call': 'on_call',
-                'schedule_json': 'schedule_json',
-                'photo': 'photo',
+            _debug(f"Existing columns in users: {sorted(list(existing_cols))}")
+
+            # If required optional columns are missing, do NOT attempt DDL at runtime in production.
+            # Instead, log a warning so operators can run the appropriate migration.
+            if 'schedule_json' not in existing_cols:
+                log_warning("Colonne 'schedule_json' manquante dans la table users - exécutez la migration pour l'ajouter (Documents/migrations/2025-08-18_convert_schedule_json_to_json.sql)")
+            if 'on_call' not in existing_cols:
+                log_warning("Colonne 'on_call' manquante dans la table users - exécutez la migration pour l'ajouter (see Documents/migrations)")
+
+            # Map param keys to candidate DB column names (use first existing candidate)
+            col_candidates = {
+                'name': ['name'],
+                'email': ['email'],
+                'role': ['role'],
+                'phone': ['phone'],
+                'employee_id': ['employee_id'],
+                'hire_date': ['hire_date'],
+                'birth_date': ['birth_date'],
+                'emergency_contact': ['emergency_contact'],
+                'address': ['address'],
+                # support both 'specialization' and legacy 'specialty'
+                'specialization': ['specialization', 'specialty'],
+                'certification_level': ['certification_level'],
+                'experience_years': ['experience_years'],
+                'hourly_rate': ['hourly_rate'],
+                'zone': ['zone'],
+                'max_weekly_hours': ['max_weekly_hours', 'max_hours'],
+                'vehicle_assigned': ['vehicle_assigned'],
+                'tools_assigned': ['tools_assigned'],
+                'notes': ['notes'],
+                'is_active': ['is_active'],
+                'on_call': ['on_call'],
+                'schedule_json': ['schedule_json'],
+                'photo': ['photo'],
             }
 
             updates = []
             exec_params = {'id': technician_id}
-            for pkey, col in col_map.items():
-                if col in existing_cols:
-                    updates.append(f"{col}=%({pkey})s")
+            for pkey, candidates in col_candidates.items():
+                # choose the first candidate column that exists in DB
+                chosen_col = None
+                for c in candidates:
+                    if c in existing_cols:
+                        chosen_col = c
+                        break
 
-                    # Resolve the value from params, with fallbacks for mismatched keys
-                    val = params.get(pkey)
+                if not chosen_col:
+                    continue
 
-                    # common mismatch: application uses 'active' while DB column is 'is_active'
-                    if val is None and pkey == 'is_active':
-                        val = params.get('active')
+                updates.append(f"{chosen_col}=%({pkey})s")
 
-                    # ensure numeric defaults where appropriate
-                    if val is None and pkey == 'experience_years':
-                        val = 0
-                    if val is None and pkey in ('max_weekly_hours', 'hourly_rate'):
-                        # sensible default values to avoid NOT NULL errors
-                        val = params.get(pkey) or params.get('max_hours') or 0
+                # Resolve the value from params, with fallbacks for mismatched keys
+                val = params.get(pkey)
 
-                    # schedule_json and photo may be explicitly set to '' to remove them
-                    if pkey == 'schedule_json' and val is None:
-                        val = params.get('schedule_json')
-                    if pkey == 'photo' and val is None:
-                        val = params.get('photo')
+                # common mismatch: application uses 'active' while DB column is 'is_active'
+                if val is None and pkey == 'is_active':
+                    val = params.get('active')
 
-                    exec_params[pkey] = val
+                # ensure numeric defaults where appropriate
+                if val is None and pkey == 'experience_years':
+                    val = 0
+                if val is None and pkey in ('max_weekly_hours', 'hourly_rate'):
+                    # sensible default values to avoid NOT NULL errors
+                    val = params.get(pkey) or params.get('max_hours') or 0
+
+                # schedule_json and photo may be explicitly set to '' to remove them
+                if pkey == 'schedule_json' and val is None:
+                    val = params.get('schedule_json')
+                if pkey == 'photo' and val is None:
+                    val = params.get('photo')
+
+                exec_params[pkey] = val
+
+            _debug(f"SQL updates: {updates}")
+            _debug(f"Exec params: {exec_params}")
 
             # Ensure critical flags are present to avoid NOT NULL integrity errors
             if 'is_active' in existing_cols:
@@ -510,11 +627,14 @@ def edit_technician(technician_id):
             # Always set updated_at
             set_clause = ", ".join(updates) if updates else ''
             if set_clause:
-                sql = f"UPDATE users SET {set_clause}, updated_at=NOW() WHERE id=%(id)s AND is_active = TRUE"
+                # Allow updates even when the user is currently inactive
+                sql = f"UPDATE users SET {set_clause}, updated_at=NOW() WHERE id=%(id)s"
             else:
-                sql = "UPDATE users SET updated_at=NOW() WHERE id=%(id)s AND is_active = TRUE"
+                sql = "UPDATE users SET updated_at=NOW() WHERE id=%(id)s"
 
             cursor.execute(sql, exec_params)
+            _debug(f"Executed SQL: {sql}")
+            _debug(f"With params: {exec_params}")
 
             # TODO: handle technical_skills association table if present
             # skills = request.form.getlist('technical_skills')
@@ -564,8 +684,57 @@ def edit_technician(technician_id):
             return redirect(url_for('technicians.index'))
 
         cursor = conn.cursor(pymysql.cursors.DictCursor)
-        cursor.execute("SELECT * FROM users WHERE id = %s AND is_active = TRUE", (technician_id,))
+        # Allow opening the edit form even if the user is marked inactive
+        cursor.execute("SELECT * FROM users WHERE id = %s", (technician_id,))
         technician = cursor.fetchone()
+
+        # Defensive parsing: ensure schedule_json is a dict for templates
+        if technician:
+            raw = technician.get('schedule_json')
+            _debug(f"GET /technicians/{technician_id}/edit - raw schedule_json from DB: {raw}")
+            if raw is None:
+                technician['schedule_json'] = {}
+            else:
+                if isinstance(raw, str):
+                    try:
+                        technician['schedule_json'] = json.loads(raw)
+                        _debug(f"Parsed schedule_json (str) -> dict: {technician['schedule_json']}")
+                    except Exception:
+                        technician['schedule_json'] = {}
+                elif isinstance(raw, (bytes, bytearray)):
+                    try:
+                        technician['schedule_json'] = json.loads(raw.decode())
+                        _debug(f"Parsed schedule_json (bytes) -> dict: {technician['schedule_json']}")
+                    except Exception:
+                        technician['schedule_json'] = {}
+                elif isinstance(raw, dict):
+                    _debug(f"schedule_json already dict: {raw}")
+                    pass
+                else:
+                    technician['schedule_json'] = {}
+
+        # Normalize and expose commonly used keys for templates so inputs render correctly
+        if technician:
+            # provide a consistent 'specialization' key (templates use technician.specialization)
+            technician['specialization'] = technician.get('specialization') or technician.get('specialty') or ''
+
+            # Ensure text fields exist
+            technician['certification_level'] = technician.get('certification_level') or ''
+            technician['zone'] = technician.get('zone') or ''
+            technician['vehicle_assigned'] = technician.get('vehicle_assigned') or ''
+            technician['tools_assigned'] = technician.get('tools_assigned') or ''
+            technician['notes'] = technician.get('notes') or ''
+
+            # Numeric defaults
+            technician['experience_years'] = technician.get('experience_years') or 0
+            technician['max_weekly_hours'] = technician.get('max_weekly_hours') or technician.get('max_hours') or 40
+            # hourly_rate stored as numeric/decimal - present as string in templates
+            hr = technician.get('hourly_rate')
+            technician['hourly_rate'] = str(hr) if hr is not None else '0.00'
+
+            # Boolean flags: templates check technician.active and technician.on_call
+            technician['active'] = bool(technician.get('is_active')) if technician.get('is_active') is not None else False
+            technician['on_call'] = bool(technician.get('on_call')) if technician.get('on_call') is not None else False
 
         cursor.close()
         conn.close()
@@ -583,8 +752,41 @@ def edit_technician(technician_id):
                 attrs = [a for a in dir(form) if not a.startswith('_')]
                 has_birth = hasattr(form, 'birth_date')
                 log_info(f"TechnicianForm instantiated; birth_date present={has_birth}; sample_attrs={attrs[:40]}")
-            except Exception as _:
+            except Exception:
                 log_info("TechnicianForm instantiated but failed to introspect attributes")
+
+            # Prefill WTForm with values from the technician row so required fields are shown and preserved
+            try:
+                form_data = {
+                    'name': technician.get('name'),
+                    'email': technician.get('email'),
+                    'phone': technician.get('phone'),
+                    'employee_id': technician.get('employee_id'),
+                    'hire_date': technician.get('hire_date'),
+                    'birth_date': technician.get('birth_date'),
+                    'emergency_contact': technician.get('emergency_contact'),
+                    'address': technician.get('address'),
+                    # map DB 'specialty' -> form 'specialization' when appropriate
+                    'specialization': technician.get('specialization') or technician.get('specialty'),
+                    'certification_level': technician.get('certification_level'),
+                    'experience_years': technician.get('experience_years'),
+                    'hourly_rate': technician.get('hourly_rate'),
+                    'zone': technician.get('zone'),
+                    'max_weekly_hours': technician.get('max_weekly_hours') or technician.get('max_hours'),
+                    'vehicle_assigned': technician.get('vehicle_assigned'),
+                    'tools_assigned': technician.get('tools_assigned'),
+                    'notes': technician.get('notes'),
+                    'certifications': technician.get('certifications'),
+                    'status': technician.get('status'),
+                    # boolean fields: convert 0/1 to True/False
+                    'active': bool(technician.get('is_active')) if technician.get('is_active') is not None else False,
+                    'on_call': bool(technician.get('on_call')) if technician.get('on_call') is not None else False,
+                }
+
+                # WTForms will accept date strings or date objects; process will coerce as appropriate
+                form.process(data=form_data)
+            except Exception as e:
+                log_error(f"Erreur lors du préremplissage du form pour le technicien {technician_id}: {e}")
         except Exception as e:
             # En cas d'erreur d'import/instanciation, fallback à None
             log_error(f"Erreur d'instanciation TechnicianForm: {e}")
@@ -599,7 +801,13 @@ def edit_technician(technician_id):
         return render_template('technicians/edit.html', technician=technician, form=form, specializations=specializations, certification_levels=certification_levels, zones=zones, technical_skills=technical_skills)
 
     except Exception as e:
-        log_error(f"Erreur lors du chargement du formulaire d'édition pour le technicien {technician_id}: {e}")
+        try:
+            import traceback
+
+            tb = traceback.format_exc()
+            log_error(f"Erreur lors du chargement du formulaire d'édition pour le technicien {technician_id}: {e}; traceback={tb}")
+        except Exception:
+            log_error(f"Erreur lors du chargement du formulaire d'édition pour le technicien {technician_id}: {e}")
         flash('Erreur lors du chargement du formulaire', 'error')
         return redirect(url_for('technicians.index'))
 
@@ -728,7 +936,7 @@ def schedule(technician_id=None):
 
         # Récupérer d'abord les informations de base du technicien (sans dépendre de colonnes optionnelles)
         cursor.execute(
-            "SELECT id, name FROM users WHERE id = %s AND is_active = TRUE",
+            "SELECT id, name FROM users WHERE id = %s",
             (technician_id,),
         )
         technician = cursor.fetchone()
@@ -764,8 +972,6 @@ def schedule(technician_id=None):
                 if raw:
                     if isinstance(raw, str):
                         try:
-                            import json
-
                             schedule = json.loads(raw)
                         except Exception:
                             schedule = {}

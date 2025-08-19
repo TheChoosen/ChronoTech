@@ -3,50 +3,56 @@
 {% block title %}Nouveau Bon de Travail - ChronoTech{% endblock %}
 
 {% block content %}
+{% set req_customer_q = request.args.get('customer_id') %}
+{% set req_vehicle_q = request.args.get('vehicle_id') %}
+{% set req_technician_q = request.args.get('technician_id') %}
+
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0">
-            <i class="fas fa-plus me-2"></i>Nouveau Bon de Travail
-        </h1>
+    <h1 class="h3 mb-0"><i class="fa-solid fa-plus me-2"></i>Nouveau Bon de Travail</h1>
         <a href="{{ url_for('work_orders.list_work_orders') }}" class="btn btn-outline-secondary clay-button">
-            <i class="fas fa-arrow-left me-2"></i>Retour à la liste
+            <i class="fa-solid fa-arrow-left me-2"></i>Retour à la liste
         </a>
     </div>
 
     <form method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="claim_number" value="{{ claim_number }}">
         <div class="row">
-            <!-- Informations principales -->
             <div class="col-lg-8">
-                <div class="clay-card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Informations Principales</h5>
+                <!-- Step 1 -->
+                <div id="wo-step-1" class="clay-card mb-4">
+                    <div class="card-header"><h5 class="mb-0"><i class="fa-solid fa-user me-2"></i>Étape 1 — Client</h5></div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="customer_id" class="form-label">Client <span class="text-danger">*</span></label>
+                            <select class="form-select clay-input" id="customer_id" name="customer_id" required>
+                                <option value="">Sélectionner un client</option>
+                                {% for customer in customers %}
+                                {%- set sel_from_q = (req_customer_q and req_customer_q|int == customer.id) -%}
+                                {%- set sel_from_form = (form.customer_id.data is not none and form.customer_id.data == customer.id) -%}
+                                <option value="{{ customer.id }}" {% if sel_from_q or sel_from_form %}selected{% endif %}>{{ customer.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <button type="button" class="btn btn-primary" id="wo-next-1">Suivant →</button>
+                        </div>
                     </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div id="wo-step-2" class="clay-card mb-4 d-none">
+                    <div class="card-header"><h5 class="mb-0"><i class="fa-solid fa-car me-2"></i>Étape 2 — Véhicule</h5></div>
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="claim_number" class="form-label">Numéro de réclamation</label>
-                                <input type="text" class="form-control clay-input" id="claim_number" 
-                                       name="claim_number" value="{{ claim_number }}" readonly>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="priority" class="form-label">Priorité <span class="text-danger">*</span></label>
-                                <select class="form-select clay-input" id="priority" name="priority" required>
-                                    <option value="">Sélectionner une priorité</option>
-                                    <option value="low">Faible</option>
-                                    <option value="medium" selected>Moyenne</option>
-                                    <option value="high">Élevée</option>
-                                    <option value="urgent">Urgente</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="customer_id" class="form-label">Client <span class="text-danger">*</span></label>
-                                <select class="form-select clay-input" id="customer_id" name="customer_id" required>
-                                    <option value="">Sélectionner un client</option>
-                                    {% for customer in customers %}
-                                    <option value="{{ customer.id }}">{{ customer.name }}</option>
+                                <label for="vehicle_id" class="form-label">Véhicule</label>
+                                <select class="form-select clay-input" id="vehicle_id" name="vehicle_id">
+                                    <option value="">Sélectionner un véhicule</option>
+                                    {% for v in vehicles %}
+                                    {%- set sel_v_q = (req_vehicle_q and req_vehicle_q|int == v.id) -%}
+                                    {%- set sel_v_form = (form.vehicle_id.data is not none and form.vehicle_id.data == v.id) -%}
+                                    <option value="{{ v.id }}" {% if sel_v_q or sel_v_form %}selected{% endif %}>{{ v.make or '' }} {{ v.model or '' }} {{ v.license_plate or '' }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
@@ -55,158 +61,113 @@
                                 <select class="form-select clay-input" id="assigned_technician_id" name="assigned_technician_id">
                                     <option value="">Non assigné</option>
                                     {% for technician in technicians %}
-                                    <option value="{{ technician.id }}">{{ technician.name }}</option>
+                                    {%- set sel_t_q = (req_technician_q and req_technician_q|int == technician.id) -%}
+                                    {%- set sel_t_form = (form.technician_id.data is not none and form.technician_id.data == technician.id) -%}
+                                    <option value="{{ technician.id }}" {% if sel_t_q or sel_t_form %}selected{% endif %}>{{ technician.name }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
                         </div>
-
                         <div class="mb-3">
                             <label for="description" class="form-label">Description <span class="text-danger">*</span></label>
-                            <textarea class="form-control clay-input" id="description" name="description" 
-                                      rows="4" required placeholder="Décrivez le problème ou l'intervention nécessaire..."></textarea>
+                            <textarea class="form-control clay-input" id="description" name="description" rows="4" required></textarea>
                         </div>
-
-                        <div class="mb-3">
-                            <label for="notes" class="form-label">Notes (visibles client)</label>
-                            <textarea class="form-control clay-input" id="notes" name="notes" rows="3" 
-                                      placeholder="Notes que le client pourra voir..."></textarea>
-                            <div class="form-text">Ces notes seront visibles par le client</div>
+                        <div class="d-flex justify-content-between">
+                            <button type="button" class="btn btn-outline-secondary" id="wo-back-2">← Retour</button>
+                            <button type="button" class="btn btn-primary" id="wo-next-2">Suivant →</button>
                         </div>
+                    </div>
+                </div>
 
+                <!-- Step 3 -->
+                <div id="wo-step-3" class="clay-card mb-4 d-none">
+                    <div class="card-header"><h5 class="mb-0"><i class="fa-solid fa-list-alt me-2"></i>Étape 3 — Type de bon</h5></div>
+                    <div class="card-body">
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="scheduled_date" class="form-label">Date prévue</label>
-                                <input type="datetime-local" class="form-control clay-input" 
-                                       id="scheduled_date" name="scheduled_date">
+                                <label for="priority" class="form-label">Priorité</label>
+                                <select class="form-select clay-input" id="priority" name="priority">
+                                    <option value="low">Faible</option>
+                                    <option value="medium" selected>Moyenne</option>
+                                    <option value="high">Élevée</option>
+                                    <option value="urgent">Urgente</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="status" class="form-label">Statut</label>
+                                <select class="form-select clay-input" id="status" name="status">
+                                    <option value="en_attente">En attente</option>
+                                    <option value="en_cours">En cours</option>
+                                    <option value="termine">Terminé</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="scheduled_date" class="form-label">Date prévue / Rendez-vous</label>
+                                <input type="datetime-local" class="form-control clay-input" id="scheduled_date" name="scheduled_date">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="estimated_duration" class="form-label">Durée estimée (minutes)</label>
-                                <input type="number" class="form-control clay-input" 
-                                       id="estimated_duration" name="estimated_duration" min="1" placeholder="60">
+                                <input type="number" class="form-control clay-input" id="estimated_duration" name="estimated_duration" min="1" placeholder="60">
                             </div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Localisation -->
-                <div class="clay-card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>Localisation</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label for="location_address" class="form-label">Adresse</label>
-                            <textarea class="form-control clay-input" id="location_address" 
-                                      name="location_address" rows="2" placeholder="Adresse complète de l'intervention"></textarea>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="location_latitude" class="form-label">Latitude</label>
-                                <input type="number" step="any" class="form-control clay-input" 
-                                       id="location_latitude" name="location_latitude" placeholder="48.8566">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="location_longitude" class="form-label">Longitude</label>
-                                <input type="number" step="any" class="form-control clay-input" 
-                                       id="location_longitude" name="location_longitude" placeholder="2.3522">
+                        <div class="d-flex justify-content-between">
+                            <button type="button" class="btn btn-outline-secondary" id="wo-back-3">← Retour</button>
+                            <div>
+                                <button type="submit" name="action" value="save_draft" class="btn btn-outline-secondary">Sauvegarder comme brouillon</button>
+                                <button type="submit" name="action" value="submit" class="btn btn-primary">Créer le bon de travail</button>
                             </div>
                         </div>
-                        <button type="button" class="btn btn-outline-info clay-button" onclick="getCurrentLocation()">
-                            <i class="fas fa-crosshairs me-2"></i>Utiliser ma position
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Documents et médias -->
-                <div class="clay-card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-paperclip me-2"></i>Documents et Médias</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label for="attachments" class="form-label">Fichiers joints</label>
-                            <input type="file" class="form-control clay-input" id="attachments" 
-                                   name="attachments" multiple accept=".jpg,.jpeg,.png,.pdf,.doc,.docx">
-                            <div class="form-text">
-                                Formats acceptés : JPG, PNG, PDF, DOC, DOCX. Taille max : 10MB par fichier.
-                            </div>
-                        </div>
-                        <div id="preview-container" class="mt-3"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- Sidebar -->
             <div class="col-lg-4">
-                <!-- Actions -->
                 <div class="clay-card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-cogs me-2"></i>Actions</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-grid gap-2">
-                            <button type="submit" name="action" value="save_draft" class="btn btn-outline-secondary clay-button">
-                                <i class="fas fa-save me-2"></i>Sauvegarder comme brouillon
-                            </button>
-                            <button type="submit" name="action" value="submit" class="btn btn-primary clay-button-primary">
-                                <i class="fas fa-paper-plane me-2"></i>Créer le bon de travail
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Informations supplémentaires -->
-                <div class="clay-card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-info me-2"></i>Informations</h5>
-                    </div>
+                    <div class="card-header"><h5 class="mb-0"><i class="fa-solid fa-info me-2"></i>Informations</h5></div>
                     <div class="card-body">
                         <div class="mb-3">
                             <label for="internal_notes" class="form-label">Notes internes</label>
-                            <textarea class="form-control clay-input" id="internal_notes" 
-                                      name="internal_notes" rows="3" placeholder="Notes visibles uniquement par l'équipe..."></textarea>
+                            <textarea class="form-control clay-input" id="internal_notes" name="internal_notes" rows="3"></textarea>
                         </div>
-                        
                         <div class="mb-3">
                             <label for="customer_reference" class="form-label">Référence client</label>
-                            <input type="text" class="form-control clay-input" id="customer_reference" 
-                                   name="customer_reference" placeholder="Référence du client">
+                            <input type="text" class="form-control clay-input" id="customer_reference" name="customer_reference">
                         </div>
-
                         <div class="mb-3">
                             <label for="tags" class="form-label">Étiquettes</label>
-                            <input type="text" class="form-control clay-input" id="tags" 
-                                   name="tags" placeholder="urgent, électricité, maintenance">
-                            <div class="form-text">Séparez les étiquettes par des virgules</div>
+                            <input type="text" class="form-control clay-input" id="tags" name="tags">
                         </div>
                     </div>
                 </div>
 
-                <!-- Coûts estimés -->
-                <div class="clay-card">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-euro-sign me-2"></i>Estimation des Coûts</h5>
+                <div class="clay-card mb-4">
+                    <div class="card-header"><h5 class="mb-0"><i class="fa-solid fa-paperclip me-2"></i>Documents et Médias</h5></div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="attachments" class="form-label">Fichiers joints</label>
+                            <input type="file" class="form-control clay-input" id="attachments" name="attachments" multiple>
+                        </div>
+                        <div id="preview-container" class="mt-3"></div>
                     </div>
+                </div>
+
+                <div class="clay-card">
+                    <div class="card-header"><h5 class="mb-0"><i class="fa-solid fa-euro-sign me-2"></i>Estimation des Coûts</h5></div>
                     <div class="card-body">
                         <div class="mb-3">
                             <label for="estimated_cost_labor" class="form-label">Main d'œuvre (€)</label>
-                            <input type="number" step="0.01" class="form-control clay-input" 
-                                   id="estimated_cost_labor" name="estimated_cost_labor" placeholder="0.00">
+                            <input type="number" step="0.01" class="form-control clay-input" id="estimated_cost_labor" name="estimated_cost_labor" placeholder="0.00">
                         </div>
-                        
                         <div class="mb-3">
                             <label for="estimated_cost_materials" class="form-label">Matériaux (€)</label>
-                            <input type="number" step="0.01" class="form-control clay-input" 
-                                   id="estimated_cost_materials" name="estimated_cost_materials" placeholder="0.00">
+                            <input type="number" step="0.01" class="form-control clay-input" id="estimated_cost_materials" name="estimated_cost_materials" placeholder="0.00">
                         </div>
-
                         <div class="mb-3">
                             <label for="estimated_cost_other" class="form-label">Autres frais (€)</label>
-                            <input type="number" step="0.01" class="form-control clay-input" 
-                                   id="estimated_cost_other" name="estimated_cost_other" placeholder="0.00">
+                            <input type="number" step="0.01" class="form-control clay-input" id="estimated_cost_other" name="estimated_cost_other" placeholder="0.00">
                         </div>
-
                         <hr>
                         <div class="d-flex justify-content-between">
                             <strong>Total estimé :</strong>
@@ -219,64 +180,64 @@
     </form>
 </div>
 
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
 <script>
-// Calcul automatique du total
-function updateTotal() {
-    const labor = parseFloat(document.getElementById('estimated_cost_labor').value) || 0;
-    const materials = parseFloat(document.getElementById('estimated_cost_materials').value) || 0;
-    const other = parseFloat(document.getElementById('estimated_cost_other').value) || 0;
-    const total = labor + materials + other;
-    document.getElementById('total-estimated').textContent = total.toFixed(2) + ' €';
+// Wizard control and helpers
+function showStep(n){
+  document.getElementById('wo-step-1').classList.toggle('d-none', n!==1);
+  document.getElementById('wo-step-2').classList.toggle('d-none', n!==2);
+  document.getElementById('wo-step-3').classList.toggle('d-none', n!==3);
 }
 
-document.getElementById('estimated_cost_labor').addEventListener('input', updateTotal);
-document.getElementById('estimated_cost_materials').addEventListener('input', updateTotal);
-document.getElementById('estimated_cost_other').addEventListener('input', updateTotal);
+document.addEventListener('DOMContentLoaded', function(){
+  var next1 = document.getElementById('wo-next-1');
+  if(next1) next1.addEventListener('click', function(){
+    var cust = document.getElementById('customer_id').value;
+    if(!cust){ alert('Veuillez sélectionner un client'); return; }
+    var params = new URLSearchParams(window.location.search);
+    params.set('customer_id', cust);
+    window.location.search = params.toString();
+  });
 
-// Géolocalisation
-function getCurrentLocation() {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(function(position) {
-            document.getElementById('location_latitude').value = position.coords.latitude.toFixed(6);
-            document.getElementById('location_longitude').value = position.coords.longitude.toFixed(6);
-        }, function(error) {
-            alert('Erreur de géolocalisation : ' + error.message);
-        });
-    } else {
-        alert('La géolocalisation n\'est pas supportée par ce navigateur.');
-    }
-}
+  var back2 = document.getElementById('wo-back-2'); if(back2) back2.addEventListener('click', function(){ showStep(1); });
+  var next2 = document.getElementById('wo-next-2'); if(next2) next2.addEventListener('click', function(){
+    var desc = document.getElementById('description').value;
+    if(!desc){ alert('Veuillez fournir une description'); return; }
+    showStep(3);
+  });
+  var back3 = document.getElementById('wo-back-3'); if(back3) back3.addEventListener('click', function(){ showStep(2); });
 
-// Prévisualisation des fichiers
-document.getElementById('attachments').addEventListener('change', function(e) {
-    const container = document.getElementById('preview-container');
-    container.innerHTML = '';
-    
-    Array.from(e.target.files).forEach(file => {
-        const div = document.createElement('div');
-        div.className = 'alert alert-info d-flex align-items-center';
-        div.innerHTML = `
-            <i class="fas fa-file me-2"></i>
-            <span>${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)</span>
-        `;
-        container.appendChild(div);
+  // Auto-advance
+  var params = new URLSearchParams(window.location.search);
+  var cust = params.get('customer_id'); var veh = params.get('vehicle_id');
+  if(cust && veh) showStep(3);
+  else if(cust) showStep(2);
+  else showStep(1);
+
+  // preview attachments
+  var attachments = document.getElementById('attachments');
+  if(attachments) attachments.addEventListener('change', function(e){
+    var container = document.getElementById('preview-container'); container.innerHTML = '';
+    Array.from(e.target.files || []).forEach(function(file){
+      var d = document.createElement('div'); d.className='alert alert-info d-flex align-items-center';
+    d.innerHTML = '<i class="fa-solid fa-file me-2"></i><span>'+file.name+' ('+((file.size/1024/1024).toFixed(2))+' MB)</span>';
+      container.appendChild(d);
     });
-});
+  });
 
-// Auto-complétion client
-document.getElementById('customer_id').addEventListener('change', function() {
-    const customerId = this.value;
-    if (customerId) {
-        // Charger les informations du client pour pré-remplir l'adresse
-        fetch(`/api/customers/${customerId}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.address) {
-                    document.getElementById('location_address').value = data.address;
-                }
-            })
-            .catch(error => console.error('Erreur:', error));
-    }
+  // total calculation listeners
+  function updateTotal(){
+    var labor = parseFloat(document.getElementById('estimated_cost_labor')?.value) || 0;
+    var materials = parseFloat(document.getElementById('estimated_cost_materials')?.value) || 0;
+    var other = parseFloat(document.getElementById('estimated_cost_other')?.value) || 0;
+    document.getElementById('total-estimated').textContent = (labor+materials+other).toFixed(2) + ' €';
+  }
+  ['estimated_cost_labor','estimated_cost_materials','estimated_cost_other'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.addEventListener('input', updateTotal);
+  });
 });
 </script>
 {% endblock %}

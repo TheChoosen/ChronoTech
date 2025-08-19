@@ -60,8 +60,19 @@ class WorkOrderForm(FlaskForm):
     title = StringField('Titre', validators=[DataRequired(), Length(max=255)])
     description = TextAreaField('Description', validators=[Optional(), Length(max=1000)])
     customer_id = IntegerField('Client', validators=[DataRequired()])
+    vehicle_id = SelectField('Véhicule', choices=[], coerce=int, validators=[Optional()])
     technician_id = IntegerField('Technicien', validators=[Optional()])
     status = SelectField('Statut', choices=[('en_attente', 'En attente'), ('en_cours', 'En cours'), ('termine', 'Terminé')], validators=[Optional()])
     due_date = DateField('Date d\'échéance', validators=[Optional()])
     notes = TextAreaField('Notes', validators=[Optional(), Length(max=500)])
     submit = SubmitField('Ajouter')
+
+
+class AppointmentForm(FlaskForm):
+    customer_id = IntegerField('Client', validators=[DataRequired()])
+    vehicle_id = SelectField('Véhicule', choices=[], coerce=int, validators=[Optional()])
+    scheduled_date = DateField('Date du rendez-vous', validators=[DataRequired()])
+    duration_minutes = IntegerField('Durée (minutes)', validators=[Optional()])
+    description = TextAreaField('Description', validators=[Optional(), Length(max=500)])
+    notes = TextAreaField('Notes', validators=[Optional(), Length(max=500)])
+    submit = SubmitField('Créer')

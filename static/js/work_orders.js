@@ -84,7 +84,7 @@
                 col.innerHTML = `
                     <div class="card">
                         <div class="card-img-top d-flex align-items-center justify-content-center" style="height: 120px; background-color: #f8f9fa;">
-                            <i class="fas fa-file fa-3x text-muted"></i>
+                            <i class="fa-solid fa-file fa-3x text-muted"></i>
                         </div>
                         <div class="card-body p-2">
                             <h6 class="card-title small mb-1">${file.name}</h6>

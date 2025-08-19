@@ -204,25 +204,137 @@ def create_work_order():
         technicians = cursor.fetchall()
     conn.close()
     # Remplir les choices pour les champs liés
-    form.customer_id.choices = [(str(c['id']), c['name']) for c in customers]
-    form.technician_id.choices = [('', '---')] + [(str(t['id']), t['name']) for t in technicians]
+    # customer_id is an IntegerField in the form, keep data as int
+    # choices are provided for template rendering as (id, name)
+    form.customer_id.choices = [(c['id'], c['name']) for c in customers]
+    # Use integer ids for technician choices as well (first choice 0 == blank)
+    form.technician_id.choices = [(0, '---')] + [(t['id'], t['name']) for t in technicians]
+    # Pré-sélectionner le client si customer_id est fourni en query string
+    req_customer_id = request.args.get('customer_id') or request.form.get('customer_id')
+    if req_customer_id:
+        # ensure the value exists in the choices
+        choice_values = [c[0] for c in form.customer_id.choices]
+        try:
+            req_c_int = int(req_customer_id)
+        except Exception:
+            req_c_int = None
+        if req_c_int is not None and req_c_int in choice_values:
+            form.customer_id.data = req_c_int
+            # Verify the customer has vehicle information before allowing creation
+            try:
+                conn_check = get_db_connection()
+                with conn_check.cursor() as cursor:
+                    cursor.execute("SELECT vehicle_info FROM customers WHERE id = %s", (int(req_customer_id),))
+                    cust_row = cursor.fetchone()
+                    if not cust_row or not cust_row.get('vehicle_info'):
+                        flash("Le client n'a pas de véhicule enregistré. Veuillez ajouter un véhicule avant de créer un bon de travail.", 'error')
+                        return redirect(url_for('customers.edit_customer', customer_id=int(req_customer_id)))
+            except Exception:
+                # If check fails, allow flow to continue (don't block on DB errors)
+                pass
+            finally:
+                try:
+                    conn_check.close()
+                except Exception:
+                    pass
+    # Load vehicles for the selected customer to populate the vehicle select in the form
+    vehicles = []
+    try:
+        if req_customer_id:
+            conn_v = get_db_connection()
+            with conn_v.cursor() as cursor:
+                cursor.execute("SELECT id, make, model, year, vin, license_plate FROM vehicles WHERE customer_id = %s ORDER BY created_at DESC", (int(req_customer_id),))
+                vehicles = cursor.fetchall()
+            conn_v.close()
+            # Populate form vehicle choices and pre-select if vehicle_id provided in query
+            try:
+                # vehicle_id SelectField uses coerce=int, provide integer choice values; 0 means blank
+                form.vehicle_id.choices = [(0, '---')] + [ (v['id'], f"{v.get('make','')} {v.get('model','')} {v.get('license_plate','')}") for v in vehicles ]
+            except Exception:
+                # If form.vehicle_id doesn't exist or choices assignment fails, ignore
+                pass
+            # Pre-select vehicle if provided (use int types)
+            req_vehicle_id = request.args.get('vehicle_id') or request.form.get('vehicle_id')
+            if req_vehicle_id:
+                try:
+                    req_v_int = int(req_vehicle_id)
+                    if req_v_int in [c[0] for c in form.vehicle_id.choices]:
+                        form.vehicle_id.data = req_v_int
+                except Exception:
+                    pass
+    except Exception:
+        vehicles = []
+    # Pré-sélectionner le technicien si fourni
+    req_technician_id = request.args.get('technician_id') or request.form.get('technician_id')
+    if req_technician_id:
+        try:
+            req_t_int = int(req_technician_id)
+        except Exception:
+            req_t_int = None
+        tech_values = [t[0] for t in form.technician_id.choices if t[0] != 0]
+        if req_t_int is not None and req_t_int in tech_values:
+            form.technician_id.data = req_t_int
+    # Compute a preview claim number for the form (useful on GET)
+    claim_number = None
+    try:
+        # Use a short-lived connection to count today's work orders
+        conn_preview = get_db_connection()
+        with conn_preview.cursor() as cursor:
+            cursor.execute("SELECT COUNT(*) as count FROM work_orders WHERE DATE(created_at) = CURDATE()")
+            row = cursor.fetchone()
+            daily_count = (row['count'] if row and 'count' in row and row['count'] is not None else 0) + 1
+            claim_number = f"WO{datetime.now().strftime('%Y%m%d')}-{daily_count:03d}"
+    except Exception:
+        # Fallback to a deterministic default if DB is unavailable
+        claim_number = f"WO{datetime.now().strftime('%Y%m%d')}-001"
+    finally:
+        try:
+            conn_preview.close()
+        except Exception:
+            pass
     if form.validate_on_submit():
         conn = get_db_connection()
+        # Ensure the selected customer has vehicle information before creating the work order
+        try:
+            if conn:
+                with conn.cursor() as cursor:
+                    cust_id_int = int(form.customer_id.data) if form.customer_id.data else None
+                    if cust_id_int:
+                        cursor.execute("SELECT vehicle_info FROM customers WHERE id = %s", (cust_id_int,))
+                        cust_row = cursor.fetchone()
+                        if not cust_row or not cust_row.get('vehicle_info'):
+                            try:
+                                conn.close()
+                            except Exception:
+                                pass
+                            flash("Le client n'a pas de véhicule enregistré. Ajoutez un véhicule avant de créer un bon de travail.", 'error')
+                            return redirect(url_for('customers.edit_customer', customer_id=cust_id_int))
+        except Exception:
+            # if the check fails for any reason, don't block creation (fail-open)
+            pass
+
         try:
             with conn.cursor() as cursor:
                 cursor.execute("SELECT COUNT(*) as count FROM work_orders WHERE DATE(created_at) = CURDATE()")
                 daily_count = cursor.fetchone()['count'] + 1
                 claim_number = f"WO{datetime.now().strftime('%Y%m%d')}-{daily_count:03d}"
                 internal_notes_value = request.form.get('internal_notes') if request.form.get('internal_notes') is not None else ''
+                # capture vehicle selection if present
+                vehicle_id_to_save = request.form.get('vehicle_id') or None
+                try:
+                    vehicle_id_to_save = int(vehicle_id_to_save) if vehicle_id_to_save else None
+                except Exception:
+                    vehicle_id_to_save = None
                 cursor.execute("""
                     INSERT INTO work_orders (
-                        claim_number, customer_id, description, priority, 
+                        claim_number, customer_id, vehicle_id, description, priority, 
                         estimated_duration, estimated_cost, scheduled_date,
                         assigned_technician_id, created_by_user_id, notes, internal_notes
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, (
                     claim_number,
                     form.customer_id.data,
+                    vehicle_id_to_save,
                     form.description.data,
                     form.status.data or 'medium',
                     None,  # estimated_duration
@@ -253,12 +365,15 @@ def create_work_order():
                     ))
                 conn.commit()
                 flash(f'Bon de travail {claim_number} créé avec succès', 'success')
+                is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
+                if is_ajax:
+                    return jsonify({'success': True, 'id': work_order_id, 'url': url_for('work_orders.view_work_order', id=work_order_id)})
                 return redirect(url_for('work_orders.view_work_order', id=work_order_id))
         except Exception as e:
             flash(f'Erreur lors de la création: {str(e)}', 'error')
         finally:
             conn.close()
-    return render_template('work_orders/add.html', form=form, customers=customers, technicians=technicians)
+    return render_template('work_orders/add.html', form=form, customers=customers, technicians=technicians, vehicles=vehicles, claim_number=claim_number)
 
 @bp.route('/<int:id>')
 def view_work_order(id):
