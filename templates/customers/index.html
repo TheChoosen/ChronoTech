@@ -216,7 +216,11 @@
                                         {% endif %}
                                     </div>
                                     <div>
-                                        <h6 class="mb-1">{{ customer.name }}</h6>
+                                        <h6 class="mb-1">{{ customer.name }}
+                                            {% if (customer.vehicles_count or 0) == 0 %}
+                                            <span class="badge bg-danger ms-2" title="Aucun véhicule associé">Aucun véhicule</span>
+                                            {% endif %}
+                                        </h6>
                                         <span class="badge {{ customer.customer_type|customer_type_badge }} mb-1">
                                             {% if customer.customer_type == 'individual' %}Particulier
                                             {% elif customer.customer_type == 'company' %}Entreprise
@@ -293,8 +297,10 @@
                                     <div class="stat-item">
                                         <h6 class="mb-0">{{ customer.work_orders_count or 0 }}</h6>
                                         <small class="text-muted">Interventions</small>
-                                        <small class="text-muted d-block">Véhicules: {{ customer.vehicles_count or 0
-                                            }}</small>
+                                        <small class="text-muted d-block">Véhicules: {{ customer.vehicles_count or 0 }}</small>
+                                        {% if (customer.vehicles_count or 0) == 0 %}
+                                        <div class="mt-1"><small class="text-danger">Aucun véhicule associé</small></div>
+                                        {% endif %}
                                     </div>
                                 </div>
                                 <div class="col-4">

@@ -48,14 +48,67 @@ def index():
             pagination = DummyPagination()
             return render_template('customers/index.html', customers=[], stats=stats, pagination=pagination)
 
-        cursor = conn.cursor(pymysql.cursors.DictCursor)
-        cursor.execute("""
-            SELECT id, name, company, email, phone, address, created_at, is_active
-            FROM customers 
-            WHERE is_active = TRUE
-            ORDER BY name ASC
-        """)
+        # Build dynamic filters from query params
+        args = request.args or {}
+        search = (args.get('search') or '').strip()
+        customer_type = args.get('customer_type') or ''
+        zone = args.get('zone') or ''
+        status = args.get('status') or ''
+        sort = args.get('sort') or 'name'
 
+        # Detect existing columns to avoid referencing missing schema fields
+        try:
+            col_cur = conn.cursor()
+            col_cur.execute("SHOW COLUMNS FROM customers")
+            existing_cols = {r[0] for r in col_cur.fetchall()}
+            col_cur.close()
+        except Exception:
+            existing_cols = set()
+
+        where_clauses = ['is_active = TRUE']
+        params = []
+
+        if search:
+            like = f"%{search}%"
+            where_clauses.append("(name LIKE %s OR company LIKE %s OR email LIKE %s OR phone LIKE %s)")
+            params.extend([like, like, like, like])
+
+        if customer_type and 'customer_type' in existing_cols:
+            where_clauses.append('customer_type = %s')
+            params.append(customer_type)
+
+        if zone and 'zone' in existing_cols:
+            where_clauses.append('zone = %s')
+            params.append(zone)
+
+        if status and 'status' in existing_cols:
+            where_clauses.append('status = %s')
+            params.append(status)
+
+        # Map allowed sorts to SQL order clauses
+        sort_map = {
+            'name': 'name ASC',
+            'name_desc': 'name DESC',
+            'created_date': 'created_at DESC',
+            'last_order': 'created_at DESC'
+        }
+        order_by = sort_map.get(sort, 'name ASC')
+
+        # Build select list, include optional columns only if present
+        select_cols = ['id', 'name', 'company', 'email', 'phone', 'address', 'created_at', 'is_active']
+        for opt in ('status', 'customer_type', 'zone'):
+            if opt in existing_cols:
+                select_cols.append(opt)
+
+        sql = f"""
+            SELECT {', '.join(select_cols)}
+            FROM customers
+            WHERE {' AND '.join(where_clauses)}
+            ORDER BY {order_by}
+        """
+
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        cursor.execute(sql, params)
         customers = cursor.fetchall()
         cursor.close()
         # Compute vehicles count for listed customers
