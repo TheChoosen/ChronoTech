@@ -3,6 +3,7 @@ ChronoTech - Module Interventions & Travaux (v2.0)
 Application Flask principale basée sur le PRD Fusionné
 Architecture moderne avec design Claymorphism et intégration IA
 """
+import traceback
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
 import os
 import logging
@@ -169,35 +170,39 @@ def index():
 
 @app.route('/login', methods=['GET', 'POST'])
 def auth_login():
-    """Connexion utilisateur"""
+    """Connexion utilisateur avec données des deux tables"""
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
         
+        # Join bdm.users and gsi.clientsweb
         conn = get_db_connection()
         try:
             with conn.cursor() as cursor:
                 cursor.execute("""
-                    SELECT id, name, email, password, role 
-                    FROM users 
-                    WHERE email = %s
+                    SELECT 
+                        u.id, u.name, u.email, u.password, u.role,
+                        c.Record_id
+                    FROM bdm.users u
+                    LEFT JOIN gsi.clientsweb c ON u.email = c.Courriel
+                    WHERE u.email = %s
                 """, (email,))
-                user = cursor.fetchone()
+                user_data = cursor.fetchone()
                 
-                if user and check_password_hash(user['password'], password):
-                    session['user_id'] = user['id']
-                    session['user_name'] = user['name']
-                    session['user_email'] = user['email']
-                    session['user_role'] = user['role']
+                if user_data and check_password_hash(user_data['password'], password):
+                    # Get company code if clientsweb record exists
+                    company_code = ""
+                    if user_data['Record_id']:
+                        company_code = get_user_company_code(user_data['Record_id'])
                     
-                    # Enregistrer la connexion - Table user_activity_log non disponible temporairement
-                    # cursor.execute("""
-                    #     INSERT INTO user_activity_log (user_id, action, details)
-                    #     VALUES (%s, 'login', %s)
-                    # """, (user['id'], f"Connexion depuis {request.remote_addr}"))
-                    # conn.commit()
+                    # Store in session
+                    session['user_id'] = user_data['id']
+                    session['user_name'] = user_data['name']
+                    session['user_email'] = user_data['email']
+                    session['user_role'] = user_data['role']
+                    session['user_company'] = company_code
                     
-                    flash(f'Bienvenue {user["name"]} !', 'success')
+                    flash(f'Bienvenue {user_data["name"]} !', 'success')
                     return redirect(url_for('dashboard'))
                 else:
                     flash('Email ou mot de passe incorrect', 'error')
@@ -205,6 +210,72 @@ def auth_login():
             conn.close()
     
     return render_template('auth/login.html')
+
+def get_user_company_code(user_id):
+    """
+    Get the company code for a user from clientsweb -> compagnieweb tables
+    Returns the company code (e.g., 'BDM') or None if not found
+    """
+    conn = None
+    cursor = None
+    try:
+        conn = get_db_connection("gsi")
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get the compagnieweb_Record_id from clientsweb
+        cursor.execute("""
+            SELECT compagnieweb_Record_id 
+            FROM clientsweb 
+            WHERE Record_id = %s
+        """, [user_id])
+        
+        client_result = cursor.fetchone()
+        
+        if not client_result or not client_result.get('compagnieweb_Record_id'):
+            return None
+        
+        compagnieweb_record_id = client_result['compagnieweb_Record_id']
+        
+        # Get the compagnie_id from compagnieweb table
+        cursor.execute("""
+            SELECT compagnie_id 
+            FROM compagnieweb 
+            WHERE Record_id = %s
+        """, [compagnieweb_record_id])
+        
+        company_result = cursor.fetchone()
+        
+        if not company_result or not company_result.get('compagnie_id'):
+            return None
+        
+        compagnie_id = company_result['compagnie_id']
+        
+        # Extract company code by removing duplicate (e.g., BDMBDM -> BDM)
+        if len(compagnie_id) % 2 == 0:
+            mid_point = len(compagnie_id) // 2
+            first_half = compagnie_id[:mid_point]
+            second_half = compagnie_id[mid_point:]
+            
+            if first_half == second_half:
+                company_code = first_half
+                return company_code
+        
+        # If not a duplicate pattern, return the full compagnie_id
+        return compagnie_id
+        
+    except Exception as e:
+        print(f"ERROR: Failed to get user company: {str(e)}")
+        traceback.print_exc()
+        return None
+    finally:
+        try:
+            if cursor:
+                cursor.close()
+            if conn and conn.is_connected():
+                conn.close()
+        except Exception as cleanup_error:
+            print(f"ERROR: Failed to cleanup database connection: {cleanup_error}")
+
 
 @app.route('/logout')
 def auth_logout():
