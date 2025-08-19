@@ -46,6 +46,8 @@ coverage.xml
 .pytest_cache/
 
 # Environments
+.env
+.env.bak/
 .env.local
 .env.backup.*
 .venv
@@ -105,3 +107,17 @@ logs/
 *.log
 
 credentials.json
+# Local environment and runtime outputs
+.env
+chronotech.out
+server.log
+
+# Uploaded user content (do not commit uploads)
+uploads/
+static/uploads/
+
+# Optional caches
+.mypy_cache/
+
+# macOS Finder
+.DS_Store

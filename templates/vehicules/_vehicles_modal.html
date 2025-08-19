@@ -1,11 +1,11 @@
 <div class="modal fade" id="vehiclesModal" tabindex="-1" aria-labelledby="vehiclesModalLabel" aria-hidden="true"
-  data-customer-id="{{ customer.id }}"
+  data-customer-id="{{ customer.id if customer is defined and customer else '' }}"
   data-wo-url="{{ url_for('work_orders.create_work_order') }}"
   data-appt-url="{{ url_for('appointments.create') }}">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="vehiclesModalLabel">Véhicules de {{ customer.name }}</h5>
+  <h5 class="modal-title" id="vehiclesModalLabel">Véhicules de {{ customer.name if customer is defined and customer else 'client' }}</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
@@ -22,8 +22,8 @@
               <div>
                 <div class="btn-group" role="group">
                   <button type="button" class="btn btn-sm btn-outline-secondary btn-edit-vehicle" data-id="{{ v.id }}">Modifier</button>
-                  <button type="button" class="btn btn-sm btn-outline-primary btn-create-wo" data-url="{{ url_for('work_orders.create_work_order', customer_id=customer.id, vehicle_id=v.id) }}" title="Créer un bon de travail pour ce véhicule">Bon</button>
-                  <button type="button" class="btn btn-sm btn-outline-success btn-create-appt" data-url="{{ url_for('appointments.create', customer_id=customer.id, vehicle_id=v.id) }}" title="Créer un rendez-vous pour ce véhicule">RDV</button>
+                  <button type="button" class="btn btn-sm btn-outline-primary btn-create-wo" data-url="{{ url_for('work_orders.create_work_order', customer_id=customer.id, vehicle_id=v.id) if customer is defined and customer else url_for('work_orders.create_work_order', vehicle_id=v.id) }}" title="Créer un bon de travail pour ce véhicule">Bon</button>
+                  <button type="button" class="btn btn-sm btn-outline-success btn-create-appt" data-url="{{ url_for('appointments.create', customer_id=customer.id, vehicle_id=v.id) if customer is defined and customer else url_for('appointments.create', vehicle_id=v.id) }}" title="Créer un rendez-vous pour ce véhicule">RDV</button>
                   <form method="POST" action="{{ url_for('vehicles.delete', id=v.id) }}" style="display:inline; margin:0;">
                     <button type="submit" class="btn btn-sm btn-outline-danger">Supprimer</button>
                   </form>
@@ -40,7 +40,7 @@
 
           <h6>Ajouter un véhicule</h6>
           <form id="add-vehicle-form">
-            <input type="hidden" name="customer_id" value="{{ customer.id }}">
+            <input type="hidden" name="customer_id" value="{{ customer.id if customer is defined and customer else '' }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
             <div class="row">
               <div class="col-md-4">
@@ -252,4 +252,3 @@ function openCreateModal(url, kind){
     });
   }).catch(()=> alert('Impossible de charger le formulaire'));
 }
-</script>

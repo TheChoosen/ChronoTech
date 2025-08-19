@@ -12,6 +12,8 @@
     <script src="https://kit.fontawesome.com/abf0b12e91.js" crossorigin="anonymous"></script>
     <!-- Custom CSS -->
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <!-- Project custom overrides (dropdown z-index / overflow fixes) -->
+    <link href="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet">
     <!-- CSRF token for AJAX -->
     <meta name="csrf-token" content="{{ csrf_token() if csrf_token else '' }}">
 
@@ -28,7 +30,8 @@
                 <small class="ms-2 opacity-75 text-secondary">v2.0</small>
             </a>
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-label="Ouvrir le menu">
                 <span class="navbar-toggler-icon"></span>
             </button>
 
@@ -37,37 +40,47 @@
 
                     <li class="nav-item">
                         <a class="nav-link {{ 'active' if request.endpoint == 'index' }} text-primary"
-                            href="{{ url_for('index') }}">
-                            <i class="fa-solid fa-home me-1 text-primary"></i>Accueil
+                            href="{{ url_for('index') }}" title="Accueil">
+                            <i class="fa-solid fa-home me-1 text-primary"></i>
+                            <span class="nav-label">Accueil</span>
                         </a>
                     </li>
                     {% if session.user_id %}
-                     <li class="nav-item">
+                    <li class="nav-item">
                         <a class="nav-link {{ 'active' if 'customers' in request.endpoint }} text-primary"
-                            href="{{ url_for('customers.index') }}">
-                            <i class="fa-solid fa-users me-1 text-primary"></i>Clients
+                            href="{{ url_for('customers.index') }}" title="Clients">
+                            <i class="fa-solid fa-users me-1 text-primary"></i>
+                            <span class="nav-label">Clients</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {{ 'active' if 'work_orders' in request.endpoint }} text-primary"
-                            href="{{ url_for('work_orders.list_work_orders') }}">
-                            <i class="fa-solid fa-clipboard-list me-1 text-primary"></i>Bons de travail
+                            href="{{ url_for('work_orders.list_work_orders') }}" title="Bons de travail">
+                            <i class="fa-solid fa-clipboard-list me-1 text-primary"></i>
+                            <span class="nav-label">Bons de travail</span>
                         </a>
                     </li>
-                     <li class="nav-item">
+                    <li class="nav-item">
                         <a class="nav-link {{ 'active' if 'technicians' in request.endpoint }} text-primary"
-                            href="{{ url_for('technicians.index') }}">
-                            <i class="fa-solid fa-user-hard-hat me-1 text-primary"></i>Techniciens
+                            href="{{ url_for('technicians.index') }}" title="Techniciens">
+                            <i class="fa-solid fa-user-hard-hat me-1 text-primary"></i>
+                            <span class="nav-label">Techniciens</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {{ 'active' if 'interventions' in request.endpoint }} text-primary"
-                            href="{{ url_for('interventions.list_interventions') }}">
-                            <i class="fa-solid fa-wrench me-1 text-primary"></i>Interventions
+                            href="{{ url_for('interventions.list_interventions') }}" title="Interventions">
+                            <i class="fa-solid fa-wrench me-1 text-primary"></i>
+                            <span class="nav-label">Interventions</span>
                         </a>
                     </li>
-                   
-                   
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if 'vehicles' in request.endpoint }} text-primary"
+                            href="{{ url_for('vehicles.index') }}" title="Véhicules">
+                            <i class="fa-solid fa-car me-1 text-primary"></i>
+                            <span class="nav-label">Véhicules</span>
+                        </a>
+                    </li>
 
                     {% endif %}
                 </ul>
@@ -77,12 +90,12 @@
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle text-primary" href="#" id="navbarDropdown" role="button"
                             data-bs-toggle="dropdown">
-                            <i class="fa-solid fa-user me-1 text-primary"></i>{{ session.user_name or 'Utilisateur' }}
+                            <i class="fa-solid fa-user me-1 text-primary"></i>
+                            <span class="nav-label">{{ session.user_name or 'Utilisateur' }}</span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li class="nav-item">
-                                <a class="dropdown-item"
-                                    href="{{ url_for('analytics.dashboard') }}">
+                                <a class="dropdown-item" href="{{ url_for('analytics.dashboard') }}">
                                     <i class="fa-solid fa-chart-bar me-1"></i>Analytics
                                 </a>
                             </li>
@@ -103,12 +116,14 @@
                     {% else %}
                     <li class="nav-item">
                         <a class="nav-link text-primary" href="{{ url_for('auth_login') }}">
-                            <i class="fa-solid fa-sign-in-alt me-1 text-primary"></i>Connexion
+                            <i class="fa-solid fa-sign-in-alt me-1 text-primary"></i>
+                            <span class="nav-label">Connexion</span>
                         </a>
                     </li>
                     {% endif %}
                 </ul>
             </div>
+        </div>
         </div>
     </nav>
 
@@ -176,6 +191,7 @@
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script src="{{ url_for('static', filename='js/lib/ajax_helpers.js') }}"></script>
     <script src="{{ url_for('static', filename='js/work_orders.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/vehicles.js') }}"></script>
 
     <!-- Global Styles -->
     <style>
@@ -235,6 +251,44 @@
             .container-fluid {
                 padding-left: 15px;
                 padding-right: 15px;
+            }
+        }
+
+        /* Compact icon-first nav on small screens */
+        @media (max-width: 991.98px) {
+
+            /* < lg */
+            .navbar .nav-link {
+                padding-left: .5rem;
+                padding-right: .5rem;
+                display: flex;
+                align-items: center;
+                gap: .5rem;
+            }
+
+            .navbar .nav-link .nav-label {
+                display: none;
+                /* hide labels on small screens to save space */
+            }
+
+            .navbar .nav-link i {
+                font-size: 1.05rem;
+            }
+
+            .navbar .navbar-brand small {
+                display: none;
+                /* hide version on small */
+            }
+        }
+
+        /* Restore labels on lg+ */
+        @media (min-width: 992px) {
+            .navbar .nav-link .nav-label {
+                display: inline;
+            }
+
+            .navbar .navbar-brand small {
+                display: inline;
             }
         }
     </style>

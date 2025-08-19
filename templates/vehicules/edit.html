@@ -1,4 +1,9 @@
-<div class="container">
+{% extends "base.html" %}
+
+{% block title %}Véhicules - Modification{% endblock %}
+
+{% block content %}
+<div class="container"></div>
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h3>Modifier le véhicule</h3>
     <a href="{{ url_for('vehicles.list_for_customer', customer_id=vehicle.customer_id) }}" class="btn btn-outline-secondary">Retour</a>
@@ -38,3 +43,5 @@
     </div>
   </form>
 </div>
+{% endblock %}
+
