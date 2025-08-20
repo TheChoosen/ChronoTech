@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ customer.name }} - Profil Client - ChronoTech{% endblock %}
+{% block title %}{{ customer.name or 'Client' }} - Profil Client - ChronoTech{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -9,20 +9,24 @@
             <i class="fas fa-user me-2"></i>{{ customer.name }}
         </h1>
         <div class="d-flex gap-2">
-            <a href="{{ url_for('customers.edit_customer', customer_id=customer.id) }}" class="btn btn-outline-primary clay-button">
+            <a href="{{ url_for('customers.edit_customer', customer_id=customer.id) }}"
+                class="btn btn-outline-primary clay-button">
                 <i class="fas fa-edit me-2"></i>Modifier
             </a>
             <div class="d-flex gap-2">
-                <a href="{{ url_for('work_orders.create_work_order', customer_id=customer.id) }}" class="btn btn-primary clay-button-primary">
+                <a href="{{ url_for('work_orders.create_work_order', customer_id=customer.id) }}"
+                    class="btn btn-primary clay-button-primary">
                     <i class="fas fa-plus me-2"></i>Créer un bon de travail
                 </a>
-                <a href="{{ url_for('appointments.create', customer_id=customer.id) }}" class="btn btn-outline-primary clay-button">
+                <a href="{{ url_for('appointments.create', customer_id=customer.id) }}"
+                    class="btn btn-outline-primary clay-button">
                     <i class="fas fa-calendar-plus me-2"></i>Créer un rendez-vous
                 </a>
-                <button class="btn btn-outline-secondary clay-button" data-bs-toggle="modal" data-bs-target="#vehiclesModal">
+                <a class="btn btn-outline-secondary clay-button" href="#vehicles-section">
                     <i class="fas fa-car me-2"></i>Véhicules
                 </button>
-                <a href="{{ url_for('parts.create_order', customer_id=customer.id) }}" class="btn btn-outline-secondary clay-button">
+                <a href="{{ url_for('parts.create_order', customer_id=customer.id) }}"
+                    class="btn btn-outline-secondary clay-button">
                     <i class="fas fa-box-open me-2"></i>Commander des pièces
                 </a>
             </div>
@@ -30,33 +34,33 @@
                 <i class="fas fa-arrow-left me-2"></i>Retour
             </a>
             <div class="dropdown">
-                <button class="btn btn-outline-secondary clay-button dropdown-toggle" type="button" 
-                        data-bs-toggle="dropdown">
+                <button class="btn btn-outline-secondary clay-button dropdown-toggle" type="button"
+                    data-bs-toggle="dropdown">
                     <i class="fas fa-ellipsis-v"></i>
                 </button>
                 <ul class="dropdown-menu">
                     <li><a class="dropdown-item" href="#" onclick="exportCustomerData()">
-                        <i class="fas fa-download me-2"></i>Exporter données
-                    </a></li>
+                            <i class="fas fa-download me-2"></i>Exporter données
+                        </a></li>
                     <li><a class="dropdown-item" href="#" onclick="printCustomerProfile()">
-                        <i class="fas fa-print me-2"></i>Imprimer profil
-                    </a></li>
+                            <i class="fas fa-print me-2"></i>Imprimer profil
+                        </a></li>
                     <li><a class="dropdown-item" href="#" onclick="duplicateCustomer()">
-                        <i class="fas fa-copy me-2"></i>Dupliquer
-                    </a></li>
-                    {% if current_user.role in ['admin', 'supervisor'] %}
-                    <li><hr class="dropdown-divider"></li>
+                            <i class="fas fa-copy me-2"></i>Dupliquer
+                        </a></li>
+                    {% if current_user is defined and current_user.role in ['admin', 'supervisor'] %}
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
                     <li><a class="dropdown-item text-danger" href="#" onclick="deleteCustomer()">
-                        <i class="fas fa-trash me-2"></i>Supprimer
-                    </a></li>
+                            <i class="fas fa-trash me-2"></i>Supprimer
+                        </a></li>
                     {% endif %}
                 </ul>
             </div>
         </div>
     </div>
 
-    {# include vehicles modal partial #}
-    {% include 'vehicules/_vehicles_modal.html' %}
 
     <div class="row">
         <!-- Contenu principal -->
@@ -76,13 +80,13 @@
                     <div class="row">
                         <div class="col-md-2">
                             {% if customer.avatar %}
-                            <img src="{{ url_for('static', filename='uploads/avatars/' + customer.avatar) }}" 
-                                 alt="{{ customer.name }}" class="rounded-circle img-fluid mb-3" 
-                                 style="width: 100px; height: 100px; object-fit: cover;">
+                            <img src="{{ url_for('static', filename='uploads/avatars/' + customer.avatar) }}"
+                                alt="{{ customer.name }}" class="rounded-circle img-fluid mb-3"
+                                style="width: 100px; height: 100px; object-fit: cover;">
                             {% else %}
-                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mb-3" 
-                                 style="width: 100px; height: 100px; font-size: 2rem;">
-                                {{ customer.name[0].upper() }}
+                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mb-3"
+                                style="width: 100px; height: 100px; font-size: 2rem;">
+                                {{ customer.name[0]|upper if customer.name else '?' }}
                             </div>
                             {% endif %}
                         </div>
@@ -263,8 +267,8 @@
             <div class="clay-card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-history me-2"></i>Historique des Interventions</h5>
-                    <a href="{{ url_for('work_orders.list_work_orders', customer_id=customer.id) }}" 
-                       class="btn btn-sm btn-outline-primary clay-button">
+                    <a href="{{ url_for('work_orders.list_work_orders', customer_id=customer.id) }}"
+                        class="btn btn-sm btn-outline-primary clay-button">
                         <i class="fas fa-external-link-alt me-2"></i>Voir tout
                     </a>
                 </div>
@@ -291,7 +295,8 @@
                                             {{ order.claim_number }}
                                         </a>
                                     </td>
-                                    <td>{{ order.description[:50] }}{% if order.description|length > 50 %}...{% endif %}</td>
+                                    {% set desc = order.description or '' %}
+                                    <td>{{ desc[:50] }}{% if desc|length > 50 %}...{% endif %}</td>
                                     <td>
                                         {% if order.technician_name %}
                                         {{ order.technician_name }}
@@ -314,12 +319,12 @@
                                     <td>{{ order.estimated_cost|currency if order.estimated_cost else '-' }}</td>
                                     <td>
                                         <div class="btn-group" role="group">
-                                            <a href="{{ url_for('work_orders.view_work_order', id=order.id) }}" 
-                                               class="btn btn-sm btn-outline-primary clay-button">
+                                            <a href="{{ url_for('work_orders.view_work_order', id=order.id) }}"
+                                                class="btn btn-sm btn-outline-primary clay-button">
                                                 <i class="fas fa-eye"></i>
                                             </a>
-                                            <a href="{{ url_for('work_orders.edit_work_order', id=order.id) }}" 
-                                               class="btn btn-sm btn-outline-secondary clay-button">
+                                            <a href="{{ url_for('work_orders.edit_work_order', id=order.id) }}"
+                                                class="btn btn-sm btn-outline-secondary clay-button">
                                                 <i class="fas fa-edit"></i>
                                             </a>
                                         </div>
@@ -334,8 +339,8 @@
                         <i class="fas fa-tools fa-3x text-muted mb-3"></i>
                         <h6>Aucune intervention pour ce client</h6>
                         <p class="text-muted">Commencez par créer la première intervention</p>
-                        <a href="{{ url_for('work_orders.create_work_order', customer_id=customer.id) }}" 
-                           class="btn btn-primary clay-button-primary">
+                        <a href="{{ url_for('work_orders.create_work_order', customer_id=customer.id) }}"
+                            class="btn btn-primary clay-button-primary">
                             <i class="fas fa-plus me-2"></i>Nouvelle intervention
                         </a>
                     </div>
@@ -353,28 +358,91 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <a href="{{ url_for('work_orders.create_work_order', customer_id=customer.id) }}" 
-                           class="btn btn-primary clay-button-primary">
+                        <a href="{{ url_for('work_orders.create_work_order', customer_id=customer.id) }}"
+                            class="btn btn-primary clay-button-primary">
                             <i class="fas fa-plus me-2"></i>Créer un bon de travail
                         </a>
-                        <a href="{{ url_for('appointments.create', customer_id=customer.id) }}" class="btn btn-outline-primary clay-button">
-                            <i class="fas fa-calendar-plus me-2"></i>Créer un rendez-vous
+                        <a class="btn btn-outline-secondary clay-button" href="#vehicles-section">
+                            <i class="fas fa-car me-2"></i>Véhicules
                         </a>
-                        <a href="{{ url_for('parts.create_order', customer_id=customer.id) }}" class="btn btn-outline-secondary clay-button">
+                        <a href="{{ url_for('parts.create_order', customer_id=customer.id) }}"
+                            class="btn btn-outline-secondary clay-button">
                             <i class="fas fa-box-open me-2"></i>Commander des pièces
                         </a>
-                        <a href="mailto:{{ customer.email }}" class="btn btn-outline-primary clay-button"
-                           {% if not customer.email %}style="display: none;"{% endif %}>
+                        <a href="mailto:{{ customer.email }}" class="btn btn-outline-primary clay-button" {% if not
+                            customer.email %}style="display: none;" {% endif %}>
                             <i class="fas fa-envelope me-2"></i>Envoyer un email
                         </a>
-                        <a href="tel:{{ customer.phone }}" class="btn btn-outline-success clay-button"
-                           {% if not customer.phone %}style="display: none;"{% endif %}>
+                        <a href="tel:{{ customer.phone }}" class="btn btn-outline-success clay-button" {% if not
+                            customer.phone %}style="display: none;" {% endif %}>
                             <i class="fas fa-phone me-2"></i>Appeler
                         </a>
                         <button class="btn btn-outline-info clay-button" onclick="generateQuote()">
                             <i class="fas fa-file-alt me-2"></i>Générer un devis
                         </button>
                     </div>
+                </div>
+            </div>
+
+            <!-- Inline vehicles section for this customer -->
+            <div id="vehicles-section" class="clay-card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-car me-2"></i>Véhicules</h5>
+                    <small class="text-muted">Liste des véhicules associés à ce client</small>
+                </div>
+                <div class="card-body">
+                    {% if vehicles %}
+                    <div class="list-group mb-3">
+                        {% for v in vehicles %}
+                        <div class="list-group-item d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong>{{ v.make or '' }} {{ v.model or '' }}</strong>
+                                <div class="small text-muted">{{ v.year or '' }} - {{ v.license_plate or '' }}
+                                </div>
+                                {% if v.notes %}<div class="mt-1">{{ v.notes }}</div>{% endif %}
+                            </div>
+                            <div class="btn-group" role="group">
+                                <a href="{{ url_for('vehicles.edit', id=v.id) }}"
+                                    class="btn btn-sm btn-outline-secondary">Modifier</a>
+                                <form method="POST" action="{{ url_for('vehicles.delete', id=v.id) }}"
+                                    style="display:inline; margin:0;">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Supprimer</button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">Aucun véhicule enregistré pour ce client.</div>
+                    {% endif %}
+
+                    <hr>
+                    <h6>Ajouter un véhicule</h6>
+                    <form method="POST" action="{{ url_for('vehicles.create') }}" class="row g-2"
+                        id="customer-add-vehicle-form">
+                        <input type="hidden" name="customer_id" value="{{ customer.id }}">
+                        <div class="col-md-3">
+                            <input name="make" class="form-control" placeholder="Marque">
+                        </div>
+                        <div class="col-md-3">
+                            <input name="model" class="form-control" placeholder="Modèle">
+                        </div>
+                        <div class="col-md-2">
+                            <input name="year" class="form-control" type="number" placeholder="Année">
+                        </div>
+                        <div class="col-md-2">
+                            <input name="license_plate" class="form-control" placeholder="Immat.">
+                        </div>
+                        <div class="col-md-12 mt-2">
+                            <input name="vin" class="form-control" placeholder="VIN">
+                        </div>
+                        <div class="col-md-12 mt-2">
+                            <textarea name="notes" class="form-control" placeholder="Notes"></textarea>
+                        </div>
+                        <div class="col-12 text-end mt-2">
+                            <button type="submit" class="btn btn-primary">Ajouter</button>
+                        </div>
+                    </form>
                 </div>
             </div>
 
@@ -419,40 +487,172 @@
             <div class="clay-card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-users me-2"></i>Contacts</h5>
-                    <button class="btn btn-sm btn-outline-primary clay-button" onclick="showAddContactModal()">
+                    <button class="btn btn-sm btn-outline-primary clay-button" data-bs-toggle="modal" data-bs-target="#contactModal" data-action="create">
                         <i class="fas fa-plus"></i>
                     </button>
                 </div>
-                <div class="card-body">
+                <div class="card-body" id="contacts-list">
                     {% if customer_contacts %}
                     {% for contact in customer_contacts %}
-                    <div class="border rounded p-2 mb-2">
+                    <div class="border rounded p-2 mb-2 contact-item" data-contact-id="{{ contact.id }}">
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
-                                <h6 class="mb-1">{{ contact.name }}</h6>
-                                <small class="text-muted">{{ contact.role }}</small>
+                                <h6 class="mb-1 contact-name">{{ contact.name }}</h6>
+                                <small class="text-muted contact-role">{{ contact.role }}</small>
                                 {% if contact.email %}
-                                <br><a href="mailto:{{ contact.email }}">{{ contact.email }}</a>
+                                <br><a class="contact-email" href="mailto:{{ contact.email }}">{{ contact.email }}</a>
                                 {% endif %}
                                 {% if contact.phone %}
-                                <br><a href="tel:{{ contact.phone }}">{{ contact.phone }}</a>
+                                <br><a class="contact-phone" href="tel:{{ contact.phone }}">{{ contact.phone }}</a>
                                 {% endif %}
                             </div>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteContact({{ contact.id }})">
-                                <i class="fas fa-trash"></i>
-                            </button>
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#contactModal" data-action="edit" data-contact='{{ contact|tojson }}'>
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <form method="POST" action="{{ url_for('customers.delete_contact', contact_id=contact.id) }}" style="display:inline; margin:0;" onsubmit="return false;">
+                                    <input type="hidden" name="customer_id" value="{{ customer.id }}">
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteContact({{ contact.id }}, {{ customer.id }})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     </div>
                     {% endfor %}
                     {% else %}
-                    <p class="text-muted text-center">Aucun contact supplémentaire</p>
+                    <p class="text-muted text-center" id="no-contacts">Aucun contact supplémentaire</p>
                     {% endif %}
                 </div>
             </div>
 
+            <!-- Contact modal (create/edit) -->
+            <div class="modal fade" id="contactModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Contact</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="contact-form">
+                                <input type="hidden" name="contact_id" id="contact-id">
+                                <input type="hidden" name="customer_id" value="{{ customer.id }}">
+                                <div class="mb-2">
+                                    <label class="form-label">Nom</label>
+                                    <input class="form-control" name="name" id="contact-name">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Rôle</label>
+                                    <input class="form-control" name="role" id="contact-role">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Email</label>
+                                    <input class="form-control" name="email" id="contact-email" type="email">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Téléphone</label>
+                                    <input class="form-control" name="phone" id="contact-phone">
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                            <button type="button" class="btn btn-primary" id="contact-save-btn">Enregistrer</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delivery addresses -->
+            <div class="clay-card mb-4" id="addresses-section">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>Adresses de livraison</h5>
+                    <button class="btn btn-sm btn-outline-primary clay-button" data-bs-toggle="modal" data-bs-target="#addressModal" data-action="create">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                <div class="card-body" id="addresses-list">
+                    {% if addresses %}
+                    {% for a in addresses %}
+                    <div class="border rounded p-2 mb-2 address-item" data-address-id="{{ a.id }}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong class="address-label">{{ a.label or 'Adresse' }}</strong>
+                                <div class="small text-muted address-street">{{ a.street }}</div>
+                                <div class="small text-muted">{{ a.postal_code }} {{ a.city }} - {{ a.country }}</div>
+                                {% if a.phone %}<div class="small">Tél: {{ a.phone }}</div>{% endif %}
+                            </div>
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#addressModal" data-action="edit" data-address='{{ a|tojson }}'>
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteAddress({{ a.id }}, {{ customer.id }})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <p class="text-muted text-center" id="no-addresses">Aucune adresse de livraison</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Address modal -->
+            <div class="modal fade" id="addressModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Adresse</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="address-form">
+                                <input type="hidden" name="address_id" id="address-id">
+                                <input type="hidden" name="customer_id" value="{{ customer.id }}">
+                                <div class="mb-2">
+                                    <label class="form-label">Libellé</label>
+                                    <input class="form-control" name="label" id="address-label">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Rue</label>
+                                    <input class="form-control" name="street" id="address-street">
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-4 mb-2">
+                                        <label class="form-label">Code Postal</label>
+                                        <input class="form-control" name="postal_code" id="address-postal">
+                                    </div>
+                                    <div class="col-md-5 mb-2">
+                                        <label class="form-label">Ville</label>
+                                        <input class="form-control" name="city" id="address-city">
+                                    </div>
+                                    <div class="col-md-3 mb-2">
+                                        <label class="form-label">Pays</label>
+                                        <input class="form-control" name="country" id="address-country">
+                                    </div>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Téléphone</label>
+                                    <input class="form-control" name="phone" id="address-phone">
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                            <button type="button" class="btn btn-primary" id="address-save-btn">Enregistrer</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
             <!-- Activité récente -->
             <div class="clay-card">
                 <div class="card-header">
+
                     <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Activité Récente</h5>
                 </div>
                 <div class="card-body">
@@ -482,49 +682,50 @@
 </div>
 
 <script>
-// Graphiques avec Chart.js (à implémenter)
-document.addEventListener('DOMContentLoaded', function() {
-    // Simulation de données pour les graphiques
-    const ordersData = {{ monthly_orders_data|tojson if monthly_orders_data else '[]'|safe }};
-    const priorityData = {{ priority_distribution|tojson if priority_distribution else '[]'|safe }};
-    
+    // Graphiques avec Chart.js (à implémenter)
+    document.addEventListener('DOMContentLoaded', function () {
+        // Simulation de données pour les graphiques
+        const ordersData = {{ monthly_orders_data| tojson if monthly_orders_data else '[]' | safe
+    }};
+    const priorityData = {{ priority_distribution| tojson if priority_distribution else '[]' | safe }};
+
     // Ici vous pourriez intégrer Chart.js pour afficher les graphiques
     console.log('Données des commandes:', ordersData);
     console.log('Répartition priorités:', priorityData);
 });
 
-function exportCustomerData() {
-    window.location.href = `{{ url_for('customers.export_data', id=customer.id) }}`;
-}
-
-function printCustomerProfile() {
-    window.print();
-}
-
-function deleteCustomer() {
-    if (confirm('Êtes-vous sûr de vouloir supprimer ce client ? Cette action supprimera également tous ses bons de travail associés.')) {
-        fetch(`{{ url_for('customers.delete', id=customer.id) }}`, {
-            method: 'DELETE',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        }).then(response => {
-            if (response.ok) {
-                window.location.href = `{{ url_for('customers.index') }}`;
-            } else {
-                alert('Erreur lors de la suppression du client');
-            }
-        });
+    function exportCustomerData() {
+        window.location.href = `{{ url_for('customers.export_data', id=customer.id) }}`;
     }
-}
 
-function generateQuote() {
-    window.location.href = `{{ url_for('quotes.add', customer_id=customer.id) }}`;
-}
+    function printCustomerProfile() {
+        window.print();
+    }
 
-// CSS pour les éléments de style
-const style = document.createElement('style');
-style.textContent = `
+    function deleteCustomer() {
+        if (confirm('Êtes-vous sûr de vouloir supprimer ce client ? Cette action supprimera également tous ses bons de travail associés.')) {
+            fetch(`{{ url_for('customers.delete', id=customer.id) }}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }).then(response => {
+                if (response.ok) {
+                    window.location.href = `{{ url_for('customers.index') }}`;
+                } else {
+                    alert('Erreur lors de la suppression du client');
+                }
+            });
+        }
+    }
+
+    function generateQuote() {
+        window.location.href = `{{ url_for('quotes.add', customer_id=customer.id) }}`;
+    }
+
+    // CSS pour les éléments de style
+    const style = document.createElement('style');
+    style.textContent = `
 .stat-card {
     padding: 1rem;
     border-radius: 8px;
@@ -553,11 +754,13 @@ style.textContent = `
     border-bottom: none;
 }
 `;
-document.head.appendChild(style);
+    document.head.appendChild(style);
 
-function duplicateCustomer() {
-    // TODO: Implémenter la duplication
-    alert('Fonctionnalité de duplication à implémenter');
-}
+    function duplicateCustomer() {
+        // TODO: Implémenter la duplication
+        alert('Fonctionnalité de duplication à implémenter');
+    }
 </script>
+<script src="{{ url_for('static', filename='js/contacts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/addresses.js') }}"></script>
 {% endblock %}

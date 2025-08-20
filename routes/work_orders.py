@@ -474,14 +474,44 @@ def view_work_order(id):
             """, (id,))
             financial_summary = cursor.fetchone()
             
+            # Fetch full customer record if available for template convenience
+            customer = None
+            try:
+                if work_order.get('customer_id'):
+                    cursor.execute("SELECT * FROM customers WHERE id = %s", (work_order.get('customer_id'),))
+                    customer = cursor.fetchone()
+            except Exception:
+                customer = None
+
+            # Compute simple progress percentage based on status (fallback)
+            status_map = {
+                'draft': 0,
+                'pending': 10,
+                'assigned': 40,
+                'in_progress': 70,
+                'completed': 100,
+                'cancelled': 0
+            }
+            progress_percentage = status_map.get(work_order.get('status'), 0)
+
+            # derive durations and cost summaries
+            actual_duration = work_order.get('actual_duration') if work_order.get('actual_duration') is not None else 0
+            total_estimated_cost = financial_summary.get('total_amount') if financial_summary and financial_summary.get('total_amount') is not None else 0
+            total_actual_cost = work_order.get('actual_cost') if work_order.get('actual_cost') is not None else 0
+
             return render_template('work_orders/view.html',
                                  work_order=work_order,
                                  work_order_lines=work_order_lines,
                                  products=products,
-                                 notes=notes,
-                                 media=media,
+                                 intervention_notes=notes,
+                                 media_files=media,
                                  status_history=status_history,
-                                 financial_summary=financial_summary)
+                                 financial_summary=financial_summary,
+                                 customer=customer,
+                                 progress_percentage=progress_percentage,
+                                 actual_duration=actual_duration,
+                                 total_estimated_cost=total_estimated_cost,
+                                 total_actual_cost=total_actual_cost)
     finally:
         conn.close()
 

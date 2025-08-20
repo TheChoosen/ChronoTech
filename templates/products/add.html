@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Ajouter produit - ChronoTech{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">Ajouter un produit</h1>
+        <a href="{{ url_for('products.index') }}" class="btn btn-outline-secondary">Retour</a>
+    </div>
+
+    <div class="clay-card">
+        <div class="card-body">
+            <form method="POST">
+                {{ form.hidden_tag() }}
+                <div class="mb-3">
+                    {{ form.sku.label(class_='form-label') }}
+                    {{ form.sku(class_='form-control') }}
+                    {% for err in form.sku.errors %}<div class="text-danger">{{ err }}</div>{% endfor %}
+                </div>
+                <div class="mb-3">
+                    {{ form.name.label(class_='form-label') }}
+                    {{ form.name(class_='form-control') }}
+                    {% for err in form.name.errors %}<div class="text-danger">{{ err }}</div>{% endfor %}
+                </div>
+                <div class="mb-3">
+                    {{ form.price.label(class_='form-label') }}
+                    {{ form.price(class_='form-control') }}
+                    {% for err in form.price.errors %}<div class="text-danger">{{ err }}</div>{% endfor %}
+                </div>
+                <div class="mb-3">
+                    {{ form.stock.label(class_='form-label') }}
+                    {{ form.stock(class_='form-control') }}
+                    {% for err in form.stock.errors %}<div class="text-danger">{{ err }}</div>{% endfor %}
+                </div>
+                <div class="mb-3">
+                    {{ form.description.label(class_='form-label') }}
+                    {{ form.description(class_='form-control') }}
+                    {% for err in form.description.errors %}<div class="text-danger">{{ err }}</div>{% endfor %}
+                </div>
+                <div class="d-grid">
+                    {{ form.submit(class_='btn btn-primary') }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

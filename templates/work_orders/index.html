@@ -18,6 +18,43 @@
         </div>
     </div>
 
+      <!-- Statistiques rapides -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="clay-card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-primary">{{ stats.total or 0 }}</h5>
+                    <p class="card-text">Total</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="clay-card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-warning">{{ stats.pending or 0 }}</h5>
+                    <p class="card-text">En attente</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="clay-card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-info">{{ stats.in_progress or 0 }}</h5>
+                    <p class="card-text">En cours</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="clay-card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-danger">{{ stats.urgent or 0 }}</h5>
+                    <p class="card-text">Urgents</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
     <!-- Filtres -->
     <div class="clay-card mb-4">
         <div class="card-body">
@@ -69,42 +106,7 @@
         </div>
     </div>
 
-    <!-- Statistiques rapides -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="clay-card text-center">
-                <div class="card-body">
-                    <h5 class="card-title text-primary">{{ stats.total or 0 }}</h5>
-                    <p class="card-text">Total</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="clay-card text-center">
-                <div class="card-body">
-                    <h5 class="card-title text-warning">{{ stats.pending or 0 }}</h5>
-                    <p class="card-text">En attente</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="clay-card text-center">
-                <div class="card-body">
-                    <h5 class="card-title text-info">{{ stats.in_progress or 0 }}</h5>
-                    <p class="card-text">En cours</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="clay-card text-center">
-                <div class="card-body">
-                    <h5 class="card-title text-danger">{{ stats.urgent or 0 }}</h5>
-                    <p class="card-text">Urgents</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
+  
     <!-- Liste des bons de travail -->
     <div class="clay-card">
         <div class="card-body">

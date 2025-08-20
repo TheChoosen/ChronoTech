@@ -218,6 +218,24 @@
                     </button>
                 </div>
                 <div class="card-body">
+                    <!-- Server-side fallback form to add a note (non-AJAX) -->
+                    <form method="POST" action="{{ url_for('interventions.add_note', work_order_id=work_order.id) }}" class="mb-3">
+                        <div class="row g-2">
+                            <div class="col-12">
+                                <select name="note_type" class="form-select">
+                                    <option value="private">Note privée</option>
+                                    <option value="internal">Note interne</option>
+                                    <option value="client">Note client</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <textarea name="content" class="form-control" rows="3" placeholder="Ajouter une note..."></textarea>
+                            </div>
+                            <div class="col-12 text-end">
+                                <button class="btn btn-sm btn-primary" type="submit">Ajouter</button>
+                            </div>
+                        </div>
+                    </form>
                     {% if intervention_notes %}
                     {% for note in intervention_notes %}
                     <div class="border rounded p-3 mb-3">
