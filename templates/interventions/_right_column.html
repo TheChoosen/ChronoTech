@@ -1,0 +1,58 @@
+<!-- Right Column content (do not include .col- wrapper here; `details.html` provides the column) -->
+    <!-- Work Order Details -->
+    <div class="card mb-3">
+            <div class="card-header">
+                <h5><i class="fa-solid fa-clipboard-list me-2"></i>Détails de l'intervention</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Statut:</strong> 
+                    <span class="badge bg-{{ 'success' if work_order.status == 'completed' else 'warning' if work_order.status == 'in_progress' else 'secondary' }}">
+                        {{ work_order.status }}
+                    </span>
+                </p>
+                <p><strong>Priorité:</strong> {{ work_order.priority or 'Normal' }}</p>
+                <p><strong>Date programmée:</strong> 
+                    {{ work_order.scheduled_date.strftime('%d/%m/%Y') if work_order.scheduled_date and work_order.scheduled_date.strftime else 'Non définie' }}
+                </p>
+                <p><strong>Technicien:</strong> {{ work_order.technician_name or 'Non assigné' }}</p>
+                <hr>
+                <p><strong>Description:</strong></p>
+                <p class="text-muted">{{ work_order.description or 'Aucune description disponible.' }}</p>
+            </div>
+        </div>
+
+        <!-- Customer Information -->
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fa-solid fa-user me-2"></i>Client</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Nom:</strong> {{ work_order.customer_name }}</p>
+                <p><strong>Téléphone:</strong> {{ work_order.customer_phone or 'N/A' }}</p>
+                <p><strong>Email:</strong> {{ work_order.customer_email or 'N/A' }}</p>
+                {% if work_order.customer_address %}
+                <p><strong>Adresse:</strong> {{ work_order.customer_address }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5><i class="fa-solid fa-bolt me-2"></i>Actions rapides</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-success" onclick="updateStatus('in_progress')">
+                        <i class="fa-solid fa-play me-1"></i>Démarrer
+                    </button>
+                    <button class="btn btn-warning" onclick="updateStatus('completed')">
+                        <i class="fa-solid fa-check me-1"></i>Terminer
+                    </button>
+                    <button class="btn btn-info" onclick="requestParts()">
+                        <i class="fa-solid fa-cogs me-1"></i>Demander pièces
+                    </button>
+                </div>
+            </div>
+        </div>
+        

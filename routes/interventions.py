@@ -1,14 +1,11 @@
 """
-Routes pour la gestion des interventions avec IA intégrée
-Basé sur le PRD Fusionné v2.0 - Transcription, traduction, médias
+Routes pour la gestion des interventions - interventions.py
 """
 from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify, flash
 import pymysql
 from datetime import datetime
 import os
-import json
 from werkzeug.utils import secure_filename
-import requests
 
 bp = Blueprint('interventions', __name__)
 
@@ -27,51 +24,6 @@ def allowed_file(filename):
     """Vérifier les extensions autorisées"""
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov', 'mp3', 'wav', 'pdf'}
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-def transcribe_audio(audio_path):
-    """Transcription audio via OpenAI Whisper API (simulé)"""
-    # TODO: Intégrer avec OpenAI Whisper API
-    # Pour l'instant, retourne un texte simulé
-    return {
-        'text': '[Transcription simulée] Problème identifié sur le roulement avant droit, nécessite remplacement immédiat',
-        'confidence': 0.95,
-        'language': 'fr'
-    }
-
-def translate_text(text, target_languages=['en', 'es']):
-    """Traduction via DeepL API (simulé)"""
-    # TODO: Intégrer avec DeepL API
-    translations = {}
-    if 'en' in target_languages:
-        translations['en'] = '[Simulated EN] Problem identified on right front bearing, requires immediate replacement'
-    if 'es' in target_languages:
-        translations['es'] = '[Simulado ES] Problema identificado en el rodamiento delantero derecho, requiere reemplazo inmediato'
-    return translations
-
-def get_ai_suggestions(work_order_id, context=''):
-    """Suggestions contextuelles IA basées sur l'historique"""
-    # TODO: Intégrer avec un modèle IA pour suggestions contextuelles
-    suggestions = [
-        {
-            'type': 'part_recommendation',
-            'title': 'Pièce recommandée',
-            'content': 'Roulement avant droit - Référence: ROL-AVD-001',
-            'confidence': 0.88
-        },
-        {
-            'type': 'maintenance_tip',
-            'title': 'Conseil de maintenance',
-            'content': 'Vérifier également l\'état du roulement gauche lors du remplacement',
-            'confidence': 0.72
-        },
-        {
-            'type': 'time_estimate',
-            'title': 'Estimation durée',
-            'content': 'Temps estimé pour cette intervention: 2h30',
-            'confidence': 0.91
-        }
-    ]
-    return suggestions
 
 @bp.route('/')
 def list_interventions():
@@ -119,7 +71,7 @@ def list_interventions():
 
 @bp.route('/<int:work_order_id>/details')
 def intervention_details(work_order_id):
-    """Interface détaillée d'intervention avec outils IA"""
+    """Interface détaillée d'intervention"""
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
@@ -150,7 +102,7 @@ def intervention_details(work_order_id):
                 flash('Accès non autorisé', 'error')
                 return redirect(url_for('interventions.list_interventions'))
             
-            # Notes d'intervention avec traductions
+            # Notes d'intervention
             cursor.execute("""
                 SELECT 
                     in_.*,
@@ -162,7 +114,7 @@ def intervention_details(work_order_id):
             """, (work_order_id,))
             notes = cursor.fetchall()
             
-            # Médias avec transcriptions et traductions
+            # Médias
             cursor.execute("""
                 SELECT 
                     im.*,
@@ -182,21 +134,17 @@ def intervention_details(work_order_id):
             """, (work_order_id,))
             work_order_lines = cursor.fetchall()
             
-            # Suggestions IA contextuelles
-            ai_suggestions = get_ai_suggestions(work_order_id)
-            
             return render_template('interventions/details.html',
                                  work_order=work_order,
                                  notes=notes,
                                  media=media,
-                                 work_order_lines=work_order_lines,
-                                 ai_suggestions=ai_suggestions)
+                                 work_order_lines=work_order_lines)
     finally:
         conn.close()
 
 @bp.route('/<int:work_order_id>/add_note', methods=['POST'])
 def add_note(work_order_id):
-    """Ajouter une note d'intervention avec traduction automatique"""
+    """Ajouter une note d'intervention"""
     content = request.form.get('content', '').strip()
     note_type = request.form.get('note_type', 'private')
     
@@ -211,28 +159,23 @@ def add_note(work_order_id):
             wo = cursor.fetchone()
             
             user_role = session.get('user_role')
+            user_id = session.get('user_id')
+            if not user_id:
+                return jsonify({'success': False, 'message': 'Utilisateur non authentifié'}), 401
             if (user_role == 'technician' and 
                 wo['assigned_technician_id'] != session.get('user_id')):
                 return jsonify({'success': False, 'message': 'Accès non autorisé'})
             
-            # Traduction automatique si activée
-            translations = {}
-            if len(content) > 10:  # Traduction seulement pour les textes longs
-                translations = translate_text(content)
-            
             # Insertion de la note
             cursor.execute("""
                 INSERT INTO intervention_notes (
-                    work_order_id, technician_id, note_type, content,
-                    translation_en, translation_es
-                ) VALUES (%s, %s, %s, %s, %s, %s)
+                    work_order_id, technician_id, note_type, content
+                ) VALUES (%s, %s, %s, %s)
             """, (
                 work_order_id,
-                session.get('user_id'),
+                user_id,
                 note_type,
-                content,
-                translations.get('en', ''),
-                translations.get('es', '')
+                content
             ))
             
             note_id = cursor.lastrowid
@@ -263,8 +206,7 @@ def add_note(work_order_id):
             return jsonify({
                 'success': True,
                 'message': 'Note ajoutée avec succès',
-                'note': new_note,
-                'translations': translations
+                'note': new_note
             })
             
     except Exception as e:
@@ -272,15 +214,15 @@ def add_note(work_order_id):
     finally:
         conn.close()
 
-@bp.route('/<int:work_order_id>/upload_media', methods=['POST'])
-def upload_media(work_order_id):
-    """Upload de média avec transcription automatique pour l'audio"""
-    if 'file' not in request.files:
-        return jsonify({'success': False, 'message': 'Aucun fichier sélectionné'})
+@bp.route('/<int:work_order_id>/upload_photos', methods=['POST'])
+def upload_photos(work_order_id):
+    """Upload de photos"""
+    if 'photos' not in request.files:
+        return jsonify({'success': False, 'message': 'Aucune photo sélectionnée'})
     
-    file = request.files['file']
-    if file.filename == '' or not allowed_file(file.filename):
-        return jsonify({'success': False, 'message': 'Type de fichier non autorisé'})
+    files = request.files.getlist('photos')
+    if not files or files[0].filename == '':
+        return jsonify({'success': False, 'message': 'Aucune photo sélectionnée'})
     
     conn = get_db_connection()
     try:
@@ -294,86 +236,50 @@ def upload_media(work_order_id):
                 wo['assigned_technician_id'] != session.get('user_id')):
                 return jsonify({'success': False, 'message': 'Accès non autorisé'})
             
-            # Sauvegarde du fichier
-            filename = secure_filename(file.filename)
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            filename = f"{timestamp}_{filename}"
+            uploaded_files = []
+            for file in files:
+                if file and allowed_file(file.filename):
+                    # Sauvegarde du fichier
+                    filename = secure_filename(file.filename)
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    filename = f"{timestamp}_{filename}"
+                    
+                    upload_path = os.path.join('static/uploads/interventions', str(work_order_id))
+                    os.makedirs(upload_path, exist_ok=True)
+                    
+                    file_path = os.path.join(upload_path, filename)
+                    file.save(file_path)
+                    
+                    # Insertion en base
+                    cursor.execute("""
+                        INSERT INTO intervention_media (
+                            work_order_id, technician_id, media_type, file_path
+                        ) VALUES (%s, %s, %s, %s)
+                    """, (
+                        work_order_id,
+                        session.get('user_id'),
+                        'photo',
+                        file_path
+                    ))
+                    
+                    uploaded_files.append({
+                        'id': cursor.lastrowid,
+                        'file_path': file_path,
+                        'filename': filename
+                    })
             
-            upload_path = os.path.join('static/uploads/interventions', str(work_order_id))
-            os.makedirs(upload_path, exist_ok=True)
-            
-            file_path = os.path.join(upload_path, filename)
-            file.save(file_path)
-            
-            # Détermination du type de média
-            ext = filename.rsplit('.', 1)[1].lower()
-            if ext in ['mp3', 'wav', 'm4a']:
-                media_type = 'audio'
-            elif ext in ['mp4', 'mov', 'avi']:
-                media_type = 'video'
-            else:
-                media_type = 'photo'
-            
-            # Transcription pour les fichiers audio
-            transcription = ''
-            translations = {}
-            if media_type == 'audio':
-                transcription_result = transcribe_audio(file_path)
-                transcription = transcription_result.get('text', '')
-                if transcription:
-                    translations = translate_text(transcription)
-            
-            # Insertion en base
-            cursor.execute("""
-                INSERT INTO intervention_media (
-                    work_order_id, technician_id, media_type, file_path,
-                    transcription, translation_fr, translation_en, translation_es
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            """, (
-                work_order_id,
-                session.get('user_id'),
-                media_type,
-                file_path,
-                transcription,
-                transcription,  # FR est la langue source
-                translations.get('en', ''),
-                translations.get('es', '')
-            ))
-            
-            media_id = cursor.lastrowid
             conn.commit()
             
             return jsonify({
                 'success': True,
-                'message': f'{media_type.title()} uploadé avec succès',
-                'media_id': media_id,
-                'file_path': file_path,
-                'transcription': transcription,
-                'translations': translations
+                'message': f'{len(uploaded_files)} photo(s) uploadée(s) avec succès',
+                'files': uploaded_files
             })
             
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
     finally:
         conn.close()
-
-@bp.route('/<int:work_order_id>/voice_note', methods=['POST'])
-def add_voice_note():
-    """Interface pour dictée vocale avec transcription en temps réel"""
-    # Cette route sera utilisée avec l'API Web Speech ou un upload audio
-    audio_data = request.files.get('audio_data')
-    
-    if not audio_data:
-        return jsonify({'success': False, 'message': 'Données audio manquantes'})
-    
-    # Traitement similaire à upload_media mais optimisé pour la dictée
-    # TODO: Implémenter la transcription en temps réel
-    
-    return jsonify({
-        'success': True,
-        'transcription': '[Transcription en temps réel simulée] Le diagnostic initial montre un problème au niveau du système de freinage',
-        'confidence': 0.87
-    })
 
 @bp.route('/<int:work_order_id>/quick_actions', methods=['POST'])
 def quick_actions(work_order_id):
@@ -427,39 +333,6 @@ def quick_actions(work_order_id):
             
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
-    finally:
-        conn.close()
-
-@bp.route('/ai/suggestions/<int:work_order_id>')
-def get_suggestions(work_order_id):
-    """API pour récupérer les suggestions IA contextuelles"""
-    conn = get_db_connection()
-    try:
-        with conn.cursor() as cursor:
-            # Récupération du contexte du bon de travail
-            cursor.execute("""
-                SELECT wo.*, c.vehicle_info, c.maintenance_history 
-                FROM work_orders wo
-                LEFT JOIN customers c ON wo.customer_id = c.id
-                WHERE wo.id = %s
-            """, (work_order_id,))
-            
-            work_order = cursor.fetchone()
-            if not work_order:
-                return jsonify({'suggestions': []})
-            
-            # Génération des suggestions basées sur le contexte
-            suggestions = get_ai_suggestions(work_order_id, work_order['description'])
-            
-            return jsonify({
-                'success': True,
-                'suggestions': suggestions,
-                'context': {
-                    'work_order_id': work_order_id,
-                    'description': work_order['description'],
-                    'priority': work_order['priority']
-                }
-            })
     finally:
         conn.close()
 
