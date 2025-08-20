@@ -27,6 +27,7 @@ from core.utils import (
 # Import and register optional blueprints
 from routes.appointments import bp as appointments_bp
 from routes.vehicles import bp as vehicles_bp
+from routes.products import bp as products_bp
 
 
 # Configuration du logging
@@ -78,6 +79,10 @@ def create_app(config_class=Config):
         app.register_blueprint(vehicles_bp, url_prefix='/vehicles')
     except Exception as e:
         logger.warning(f"Impossible d'enregistrer vehicles blueprint: {e}")
+    try:
+        app.register_blueprint(products_bp)
+    except Exception as e:
+        logger.warning(f"Impossible d'enregistrer products blueprint: {e}")
     
     # Configuration de la base de données
     with app.app_context():
@@ -691,6 +696,41 @@ def inject_globals():
             # fallback: try to use fmt as strftime
             try:
                 return self.dt.strftime(fmt)
+            except Exception:
+                return str(self.dt)
+        def fromNow(self):
+            """Retourne une chaîne relative en français depuis maintenant (ex: 'il y a 2 heures')."""
+            if not self.dt:
+                return ''
+            from datetime import datetime
+            now = datetime.now()
+            try:
+                diff = now - self.dt
+            except Exception:
+                return ''
+            seconds = int(diff.total_seconds())
+            past = seconds >= 0
+            sec = abs(seconds)
+            if sec < 45:
+                return "à l'instant" if past else 'dans un instant'
+            if sec < 90:
+                return 'il y a une minute' if past else 'dans une minute'
+            minutes = sec // 60
+            if minutes < 45:
+                return f"il y a {minutes} minutes" if past else f"dans {minutes} minutes"
+            if minutes < 90:
+                return 'il y a une heure' if past else 'dans une heure'
+            hours = minutes // 60
+            if hours < 24:
+                return f"il y a {hours} heures" if past else f"dans {hours} heures"
+            days = hours // 24
+            if days == 1:
+                return 'il y a un jour' if past else 'dans un jour'
+            if days < 30:
+                return f"il y a {days} jours" if past else f"dans {days} jours"
+            # Fallback to a readable date for older items
+            try:
+                return self.dt.strftime('%d/%m/%Y')
             except Exception:
                 return str(self.dt)
     def moment(dt=None):

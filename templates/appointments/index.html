@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Rendez-vous - ChronoTech{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">Rendez-vous</h1>
+        <div>
+            <a href="{{ url_for('appointments.create') }}" class="btn btn-primary">
+                <i class="fa-solid fa-plus me-1"></i>Ajouter
+            </a>
+        </div>
+    </div>
+
+    {% if appointments %}
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Client</th>
+                            <th>Véhicule</th>
+                            <th>Date</th>
+                            <th>Durée</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for a in appointments %}
+                        <tr>
+                            <td>{{ a.id }}</td>
+                            <td>{{ a.customer_name }}</td>
+                            <td>{{ a.vehicle_display or '-' }}</td>
+                            <td>{{ a.scheduled_date.strftime('%d/%m %H:%M') if a.scheduled_date else '-' }}</td>
+                            <td>{{ a.duration_minutes or '-' }}</td>
+                            <td>
+                                <a href="{{ url_for('appointments.view_appointments', appointment_id=a.id) }}" class="btn btn-sm btn-outline-secondary">Voir</a>
+                                <a href="{{ url_for('appointments.edit_appointments', appointment_id=a.id) }}" class="btn btn-sm btn-outline-primary">Éditer</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-4 text-muted">
+        <p>Aucun rendez-vous trouvé.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
