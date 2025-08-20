@@ -1,15 +1,144 @@
         <!-- Intelligent Suggestions Section -->
         <div class="audio-section suggestions-section">
-            <h3>Suggestions intelligentes</h3>
-            <p class="mb-2">Générez uniquement les suggestions dont vous avez besoin — cliquez sur une section ci-dessous :</p>
-            <div class="btn-group mb-3" role="group" aria-label="Suggestions actions">
-                <button id="btnSuggestDiagnostic" class="btn btn-outline-primary">Diagnostic</button>
-                <button id="btnSuggestParts" class="btn btn-outline-primary">Pièces</button>
-                <button id="btnSuggestTime" class="btn btn-outline-primary">Temps &amp; Coût</button>
-                <button id="btnSuggestPreventive" class="btn btn-outline-primary">Préventif</button>
-                <button id="btnSuggestAll" class="btn btn-primary">Générer tout</button>
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                    <h3 class="mb-0">Suggestions intelligentes</h3>
+                    <small class="text-muted">Générez uniquement les sections nécessaires — ou utilisez la recherche rapide.</small>
+                </div>
+                <div class="text-end">
+                    <div id="suggestionsSpinner" style="display:none;">
+                        <div class="spinner-border text-info" role="status" style="width:1.5rem; height:1.5rem;">
+                            <span class="visually-hidden">Chargement...</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div id="suggestionsContainer" class="suggestions-list">
-                <!-- Suggestions results will be rendered here on button click -->
+
+            <!-- Quick Search -->
+            <div class="mb-3 suggestions-actions">
+                <div class="input-group">
+                    <input id="quickSearchInput" type="text" class="form-control" placeholder="Recherche technique rapide (ex: bruit, voyant, fuite)">
+                    <button class="btn btn-outline-secondary" id="clearSearchBtn" title="Effacer">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                    <button class="btn btn-primary" id="quickSearchBtn">
+                        <i class="fa-solid fa-search me-1"></i>Rechercher
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search Results -->
+            <div id="quickSearchResults" class="mb-3" style="display:none;">
+                <div id="searchResultsContent"></div>
+            </div>
+
+            <!-- Accordion with suggestion sections -->
+            <div class="accordion" id="suggestionsAccordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingDiag">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDiag" aria-expanded="false" aria-controls="collapseDiag">
+                            <i class="fa-solid fa-stethoscope me-2 text-primary"></i> Diagnostic
+                        </button>
+                    </h2>
+                    <div id="collapseDiag" class="accordion-collapse collapse" aria-labelledby="headingDiag" data-bs-parent="#suggestionsAccordion">
+                        <div class="accordion-body">
+                            <div class="d-flex justify-content-end mb-2">
+                                <button id="generateDiagBtn" class="btn btn-sm btn-primary">Générer</button>
+                            </div>
+                            <div id="diagnosticSteps" class="suggestion-content">Aucune suggestion chargée.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingParts">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseParts" aria-expanded="false" aria-controls="collapseParts">
+                            <i class="fa-solid fa-cogs me-2 text-primary"></i> Pièces
+                        </button>
+                    </h2>
+                    <div id="collapseParts" class="accordion-collapse collapse" aria-labelledby="headingParts" data-bs-parent="#suggestionsAccordion">
+                        <div class="accordion-body">
+                            <div class="d-flex justify-content-end mb-2">
+                                <button id="generatePartsBtn" class="btn btn-sm btn-primary">Générer</button>
+                            </div>
+                            <div id="commonParts" class="suggestion-content">Aucune suggestion chargée.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingProcedures">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseProcedures" aria-expanded="false" aria-controls="collapseProcedures">
+                            <i class="fa-solid fa-tools me-2 text-primary"></i> Procédures
+                        </button>
+                    </h2>
+                    <div id="collapseProcedures" class="accordion-collapse collapse" aria-labelledby="headingProcedures" data-bs-parent="#suggestionsAccordion">
+                        <div class="accordion-body">
+                            <div class="d-flex justify-content-end mb-2">
+                                <button id="generateProceduresBtn" class="btn btn-sm btn-primary">Générer</button>
+                            </div>
+                            <div id="repairProcedures" class="suggestion-content">Aucune suggestion chargée.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingSafety">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSafety" aria-expanded="false" aria-controls="collapseSafety">
+                            <i class="fa-solid fa-triangle-exclamation me-2 text-warning"></i> Sécurité
+                        </button>
+                    </h2>
+                    <div id="collapseSafety" class="accordion-collapse collapse" aria-labelledby="headingSafety" data-bs-parent="#suggestionsAccordion">
+                        <div class="accordion-body">
+                            <div class="d-flex justify-content-end mb-2">
+                                <button id="generateSafetyBtn" class="btn btn-sm btn-primary">Générer</button>
+                            </div>
+                            <div id="safetyWarnings" class="suggestion-content">Aucune suggestion chargée.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingTime">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTime" aria-expanded="false" aria-controls="collapseTime">
+                            <i class="fa-solid fa-stopwatch me-2 text-info"></i> Temps & Coût
+                        </button>
+                    </h2>
+                    <div id="collapseTime" class="accordion-collapse collapse" aria-labelledby="headingTime" data-bs-parent="#suggestionsAccordion">
+                        <div class="accordion-body">
+                            <div class="d-flex justify-content-end mb-2">
+                                <button id="generateTimeBtn" class="btn btn-sm btn-primary">Générer</button>
+                            </div>
+                            <div id="timeEstimates" class="suggestion-content">Aucune suggestion chargée.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingPreventive">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePreventive" aria-expanded="false" aria-controls="collapsePreventive">
+                            <i class="fa-solid fa-calendar-check me-2 text-success"></i> Maintenance Préventive
+                        </button>
+                    </h2>
+                    <div id="collapsePreventive" class="accordion-collapse collapse" aria-labelledby="headingPreventive" data-bs-parent="#suggestionsAccordion">
+                        <div class="accordion-body">
+                            <div class="d-flex justify-content-end mb-2">
+                                <button id="generatePreventiveBtn" class="btn btn-sm btn-primary">Générer</button>
+                            </div>
+                            <div id="preventiveMaintenance" class="suggestion-content">Aucune suggestion chargée.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer actions -->
+            <div id="suggestionsFooter" class="suggestions-footer mt-3 d-flex justify-content-end align-items-center" style="display:block;">
+                <div class="d-flex gap-2">
+                    <button id="addAllSuggestionsBtn" class="btn btn-success">Ajouter aux notes</button>
+                    <button id="exportSuggestionsBtn" class="btn btn-outline-secondary">Exporter</button>
+                    <button id="refreshSuggestionsBtn" class="btn btn-light" title="Rafraîchir">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                    </button>
+                </div>
             </div>
         </div>
