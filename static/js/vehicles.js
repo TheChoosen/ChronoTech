@@ -1,6 +1,8 @@
 // Simple client-side loader for /vehicles/api
 (function(){
-  const tableBody = document.querySelector('#vehicles-table tbody');
+  const table = document.getElementById('vehicles-table');
+  if (!table) return; // Not on vehicles page, bail out early to avoid null errors
+  const tableBody = table.querySelector('tbody');
   const pagination = document.getElementById('vehicles-pagination');
   const qInput = document.getElementById('filter-search');
   const makeInput = document.getElementById('filter-make');

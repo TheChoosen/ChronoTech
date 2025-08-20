@@ -578,7 +578,7 @@ def update_settings():
         return redirect(url_for('settings'))
 
 # Import des modules de routes
-from routes import work_orders, interventions, customers, technicians, analytics, api
+from routes import work_orders, interventions, customers, technicians, analytics, api, openai
 
 # Enregistrement des blueprints
 app.register_blueprint(work_orders.bp, url_prefix='/work_orders')
@@ -587,6 +587,7 @@ app.register_blueprint(customers.bp, url_prefix='/customers')
 app.register_blueprint(technicians.bp, url_prefix='/technicians')
 app.register_blueprint(analytics.bp, url_prefix='/analytics')
 app.register_blueprint(api.bp, url_prefix='/api')
+app.register_blueprint(openai.openai_bp )
 
 # Gestion des erreurs
 @app.errorhandler(404)
@@ -660,20 +661,109 @@ def nl2br_filter(text):
     # Remplace les retours à la ligne par des balises <br>
     return Markup(re.sub(r'\r?\n', '<br>', str(text)))
 
-# Variables globales pour les templates
+# Replace your existing MomentShim class in app.py with this enhanced version
+
 @app.context_processor
 def inject_globals():
     """Injecter des variables globales dans tous les templates, y compris un faux 'moment' pour compatibilité Jinja."""
-    from datetime import datetime
+    from datetime import datetime, timezone
+    import math
+    
     class MomentShim:
         def __init__(self, dt):
-            if isinstance(dt, str):
+            if dt is None:
+                self.dt = None
+            elif isinstance(dt, str):
                 try:
+                    # Handle various string formats
+                    if dt.endswith('Z'):
+                        dt = dt[:-1] + '+00:00'
                     self.dt = datetime.fromisoformat(dt)
+                    # Ensure timezone awareness
+                    if self.dt.tzinfo is None:
+                        self.dt = self.dt.replace(tzinfo=timezone.utc)
                 except Exception:
-                    self.dt = None
+                    try:
+                        # Try parsing as standard format
+                        self.dt = datetime.strptime(dt, '%Y-%m-%d %H:%M:%S')
+                        self.dt = self.dt.replace(tzinfo=timezone.utc)
+                    except Exception:
+                        self.dt = None
+            elif isinstance(dt, datetime):
+                self.dt = dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
             else:
                 self.dt = dt
+        
+        def fromNow(self, suffix=True):
+            """
+            Returns a human-readable relative time string (e.g., "il y a 2 heures", "dans 3 jours")
+            Similar to moment.js fromNow() method, but in French for ChronoTech
+            """
+            if not self.dt:
+                return "date invalide"
+                
+            now = datetime.now(timezone.utc)
+            
+            # Ensure both datetimes are timezone-aware
+            if self.dt.tzinfo is None:
+                dt = self.dt.replace(tzinfo=timezone.utc)
+            else:
+                dt = self.dt
+                
+            if now.tzinfo is None:
+                now = now.replace(tzinfo=timezone.utc)
+            
+            diff = now - dt
+            total_seconds = diff.total_seconds()
+            
+            # Determine if it's past or future
+            is_past = total_seconds > 0
+            abs_seconds = abs(total_seconds)
+            
+            # Calculate time units
+            minute = 60
+            hour = minute * 60
+            day = hour * 24
+            month = day * 30.44  # Average month length
+            year = day * 365.25  # Average year length
+            
+            # French time expressions
+            if abs_seconds < 45:
+                time_str = "quelques secondes"
+            elif abs_seconds < 90:
+                time_str = "une minute"
+            elif abs_seconds < 45 * minute:
+                minutes = math.floor(abs_seconds / minute)
+                time_str = f"{minutes} minute{'s' if minutes > 1 else ''}"
+            elif abs_seconds < 90 * minute:
+                time_str = "une heure"
+            elif abs_seconds < 22 * hour:
+                hours = math.floor(abs_seconds / hour)
+                time_str = f"{hours} heure{'s' if hours > 1 else ''}"
+            elif abs_seconds < 36 * hour:
+                time_str = "un jour"
+            elif abs_seconds < 25 * day:
+                days = math.floor(abs_seconds / day)
+                time_str = f"{days} jour{'s' if days > 1 else ''}"
+            elif abs_seconds < 45 * day:
+                time_str = "un mois"
+            elif abs_seconds < 320 * day:
+                months = math.floor(abs_seconds / month)
+                time_str = f"{months} mois"
+            elif abs_seconds < 548 * day:
+                time_str = "un an"
+            else:
+                years = math.floor(abs_seconds / year)
+                time_str = f"{years} an{'s' if years > 1 else ''}"
+            
+            if not suffix:
+                return time_str
+            
+            if is_past:
+                return f"il y a {time_str}"
+            else:
+                return f"dans {time_str}"
+        
         def format(self, fmt):
             if not self.dt:
                 return ''
@@ -684,20 +774,76 @@ def inject_globals():
                 'YYYY-MM-DD': '%Y-%m-%d',
                 'YYYY-MM-DD HH:mm': '%Y-%m-%d %H:%M',
                 'HH:mm': '%H:%M',
+                'DD/MM': '%d/%m',
+                'MMM YYYY': '%b %Y',
+                'MMMM YYYY': '%B %Y',
+                'DD MMM': '%d %b',
+                'DD MMMM': '%d %B',
             }
-            for mfmt, sffmt in fmt_map.items():
-                if fmt == mfmt:
-                    return self.dt.strftime(sffmt)
-            # fallback: try to use fmt as strftime
+            
+            # Check if it's a direct mapping
+            if fmt in fmt_map:
+                return self.dt.strftime(fmt_map[fmt])
+            
+            # Try to convert moment.js format to strftime
+            converted_fmt = fmt
+            moment_to_strftime = {
+                'YYYY': '%Y',
+                'YY': '%y',
+                'MM': '%m',
+                'MMM': '%b',
+                'MMMM': '%B',
+                'DD': '%d',
+                'HH': '%H',
+                'hh': '%I',
+                'mm': '%M',
+                'ss': '%S',
+                'A': '%p',
+                'a': '%p'
+            }
+            
+            for moment_token, strftime_token in moment_to_strftime.items():
+                converted_fmt = converted_fmt.replace(moment_token, strftime_token)
+            
+            # fallback: try to use converted format as strftime
             try:
-                return self.dt.strftime(fmt)
+                return self.dt.strftime(converted_fmt)
             except Exception:
-                return str(self.dt)
+                # If all else fails, return ISO format
+                return self.dt.strftime('%Y-%m-%d %H:%M:%S')
+        
+        def calendar(self):
+            """Return a calendar-style representation"""
+            if not self.dt:
+                return "date invalide"
+                
+            now = datetime.now(timezone.utc)
+            diff = (self.dt.date() - now.date()).days
+            
+            if diff == 0:
+                return f"Aujourd'hui à {self.dt.strftime('%H:%M')}"
+            elif diff == 1:
+                return f"Demain à {self.dt.strftime('%H:%M')}"
+            elif diff == -1:
+                return f"Hier à {self.dt.strftime('%H:%M')}"
+            elif -7 <= diff < 0:
+                days = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche']
+                return f"{days[self.dt.weekday()]} dernier à {self.dt.strftime('%H:%M')}"
+            elif 0 < diff <= 7:
+                days = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche']
+                return f"{days[self.dt.weekday()]} à {self.dt.strftime('%H:%M')}"
+            else:
+                return self.dt.strftime('%d/%m/%Y à %H:%M')
+        
+        def __str__(self):
+            return str(self.dt) if self.dt else "None"
+    
     def moment(dt=None):
         from datetime import datetime
         if dt is None:
             dt = datetime.now()
         return MomentShim(dt)
+    
     return {
         'current_user': {
             'id': session.get('user_id'),

@@ -1,0 +1,17 @@
+<div class="vehicle-info">
+    <h4>Véhicule & Client</h4>
+    <div class="row">
+        <div class="col-md-8">
+            <p><strong>Bon:</strong> {{ work_order.claim_number }} — <strong>Statut:</strong> {{ work_order.status }}</p>
+            <p><strong>Client:</strong> {{ work_order.customer_name or 'N/A' }} {% if work_order.customer_phone %} — {{ work_order.customer_phone }}{% endif %}</p>
+            <p><strong>Adresse:</strong> {{ work_order.customer_address or 'N/A' }}</p>
+            <p><strong>Description:</strong> {{ work_order.description or '—' }}</p>
+        </div>
+        <div class="col-md-4">
+            <p><strong>Véhicule:</strong></p>
+            <p>{{ work_order.vehicle_make or 'N/A' }} {{ work_order.vehicle_model or '' }} — {{ work_order.vehicle_year or '' }}</p>
+            <p><strong>VIN:</strong> {{ work_order.vehicle_vin or 'N/A' }}</p>
+            <p><strong>Kilométrage:</strong> {{ work_order.vehicle_mileage or 'N/A' }}</p>
+        </div>
+    </div>
+</div>

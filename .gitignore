@@ -121,3 +121,7 @@ static/uploads/
 
 # macOS Finder
 .DS_Store
+
+combined_output.txt
+copycontent.py
+token.pickle

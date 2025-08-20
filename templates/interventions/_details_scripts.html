@@ -1,0 +1,1223 @@
+<script>
+    const workOrderId = {{ work_order.id | tojson }};
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let recordedBlob = null;
+    let currentTranscription = '';
+    let currentTranslation = '';
+
+    // AI Chat variables
+    let currentConversation = [];
+    let lastGeneratedSummary = '';
+
+    // DOM Elements
+    const sourceFile = document.getElementById('sourceFile');
+    const sourceMic = document.getElementById('sourceMic');
+    const fileRow = document.getElementById('fileRow');
+    const micRow = document.getElementById('micRow');
+    const modeEl = document.getElementById('mode');
+    const langRow = document.getElementById('langRow');
+    const startBtn = document.getElementById('startRec');
+    const stopBtn = document.getElementById('stopRec');
+    const playBtn = document.getElementById('playRec');
+    const recStatus = document.getElementById('recStatus');
+    const audioPreview = document.getElementById('audioPreview');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const resultSection = document.getElementById('resultSection');
+
+    // AI Chat DOM elements
+    const summaryTypeEl = document.getElementById('summaryType');
+    const outputLanguageEl = document.getElementById('outputLanguage');
+    const customInstructionsEl = document.getElementById('customInstructions');
+    const customInstructionsRow = document.getElementById('customInstructionsRow');
+    const generateSummaryBtn = document.getElementById('generateSummaryBtn');
+    const summaryLoadingSpinner = document.getElementById('summaryLoadingSpinner');
+    const clearChatBtn = document.getElementById('clearChatBtn');
+    const chatContainer = document.getElementById('chatContainer');
+    const chatMessages = document.getElementById('chatMessages');
+    const followUpSection = document.getElementById('followUpSection');
+    const followUpInput = document.getElementById('followUpInput');
+    const askFollowUpBtn = document.getElementById('askFollowUpBtn');
+    const summaryActions = document.getElementById('summaryActions');
+
+    // Check if recording is supported
+    function checkRecordingSupport() {
+        const isSupported = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+        const isSecure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+        
+        if (!isSupported) {
+            recStatus.textContent = 'Enregistrement non supporté par ce navigateur';
+            startBtn.disabled = true;
+            stopBtn.disabled = true;
+            playBtn.disabled = true;
+            
+            const warningDiv = document.createElement('div');
+            warningDiv.className = 'alert alert-warning';
+            warningDiv.innerHTML = `
+                <i class="fa-solid fa-exclamation-triangle me-2"></i>
+                <strong>Enregistrement non disponible</strong><br>
+                Votre navigateur ne supporte pas l'enregistrement audio ou vous devez utiliser HTTPS.<br>
+                Veuillez utiliser l'upload de fichier à la place.
+            `;
+            micRow.insertBefore(warningDiv, micRow.firstChild);
+            
+            sourceFile.checked = true;
+            fileRow.style.display = 'block';
+            micRow.style.display = 'none';
+            
+            return false;
+        }
+        
+        if (!isSecure) {
+            recStatus.textContent = 'HTTPS requis pour l\'enregistrement';
+            startBtn.disabled = true;
+            
+            const warningDiv = document.createElement('div');
+            warningDiv.className = 'alert alert-warning';
+            warningDiv.innerHTML = `
+                <i class="fa-solid fa-exclamation-triangle me-2"></i>
+                <strong>HTTPS requis</strong><br>
+                L'enregistrement microphone nécessite une connexion sécurisée (HTTPS).<br>
+                Veuillez utiliser l'upload de fichier ou accéder via HTTPS.
+            `;
+            micRow.insertBefore(warningDiv, micRow.firstChild);
+            
+            return false;
+        }
+        
+        return true;
+    }
+
+    // Recording Functions
+    async function startRecording() {
+        if (!checkRecordingSupport()) {
+            return;
+        }
+        
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    sampleRate: 44100
+                }
+            });
+            
+            audioChunks = [];
+            
+            let options = { mimeType: 'audio/webm;codecs=opus' };
+            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                options = { mimeType: 'audio/webm' };
+                if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                    options = { mimeType: 'audio/mp4' };
+                    if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                        options = {};
+                    }
+                }
+            }
+            
+            mediaRecorder = new MediaRecorder(stream, options);
+            
+            mediaRecorder.addEventListener('dataavailable', e => {
+                if (e.data && e.data.size > 0) audioChunks.push(e.data);
+            });
+            
+            mediaRecorder.addEventListener('start', () => {
+                recordedBlob = null;
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                playBtn.disabled = true;
+                recStatus.textContent = 'Enregistrement...';
+                recStatus.classList.add('recording');
+                
+                try {
+                    audioPreview.style.display = 'block';
+                    audioPreview.srcObject = stream;
+                    audioPreview.autoplay = true;
+                    audioPreview.muted = true;
+                } catch (err) {
+                    console.warn('Live preview not available');
+                }
+            });
+            
+            mediaRecorder.addEventListener('stop', () => {
+                stream.getTracks().forEach(track => track.stop());
+                
+                const mimeType = mediaRecorder.mimeType || 'audio/webm';
+                recordedBlob = new Blob(audioChunks, { type: mimeType });
+                const url = URL.createObjectURL(recordedBlob);
+                
+                try {
+                    audioPreview.srcObject = null;
+                    audioPreview.autoplay = false;
+                    audioPreview.muted = false;
+                } catch (err) {}
+                
+                audioPreview.src = url;
+                audioPreview.style.display = 'block';
+                playBtn.disabled = false;
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+                recStatus.textContent = 'Enregistrement terminé';
+                recStatus.classList.remove('recording');
+            });
+            
+            mediaRecorder.addEventListener('error', (event) => {
+                console.error('MediaRecorder error:', event.error);
+                recStatus.textContent = 'Erreur d\'enregistrement: ' + event.error.name;
+                recStatus.classList.remove('recording');
+                
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+                playBtn.disabled = true;
+                
+                stream.getTracks().forEach(track => track.stop());
+            });
+            
+            mediaRecorder.start();
+            
+        } catch (err) {
+            console.error('Recording error:', err);
+            let errorMessage = 'Erreur: ';
+            
+            if (err.name === 'NotAllowedError') {
+                errorMessage += 'Autorisation microphone refusée';
+            } else if (err.name === 'NotFoundError') {
+                errorMessage += 'Aucun microphone trouvé';
+            } else if (err.name === 'NotSupportedError') {
+                errorMessage += 'Enregistrement non supporté';
+            } else {
+                errorMessage += 'Microphone non disponible (' + err.name + ')';
+            }
+            
+            recStatus.textContent = errorMessage;
+            recStatus.classList.remove('recording');
+            
+            const helpDiv = document.createElement('div');
+            helpDiv.className = 'alert alert-info mt-2';
+            helpDiv.innerHTML = `
+                <i class="fa-solid fa-info-circle me-2"></i>
+                <strong>Solutions possibles:</strong><br>
+                • Autorisez l'accès au microphone dans votre navigateur<br>
+                • Vérifiez que votre microphone est connecté<br>
+                • Utilisez l'upload de fichier à la place<br>
+                • Essayez avec un autre navigateur (Chrome/Firefox recommandés)
+            `;
+            
+            if (!micRow.querySelector('.alert-info')) {
+                micRow.appendChild(helpDiv);
+            }
+        }
+    }
+
+    function stopRecording() {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+        }
+    }
+
+    function playRecording() {
+        if (audioPreview.src) {
+            audioPreview.play();
+        }
+    }
+
+    // Audio Processing
+    async function processAudio() {
+        const source = document.querySelector('input[name="source"]:checked').value;
+        const mode = modeEl.value;
+        const target_lang = document.getElementById('target_lang').value;
+
+        uploadBtn.disabled = true;
+        loadingSpinner.style.display = 'inline-block';
+
+        const formData = new FormData();
+        formData.append('mode', mode);
+        formData.append('company', '{{ work_order.company or "BDM" }}');
+        formData.append('bon_id', '{{ work_order.claim_number }}');
+        if (target_lang) formData.append('target_lang', target_lang);
+
+        try {
+            if (source === 'mic') {
+                if (!recordedBlob) {
+                    throw new Error('Aucun enregistrement disponible');
+                }
+                formData.append('file', recordedBlob, 'microphone.webm');
+            } else {
+                const fileInput = document.getElementById('fileInput');
+                if (!fileInput.files || fileInput.files.length === 0) {
+                    throw new Error('Aucun fichier sélectionné');
+                }
+                formData.append('file', fileInput.files[0]);
+            }
+
+            const response = await fetch(`/api/openai/audio`, {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(result.error || 'Erreur de traitement');
+            }
+
+            currentTranscription = result.transcription || '';
+            currentTranslation = result.translation || '';
+            
+            displayResults(currentTranscription, currentTranslation);
+            
+        } catch (error) {
+            alert('Erreur: ' + error.message);
+        } finally {
+            uploadBtn.disabled = false;
+            loadingSpinner.style.display = 'none';
+        }
+    }
+
+    function displayResults(transcription, translation) {
+        document.getElementById('transcriptionResult').innerHTML = `
+            <h5><i class="fa-solid fa-file-text me-2"></i>Transcription</h5>
+            <p class="bg-light p-3 rounded">${transcription}</p>
+        `;
+        
+        if (translation) {
+            const translationDiv = document.getElementById('translationResult');
+            translationDiv.innerHTML = `
+                <h5><i class="fa-solid fa-language me-2"></i>Traduction</h5>
+                <p class="bg-light p-3 rounded">${translation}</p>
+            `;
+            translationDiv.style.display = 'block';
+        }
+        
+        document.getElementById('resultSection').style.display = 'block';
+    }
+
+    function addTranscriptionToNotes() {
+        if (currentTranscription) {
+            const noteContent = document.getElementById('noteContent');
+            if (noteContent) {
+                const prefix = '🎤 Transcription audio:\n\n';
+                const content = currentTranscription;
+                const suffix = currentTranslation ? `\n\n📝 Traduction:\n${currentTranslation}` : '';
+                noteContent.value = prefix + content + suffix;
+            }
+        }
+    }
+
+    // AI Chat Functions
+    function initializeChat() {
+        summaryTypeEl.addEventListener('change', function() {
+            customInstructionsRow.style.display = 
+                this.value === 'custom' ? 'block' : 'none';
+        });
+
+        generateSummaryBtn.addEventListener('click', generateAISummary);
+        clearChatBtn.addEventListener('click', clearChat);
+        
+        askFollowUpBtn.addEventListener('click', askFollowUpQuestion);
+        followUpInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                askFollowUpQuestion();
+            }
+        });
+        
+        document.getElementById('addSummaryToNotesBtn')?.addEventListener('click', addSummaryToNotes);
+        document.getElementById('copySummaryBtn')?.addEventListener('click', copySummaryToClipboard);
+        document.getElementById('exportSummaryBtn')?.addEventListener('click', exportSummaryToPDF);
+    }
+
+    async function generateAISummary() {
+        const summaryType = summaryTypeEl.value;
+        const language = outputLanguageEl.value;
+        const customInstructions = customInstructionsEl.value.trim();
+        
+        generateSummaryBtn.disabled = true;
+        summaryLoadingSpinner.style.display = 'inline-block';
+        
+        chatContainer.style.display = 'block';
+        clearChatBtn.style.display = 'inline-block';
+        
+        const userMessage = getUserPrompt(summaryType, language, customInstructions);
+        addChatMessage('user', userMessage);
+        
+        const typingId = addTypingIndicator();
+        
+        try {
+            const response = await fetch(`/interventions/ai/generate_summary/${workOrderId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    summary_type: summaryType,
+                    language: language,
+                    custom_instructions: customInstructions,
+                    conversation_history: currentConversation
+                })
+            });
+            
+            const result = await response.json();
+            
+            removeTypingIndicator(typingId);
+            
+            if (result.success) {
+                lastGeneratedSummary = result.summary;
+                addChatMessage('assistant', result.summary);
+                
+                followUpSection.style.display = 'block';
+                summaryActions.style.display = 'block';
+                
+                currentConversation.push({
+                    role: 'user',
+                    content: userMessage
+                });
+                currentConversation.push({
+                    role: 'assistant', 
+                    content: result.summary
+                });
+                
+            } else {
+                addChatMessage('assistant', `❌ Erreur: ${result.error}`);
+            }
+            
+        } catch (error) {
+            removeTypingIndicator(typingId);
+            addChatMessage('assistant', `❌ Erreur de connexion: ${error.message}`);
+        } finally {
+            generateSummaryBtn.disabled = false;
+            summaryLoadingSpinner.style.display = 'none';
+        }
+    }
+
+    async function askFollowUpQuestion() {
+        const question = followUpInput.value.trim();
+        if (!question) return;
+        
+        followUpInput.value = '';
+        askFollowUpBtn.disabled = true;
+        
+        addChatMessage('user', question);
+        
+        const typingId = addTypingIndicator();
+        
+        try {
+            const response = await fetch(`/interventions/ai/chat/${workOrderId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    question: question,
+                    conversation_history: currentConversation
+                })
+            });
+            
+            const result = await response.json();
+            
+            removeTypingIndicator(typingId);
+            
+            if (result.success) {
+                addChatMessage('assistant', result.response);
+                
+                currentConversation.push({
+                    role: 'user',
+                    content: question
+                });
+                currentConversation.push({
+                    role: 'assistant',
+                    content: result.response
+                });
+            } else {
+                addChatMessage('assistant', `❌ Erreur: ${result.error}`);
+            }
+            
+        } catch (error) {
+            removeTypingIndicator(typingId);
+            addChatMessage('assistant', `❌ Erreur: ${error.message}`);
+        } finally {
+            askFollowUpBtn.disabled = false;
+        }
+    }
+
+    function getUserPrompt(summaryType, language, customInstructions) {
+        const prompts = {
+            'technical': 'Génère un résumé technique complet de cette intervention',
+            'customer': 'Crée un rapport simplifié pour le client',
+            'parts': 'Analyse les pièces nécessaires et leur disponibilité',
+            'time': 'Estime le temps et les coûts de cette intervention',
+            'custom': customInstructions || 'Résumé personnalisé'
+        };
+        
+        let prompt = prompts[summaryType];
+        if (language !== 'fr') {
+            const langNames = { 'en': 'anglais', 'es': 'espagnol', 'de': 'allemand' };
+            prompt += ` (en ${langNames[language]})`;
+        }
+        
+        return prompt;
+    }
+
+    function addChatMessage(role, content) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `chat-message ${role}`;
+        
+        const timestamp = new Date().toLocaleTimeString('fr-FR', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        });
+        
+        const icon = role === 'user' ? '👤' : '🤖';
+        const name = role === 'user' ? 'Vous' : 'Assistant IA';
+        
+        messageDiv.innerHTML = `
+            <div class="message-header">
+                ${icon} ${name}
+                <span class="timestamp">${timestamp}</span>
+            </div>
+            <div class="message-content">${formatMessageContent(content)}</div>
+        `;
+        
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function formatMessageContent(content) {
+        return content
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/```(.*?)```/gs, '<pre><code>$1</code></pre>')
+            .replace(/`(.*?)`/g, '<code>$1</code>')
+            .replace(/\n\n/g, '</p><p>')
+            .replace(/\n/g, '<br>');
+    }
+
+    function addTypingIndicator() {
+        const typingDiv = document.createElement('div');
+        const typingId = 'typing_' + Date.now();
+        typingDiv.id = typingId;
+        typingDiv.className = 'typing-indicator';
+        typingDiv.textContent = 'L\'IA réfléchit...';
+        
+        chatMessages.appendChild(typingDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        
+        return typingId;
+    }
+
+    function removeTypingIndicator(typingId) {
+        const typingDiv = document.getElementById(typingId);
+        if (typingDiv) {
+            typingDiv.remove();
+        }
+    }
+
+    function clearChat() {
+        currentConversation = [];
+        lastGeneratedSummary = '';
+        chatMessages.innerHTML = '';
+        chatContainer.style.display = 'none';
+        clearChatBtn.style.display = 'none';
+        followUpSection.style.display = 'none';
+        summaryActions.style.display = 'none';
+    }
+
+    function addSummaryToNotes() {
+        if (!lastGeneratedSummary) {
+            alert('Aucun résumé à ajouter');
+            return;
+        }
+        
+        const noteContent = document.getElementById('noteContent');
+        const originalValue = noteContent.value;
+        
+        noteContent.value = `🤖 Résumé IA:\n\n${lastGeneratedSummary}`;
+        addManualNote();
+        
+        setTimeout(() => {
+            if (noteContent.value.includes('🤖 Résumé IA:')) {
+                noteContent.value = originalValue;
+            }
+        }, 2000);
+    }
+
+    function copySummaryToClipboard() {
+        if (!lastGeneratedSummary) {
+            alert('Aucun résumé à copier');
+            return;
+        }
+        
+        navigator.clipboard.writeText(lastGeneratedSummary).then(() => {
+            const btn = document.getElementById('copySummaryBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-check me-1"></i>Copié!';
+            btn.classList.remove('btn-outline-info');
+            btn.classList.add('btn-success');
+            
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-outline-info');
+            }, 2000);
+        }).catch(() => {
+            alert('Erreur lors de la copie');
+        });
+    }
+
+    function exportSummaryToPDF() {
+        if (!lastGeneratedSummary) {
+            alert('Aucun résumé à exporter');
+            return;
+        }
+        
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>Résumé d'intervention - ${document.querySelector('.intervention-header h1').textContent}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 2cm; }
+                    h1 { color: #333; border-bottom: 2px solid #ccc; }
+                    .meta { color: #666; margin-bottom: 20px; }
+                    .content { line-height: 1.6; white-space: pre-wrap; }
+                </style>
+            </head>
+            <body>
+                <h1>Résumé d'intervention IA</h1>
+                <div class="meta">
+                    Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}<br>
+                    Intervention: ${document.querySelector('.intervention-header h1').textContent}
+                </div>
+                <div class="content">${lastGeneratedSummary}</div>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+    }
+
+    function addManualNote() {
+        const content = document.getElementById('noteContent').value.trim();
+        if (!content) {
+            alert('Veuillez saisir une note');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('content', content);
+        formData.append('note_type', 'private');
+        
+        fetch(`/interventions/${workOrderId}/add_note`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                document.getElementById('noteContent').value = '';
+                
+                const notesList = document.getElementById('notesList');
+                const noteDiv = document.createElement('div');
+                noteDiv.className = 'note-item';
+                noteDiv.innerHTML = `
+                    <div class="note-header">
+                        <i class="fa-solid fa-user me-1"></i>${result.note.technician_name}
+                        <span class="note-time">• ${new Date().toLocaleString('fr-FR')}</span>
+                    </div>
+                    <div class="note-content">${result.note.content}</div>
+                `;
+                
+                notesList.insertBefore(noteDiv, notesList.firstChild);
+                
+                const noNotesMsg = notesList.querySelector('.text-muted');
+                if (noNotesMsg && noNotesMsg.textContent.includes('Aucune note')) {
+                    noNotesMsg.remove();
+                }
+            } else {
+                alert('Erreur: ' + result.message);
+            }
+        })
+        .catch(error => {
+            alert('Erreur de connexion: ' + error.message);
+        });
+    }
+
+    function updateStatus(status) {
+        const formData = new FormData();
+        formData.append('action', status === 'in_progress' ? 'start_work' : 'complete_work');
+        
+        fetch(`/interventions/${workOrderId}/quick_actions`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                alert(result.message);
+                location.reload();
+            } else {
+                alert('Erreur: ' + result.message);
+            }
+        })
+        .catch(error => {
+            alert('Erreur: ' + error.message);
+        });
+    }
+
+    function requestParts() {
+        const formData = new FormData();
+        formData.append('action', 'request_parts');
+        
+        fetch(`/interventions/${workOrderId}/quick_actions`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                alert(result.message);
+            } else {
+                alert('Erreur: ' + result.message);
+            }
+        })
+        .catch(error => {
+            alert('Erreur: ' + error.message);
+        });
+    }
+
+    // Initialize UI
+    function initializeUI() {
+        const recordingSupported = checkRecordingSupport();
+        
+        sourceFile.addEventListener('change', () => {
+            fileRow.style.display = 'block';
+            micRow.style.display = 'none';
+        });
+        
+        sourceMic.addEventListener('change', () => {
+            if (recordingSupported) {
+                fileRow.style.display = 'none';
+                micRow.style.display = 'block';
+            } else {
+                sourceFile.checked = true;
+                alert('Enregistrement microphone non disponible. Utilisez l\'upload de fichier.');
+            }
+        });
+
+        modeEl.addEventListener('change', function(e) {
+            langRow.style.display = e.target.value === 'translate' ? 'block' : 'none';
+        });
+
+        if (recordingSupported) {
+            startBtn.addEventListener('click', startRecording);
+            stopBtn.addEventListener('click', stopRecording);
+            playBtn.addEventListener('click', playRecording);
+        }
+        
+        uploadBtn.addEventListener('click', processAudio);
+        
+        document.getElementById('addToNotesBtn')?.addEventListener('click', addTranscriptionToNotes);
+        
+        // Initialize AI chat
+        initializeChat();
+        
+    // Initialize suggestions system
+    initializeSuggestions();
+    }
+
+    // Suggestions System JavaScript
+    let suggestionsData = {};
+    let isGeneratingSuggestions = false;
+
+    function initializeSuggestions() {
+        // Wire the new per-section suggestion buttons (safe guards if elements missing)
+        const btnDiag = document.getElementById('btnSuggestDiagnostic');
+        const btnParts = document.getElementById('btnSuggestParts');
+        const btnTime = document.getElementById('btnSuggestTime');
+        const btnPrev = document.getElementById('btnSuggestPreventive');
+        const btnAll = document.getElementById('btnSuggestAll');
+
+        if (btnDiag) btnDiag.addEventListener('click', () => generateSectionSuggestions('diagnostic_steps'));
+        if (btnParts) btnParts.addEventListener('click', () => generateSectionSuggestions('common_parts'));
+        if (btnTime) btnTime.addEventListener('click', () => generateSectionSuggestions('time_estimates'));
+        if (btnPrev) btnPrev.addEventListener('click', () => generateSectionSuggestions('preventive_maintenance'));
+        if (btnAll) btnAll.addEventListener('click', generateAllSuggestions);
+
+        const quickSearchBtn = document.getElementById('quickSearchBtn');
+        const quickSearchInput = document.getElementById('quickSearchInput');
+        if (quickSearchBtn) quickSearchBtn.addEventListener('click', performQuickSearch);
+        if (quickSearchInput) quickSearchInput.addEventListener('keypress', function(e){ if (e.key === 'Enter') performQuickSearch(); });
+
+        const clearSearchBtn = document.getElementById('clearSearchBtn');
+        const addAllBtn = document.getElementById('addAllSuggestionsBtn');
+        const exportBtn = document.getElementById('exportSuggestionsBtn');
+        const refreshBtn = document.getElementById('refreshSuggestionsBtn');
+
+        if (clearSearchBtn) clearSearchBtn.addEventListener('click', clearSearchResults);
+        if (addAllBtn) addAllBtn.addEventListener('click', addAllSuggestionsToNotes);
+        if (exportBtn) exportBtn.addEventListener('click', exportSuggestionsReport);
+        if (refreshBtn) refreshBtn.addEventListener('click', refreshSuggestions);
+
+        // Do NOT auto-generate suggestions on load — user must click per-section buttons
+    }
+
+    // Generate suggestions for a specific section only
+    async function generateSectionSuggestions(sectionKey) {
+        if (isGeneratingSuggestions) return;
+        isGeneratingSuggestions = true;
+
+        // show container if present
+        const container = document.getElementById('suggestionsContainer');
+        if (container) container.style.display = 'block';
+
+        const spinner = document.getElementById('suggestionsSpinner');
+        if (spinner) spinner.style.display = 'inline-block';
+
+        try {
+            const response = await fetch(`/interventions/suggestions/${workOrderId}?section=${encodeURIComponent(sectionKey)}`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const result = await response.json();
+            if (result.success) {
+                const suggestions = result.suggestions || {};
+                // Map API keys to element IDs and titles
+                const mapping = {
+                    'diagnostic_steps': ['diagnosticSteps', 'Étapes de Diagnostic'],
+                    'common_parts': ['commonParts', 'Pièces Communes'],
+                    'repair_procedures': ['repairProcedures', 'Procédures de Réparation'],
+                    'safety_warnings': ['safetyWarnings', 'Avertissements Sécurité'],
+                    'time_estimates': ['timeEstimates', 'Estimations Temps'],
+                    'preventive_maintenance': ['preventiveMaintenance', 'Maintenance Préventive']
+                };
+
+                const mapItem = mapping[sectionKey];
+                if (mapItem) {
+                    displaySuggestionContent(mapItem[0], suggestions[sectionKey], mapItem[1]);
+                } else {
+                    // Fallback: display full suggestions
+                    displaySuggestions(suggestions);
+                }
+            } else {
+                showSuggestionsError(result.error || 'Erreur serveur');
+            }
+        } catch (err) {
+            showSuggestionsError(err.message);
+        } finally {
+            isGeneratingSuggestions = false;
+            if (spinner) spinner.style.display = 'none';
+        }
+    }
+
+    async function generateAllSuggestions() {
+        if (isGeneratingSuggestions) return;
+        
+        isGeneratingSuggestions = true;
+        const btn = document.getElementById('generateSuggestionsBtn');
+        const spinner = document.getElementById('suggestionsSpinner');
+        
+        btn.disabled = true;
+        spinner.style.display = 'inline-block';
+        
+        // Show suggestions container
+        document.getElementById('suggestionsContainer').style.display = 'block';
+        document.getElementById('suggestionsFooter').style.display = 'block';
+        
+        try {
+            const response = await fetch(`/interventions/suggestions/${workOrderId}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                suggestionsData = result.suggestions;
+                displaySuggestions(suggestionsData);
+            } else {
+                showSuggestionsError(result.error);
+            }
+            
+        } catch (error) {
+            showSuggestionsError(error.message);
+        } finally {
+            isGeneratingSuggestions = false;
+            btn.disabled = false;
+            spinner.style.display = 'none';
+        }
+    }
+
+    function displaySuggestions(suggestions) {
+        // Display each type of suggestion
+        displaySuggestionContent('diagnosticSteps', suggestions.diagnostic_steps, 'Étapes de Diagnostic');
+        displaySuggestionContent('commonParts', suggestions.common_parts, 'Pièces Communes');
+        displaySuggestionContent('repairProcedures', suggestions.repair_procedures, 'Procédures de Réparation');
+        displaySuggestionContent('safetyWarnings', suggestions.safety_warnings, 'Avertissements Sécurité');
+        displaySuggestionContent('timeEstimates', suggestions.time_estimates, 'Estimations Temps');
+        displaySuggestionContent('preventiveMaintenance', suggestions.preventive_maintenance, 'Maintenance Préventive');
+    }
+
+    function displaySuggestionContent(elementId, content, title) {
+        const element = document.getElementById(elementId);
+        if (!element) return;
+        
+        if (content && content.trim()) {
+            // Format the content with proper HTML
+            const formattedContent = formatSuggestionContent(content);
+            element.innerHTML = `
+                <div class="suggestion-status status-complete"></div>
+                <div>${formattedContent}</div>
+            `;
+        } else {
+            element.innerHTML = `
+                <div class="suggestion-status status-error"></div>
+                <div class="text-muted">Aucune suggestion disponible pour ${title}</div>
+            `;
+        }
+    }
+
+    function formatSuggestionContent(content) {
+        // Convert markdown-like formatting to HTML and structure content
+        return content
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/^\d+\.\s/gm, '<li>')
+            .replace(/^-\s/gm, '<li>')
+            .replace(/\n\n/g, '</p><p>')
+            .replace(/\n/g, '<br>')
+            .replace(/(<li>.*?)(?=<li>|$)/gs, '<ol>$1</ol>')
+            .replace(/<ol><li>/g, '<ol><li>')
+            .replace(/<\/li><\/ol>/g, '</li></ol>');
+    }
+
+    async function performQuickSearch() {
+        const query = document.getElementById('quickSearchInput').value.trim();
+        if (!query) return;
+        
+        const btn = document.getElementById('quickSearchBtn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+        btn.disabled = true;
+        
+        // Show search results container
+        document.getElementById('quickSearchResults').style.display = 'block';
+        document.getElementById('searchResultsContent').innerHTML = `
+            <div class="text-center">
+                <i class="fa-solid fa-spinner fa-spin me-2"></i>
+                Recherche en cours...
+            </div>
+        `;
+        
+        try {
+            // Get vehicle info from the page
+            const vehicleInfo = {
+                make: '{{ work_order.vehicle_make or "" }}',
+                model: '{{ work_order.vehicle_model or "" }}',
+                year: '{{ work_order.vehicle_year or "" }}',
+                mileage: '{{ work_order.vehicle_mileage or "" }}'
+            };
+            
+            const response = await fetch('/interventions/suggestions/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    query: query,
+                    vehicle_info: vehicleInfo,
+                    context: '{{ work_order.description or "" }}'
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                displaySearchResults(result.results, query);
+            } else {
+                document.getElementById('searchResultsContent').innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="fa-solid fa-exclamation-triangle me-2"></i>
+                        Erreur de recherche: ${result.error}
+                    </div>
+                `;
+            }
+            
+        } catch (error) {
+            document.getElementById('searchResultsContent').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fa-solid fa-times me-2"></i>
+                    Erreur de connexion: ${error.message}
+                </div>
+            `;
+        } finally {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    }
+
+    function displaySearchResults(results, query) {
+        const content = document.getElementById('searchResultsContent');
+        
+        if (results.analysis) {
+            content.innerHTML = `
+                <div class="search-result">
+                    <h6><i class="fa-solid fa-search me-2"></i>Résultats pour: "${query}"</h6>
+                    <div class="search-analysis">
+                        ${formatSuggestionContent(results.analysis)}
+                    </div>
+                    <div class="search-meta text-muted mt-2">
+                        <small>
+                            <i class="fa-solid fa-clock me-1"></i>
+                            Recherche effectuée le ${new Date().toLocaleString('fr-FR')}
+                        </small>
+                    </div>
+                    <div class="search-actions mt-3">
+                        <button class="btn btn-sm btn-success" onclick="addSearchResultToNotes('${query}', \`${results.analysis.replace(/`/g, '\\`')}\`)">
+                            <i class="fa-solid fa-plus me-1"></i>Ajouter aux notes
+                        </button>
+                    </div>
+                </div>
+            `;
+        } else {
+            content.innerHTML = `
+                <div class="alert alert-info">
+                    <i class="fa-solid fa-info-circle me-2"></i>
+                    Aucun résultat trouvé pour "${query}"
+                </div>
+            `;
+        }
+    }
+
+    function clearSearchResults() {
+        document.getElementById('quickSearchResults').style.display = 'none';
+        document.getElementById('quickSearchInput').value = '';
+    }
+
+    function addSearchResultToNotes(query, analysis) {
+        const noteContent = document.getElementById('noteContent');
+        const timestamp = new Date().toLocaleString('fr-FR');
+        const searchNote = `🔍 Recherche technique (${timestamp}):\nRequête: ${query}\n\nRésultats:\n${analysis}`;
+        
+        if (noteContent.value.trim()) {
+            noteContent.value += '\n\n' + searchNote;
+        } else {
+            noteContent.value = searchNote;
+        }
+        
+        // Scroll to notes section
+        document.getElementById('noteContent').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function addAllSuggestionsToNotes() {
+        if (!suggestionsData || Object.keys(suggestionsData).length === 0) {
+            alert('Aucune suggestion à ajouter. Générez d\'abord les suggestions.');
+            return;
+        }
+        
+        const noteContent = document.getElementById('noteContent');
+        const timestamp = new Date().toLocaleString('fr-FR');
+        
+        let suggestionsNote = `🔧 Suggestions Intelligentes (${timestamp}):\n\n`;
+        
+        if (suggestionsData.diagnostic_steps) {
+            suggestionsNote += `📋 DIAGNOSTIC:\n${suggestionsData.diagnostic_steps}\n\n`;
+        }
+        
+        if (suggestionsData.safety_warnings) {
+            suggestionsNote += `⚠️ SÉCURITÉ:\n${suggestionsData.safety_warnings}\n\n`;
+        }
+        
+        if (suggestionsData.common_parts) {
+            suggestionsNote += `🔧 PIÈCES:\n${suggestionsData.common_parts}\n\n`;
+        }
+        
+        if (suggestionsData.repair_procedures) {
+            suggestionsNote += `🛠️ PROCÉDURES:\n${suggestionsData.repair_procedures}\n\n`;
+        }
+        
+        if (suggestionsData.time_estimates) {
+            suggestionsNote += `⏱️ TEMPS:\n${suggestionsData.time_estimates}\n\n`;
+        }
+        
+        if (suggestionsData.preventive_maintenance) {
+            suggestionsNote += `📅 MAINTENANCE:\n${suggestionsData.preventive_maintenance}\n\n`;
+        }
+        
+        if (noteContent.value.trim()) {
+            noteContent.value += '\n\n' + suggestionsNote;
+        } else {
+            noteContent.value = suggestionsNote;
+        }
+        
+        // Show success message
+        const btn = document.getElementById('addAllSuggestionsBtn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-check me-1"></i>Ajouté!';
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-outline-success');
+        
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.classList.remove('btn-outline-success');
+            btn.classList.add('btn-success');
+        }, 2000);
+        
+        // Scroll to notes
+        document.getElementById('noteContent').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function exportSuggestionsReport() {
+        if (!suggestionsData || Object.keys(suggestionsData).length === 0) {
+            alert('Aucune suggestion à exporter. Générez d\'abord les suggestions.');
+            return;
+        }
+        
+        const workOrderNumber = '{{ work_order.claim_number }}';
+        const vehicleInfo = '{{ work_order.vehicle_make }} {{ work_order.vehicle_model }} {{ work_order.vehicle_year }}';
+        const timestamp = new Date().toLocaleString('fr-FR');
+        
+        let reportContent = `
+            <html>
+            <head>
+                <title>Rapport Suggestions - ${workOrderNumber}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 2cm; line-height: 1.6; }
+                    h1 { color: #333; border-bottom: 3px solid #007bff; padding-bottom: 10px; }
+                    h2 { color: #495057; border-left: 4px solid #17a2b8; padding-left: 10px; margin-top: 2rem; }
+                    .header-info { background: #f8f9fa; padding: 1rem; border-radius: 5px; margin-bottom: 2rem; }
+                    .section { margin-bottom: 2rem; page-break-inside: avoid; }
+                    .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 1rem; border-radius: 5px; }
+                    ol, ul { padding-left: 2rem; }
+                    li { margin-bottom: 0.5rem; }
+                </style>
+            </head>
+            <body>
+                <h1>Rapport de Suggestions Intelligentes</h1>
+                
+                <div class="header-info">
+                    <strong>Intervention:</strong> ${workOrderNumber}<br>
+                    <strong>Véhicule:</strong> ${vehicleInfo}<br>
+                    <strong>Généré le:</strong> ${timestamp}<br>
+                    <strong>Technicien:</strong> {{ session.get('nom_complet', 'N/A') }}
+                </div>
+        `;
+        
+        if (suggestionsData.safety_warnings) {
+            reportContent += `
+                <div class="section warning">
+                    <h2>⚠️ Avertissements de Sécurité</h2>
+                    ${formatSuggestionContent(suggestionsData.safety_warnings)}
+                </div>
+            `;
+        }
+        
+        if (suggestionsData.diagnostic_steps) {
+            reportContent += `
+                <div class="section">
+                    <h2>📋 Étapes de Diagnostic</h2>
+                    ${formatSuggestionContent(suggestionsData.diagnostic_steps)}
+                </div>
+            `;
+        }
+        
+        if (suggestionsData.common_parts) {
+            reportContent += `
+                <div class="section">
+                    <h2>🔧 Pièces Communes</h2>
+                    ${formatSuggestionContent(suggestionsData.common_parts)}
+                </div>
+            `;
+        }
+        
+        if (suggestionsData.repair_procedures) {
+            reportContent += `
+                <div class="section">
+                    <h2>🛠️ Procédures de Réparation</h2>
+                    ${formatSuggestionContent(suggestionsData.repair_procedures)}
+                </div>
+            `;
+        }
+        
+        if (suggestionsData.time_estimates) {
+            reportContent += `
+                <div class="section">
+                    <h2>⏱️ Estimations de Temps</h2>
+                    ${formatSuggestionContent(suggestionsData.time_estimates)}
+                </div>
+            `;
+        }
+        
+        if (suggestionsData.preventive_maintenance) {
+            reportContent += `
+                <div class="section">
+                    <h2>📅 Maintenance Préventive</h2>
+                    ${formatSuggestionContent(suggestionsData.preventive_maintenance)}
+                </div>
+            `;
+        }
+        
+        reportContent += `
+            </body>
+            </html>
+        `;
+        
+        // Open print dialog
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(reportContent);
+        printWindow.document.close();
+        printWindow.print();
+    }
+
+    function refreshSuggestions() {
+        // Clear existing suggestions
+        suggestionsData = {};
+        
+        // Reset all suggestion contents to loading state
+        const suggestionElements = [
+            'diagnosticSteps', 'commonParts', 'repairProcedures', 
+            'safetyWarnings', 'timeEstimates', 'preventiveMaintenance'
+        ];
+        
+        suggestionElements.forEach(elementId => {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.innerHTML = `
+                    <div class="loading-placeholder">
+                        <i class="fa-solid fa-spinner fa-spin"></i> Régénération en cours...
+                    </div>
+                `;
+            }
+        });
+        
+        // Regenerate suggestions
+        setTimeout(() => {
+            generateAllSuggestions();
+        }, 500);
+    }
+
+    function showSuggestionsError(error) {
+        const suggestionElements = [
+            'diagnosticSteps', 'commonParts', 'repairProcedures', 
+            'safetyWarnings', 'timeEstimates', 'preventiveMaintenance'
+        ];
+        
+        suggestionElements.forEach(elementId => {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.innerHTML = `
+                    <div class="suggestion-status status-error"></div>
+                    <div class="alert alert-danger">
+                        <i class="fa-solid fa-exclamation-triangle me-2"></i>
+                        Erreur: ${error}
+                    </div>
+                `;
+            }
+        });
+    }
+
+    // Initialize when page loads
+    document.addEventListener('DOMContentLoaded', initializeUI);
+</script>
