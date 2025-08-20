@@ -45,6 +45,7 @@
                             <span class="nav-label">Accueil</span>
                         </a>
                     </li>
+
                     {% if session.user_id %}
                     <li class="nav-item">
                         <a class="nav-link {{ 'active' if 'customers' in request.endpoint }} text-primary"
@@ -53,36 +54,89 @@
                             <span class="nav-label">Clients</span>
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ 'active' if 'work_orders' in request.endpoint }} text-primary"
-                            href="{{ url_for('work_orders.list_work_orders') }}" title="Bons de travail">
-                            <i class="fa-solid fa-clipboard-list me-1 text-primary"></i>
-                            <span class="nav-label">Bons de travail</span>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {{ 'active' if ('vehicles' in request.endpoint) or ('products' in request.endpoint) }} text-primary"
+                            href="#" id="inventoryDropdown" role="button" data-bs-toggle="dropdown"
+                            aria-expanded="false">
+                            <i class="fa-solid fa-boxes-stacked me-1 text-primary"></i>
+                            <span class="nav-label">Inventaire</span>
                         </a>
+                        <ul class="dropdown-menu" aria-labelledby="inventoryDropdown">
+                            <li>
+                                <a class="dropdown-item {{ 'active' if 'vehicles' in request.endpoint }}"
+                                    href="{{ url_for('vehicles.index') }}">
+                                    <i class="fa-solid fa-car me-2"></i>Véhicules
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item {{ 'active' if 'products' in request.endpoint }}"
+                                    href="{{ url_for('products.index') }}">
+                                    <i class="fa-solid fa-boxes-stacked me-2"></i>Produits
+                                </a>
+                            </li>
+                        </ul>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ 'active' if 'technicians' in request.endpoint }} text-primary"
-                            href="{{ url_for('technicians.index') }}" title="Techniciens">
-                            <i class="fa-solid fa-user-hard-hat me-1 text-primary"></i>
-                            <span class="nav-label">Techniciens</span>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {{ 'active' if ('work_orders' in request.endpoint) or ('appointments' in request.endpoint) or ('interventions' in request.endpoint) or ('schedule' in request.endpoint) }} text-primary"
+                            href="#" id="opsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fa-solid fa-briefcase me-1 text-primary"></i>
+                            <span class="nav-label">Opérations</span>
                         </a>
+                        <ul class="dropdown-menu" aria-labelledby="opsDropdown">
+                            <li>
+                                <a class="dropdown-item {{ 'active' if 'interventions' in request.endpoint }}"
+                                    href="{{ url_for('interventions.list_interventions') }}">
+                                    <i class="fa-solid fa-list-check me-2"></i>Interventions
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item {{ 'active' if 'work_orders' in request.endpoint }}"
+                                    href="{{ url_for('work_orders.list_work_orders') }}">
+                                    <i class="fa-solid fa-clipboard-list me-2"></i>Bons de travail
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item {{ 'active' if 'appointments' in request.endpoint }}"
+                                    href="{{ url_for('appointments.index') }}">
+                                    <i class="fa-solid fa-calendar-check me-2"></i>Rendez-vous
+                                </a>
+                            </li>
+                        </ul>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ 'active' if 'interventions' in request.endpoint }} text-primary"
-                            href="{{ url_for('interventions.list_interventions') }}" title="Interventions">
-                            <i class="fa-solid fa-wrench me-1 text-primary"></i>
-                            <span class="nav-label">Interventions</span>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {{ 'active' if ('technicians' in request.endpoint)}} text-primary"
+                            href="#" id="opsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fa-solid fa-briefcase me-1 text-primary"></i>
+                            <span class="nav-label">Opérateurs</span>
                         </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ 'active' if 'vehicles' in request.endpoint }} text-primary"
-                            href="{{ url_for('vehicles.index') }}" title="Véhicules">
-                            <i class="fa-solid fa-car me-1 text-primary"></i>
-                            <span class="nav-label">Véhicules</span>
-                        </a>
-                    </li>
+                        <ul class="dropdown-menu" aria-labelledby="opsDropdown">
+                            <li>
+                                {# If user is logged in, link to their schedule via technician_id query param.
+                                Otherwise fall back to the technicians list to avoid 'Technicien non spécifié'. #}
+                                {% if session.user_id %}
+                                <a class="dropdown-item {{ 'active' if 'schedule' in request.endpoint or 'technicians' in request.endpoint }}"
+                                    href="{{ (url_for('technicians.schedule') ~ '?technician_id=' ~ session.user_id) }}">
+                                    <i class="fa-solid fa-calendar me-2"></i>Planning
+                                </a>
+                                {% else %}
+                                <a class="dropdown-item {{ 'active' if 'schedule' in request.endpoint or 'technicians' in request.endpoint }}"
+                                    href="{{ url_for('technicians.index') }}">
+                                    <i class="fa-solid fa-calendar me-2"></i>Planning
+                                </a>
+                                {% endif %}
+                            </li>
+                            <li>
+                                <a class="dropdown-item {{ 'active' if 'technicians' in request.endpoint }}"
+                                    href="{{ url_for('technicians.index') }}" title="Techniciens">
+                                    <i class="fa-solid fa-user-hard-hat me-1"></i>
+                                    <span class="nav-label">Techniciens</span>
+                                </a>
+                            </li>
+                        </ul>
 
+                    </li>
                     {% endif %}
+
                 </ul>
 
                 <ul class="navbar-nav">
@@ -192,6 +246,7 @@
     <script src="{{ url_for('static', filename='js/lib/ajax_helpers.js') }}"></script>
     <script src="{{ url_for('static', filename='js/work_orders.js') }}"></script>
     <script src="{{ url_for('static', filename='js/vehicles.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/product_selector.js') }}"></script>
 
     <!-- Global Styles -->
     <style>

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Voir rendez-vous - ChronoTech{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">Détails du rendez-vous</h1>
+        <div>
+            <a href="{{ url_for('appointments.index') }}" class="btn btn-outline-secondary">
+                <i class="fa-solid fa-arrow-left me-2"></i>Retour
+            </a>
+            <a href="{{ url_for('appointments.edit_appointments', appointment_id=appointment.id) }}" class="btn btn-primary ms-2">Éditer</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">Client</dt>
+                <dd class="col-sm-9">{{ appointment.customer_name }}</dd>
+
+                <dt class="col-sm-3">Véhicule</dt>
+                <dd class="col-sm-9">{{ appointment.vehicle_display or '-' }}</dd>
+
+                <dt class="col-sm-3">Date</dt>
+                <dd class="col-sm-9">{{ appointment.scheduled_date.strftime('%d/%m %Y %H:%M') if appointment.scheduled_date else '-' }}</dd>
+
+                <dt class="col-sm-3">Durée (min)</dt>
+                <dd class="col-sm-9">{{ appointment.duration_minutes or '-' }}</dd>
+
+                <dt class="col-sm-3">Description</dt>
+                <dd class="col-sm-9">{{ appointment.description or '-' }}</dd>
+
+                <dt class="col-sm-3">Notes internes</dt>
+                <dd class="col-sm-9">{{ appointment.notes or '-' }}</dd>
+            </dl>
+        </div>
+    </div>
+</div>
+{% endblock %}

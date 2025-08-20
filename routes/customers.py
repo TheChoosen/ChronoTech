@@ -11,6 +11,40 @@ import traceback
 bp = Blueprint('customers', __name__)
 
 
+class MiniPagination:
+    """Lightweight pagination object to mimic Flask-SQLAlchemy / Werkzeug pagination used in templates."""
+    def __init__(self, total=0, page=1, per_page=20):
+        try:
+            self.total = int(total or 0)
+        except Exception:
+            self.total = 0
+        self.page = int(page or 1)
+        self.per_page = int(per_page or 20)
+        self.pages = max(1, (self.total + self.per_page - 1) // self.per_page)
+
+    @property
+    def has_prev(self):
+        return self.page > 1
+
+    @property
+    def has_next(self):
+        return self.page < self.pages
+
+    @property
+    def prev_num(self):
+        return self.page - 1 if self.has_prev else None
+
+    @property
+    def next_num(self):
+        return self.page + 1 if self.has_next else None
+
+    def iter_pages(self, left_edge=2, left_current=2, right_current=2, right_edge=2):
+        # Simplified iterator that yields all pages; templates handle ellipses if needed
+        for p in range(1, self.pages + 1):
+            yield p
+
+
+
 def _debug(msg):
     try:
         print(f"[DEBUG customers] {msg}")
@@ -40,12 +74,7 @@ def index():
                 'total_work_orders': 0,
                 'total_revenue': 0
             }
-            class DummyPagination:
-                total = 0
-                prev_num = None
-                next_num = None
-                pages = 1
-            pagination = DummyPagination()
+            pagination = MiniPagination(total=0, page=1, per_page=20)
             return render_template('customers/index.html', customers=[], stats=stats, pagination=pagination)
 
         # Build dynamic filters from query params
@@ -65,7 +94,7 @@ def index():
         except Exception:
             existing_cols = set()
 
-        where_clauses = ['is_active = TRUE']
+        where_clauses = []
         params = []
 
         if search:
@@ -85,6 +114,11 @@ def index():
             where_clauses.append('status = %s')
             params.append(status)
 
+        # If there's an is_active column and the caller did not filter by status,
+        # default to only showing active customers for backward-compatibility.
+        if 'is_active' in existing_cols and not status:
+            where_clauses.insert(0, 'is_active = TRUE')
+
         # Map allowed sorts to SQL order clauses
         sort_map = {
             'name': 'name ASC',
@@ -100,17 +134,35 @@ def index():
             if opt in existing_cols:
                 select_cols.append(opt)
 
-        sql = f"""
-            SELECT {', '.join(select_cols)}
-            FROM customers
-            WHERE {' AND '.join(where_clauses)}
-            ORDER BY {order_by}
-        """
+        where_sql = ' AND '.join(where_clauses)
 
+        # Log the built query and params for debugging
+        try:
+            log_info(f"Customers SQL WHERE: {where_sql} params={params}")
+        except Exception:
+            pass
+
+        # First get total count matching filters (accurate stats & pagination)
+        count_sql = f"SELECT COUNT(*) AS cnt FROM customers WHERE {where_sql}"
         cursor = conn.cursor(pymysql.cursors.DictCursor)
-        cursor.execute(sql, params)
-        customers = cursor.fetchall()
-        cursor.close()
+        try:
+            cursor.execute(count_sql, params)
+            row = cursor.fetchone()
+            total_matching = int(row['cnt']) if row and 'cnt' in row else 0
+        except Exception as e:
+            log_error(f"Erreur count customers: {e}")
+            total_matching = 0
+
+        # Now fetch the actual rows (could add LIMIT/OFFSET for pagination later)
+        sql = f"SELECT {', '.join(select_cols)} FROM customers WHERE {where_sql} ORDER BY {order_by}"
+        try:
+            cursor.execute(sql, params)
+            customers = cursor.fetchall()
+        except Exception as e:
+            log_error(f"Erreur select customers: {e}")
+            customers = []
+        finally:
+            cursor.close()
         # Compute vehicles count for listed customers
         try:
             if customers:
@@ -135,17 +187,27 @@ def index():
         log_info(f"Récupération de {len(customers)} clients")
         # Statistiques basiques (à adapter selon tes besoins)
         stats = {
-            'total_customers': len(customers),
+            'total_customers': total_matching,
             'active_customers': len([c for c in customers if c.get('is_active', True)]),
             'total_work_orders': 0,  # À calculer si besoin
             'total_revenue': 0      # À calculer si besoin
         }
-        class DummyPagination:
-            total = len(customers)
-            prev_num = None
-            next_num = None
-            pages = 1
-        pagination = DummyPagination()
+        pagination = MiniPagination(total=total_matching, page=1, per_page=20)
+        # If AJAX request, return only the rendered list fragment as JSON for client-side replacement
+        try:
+            is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
+        except Exception:
+            is_ajax = False
+
+        if is_ajax:
+            try:
+                fragment = render_template('customers/_list.html', customers=customers, stats=stats, pagination=pagination)
+                stats_fragment = render_template('customers/_stats.html', stats=stats)
+                return jsonify({'success': True, 'html': fragment, 'stats_html': stats_fragment, 'total': pagination.total})
+            except Exception as e:
+                log_error(f"Erreur rendu fragment clients pour AJAX: {e}")
+                return jsonify({'success': False, 'error': 'render_error'}), 500
+
         return render_template('customers/index.html', customers=customers, stats=stats, pagination=pagination)
 
     except Exception as e:
@@ -157,12 +219,7 @@ def index():
             'total_work_orders': 0,
             'total_revenue': 0
         }
-        class DummyPagination:
-            total = 0
-            prev_num = None
-            next_num = None
-            pages = 1
-        pagination = DummyPagination()
+        pagination = MiniPagination(total=0, page=1, per_page=20)
         return render_template('customers/index.html', customers=[], stats=stats, pagination=pagination)
 
 
@@ -294,6 +351,221 @@ def view_customer(customer_id):
         return redirect(url_for('customers.index'))
 
 
+@bp.route('/<int:customer_id>/contacts/create', methods=['POST'])
+def create_contact(customer_id):
+    """Create a contact for a customer. AJAX-aware (returns JSON) or fallback to redirect."""
+    name = request.form.get('name')
+    role = request.form.get('role')
+    email = request.form.get('email')
+    phone = request.form.get('phone')
+    try:
+        conn = get_db_connection()
+        if not conn:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+                return jsonify({'success': False, 'message': 'DB connection error'}), 500
+            flash('Erreur de connexion DB', 'error')
+            return redirect(url_for('customers.view_customer', customer_id=customer_id))
+
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO contacts (customer_id, name, role, email, phone, created_at)
+                VALUES (%s, %s, %s, %s, %s, NOW())
+            """, (customer_id, name, role, email, phone))
+            conn.commit()
+            cid = cursor.lastrowid
+            # fetch created
+            try:
+                cursor.execute("SELECT id, name, role, email, phone FROM contacts WHERE id = %s", (cid,))
+                created = cursor.fetchone()
+            except Exception:
+                created = None
+        conn.close()
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+            return jsonify({'success': True, 'id': cid, 'contact': created})
+        flash('Contact ajouté', 'success')
+        return redirect(url_for('customers.view_customer', customer_id=customer_id))
+    except Exception as e:
+        log_error(f"Erreur création contact: {e}")
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+            return jsonify({'success': False, 'message': 'Erreur création contact'}), 500
+        flash('Erreur création contact', 'error')
+        return redirect(url_for('customers.view_customer', customer_id=customer_id))
+
+
+@bp.route('/contacts/<int:contact_id>/update', methods=['POST'])
+def update_contact(contact_id):
+    """Update a contact. Expects form data and customer_id in form for redirect fallback."""
+    name = request.form.get('name')
+    role = request.form.get('role')
+    email = request.form.get('email')
+    phone = request.form.get('phone')
+    customer_id = request.form.get('customer_id')
+    try:
+        conn = get_db_connection()
+        if not conn:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+                return jsonify({'success': False, 'message': 'DB connection error'}), 500
+            flash('Erreur de connexion DB', 'error')
+            return redirect(url_for('customers.view_customer', customer_id=customer_id or 0))
+
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                UPDATE contacts SET name=%s, role=%s, email=%s, phone=%s, updated_at=NOW()
+                WHERE id = %s
+            """, (name, role, email, phone, contact_id))
+            conn.commit()
+            try:
+                cursor.execute("SELECT id, name, role, email, phone FROM contacts WHERE id = %s", (contact_id,))
+                updated = cursor.fetchone()
+            except Exception:
+                updated = None
+        conn.close()
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+            return jsonify({'success': True, 'contact': updated})
+        flash('Contact modifié', 'success')
+        return redirect(url_for('customers.view_customer', customer_id=customer_id or 0))
+    except Exception as e:
+        log_error(f"Erreur update contact: {e}")
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+            return jsonify({'success': False, 'message': 'Erreur mise à jour'}), 500
+        flash('Erreur mise à jour contact', 'error')
+        return redirect(url_for('customers.view_customer', customer_id=customer_id or 0))
+
+
+@bp.route('/contacts/<int:contact_id>/delete', methods=['POST'])
+def delete_contact(contact_id):
+    """Delete a contact. Expects customer_id in form for redirect fallback."""
+    customer_id = request.form.get('customer_id') or request.args.get('customer_id')
+    try:
+        conn = get_db_connection()
+        if not conn:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+                return jsonify({'success': False, 'message': 'DB connection error'}), 500
+            flash('Erreur de connexion DB', 'error')
+            return redirect(url_for('customers.view_customer', customer_id=customer_id or 0))
+        with conn.cursor() as cursor:
+            cursor.execute("DELETE FROM contacts WHERE id = %s", (contact_id,))
+            conn.commit()
+        conn.close()
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+            return jsonify({'success': True})
+        flash('Contact supprimé', 'success')
+        return redirect(url_for('customers.view_customer', customer_id=customer_id or 0))
+    except Exception as e:
+        log_error(f"Erreur suppression contact: {e}")
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+            return jsonify({'success': False, 'message': 'Erreur suppression'}), 500
+        flash('Erreur suppression contact', 'error')
+        return redirect(url_for('customers.view_customer', customer_id=customer_id or 0))
+
+
+@bp.route('/<int:customer_id>/addresses/create', methods=['POST'])
+def create_address(customer_id):
+    """Create a delivery address for a customer. AJAX-aware."""
+    label = request.form.get('label')
+    street = request.form.get('street')
+    postal_code = request.form.get('postal_code')
+    city = request.form.get('city')
+    country = request.form.get('country')
+    phone = request.form.get('phone')
+    try:
+        conn = get_db_connection()
+        if not conn:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+                return jsonify({'success': False, 'message': 'DB connection error'}), 500
+            flash('Erreur de connexion DB', 'error')
+            return redirect(url_for('customers.view_customer', customer_id=customer_id))
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO addresses (customer_id, label, street, postal_code, city, country, phone, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
+            """, (customer_id, label, street, postal_code, city, country, phone))
+            conn.commit()
+            aid = cursor.lastrowid
+            try:
+                cursor.execute("SELECT id, label, street, postal_code, city, country, phone FROM addresses WHERE id = %s", (aid,))
+                created = cursor.fetchone()
+            except Exception:
+                created = None
+        conn.close()
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+            return jsonify({'success': True, 'id': aid, 'address': created})
+        flash('Adresse ajoutée', 'success')
+        return redirect(url_for('customers.view_customer', customer_id=customer_id))
+    except Exception as e:
+        log_error(f"Erreur création adresse: {e}")
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+            return jsonify({'success': False, 'message': 'Erreur création adresse'}), 500
+        flash('Erreur création adresse', 'error')
+        return redirect(url_for('customers.view_customer', customer_id=customer_id))
+
+
+@bp.route('/addresses/<int:address_id>/update', methods=['POST'])
+def update_address(address_id):
+    label = request.form.get('label')
+    street = request.form.get('street')
+    postal_code = request.form.get('postal_code')
+    city = request.form.get('city')
+    country = request.form.get('country')
+    phone = request.form.get('phone')
+    customer_id = request.form.get('customer_id')
+    try:
+        conn = get_db_connection()
+        if not conn:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+                return jsonify({'success': False, 'message': 'DB connection error'}), 500
+            flash('Erreur de connexion DB', 'error')
+            return redirect(url_for('customers.view_customer', customer_id=customer_id or 0))
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                UPDATE addresses SET label=%s, street=%s, postal_code=%s, city=%s, country=%s, phone=%s, updated_at=NOW()
+                WHERE id = %s
+            """, (label, street, postal_code, city, country, phone, address_id))
+            conn.commit()
+            try:
+                cursor.execute("SELECT id, label, street, postal_code, city, country, phone FROM addresses WHERE id = %s", (address_id,))
+                updated = cursor.fetchone()
+            except Exception:
+                updated = None
+        conn.close()
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+            return jsonify({'success': True, 'address': updated})
+        flash('Adresse modifiée', 'success')
+        return redirect(url_for('customers.view_customer', customer_id=customer_id or 0))
+    except Exception as e:
+        log_error(f"Erreur update adresse: {e}")
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+            return jsonify({'success': False, 'message': 'Erreur mise à jour'}), 500
+        flash('Erreur mise à jour adresse', 'error')
+        return redirect(url_for('customers.view_customer', customer_id=customer_id or 0))
+
+
+@bp.route('/addresses/<int:address_id>/delete', methods=['POST'])
+def delete_address(address_id):
+    customer_id = request.form.get('customer_id') or request.args.get('customer_id')
+    try:
+        conn = get_db_connection()
+        if not conn:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+                return jsonify({'success': False, 'message': 'DB connection error'}), 500
+            flash('Erreur de connexion DB', 'error')
+            return redirect(url_for('customers.view_customer', customer_id=customer_id or 0))
+        with conn.cursor() as cursor:
+            cursor.execute("DELETE FROM addresses WHERE id = %s", (address_id,))
+            conn.commit()
+        conn.close()
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+            return jsonify({'success': True})
+        flash('Adresse supprimée', 'success')
+        return redirect(url_for('customers.view_customer', customer_id=customer_id or 0))
+    except Exception as e:
+        log_error(f"Erreur suppression adresse: {e}")
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+            return jsonify({'success': False, 'message': 'Erreur suppression'}), 500
+        flash('Erreur suppression adresse', 'error')
+        return redirect(url_for('customers.view_customer', customer_id=customer_id or 0))
+
+
 # Backwards-compatible alias: some templates call `customers.view` with param `id`
 @bp.route('/<int:id>/view')
 def view(id):
@@ -415,16 +687,19 @@ def delete_customer(customer_id):
 
         log_info(f"Client supprimé (soft delete): ID {customer_id}")
 
-        if request.is_json:
-            return jsonify({'success': True, 'message': 'Client supprimé avec succès'})
+        # Determine if this was an AJAX request (X-Requested-With) or JSON
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
+        if is_ajax:
+            return jsonify({'success': True, 'message': 'Client supprimé avec succès', 'id': customer_id})
         else:
             flash('Client supprimé avec succès', 'success')
             return redirect(url_for('customers.index'))
 
     except Exception as e:
         log_error(f"Erreur lors de la suppression du client {customer_id}: {e}")
-        if request.is_json:
-            return jsonify({'success': False, 'message': 'Erreur lors de la suppression du client'})
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'Erreur lors de la suppression du client'}), 500
         else:
             flash('Erreur lors de la suppression du client', 'error')
             return redirect(url_for('customers.index'))

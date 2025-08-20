@@ -3,98 +3,103 @@
 {% block title %}Tableau de bord - ChronoTech{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="h3 mb-0">
-    <i class="fa-solid fa-tachometer-alt me-2"></i>Tableau de bord
-    </h1>
-    <div class="d-flex gap-2">
-        <a href="{{ url_for('work_orders.create_work_order') }}" class="btn btn-primary">
-            <i class="fa-solid fa-plus me-1"></i>Nouveau bon
-        </a>
+<div class="clay-dashboard">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fa-solid fa-tachometer-alt me-2"></i>Tableau de bord
+        </h1>
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#actionsModal">
+                <i class="fa-solid fa-bolt me-2"></i>Actions rapides
+            </button>
+            <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#teamChatModal"
+                id="open-team-chat">
+                <i class="fa-solid fa-comments me-2"></i>Clavardage
+            </button>
+            <a href="{{ url_for('work_orders.create_work_order') }}" class="btn btn-primary">
+                <i class="fa-solid fa-plus me-1"></i>Bon de travail
+            </a>
+            <a href="{{ url_for('appointments.create') }}" class="btn btn-primary">
+                <i class="fa-solid fa-plus me-1"></i>Rendez-vous
+            </a>
+        </div>
     </div>
-</div>
 
-<!-- Statistiques principales -->
-<div class="row g-4 mb-4">
-    <div class="col-md-3">
-        <div class="card bg-primary text-white">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="card-title">Bons actifs</h6>
-                        <h3 class="mb-0">{{ stats.get('active_orders', 0) }}</h3>
+    <!-- Kanban -->
+    <div class="card mb-4">
+        <div class="card-header d-flex align-items-center justify-content-between">
+            <h5 class="mb-0"><i class="fa-solid fa-columns me-2"></i>Kanban des bons de travail</h5>
+            <small class="text-muted">Glissez-déposez pour changer le statut</small>
+        </div>
+        <div class="card-body">
+            <div id="kanban" class="kanban d-flex gap-3 overflow-auto">
+                {% set cols = ['pending','assigned','in_progress','on_hold','completed','cancelled'] %}
+                {% for c in cols %}
+                <div class="kanban-col" data-status="{{ c }}">
+                    <div class="kanban-col-header">
+                        {{ {'pending':'En attente','assigned':'Assigné','in_progress':'En cours','on_hold':'En
+                        pause','completed':'Terminé','cancelled':'Annulé'}[c] }}
+                        <span class="badge bg-secondary ms-2" data-count="0"></span>
                     </div>
-                    <div class="opacity-75">
-                        <i class="fa-solid fa-clipboard-list fa-2x"></i>
-                    </div>
+                    <div class="kanban-col-body" data-list="{{ c }}"></div>
                 </div>
+                {% endfor %}
             </div>
         </div>
     </div>
-    
-    <div class="col-md-3">
-        <div class="card bg-success text-white">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="card-title">Complétés aujourd'hui</h6>
-                        <h3 class="mb-0">{{ stats.get('completed_today', 0) }}</h3>
-                    </div>
-                    <div class="opacity-75">
-                        <i class="fa-solid fa-check-circle fa-2x"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-3">
-        <div class="card bg-warning text-white">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="card-title">Urgents</h6>
-                        <h3 class="mb-0">{{ stats.get('urgent_orders', 0) }}</h3>
-                    </div>
-                    <div class="opacity-75">
-                        <i class="fa-solid fa-exclamation-triangle fa-2x"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-3">
-        <div class="card bg-info text-white">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="card-title">Techniciens actifs</h6>
-                        <h3 class="mb-0">{{ stats.get('active_technicians', 0) }}</h3>
-                    </div>
-                    <div class="opacity-75">
-                        <i class="fa-solid fa-user-hard-hat fa-2x"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
-<div class="row g-4">
-    <!-- Bons de travail récents -->
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">
-                    <i class="fa-solid fa-clipboard-list me-2"></i>Bons de travail récents
-                </h5>
-                <a href="{{ url_for('work_orders.list_work_orders') }}" class="btn btn-sm btn-outline-primary">
-                    Voir tout
-                </a>
+
+
+
+
+    <div class="row g-4">
+        <!-- Bons de travail récents -->
+        <div class="col-lg-7">
+        
+
+            <!-- Activités récentes -->
+            <div class="card mb-4 d-none">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fa-solid fa-history me-2"></i>Activité récente
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_activities %}
+                    <div class="timeline">
+                        {% for activity in recent_activities %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-primary"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-1">{{ activity.description }}</h6>
+                                <small class="text-muted">
+                                    <i class="fa-solid fa-clock me-1"></i>
+                                    {{ activity.created_at.strftime('%d/%m %H:%M') if activity.created_at else '-' }}
+                                </small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="fa-solid fa-history fa-3x mb-3"></i>
+                        <p>Aucune activité récente</p>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
-            <div class="card-body">
-                {% if recent_orders %}
+
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fa-solid fa-clipboard-list me-2"></i>Bons de travail récents
+                    </h5>
+                    <a href="{{ url_for('work_orders.list_work_orders') }}" class="btn btn-sm btn-outline-primary">
+                        Voir tout
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_orders %}
                     <div class="table-responsive">
                         <table class="table table-hover">
                             <thead>
@@ -111,18 +116,21 @@
                                 {% for order in recent_orders %}
                                 <tr>
                                     <td>
-                                        <a href="{{ url_for('work_orders.view_work_order', id=order.id) }}" class="text-decoration-none">
+                                        <a href="{{ url_for('work_orders.view_work_order', id=order.id) }}"
+                                            class="text-decoration-none">
                                             {{ order.claim_number }}
                                         </a>
                                     </td>
                                     <td>{{ order.customer_name }}</td>
                                     <td>
-                                        <span class="badge bg-{{ 'success' if order.status == 'completed' else 'primary' if order.status == 'in_progress' else 'secondary' }}">
+                                        <span
+                                            class="badge bg-{{ 'success' if order.status == 'completed' else 'primary' if order.status == 'in_progress' else 'secondary' }}">
                                             {{ order.status }}
                                         </span>
                                     </td>
                                     <td>
-                                        <span class="badge bg-{{ 'danger' if order.priority == 'urgent' else 'warning' if order.priority == 'high' else 'info' }}">
+                                        <span
+                                            class="badge bg-{{ 'danger' if order.priority == 'urgent' else 'warning' if order.priority == 'high' else 'info' }}">
                                             {{ order.priority }}
                                         </span>
                                     </td>
@@ -133,7 +141,7 @@
                             </tbody>
                         </table>
                     </div>
-                {% else %}
+                    {% else %}
                     <div class="text-center py-4 text-muted">
                         <i class="fa-solid fa-clipboard-list fa-3x mb-3"></i>
                         <p>Aucun bon de travail récent</p>
@@ -141,96 +149,672 @@
                             <i class="fa-solid fa-plus me-1"></i>Créer le premier bon
                         </a>
                     </div>
-                {% endif %}
+                    {% endif %}
+                </div>
             </div>
         </div>
-    </div>
-    
-    <!-- Activités récentes -->
-    <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="fa-solid fa-history me-2"></i>Activité récente
-                </h5>
-            </div>
-            <div class="card-body">
-                {% if recent_activities %}
-                    <div class="timeline">
-                        {% for activity in recent_activities %}
-                        <div class="timeline-item">
-                            <div class="timeline-marker bg-primary"></div>
-                            <div class="timeline-content">
-                                <h6 class="mb-1">{{ activity.description }}</h6>
-                                <small class="text-muted">
-                                    <i class="fa-solid fa-clock me-1"></i>
-                                    {{ activity.created_at.strftime('%d/%m %H:%M') if activity.created_at else '-' }}
-                                </small>
+
+        <div class="col-lg-5">
+    <!-- Statistiques principales -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-6">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="card-title text-white">Bons actifs</h6>
+                                    <h3 class="mb-0 text-white" id="stat-active-orders">{{ stats.get('active_orders', 0)
+                                        }}</h3>
+                                </div>
+                                <div class="opacity-75">
+                                    <i class="fa-solid fa-clipboard-list fa-2x"></i>
+                                </div>
                             </div>
                         </div>
-                        {% endfor %}
                     </div>
-                {% else %}
-                    <div class="text-center py-4 text-muted">
-                        <i class="fa-solid fa-history fa-3x mb-3"></i>
-                        <p>Aucune activité récente</p>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="card-title text-white">Complétés aujourd'hui</h6>
+                                    <h3 class="mb-0 text-white" id="stat-completed-today">{{
+                                        stats.get('completed_today', 0) }}
+                                    </h3>
+                                </div>
+                                <div class="opacity-75">
+                                    <i class="fa-solid fa-check-circle fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                {% endif %}
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="card-title text-white">Urgents</h6>
+                                    <h3 class="mb-0 text-white" id="stat-urgent-orders">{{ stats.get('urgent_orders', 0)
+                                        }}</h3>
+                                </div>
+                                <div class="opacity-75">
+                                    <i class="fa-solid fa-exclamation-triangle fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="card-title text-white">Techniciens actifs</h6>
+                                    <h3 class="mb-0 text-white" id="stat-active-technicians">{{
+                                        stats.get('active_technicians',
+                                        0) }}</h3>
+                                </div>
+                                <div class="opacity-75">
+                                    <i class="fa-solid fa-user-hard-hat fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-        
-        <!-- Actions rapides -->
-        <div class="card mt-4">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="fa-solid fa-bolt me-2"></i>Actions rapides
-                </h5>
+            <!-- Présence en ligne -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fa-solid fa-signal me-2"></i>En ligne maintenant</h5>
+                    <span class="badge bg-success" id="online-count">0</span>
+                </div>
+                <div class="card-body">
+                    <div id="online-users" class="d-flex flex-wrap gap-2"></div>
+                </div>
+                <div class="small text-muted px-3 pb-2">Actualisé en temps réel</div>
             </div>
-            <div class="card-body">
-                <div class="d-grid gap-2">
-                    <a href="{{ url_for('work_orders.create_work_order') }}" class="btn btn-primary">
-                        <i class="fa-solid fa-plus me-1"></i>Nouveau bon de travail
-                    </a>
-                    <a href="{{ url_for('customers.add_customer') }}" class="btn btn-outline-primary">
-                        <i class="fa-solid fa-user-plus me-1"></i>Nouveau client
-                    </a>
-                    <a href="{{ url_for('analytics.dashboard') }}" class="btn btn-outline-info">
-                        <i class="fa-solid fa-chart-bar me-1"></i>Voir les statistiques
-                    </a>
+
+
+            <!-- Actions rapides (tuiles) -->
+            <div class="card mt-4 d-none">
+                <div class="card-header d-flex justify-content-between align-items-center">
+
+                    <h5 class="card-title mb-0">
+                        <i class="fa-solid fa-bolt me-2"></i>Actions rapides
+                    </h5>
+
+                </div>
+                <div class="card-body">
+                    <div class="tile-grid">
+                        <a href="{{ url_for('work_orders.create_work_order') }}" class="tile-btn tile-accent"
+                            title="Nouveau bon de travail">
+                            <i class="fa-solid fa-plus fa-lg"></i>
+                            <span>Nouveau bon</span>
+                        </a>
+                        <a href="{{ url_for('customers.add_customer') }}" class="tile-btn" title="Nouveau client">
+                            <i class="fa-solid fa-user-plus fa-lg"></i>
+                            <span>Nouveau client</span>
+                        </a>
+                        <a href="{{ url_for('analytics.dashboard') }}" class="tile-btn" title="Voir les statistiques">
+                            <i class="fa-solid fa-chart-bar fa-lg"></i>
+                            <span>Statistiques</span>
+                        </a>
+                        <button class="tile-btn" type="button" data-bs-toggle="modal" data-bs-target="#actionsModal"
+                            title="Plus d'actions">
+                            <i class="fa-solid fa-ellipsis fa-lg"></i>
+                            <span>Plus...</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Team Chat Modal (AJAX-driven content/actions inside) -->
+            <div class="modal fade" id="teamChatModal" tabindex="-1" aria-labelledby="teamChatModalLabel"
+                aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-centered modal-fullscreen-sm-down">
+                    <div class="modal-content">
+                        <div class="modal-header d-flex align-items-center">
+                            <h5 class="modal-title" id="teamChatModalLabel"><i
+                                    class="fa-solid fa-comments me-2"></i>Chat d'équipe</h5>
+                            <div class="chat-controls ms-3">
+                                <div class="btn-group me-2" role="group" aria-label="chat-channels">
+                                    <select id="chat-channel-select" class="form-select form-select-sm"
+                                        title="Canal de discussion">
+                                        <option value="global">Global</option>
+                                        <option value="department">Département</option>
+                                        <option value="technician">Technicien</option>
+                                    </select>
+                                </div>
+                                <span id="chat-channel-live" class="visually-hidden" aria-live="polite"
+                                    aria-atomic="true"></span>
+                                <button class="btn btn-sm btn-outline-secondary me-1" id="manage-departments-btn"
+                                    title="Gérer les départements" data-bs-toggle="modal"
+                                    data-bs-target="#departmentsModal"><i class="fa-solid fa-building"></i></button>
+                                <button class="btn btn-sm btn-outline-secondary" id="chat-refresh" title="Rafraîchir"><i
+                                        class="fa-solid fa-arrows-rotate"></i></button>
+                                {% if session.user_role == 'admin' %}
+                                <button class="btn btn-sm btn-outline-danger" id="chat-clear"
+                                    title="Effacer l'historique"><i class="fa-solid fa-trash"></i></button>
+                                {% endif %}
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                aria-label="Fermer"></button>
+                        </div>
+                        <div class="modal-body p-0">
+                            <div id="chat-messages"
+                                style="height:60vh; overflow-y:auto; padding:12px; background:linear-gradient(145deg,#fff,#f2f6fd);">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <div class="input-group w-100">
+                                <input type="text" class="form-control" id="chat-input"
+                                    placeholder="Écrire un message..." />
+                                <button class="btn btn-primary" id="chat-send"><i
+                                        class="fa-solid fa-paper-plane"></i></button>
+                                <button class="btn btn-outline-info" id="chat-assist" title="Assistant IA"><i
+                                        class="fa-solid fa-robot"></i></button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+
+
+
+    <!-- Claymorphism styles -->
+    <style>
+        :root {
+            --clay-bg: #ecf1f8;
+            --clay-surface: #f7f9fc;
+            --clay-text: #1f2937;
+            --clay-shadow: #cfd6e3;
+            --clay-highlight: #ffffff;
+            --primary: #4f46e5;
+            --success: #16a34a;
+            --warning: #f59e0b;
+            --info: #0ea5e9;
+            --danger: #ef4444;
+        }
+
+        .clay-dashboard {
+            background: linear-gradient(145deg, var(--clay-bg), #e7edf7);
+            border-radius: 20px;
+            padding: 12px;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--clay-surface) !important;
+            border: none !important;
+            border-radius: 18px;
+            box-shadow: 12px 12px 24px var(--clay-shadow), -12px -12px 24px var(--clay-highlight);
+        }
+
+        .card .card-header {
+            background: transparent;
+            border-bottom: none;
+            font-weight: 600;
+        }
+
+        .card .card-body {
+            color: var(--clay-text);
+        }
+
+        /* Tinted stat cards */
+        .card.bg-primary,
+        .card.bg-success,
+        .card.bg-warning,
+        .card.bg-info {
+            color: #fff !important;
+            text-shadow: 0 1px 0 rgba(0, 0, 0, .12);
+            border: none !important;
+        }
+
+        .card.bg-primary {
+            background: linear-gradient(145deg, #5b55e8, #413ad8) !important;
+        }
+
+        .card.bg-success {
+            background: linear-gradient(145deg, #1cb456, #149c49) !important;
+        }
+
+        .card.bg-warning {
+            background: linear-gradient(145deg, #ffad33, #e99711) !important;
+        }
+
+        .card.bg-info {
+            background: linear-gradient(145deg, #22b3ee, #0c9dd9) !important;
+        }
+
+        .card.bg-primary,
+        .card.bg-success,
+        .card.bg-warning,
+        .card.bg-info {
+            box-shadow: 12px 12px 24px rgba(0, 0, 0, .08), -12px -12px 24px rgba(255, 255, 255, .35);
+        }
+
+        /* Buttons */
+        .btn {
+            border: none !important;
+            border-radius: 14px !important;
+            box-shadow: 6px 6px 12px var(--clay-shadow), -6px -6px 12px var(--clay-highlight);
+            transition: transform .05s ease, box-shadow .2s ease;
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+            box-shadow: inset 6px 6px 12px var(--clay-shadow), inset -6px -6px 12px var(--clay-highlight);
+        }
+
+        /* Badges */
+        .badge {
+            border-radius: 12px;
+            box-shadow: inset 3px 3px 6px rgba(0, 0, 0, .06), inset -3px -3px 6px rgba(255, 255, 255, .6);
+        }
+
+        /* Presence chips */
+        .user-chip {
+            background: var(--clay-surface);
+            border: none;
+            border-radius: 999px;
+            padding: 8px 12px;
+            box-shadow: 6px 6px 12px var(--clay-shadow), -6px -6px 12px var(--clay-highlight);
+            color: var(--clay-text);
+        }
+
+        /* Table */
+        .table {
+            --bs-table-bg: transparent;
+            color: var(--clay-text);
+        }
+
+        .table tbody tr {
+            border-radius: 12px;
+        }
+
+        .table tbody tr:hover {
+            background: radial-gradient(100% 100% at 0% 0%, #ffffff 0%, #f2f5fb 100%);
+        }
+
+        /* Timeline */
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .timeline-marker {
+            position: absolute;
+            left: -35px;
+            top: 5px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            box-shadow: 4px 4px 8px var(--clay-shadow), -4px -4px 8px var(--clay-highlight);
+            background: var(--info);
+        }
+
+        .timeline-item:not(:last-child)::before {
+            content: '';
+            position: absolute;
+            left: -31px;
+            top: 15px;
+            width: 2px;
+            height: calc(100% + 10px);
+            background-color: #dde3ef;
+            box-shadow: inset 1px 1px 2px var(--clay-shadow), inset -1px -1px 2px var(--clay-highlight);
+        }
+
+        /* Kanban */
+        .kanban {
+            min-height: 220px;
+        }
+
+        .kanban-col {
+            min-width: 260px;
+            border-radius: 16px;
+            border: none;
+            background: var(--clay-surface);
+            box-shadow: 10px 10px 20px var(--clay-shadow), -10px -10px 20px var(--clay-highlight);
+        }
+
+        .kanban-col-header {
+            padding: 12px 14px;
+            font-weight: 700;
+            border-bottom: none;
+            background: transparent;
+        }
+
+        .kanban-col-body {
+            padding: 12px;
+            min-height: 180px;
+            border-radius: 0 0 16px 16px;
+        }
+
+        .kanban-card {
+            background: var(--clay-surface);
+            border: none;
+            border-radius: 14px;
+            padding: 12px;
+            margin-bottom: 10px;
+            cursor: grab;
+            box-shadow: 8px 8px 16px var(--clay-shadow), -8px -8px 16px var(--clay-highlight);
+            transition: transform .1s ease, box-shadow .2s ease;
+        }
+
+        .kanban-card:hover {
+            transform: translateY(-1px);
+        }
+
+        .kanban-card .title {
+            font-weight: 700;
+        }
+
+        .kanban-card .meta {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .kanban-col-body.drag-over {
+            outline: 2px dashed #cbd5e1;
+            outline-offset: 4px;
+        }
+
+        /* Chat box */
+        #chat-messages {
+            background: linear-gradient(145deg, #fff, #f2f6fd);
+            border-radius: 12px;
+            /* enforce scroll area */
+            height: 300px;
+            max-height: 300px;
+
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            display: block;
+            box-sizing: border-box;
+            padding-right: 6px;
+            /* keep scrollbar from covering text */
+            padding-bottom: 56px;
+            /* space for input bar so messages aren't overlapped on some UAs */
+        }
+
+        /* Make the chat card a column so footer stays visible and body scrolls */
+        .chat-card {
+            display: flex;
+            flex-direction: column;
+            height: 45vh;
+            /* responsive card height */
+            min-height: 260px;
+            /* reasonable floor on small screens */
+            max-height: 75vh;
+            /* safety cap */
+        }
+
+        .chat-card>.card-body#chat-messages {
+            border-radius: 12px 12px 0 0;
+            padding: 12px;
+            flex: 1 1 auto;
+            /* grow to fill */
+            margin: 0;
+            max-height: none;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+        }
+
+        .chat-card>.card-footer {
+            flex: 0 0 auto;
+            background: transparent;
+            border-top: none;
+            padding: 10px;
+        }
+
+        #chat-input {
+            border: none;
+            border-radius: 14px !important;
+            box-shadow: inset 6px 6px 12px var(--clay-shadow), inset -6px -6px 12px var(--clay-highlight) !important;
+        }
+
+        /* Chat message wrapping and layout */
+        .chat-row {
+            padding: 8px 12px;
+            border-radius: 10px;
+        }
+
+        .chat-text {
+            white-space: pre-wrap;
+            /* respect line breaks */
+            word-break: break-word;
+            /* break long words/URLs */
+            overflow-wrap: anywhere;
+            margin-top: 6px;
+            color: var(--clay-text);
+        }
+
+        /* Headers, icons */
+        .opacity-75 i {
+            filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, .15));
+        }
+
+        /* Utility */
+        .mb-0[id^='stat-'] {
+            letter-spacing: .2px;
+        }
+
+        /* Tile actions */
+        .tile-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 12px;
+        }
+
+        .tile-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            /* square tile */
+            border: none;
+            background: var(--clay-surface);
+            color: var(--clay-text);
+            border-radius: 16px;
+            text-decoration: none;
+            box-shadow: 10px 10px 20px var(--clay-shadow), -10px -10px 20px var(--clay-highlight);
+            transition: transform .06s ease, box-shadow .2s ease;
+        }
+
+        .tile-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .tile-btn.tile-accent {
+            background: linear-gradient(145deg, #eef0ff, #e6e9ff);
+            color: #3730a3;
+            box-shadow: 12px 12px 22px rgba(0, 0, 0, .08), -12px -12px 22px rgba(255, 255, 255, .6);
+        }
+
+        .tile-btn i {
+            filter: drop-shadow(1px 1px 0 rgba(0, 0, 0, .08));
+        }
+
+        .tile-btn span {
+            font-weight: 600;
+            font-size: .95rem;
+            text-align: center;
+        }
+
+        /* Chat controls alignment */
+        .chat-controls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        /* Group selects to keep header compact on small screens */
+        .chat-controls .select-group {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        #chat-channel-select,
+        #chat-department-select,
+        #chat-technician-select {
+            width: auto;
+            min-width: 140px;
+        }
+
+        @media (max-width: 768px) {
+
+            #chat-channel-select,
+            #chat-department-select,
+            #chat-technician-select {
+                min-width: 96px;
+            }
+
+            .chat-controls {
+                gap: 4px;
+            }
+
+            .chat-controls .select-group {
+                width: 100%;
+                justify-content: flex-start;
+            }
+
+            .chat-controls .btn {
+                padding: .35rem .5rem;
+            }
+        }
+    </style>
+
+    <!-- Actions modal: all nav choices as tiles -->
+    <!-- Departments management modal (AJAX) -->
+    <div class="modal fade" id="departmentsModal" tabindex="-1" aria-labelledby="departmentsModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="departmentsModalLabel">Gérer les départements</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="departments-list" class="mb-3"></div>
+                    <hr />
+                    <form id="department-form">
+                        <input type="hidden" id="dept-id" />
+                        <div class="mb-2">
+                            <input class="form-control" id="dept-name" placeholder="Nom du département" />
+                        </div>
+                        <div class="mb-2">
+                            <textarea class="form-control" id="dept-desc" placeholder="Description" rows="3"></textarea>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-primary" id="dept-save" type="submit">Sauvegarder</button>
+                            <button class="btn btn-secondary" id="dept-cancel" type="button"
+                                data-bs-dismiss="modal">Annuler</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="actionsModal" tabindex="-1" aria-labelledby="actionsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content"
+                style="border: none; border-radius: 18px; box-shadow: 12px 12px 24px var(--clay-shadow), -12px -12px 24px var(--clay-highlight);">
+                <div class="modal-header" style="border: none;">
+                    <h5 class="modal-title" id="actionsModalLabel"><i class="fa-solid fa-grid-2 me-2"></i>Choisir une
+                        action</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="tile-grid">
+                        <a href="{{ url_for('index') }}" class="tile-btn" title="Accueil">
+                            <i class="fa-solid fa-home fa-lg"></i><span>Accueil</span>
+                        </a>
+                        {% if session.user_id %}
+                        <a href="{{ url_for('customers.index') }}" class="tile-btn" title="Clients">
+                            <i class="fa-solid fa-users fa-lg"></i><span>Clients</span>
+                        </a>
+                        <a href="{{ url_for('vehicles.index') }}" class="tile-btn" title="Véhicules">
+                            <i class="fa-solid fa-car fa-lg"></i><span>Véhicules</span>
+                        </a>
+                        <a href="{{ url_for('products.index') }}" class="tile-btn" title="Produits">
+                            <i class="fa-solid fa-boxes-stacked fa-lg"></i><span>Produits</span>
+                        </a>
+                        <a href="{{ url_for('technicians.schedule') }}" class="tile-btn" title="Planning">
+                            <i class="fa-solid fa-calendar fa-lg"></i><span>Planning</span>
+                        </a>
+                        <a href="{{ url_for('interventions.list_interventions') }}" class="tile-btn"
+                            title="Interventions">
+                            <i class="fa-solid fa-list-check fa-lg"></i><span>Interventions</span>
+                        </a>
+                        <a href="{{ url_for('work_orders.list_work_orders') }}" class="tile-btn"
+                            title="Bons de travail">
+                            <i class="fa-solid fa-clipboard-list fa-lg"></i><span>Bons de travail</span>
+                        </a>
+                        <a href="{{ url_for('appointments.create') }}" class="tile-btn" title="Rendez-vous">
+                            <i class="fa-solid fa-calendar-check fa-lg"></i><span>Rendez-vous</span>
+                        </a>
+                        <a href="{{ url_for('technicians.index') }}" class="tile-btn" title="Techniciens">
+                            <i class="fa-solid fa-user-hard-hat fa-lg"></i><span>Techniciens</span>
+                        </a>
+                        <a href="{{ url_for('analytics.dashboard') }}" class="tile-btn" title="Analytics">
+                            <i class="fa-solid fa-chart-bar fa-lg"></i><span>Analytics</span>
+                        </a>
+                        <a href="{{ url_for('user_profile') }}" class="tile-btn" title="Profil">
+                            <i class="fa-solid fa-user-cog fa-lg"></i><span>Profil</span>
+                        </a>
+                        <a href="{{ url_for('settings') }}" class="tile-btn" title="Paramètres">
+                            <i class="fa-solid fa-cog fa-lg"></i><span>Paramètres</span>
+                        </a>
+                        <a href="{{ url_for('auth_logout') }}" class="tile-btn" title="Déconnexion">
+                            <i class="fa-solid fa-sign-out-alt fa-lg"></i><span>Déconnexion</span>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="modal-footer" style="border: none;">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% block scripts %}
+    {{ super() }}
+    <script defer src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    <script>
+        window.__DASHBOARD__ = {
+            endpoints: {
+                stats: "{{ url_for('api.get_dashboard_stats_session') }}",
+                presence: "{{ url_for('api.presence_online') }}",
+                heartbeat: "{{ url_for('api.presence_heartbeat') }}",
+                kanban: "{{ url_for('api.kanban_data') }}",
+                // Utiliser la route session-friendly (POST) pour changer le statut
+                updateStatus: function (id) { const base = "{{ url_for('work_orders.update_status', id=0) }}"; return base.replace('/0', '/' + id); },
+                chatHistory: "{{ url_for('api.chat_history') }}",
+                chatSend: "{{ url_for('api.chat_send') }}",
+                chatAssistant: "{{ url_for('api.chat_assistant') }}",
+                chatClear: "{{ url_for('api.chat_clear') }}"
+            }
+        };
+    </script>
+    {% endblock %}
 </div>
-
-<style>
-.timeline {
-    position: relative;
-    padding-left: 30px;
-}
-
-.timeline-item {
-    position: relative;
-    margin-bottom: 20px;
-}
-
-.timeline-marker {
-    position: absolute;
-    left: -35px;
-    top: 5px;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-}
-
-.timeline-item:not(:last-child)::before {
-    content: '';
-    position: absolute;
-    left: -31px;
-    top: 15px;
-    width: 2px;
-    height: calc(100% + 10px);
-    background-color: #dee2e6;
-}
-</style>
 {% endblock %}

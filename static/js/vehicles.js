@@ -1,7 +1,8 @@
 // Simple client-side loader for /vehicles/api
 (function(){
-  const tableBody = document.querySelector('#vehicles-table tbody');
-  const pagination = document.getElementById('vehicles-pagination');
+  // initialize lazily because this script is loaded on multiple pages
+  let tableBody = null;
+  let pagination = null;
   const qInput = document.getElementById('filter-search');
   const makeInput = document.getElementById('filter-make');
   const modelInput = document.getElementById('filter-model');
@@ -23,6 +24,7 @@
   }
 
   function renderRows(items) {
+    if(!tableBody) return; // nothing to render on pages without the table
     tableBody.innerHTML = '';
     if (!items || items.length === 0) {
       const tr = document.createElement('tr');
@@ -53,6 +55,7 @@
   }
 
   function renderPagination(page, pages) {
+    if(!pagination) return; // no pagination controls on some pages
     pagination.innerHTML = '';
     if (pages <= 1) return;
     for (let p = 1; p <= pages; p++) {
@@ -81,7 +84,7 @@
       renderRows(data.items || []);
       renderPagination(data.page || 1, data.pages || 1);
     } catch (e) {
-      tableBody.innerHTML = '<tr><td colspan="8" class="text-danger">Erreur de chargement</td></tr>';
+      if(tableBody) tableBody.innerHTML = '<tr><td colspan="8" class="text-danger">Erreur de chargement</td></tr>';
       console.error('Erreur chargement véhicules', e);
     }
   }
@@ -89,8 +92,12 @@
   if (btnFilter) btnFilter.addEventListener('click', (e)=>{ e.preventDefault(); state.page = 1; load(); });
   if (btnReset) btnReset.addEventListener('click', (e)=>{ e.preventDefault(); if(qInput) qInput.value=''; if(makeInput) makeInput.value=''; if(modelInput) modelInput.value=''; if(yearInput) yearInput.value=''; state.page=1; load(); });
 
-  // initial load
-  document.addEventListener('DOMContentLoaded', ()=>{ load(); });
+  // initial load: set DOM-dependent refs then load
+  document.addEventListener('DOMContentLoaded', ()=>{
+    tableBody = document.querySelector('#vehicles-table tbody');
+    pagination = document.getElementById('vehicles-pagination');
+    load();
+  });
 })();
 
 // Global handlers: intercept delete forms under #vehicles-table and modal add form already handled
@@ -127,7 +134,7 @@ document.addEventListener('submit', function(e){
         } else {
           alert(resp && resp.message ? resp.message : 'Erreur suppression');
         }
-      }).catch(()=> alert('Erreur réseau'));
+    }).catch(()=> alert('Erreur réseau'));
     return false;
   }
 
@@ -157,4 +164,64 @@ document.addEventListener('submit', function(e){
       }).catch(()=> alert('Erreur réseau'));
     return false;
   }
+});
+
+// Intercept the inline customer add vehicle form and submit via AJAX to update the list in-place
+document.addEventListener('DOMContentLoaded', function(){
+  var inlineForm = document.getElementById('customer-add-vehicle-form');
+  if(!inlineForm) return;
+  inlineForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    var form = e.target;
+    var fd = new FormData(form);
+    var token = (window.CT && window.CT.getCsrfToken) ? window.CT.getCsrfToken() : null;
+    var headers = {'X-Requested-With': 'XMLHttpRequest'};
+    if(token) headers['X-CSRF-Token'] = token;
+
+    fetch(form.action, { method: 'POST', body: fd, headers: headers, credentials: 'same-origin' })
+      .then(function(r){
+        if(!r.ok) throw new Error('Erreur serveur');
+        return r.json();
+      }).then(function(resp){
+        if(resp && resp.success){
+          var v = resp.vehicle || {};
+          // create list-group-item element
+          var container = document.querySelector('#vehicles-section .list-group');
+          if(!container){
+            // create container if missing
+            container = document.createElement('div');
+            container.className = 'list-group mb-3';
+            var alert = document.querySelector('#vehicles-section .alert'); if(alert) alert.remove();
+            var hr = document.querySelector('#vehicles-section hr');
+            if(hr) hr.parentNode.insertBefore(container, hr);
+            else document.querySelector('#vehicles-section .card-body').prepend(container);
+          }
+          var item = document.createElement('div');
+          item.className = 'list-group-item d-flex justify-content-between align-items-start';
+          item.setAttribute('data-vehicle-id', resp.id || (v.id || 'new'));
+          item.innerHTML = `
+            <div>
+              <strong>${v.make || fd.get('make') || ''} ${v.model || fd.get('model') || ''}</strong>
+              <div class="small text-muted">${v.year || fd.get('year') || ''} - ${v.license_plate || fd.get('license_plate') || ''}</div>
+              ${v.notes ? '<div class="mt-1">'+(v.notes||'')+'</div>' : (fd.get('notes') ? '<div class="mt-1">'+fd.get('notes')+'</div>' : '')}
+            </div>
+            <div class="btn-group" role="group">
+              <a href="/vehicles/${resp.id || (v.id||'')}/edit" class="btn btn-sm btn-outline-secondary">Modifier</a>
+              <form method="POST" action="/vehicles/${resp.id || (v.id||'')}/delete" style="display:inline; margin:0;">
+                <button type="submit" class="btn btn-sm btn-outline-danger">Supprimer</button>
+              </form>
+            </div>
+          `;
+          container.insertBefore(item, container.firstChild);
+          // clear form
+          form.reset();
+          if(window.CT && window.CT.showToast) window.CT.showToast('Véhicule ajouté', 'success');
+        } else {
+          alert(resp && resp.message ? resp.message : 'Erreur création véhicule');
+        }
+      }).catch(function(err){
+        console.error(err);
+        alert('Erreur réseau');
+      });
+  });
 });

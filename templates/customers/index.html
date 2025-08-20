@@ -19,67 +19,8 @@
     </div>
 
     <!-- Statistiques -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="clay-card text-center">
-                <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-center">
-                        <div class="icon-shape bg-primary text-white rounded-circle me-3">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <div>
-                            <h3 class="mb-0">{{ stats.total_customers }}</h3>
-                            <p class="text-muted mb-0">Total Clients</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="clay-card text-center">
-                <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-center">
-                        <div class="icon-shape bg-success text-white rounded-circle me-3">
-                            <i class="fas fa-star"></i>
-                        </div>
-                        <div>
-                            <h3 class="mb-0">{{ stats.active_customers }}</h3>
-                            <p class="text-muted mb-0">Clients Actifs</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="clay-card text-center">
-                <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-center">
-                        <div class="icon-shape bg-info text-white rounded-circle me-3">
-                            <i class="fas fa-tools"></i>
-                        </div>
-                        <div>
-                            <h3 class="mb-0">{{ stats.total_work_orders }}</h3>
-                            <p class="text-muted mb-0">Interventions</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="clay-card text-center">
-                <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-center">
-                        <div class="icon-shape bg-warning text-white rounded-circle me-3">
-                            <i class="fas fa-euro-sign"></i>
-                        </div>
-                        <div>
-                            <h3 class="mb-0">{{ stats.total_revenue|currency }}</h3>
-                            <p class="text-muted mb-0">Chiffre d'Affaires</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div id="customersStats">
+        {% include 'customers/_stats.html' %}
     </div>
 
     <!-- Filtres et recherche -->
@@ -99,7 +40,7 @@
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">Type</label>
-                        <select class="form-select clay-input" name="customer_type" onchange="submitFilter()">
+                        <select class="form-select clay-input" name="customer_type">
                             <option value="">Tous les types</option>
                             <option value="individual" {{ 'selected' if request.args.get('customer_type')=='individual'
                                 }}>
@@ -116,7 +57,7 @@
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">Zone</label>
-                        <select class="form-select clay-input" name="zone" onchange="submitFilter()">
+                        <select class="form-select clay-input" name="zone">
                             <option value="">Toutes zones</option>
                             {% for zone in zones %}
                             <option value="{{ zone }}" {{ 'selected' if request.args.get('zone')==zone }}>
@@ -127,7 +68,7 @@
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">Statut</label>
-                        <select class="form-select clay-input" name="status" onchange="submitFilter()">
+                        <select class="form-select clay-input" name="status">
                             <option value="">Tous statuts</option>
                             <option value="active" {{ 'selected' if request.args.get('status')=='active' }}>
                                 Actif
@@ -142,7 +83,7 @@
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">Tri</label>
-                        <select class="form-select clay-input" name="sort" onchange="submitFilter()">
+                        <select class="form-select clay-input" name="sort">
                             <option value="name" {{ 'selected' if request.args.get('sort')=='name' }}>
                                 Nom A-Z
                             </option>
@@ -172,325 +113,12 @@
     </div>
 
     <!-- Liste des clients -->
-    <div class="clay-card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">
-                <i class="fas fa-list me-2"></i>Liste des Clients
-                <span class="badge bg-secondary">{{ pagination.total }} résultat(s)</span>
-            </h5>
-            <div class="d-flex gap-2">
-                <div class="btn-group" role="group">
-                    <input type="radio" class="btn-check" name="view" id="view-grid" autocomplete="off" checked>
-                    <label class="btn btn-outline-secondary btn-sm clay-button" for="view-grid"
-                        onclick="switchView('grid')">
-                        <i class="fas fa-th"></i>
-                    </label>
-                    <input type="radio" class="btn-check" name="view" id="view-list" autocomplete="off">
-                    <label class="btn btn-outline-secondary btn-sm clay-button" for="view-list"
-                        onclick="switchView('list')">
-                        <i class="fas fa-list"></i>
-                    </label>
-                </div>
-            </div>
-        </div>
-
-        <!-- Vue grille (par défaut) -->
-        <div class="card-body" id="gridView">
-            {% if customers %}
-            <div class="row">
-                {% for customer in customers %}
-                <div class="col-md-6 col-lg-4 mb-4">
-                    <div class="card h-100 customer-card">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                <div class="d-flex align-items-center">
-                                    <div class="avatar-circle me-3">
-                                        {% if customer.avatar %}
-                                        <img src="{{ url_for('static', filename='uploads/avatars/' + customer.avatar) }}"
-                                            alt="{{ customer.name }}" class="rounded-circle" width="48" height="48">
-                                        {% else %}
-                                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center"
-                                            style="width: 48px; height: 48px;">
-                                            {{ customer.name[0].upper() }}
-                                        </div>
-                                        {% endif %}
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-1">{{ customer.name }}
-                                            {% if (customer.vehicles_count or 0) == 0 %}
-                                            <span class="badge bg-danger ms-2" title="Aucun véhicule associé">Aucun véhicule</span>
-                                            {% endif %}
-                                        </h6>
-                                        <span class="badge {{ customer.customer_type|customer_type_badge }} mb-1">
-                                            {% if customer.customer_type == 'individual' %}Particulier
-                                            {% elif customer.customer_type == 'company' %}Entreprise
-                                            {% elif customer.customer_type == 'government' %}Administration
-                                            {% else %}{{ customer.customer_type }}{% endif %}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div class="dropdown">
-                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
-                                        data-bs-toggle="dropdown">
-                                        <i class="fas fa-ellipsis-v"></i>
-                                    </button>
-                                    <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item"
-                                                href="{{ url_for('customers.view_customer', customer_id=customer.id) }}">
-                                                <i class="fas fa-eye me-2"></i>Voir
-                                            </a></li>
-                                        <li><a class="dropdown-item"
-                                                href="{{ url_for('customers.edit_customer', customer_id=customer.id) }}">
-                                                <i class="fas fa-edit me-2"></i>Modifier
-                                            </a></li>
-                                        <li><a class="dropdown-item"
-                                                href="{{ url_for('work_orders.create_work_order', customer_id=customer.id) }}">
-                                                <i class="fas fa-plus me-2"></i>Créer un bon de travail
-                                            </a></li>
-                                        <li><a class="dropdown-item"
-                                                href="{{ url_for('vehicles.new') }}?customer_id={{ customer.id }}">
-                                                <i class="fas fa-car me-2"></i>Créer un véhicule
-                                            </a></li>
-                                        <li>
-                                            <hr class="dropdown-divider">
-                                        </li>
-                                        {% if current_user.role in ['admin', 'supervisor'] %}
-                                        <li><a class="dropdown-item text-danger" href="#"
-                                                onclick="deleteCustomer({{ customer.id }})">
-                                                <i class="fas fa-trash me-2"></i>Supprimer
-                                            </a></li>
-                                        {% endif %}
-                                    </ul>
-                                </div>
-                            </div>
-
-                            <div class="customer-info">
-                                {% if customer.email %}
-                                <p class="mb-1">
-                                    <i class="fas fa-envelope text-muted me-2"></i>
-                                    <a href="mailto:{{ customer.email }}">{{ customer.email }}</a>
-                                </p>
-                                {% endif %}
-                                {% if customer.phone %}
-                                <p class="mb-1">
-                                    <i class="fas fa-phone text-muted me-2"></i>
-                                    <a href="tel:{{ customer.phone }}">{{ customer.phone }}</a>
-                                </p>
-                                {% endif %}
-                                {% if customer.city %}
-                                <p class="mb-1">
-                                    <i class="fas fa-map-marker-alt text-muted me-2"></i>{{ customer.city }}
-                                </p>
-                                {% endif %}
-                                {% if customer.company %}
-                                <p class="mb-1">
-                                    <i class="fas fa-building text-muted me-2"></i>{{ customer.company }}
-                                </p>
-                                {% endif %}
-                            </div>
-
-                            <hr>
-
-                            <!-- Statistiques client -->
-                            <div class="row text-center">
-                                <div class="col-4">
-                                    <div class="stat-item">
-                                        <h6 class="mb-0">{{ customer.work_orders_count or 0 }}</h6>
-                                        <small class="text-muted">Interventions</small>
-                                        <small class="text-muted d-block">Véhicules: {{ customer.vehicles_count or 0 }}</small>
-                                        {% if (customer.vehicles_count or 0) == 0 %}
-                                        <div class="mt-1"><small class="text-danger">Aucun véhicule associé</small></div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="stat-item">
-                                        <h6 class="mb-0">{{ customer.total_spent|currency if customer.total_spent else
-                                            '0 €' }}</h6>
-                                        <small class="text-muted">Total</small>
-                                    </div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="stat-item">
-                                        <h6 class="mb-0">
-                                            {% if customer.last_order_date %}
-                                            {{ customer.last_order_date|days_ago }}j
-                                            {% else %}
-                                            -
-                                            {% endif %}
-                                        </h6>
-                                        <small class="text-muted">Dernier</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-footer">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="badge {{ customer.status|status_badge }}">
-                                    {% if customer.status == 'active' %}Actif
-                                    {% elif customer.status == 'inactive' %}Inactif
-                                    {% elif customer.status == 'prospect' %}Prospect
-                                    {% else %}{{ customer.status }}{% endif %}
-                                </span>
-                                <small class="text-muted">
-                                    Créé {{ customer.created_at|datetime_format('short') }}
-                                </small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <div class="text-center py-4">
-                <i class="fas fa-users fa-3x text-muted mb-3"></i>
-                <h5>Aucun client trouvé</h5>
-                <p class="text-muted">Commencez par ajouter votre premier client</p>
-                <a href="{{ url_for('customers.add_customer') }}" class="btn btn-primary clay-button-primary">
-                    <i class="fas fa-plus me-2"></i>Ajouter un client
-                </a>
-            </div>
-            {% endif %}
-        </div>
-
-        <!-- Vue liste (cachée par défaut) -->
-        <div class="table-responsive" id="listView" style="display: none;">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Client</th>
-                        <th>Type</th>
-                        <th>Contact</th>
-                        <th>Localisation</th>
-                        <th>Interventions</th>
-                        <th>Total</th>
-                        <th>Statut</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for customer in customers %}
-                    <tr>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                {% if customer.avatar %}
-                                <img src="{{ url_for('static', filename='uploads/avatars/' + customer.avatar) }}"
-                                    alt="{{ customer.name }}" class="rounded-circle me-2" width="32" height="32">
-                                {% else %}
-                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2"
-                                    style="width: 32px; height: 32px; font-size: 14px;">
-                                    {{ customer.name[0].upper() }}
-                                </div>
-                                {% endif %}
-                                <div>
-                                    <div class="fw-bold">{{ customer.name }}</div>
-                                    {% if customer.company %}
-                                    <small class="text-muted">{{ customer.company }}</small>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="badge {{ customer.customer_type|customer_type_badge }}">
-                                {% if customer.customer_type == 'individual' %}Particulier
-                                {% elif customer.customer_type == 'company' %}Entreprise
-                                {% elif customer.customer_type == 'government' %}Administration
-                                {% else %}{{ customer.customer_type }}{% endif %}
-                            </span>
-                        </td>
-                        <td>
-                            {% if customer.email %}
-                            <div><a href="mailto:{{ customer.email }}">{{ customer.email }}</a></div>
-                            {% endif %}
-                            {% if customer.phone %}
-                            <div><a href="tel:{{ customer.phone }}">{{ customer.phone }}</a></div>
-                            {% endif %}
-                        </td>
-                        <td>{{ customer.city or '-' }}</td>
-                        <td>{{ customer.work_orders_count or 0 }}</td>
-                        <td>{{ customer.total_spent|currency if customer.total_spent else '0 €' }}</td>
-                        <td>
-                            <span class="badge {{ customer.status|status_badge }}">
-                                {% if customer.status == 'active' %}Actif
-                                {% elif customer.status == 'inactive' %}Inactif
-                                {% elif customer.status == 'prospect' %}Prospect
-                                {% else %}{{ customer.status }}{% endif %}
-                            </span>
-                        </td>
-                        <td>
-                            <div class="btn-group" role="group">
-                                <a href="{{ url_for('customers.view_customer', customer_id=customer.id) }}"
-                                    class="btn btn-sm btn-outline-primary clay-button">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <a href="{{ url_for('customers.edit_customer', customer_id=customer.id) }}"
-                                    class="btn btn-sm btn-outline-secondary clay-button">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                {% if current_user.role in ['admin', 'supervisor'] %}
-                                <button class="btn btn-sm btn-outline-danger clay-button"
-                                    onclick="deleteCustomer({{ customer.id }})">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Pagination -->
-        {% if pagination.pages > 1 %}
-        <div class="card-footer">
-            <nav aria-label="Pagination clients">
-                <ul class="pagination justify-content-center mb-0">
-                    {% if pagination.has_prev %}
-                    <li class="page-item">
-                        <a class="page-link"
-                            href="{{ url_for('customers.index', page=pagination.prev_num, **request.args) }}">
-                            <i class="fas fa-chevron-left"></i>
-                        </a>
-                    </li>
-                    {% endif %}
-
-                    {% for page_num in pagination.iter_pages() %}
-                    {% if page_num %}
-                    {% if page_num != pagination.page %}
-                    <li class="page-item">
-                        <a class="page-link" href="{{ url_for('customers.index', page=page_num, **request.args) }}">
-                            {{ page_num }}
-                        </a>
-                    </li>
-                    {% else %}
-                    <li class="page-item active">
-                        <span class="page-link">{{ page_num }}</span>
-                    </li>
-                    {% endif %}
-                    {% else %}
-                    <li class="page-item disabled">
-                        <span class="page-link">...</span>
-                    </li>
-                    {% endif %}
-                    {% endfor %}
-
-                    {% if pagination.has_next %}
-                    <li class="page-item">
-                        <a class="page-link"
-                            href="{{ url_for('customers.index', page=pagination.next_num, **request.args) }}">
-                            <i class="fas fa-chevron-right"></i>
-                        </a>
-                    </li>
-                    {% endif %}
-                </ul>
-            </nav>
-        </div>
-        {% endif %}
+    <div class="clay-card" id="customersCard">
+        {% include 'customers/_list.html' %}
     </div>
 </div>
 
-<script>
+    <script>
     function submitFilter() {
         const form = document.getElementById('filterForm');
         const params = new URLSearchParams(new FormData(form));
@@ -503,9 +131,106 @@
         // always reset pagination when filtering
         params.delete('page');
 
-        const query = params.toString();
-        const base = form.getAttribute('action') || window.location.pathname;
-        window.location.href = base + (query ? '?' + query : '');
+    const query = params.toString();
+    // Build absolute URL to avoid issues with trailing slashes or relative paths
+    const actionAttr = form.getAttribute('action') || window.location.pathname;
+    const actionUrl = new URL(actionAttr, window.location.origin);
+    actionUrl.search = query; // sets empty string if no params
+    const url = actionUrl.toString();
+    console.debug('[customers] params=', query);
+
+        // Show loading state
+        const card = document.getElementById('customersCard');
+        if (!card) {
+            // fallback to full navigation
+            window.location.href = url;
+            return;
+        }
+
+        const previous = card.innerHTML;
+        // insert a lightweight spinner overlay
+        card.style.opacity = '0.6';
+        const spinner = document.createElement('div');
+        spinner.className = 'customers-loading-overlay d-flex justify-content-center align-items-center';
+        spinner.innerHTML = `<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Chargement...</span></div>`;
+        spinner.style.position = 'absolute';
+        spinner.style.left = 0;
+        spinner.style.top = 0;
+        spinner.style.width = '100%';
+        spinner.style.height = '100%';
+        spinner.style.background = 'rgba(255,255,255,0.6)';
+        spinner.style.zIndex = 2000;
+        spinner.style.pointerEvents = 'none';
+        card.style.position = 'relative';
+        card.appendChild(spinner);
+
+        console.debug('[customers] fetch url=', url);
+    fetch(url, { method: 'GET', credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json, text/html' } })
+            .then(resp => {
+                console.debug('[customers] response status=', resp.status, 'content-type=', resp.headers.get('content-type'));
+                if (!resp.ok) throw new Error('Fetch failed');
+                // Try to parse JSON first (our server returns {html: '...'} for AJAX)
+                const contentType = resp.headers.get('content-type') || '';
+                if (contentType.includes('application/json')) return resp.json();
+                return resp.text().then(t => ({ html: t }));
+            })
+            .then(data => {
+                if (!data) throw new Error('Empty response');
+                if (data.html && typeof data.html === 'string') {
+                    // If server returned only the fragment as JSON.html, insert it into the card
+                    // The fragment may be a partial (no outer #customersCard wrapper)
+                    const frag = document.createElement('div');
+                    frag.innerHTML = data.html;
+                    // If fragment contains the wrapper, extract inner, otherwise use fragment directly
+                    const newCard = frag.querySelector('#customersCard') || frag;
+                    if (!newCard) {
+                        window.location.href = url; // fallback
+                        return;
+                    }
+                    card.innerHTML = newCard.innerHTML;
+                } else if (data.html) {
+                    // fallback to text/html string
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(data.html, 'text/html');
+                    const newCard = doc.getElementById('customersCard');
+                    if (!newCard) {
+                        window.location.href = url;
+                        return;
+                    }
+                    card.innerHTML = newCard.innerHTML;
+                } else {
+                    window.location.href = url;
+                    return;
+                }
+
+                // Update browser URL without reloading
+                try { history.pushState({}, '', url); } catch (e) {}
+
+                // Replace stats panel if provided by the server
+                if (data.stats_html && typeof data.stats_html === 'string') {
+                    const statsFrag = document.createElement('div');
+                    statsFrag.innerHTML = data.stats_html;
+                    const newStats = statsFrag.querySelector('#customersStats') || statsFrag;
+                    const statsContainer = document.getElementById('customersStats');
+                    if (statsContainer && newStats) statsContainer.innerHTML = newStats.innerHTML;
+                }
+
+                // Reattach handlers for forms/controls inside the replaced fragment
+                attachFilterHandlers();
+                attachPaginationHandlers();
+            })
+            .catch(err => {
+                console.error('Filter fetch failed', err);
+                // fallback to full navigation
+                window.location.href = url;
+            })
+            .finally(() => {
+                // remove spinner and restore opacity
+                const ov = card.querySelector('.customers-loading-overlay');
+                if (ov) ov.remove();
+                card.style.opacity = '';
+                card.style.position = '';
+            });
     }
 
     // Attach submit handlers; works whether this script runs before or after DOMContentLoaded
@@ -520,14 +245,22 @@
             submitFilter();
         });
 
-        // Handle Enter key inside the search input explicitly
+        // Handle Enter key inside the search input explicitly and add debounce for live search
         const searchInput = form.querySelector('input[name="search"]');
         if (searchInput) {
+            let debounceTimer = null;
             searchInput.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     submitFilter();
                 }
+            });
+            // debounce on input for 400ms
+            searchInput.addEventListener('input', function () {
+                if (debounceTimer) clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    submitFilter();
+                }, 400);
             });
         }
 
@@ -539,13 +272,62 @@
                 submitFilter();
             });
         }
+
+        // Attach change handlers to select controls to trigger AJAX filtering
+        form.querySelectorAll('select').forEach(sel => {
+            sel.addEventListener('change', function () {
+                console.debug('[customers] select change', sel.name, sel.value);
+                submitFilter();
+            });
+        });
     }
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', attachFilterHandlers);
+        document.addEventListener('DOMContentLoaded', function() { attachFilterHandlers(); attachPaginationHandlers(); });
     } else {
         attachFilterHandlers();
+        attachPaginationHandlers();
     }
+
+        // Intercept pagination links inside the customersCard to use AJAX
+        function attachPaginationHandlers() {
+            const card = document.getElementById('customersCard');
+            if (!card) return;
+            card.querySelectorAll('.pagination a.page-link').forEach(a => {
+                a.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const href = a.getAttribute('href');
+                    if (!href) return;
+                    // parse query params and set them into the filter form then submit
+                    const url = new URL(href, window.location.origin);
+                    const params = new URLSearchParams(url.search);
+                    // copy params into the filter form
+                    const form = document.getElementById('filterForm');
+                    for (const [k, v] of params.entries()) {
+                        const field = form.querySelector(`[name="${k}"]`);
+                        if (field) {
+                            field.value = v;
+                        } else {
+                            // create hidden input for page param
+                            if (k === 'page') {
+                                let existing = form.querySelector('input[name="page"]');
+                                if (!existing) {
+                                    existing = document.createElement('input');
+                                    existing.type = 'hidden';
+                                    existing.name = 'page';
+                                    form.appendChild(existing);
+                                }
+                                existing.value = v;
+                            }
+                        }
+                    }
+                    submitFilter();
+                });
+            });
+        }
+
+        // ensure pagination handlers are attached after fragment replacement
+        window.addEventListener('popstate', function () { attachFilterHandlers(); attachPaginationHandlers(); });
 
     function switchView(viewType) {
         const gridView = document.getElementById('gridView');
@@ -563,19 +345,30 @@
     function deleteCustomer(customerId) {
         if (confirm('Êtes-vous sûr de vouloir supprimer ce client ? Cette action supprimera également tous ses bons de travail associés.')) {
             const url = `/customers/${customerId}/delete`;
+            const formData = new FormData();
+            formData.append('customer_id', customerId);
+
             fetch(url, {
-                method: 'DELETE',
+                method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: JSON.stringify({ customer_id: customerId })
+                body: formData
             }).then(response => {
                 if (response.ok) {
-                    location.reload();
+                    // If JSON returned, we could handle it; simplest is to reload the list fragment
+                    // Try to refresh via AJAX if on customers page
+                    if (document.getElementById('customersCard')) {
+                        submitFilter();
+                    } else {
+                        location.reload();
+                    }
                 } else {
                     alert('Erreur lors de la suppression du client');
                 }
+            }).catch(err => {
+                console.error('Delete failed', err);
+                alert('Erreur lors de la suppression du client');
             });
         }
     }

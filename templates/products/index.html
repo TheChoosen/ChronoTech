@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}Produits - ChronoTech{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">Produits</h1>
+        <a href="{{ url_for('products.add') }}" class="btn btn-primary">Ajouter un produit</a>
+    </div>
+
+    <div class="clay-card">
+        <div class="card-body">
+            {% if products %}
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>SKU</th>
+                        <th>Nom</th>
+                        <th>Prix</th>
+                        <th>Stock</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in products %}
+                    <tr>
+                        <td>{{ p.id }}</td>
+                        <td>{{ p.sku or '' }}</td>
+                        <td><a href="{{ url_for('products.view', product_id=p.id) }}">{{ p.name }}</a></td>
+                        <td>{{ p.price or '' }}</td>
+                        <td>{{ p.stock or '' }}</td>
+                        <td class="text-end">
+                            <a href="{{ url_for('products.edit', product_id=p.id) }}" class="btn btn-sm btn-outline-secondary">Éditer</a>
+                            <form method="POST" action="{{ url_for('products.delete', product_id=p.id) }}" style="display:inline" onsubmit="return confirm('Supprimer ce produit ?');">
+                                <button class="btn btn-sm btn-danger">Supprimer</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p>Aucun produit trouvé.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
