@@ -738,11 +738,26 @@
         const btnPrev = document.getElementById('btnSuggestPreventive');
         const btnAll = document.getElementById('btnSuggestAll');
 
-        if (btnDiag) btnDiag.addEventListener('click', () => generateSectionSuggestions('diagnostic_steps'));
-        if (btnParts) btnParts.addEventListener('click', () => generateSectionSuggestions('common_parts'));
-        if (btnTime) btnTime.addEventListener('click', () => generateSectionSuggestions('time_estimates'));
-        if (btnPrev) btnPrev.addEventListener('click', () => generateSectionSuggestions('preventive_maintenance'));
-        if (btnAll) btnAll.addEventListener('click', generateAllSuggestions);
+    if (btnDiag) btnDiag.addEventListener('click', () => generateSectionSuggestions('diagnostic_steps'));
+    if (btnParts) btnParts.addEventListener('click', () => generateSectionSuggestions('common_parts'));
+    if (btnTime) btnTime.addEventListener('click', () => generateSectionSuggestions('time_estimates'));
+    if (btnPrev) btnPrev.addEventListener('click', () => generateSectionSuggestions('preventive_maintenance'));
+    if (btnAll) btnAll.addEventListener('click', generateAllSuggestions);
+
+    // Per-panel generate buttons
+    const genDiag = document.getElementById('generateDiagBtn');
+    const genParts = document.getElementById('generatePartsBtn');
+    const genProcedures = document.getElementById('generateProceduresBtn');
+    const genSafety = document.getElementById('generateSafetyBtn');
+    const genTime = document.getElementById('generateTimeBtn');
+    const genPreventive = document.getElementById('generatePreventiveBtn');
+
+    if (genDiag) genDiag.addEventListener('click', () => generateSectionSuggestions('diagnostic_steps'));
+    if (genParts) genParts.addEventListener('click', () => generateSectionSuggestions('common_parts'));
+    if (genProcedures) genProcedures.addEventListener('click', () => generateSectionSuggestions('repair_procedures'));
+    if (genSafety) genSafety.addEventListener('click', () => generateSectionSuggestions('safety_warnings'));
+    if (genTime) genTime.addEventListener('click', () => generateSectionSuggestions('time_estimates'));
+    if (genPreventive) genPreventive.addEventListener('click', () => generateSectionSuggestions('preventive_maintenance'));
 
         const quickSearchBtn = document.getElementById('quickSearchBtn');
         const quickSearchInput = document.getElementById('quickSearchInput');
@@ -871,6 +886,30 @@
                 <div class="suggestion-status status-complete"></div>
                 <div>${formattedContent}</div>
             `;
+            // Auto-open the accordion panel that contains this element (if using Bootstrap)
+            try {
+                const collapseMap = {
+                    'diagnosticSteps': 'collapseDiag',
+                    'commonParts': 'collapseParts',
+                    'repairProcedures': 'collapseProcedures',
+                    'safetyWarnings': 'collapseSafety',
+                    'timeEstimates': 'collapseTime',
+                    'preventiveMaintenance': 'collapsePreventive'
+                };
+                const collapseId = collapseMap[elementId];
+                if (collapseId && window.bootstrap) {
+                    const collapseEl = document.getElementById(collapseId);
+                    if (collapseEl && !collapseEl.classList.contains('show')) {
+                        // Use existing instance or create without toggling, then show
+                        let inst = window.bootstrap.Collapse.getInstance(collapseEl);
+                        if (!inst) inst = new window.bootstrap.Collapse(collapseEl, { toggle: false });
+                        inst.show();
+                    }
+                }
+            } catch (e) {
+                // Ignore if Bootstrap not present or any error
+                console.warn('Could not auto-open suggestion panel', e);
+            }
         } else {
             element.innerHTML = `
                 <div class="suggestion-status status-error"></div>
