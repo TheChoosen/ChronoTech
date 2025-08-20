@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, SelectField, TextAreaField, SubmitField, DateField, IntegerField, BooleanField, FileField
+from wtforms import StringField, SelectField, TextAreaField, SubmitField, DateField, IntegerField, BooleanField, FileField, DecimalField
 from wtforms.validators import DataRequired, Email, Length, Optional
 
 class CustomerForm(FlaskForm):
@@ -76,3 +76,12 @@ class AppointmentForm(FlaskForm):
     description = TextAreaField('Description', validators=[Optional(), Length(max=500)])
     notes = TextAreaField('Notes', validators=[Optional(), Length(max=500)])
     submit = SubmitField('Créer')
+
+
+class ProductForm(FlaskForm):
+    sku = StringField('SKU', validators=[Optional(), Length(max=100)])
+    name = StringField('Nom', validators=[DataRequired(), Length(max=255)])
+    price = DecimalField('Prix', places=2, rounding=None, validators=[Optional()])
+    stock = IntegerField('Stock', validators=[Optional()])
+    description = TextAreaField('Description', validators=[Optional(), Length(max=2000)])
+    submit = SubmitField('Enregistrer')
