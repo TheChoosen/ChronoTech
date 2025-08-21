@@ -143,10 +143,16 @@ def index():
             pass
 
         # First get total count matching filters (accurate stats & pagination)
-        count_sql = f"SELECT COUNT(*) AS cnt FROM customers WHERE {where_sql}"
+        # If no WHERE clauses, don't include the WHERE keyword (avoid SQL syntax error)
+        if where_sql:
+            count_sql = f"SELECT COUNT(*) AS cnt FROM customers WHERE {where_sql}"
+            count_params = params
+        else:
+            count_sql = "SELECT COUNT(*) AS cnt FROM customers"
+            count_params = []
         cursor = conn.cursor(pymysql.cursors.DictCursor)
         try:
-            cursor.execute(count_sql, params)
+            cursor.execute(count_sql, count_params)
             row = cursor.fetchone()
             total_matching = int(row['cnt']) if row and 'cnt' in row else 0
         except Exception as e:
@@ -154,15 +160,28 @@ def index():
             total_matching = 0
 
         # Now fetch the actual rows (could add LIMIT/OFFSET for pagination later)
-        sql = f"SELECT {', '.join(select_cols)} FROM customers WHERE {where_sql} ORDER BY {order_by}"
+        base_sql = f"SELECT {', '.join(select_cols)} FROM customers"
+        if where_sql:
+            base_sql += f" WHERE {where_sql}"
+        base_sql += f" ORDER BY {order_by}"
         try:
-            cursor.execute(sql, params)
+            cursor.execute(base_sql, params)
             customers = cursor.fetchall()
         except Exception as e:
             log_error(f"Erreur select customers: {e}")
             customers = []
         finally:
             cursor.close()
+        # Normalize optional fields so templates can safely access them even when columns are missing
+        try:
+            for c in customers:
+                # ensure keys exist
+                for k in ('customer_type', 'status', 'is_active', 'avatar', 'company', 'city', 'email', 'phone', 'vehicles_count', 'work_orders_count', 'total_spent', 'last_order_date'):
+                    if k not in c:
+                        c[k] = None
+        except Exception:
+            pass
+
         # Compute vehicles count for listed customers
         try:
             if customers:
@@ -235,9 +254,20 @@ def add_customer():
                 return render_template('customers/add.html', form=form)
 
             cursor = conn.cursor()
+            # Normalize customer_type values to canonical tokens used in templates
+            ct_raw = getattr(form, 'customer_type', None) and form.customer_type.data or None
+            ct_map = {
+                'particulier': 'individual',
+                'entreprise': 'company',
+                'government': 'government',
+                'individual': 'individual',
+                'company': 'company'
+            }
+            customer_type_value = ct_map.get(ct_raw, ct_raw)
+
             cursor.execute("""
-                INSERT INTO customers (name, company, email, phone, address, siret, status, postal_code, city, country, billing_address, payment_terms, notes, tax_number, preferred_contact_method, zone, created_at, updated_at, is_active)
-                VALUES (%(name)s, %(company)s, %(email)s, %(phone)s, %(address)s, %(siret)s, %(status)s, %(postal_code)s, %(city)s, %(country)s, %(billing_address)s, %(payment_terms)s, %(notes)s, %(tax_number)s, %(preferred_contact_method)s, %(zone)s, NOW(), NOW(), TRUE)
+                INSERT INTO customers (name, company, email, phone, address, siret, status, customer_type, postal_code, city, country, billing_address, payment_terms, notes, tax_number, preferred_contact_method, zone, created_at, updated_at, is_active)
+                VALUES (%(name)s, %(company)s, %(email)s, %(phone)s, %(address)s, %(siret)s, %(status)s, %(customer_type)s, %(postal_code)s, %(city)s, %(country)s, %(billing_address)s, %(payment_terms)s, %(notes)s, %(tax_number)s, %(preferred_contact_method)s, %(zone)s, NOW(), NOW(), TRUE)
             """, {
                 'name': form.name.data,
                 'company': form.company.data,
@@ -246,6 +276,7 @@ def add_customer():
                 'address': form.address.data,
                 'siret': getattr(form, 'siret', None) and form.siret.data or None,
                 'status': getattr(form, 'status', None) and form.status.data or None,
+                'customer_type': customer_type_value,
                 'postal_code': getattr(form, 'postal_code', None) and form.postal_code.data or None,
                 'city': getattr(form, 'city', None) and form.city.data or None,
                 'country': getattr(form, 'country', None) and form.country.data or None,
@@ -291,6 +322,13 @@ def view_customer(customer_id):
         """, (customer_id,))
 
         customer = cursor.fetchone()
+        # Ensure optional keys exist to avoid template runtime errors when the column is absent
+        try:
+            if customer is not None:
+                if 'customer_type' not in customer:
+                    customer['customer_type'] = None
+        except Exception:
+            pass
         if not customer:
             cursor.close()
             conn.close()
@@ -577,6 +615,7 @@ def edit_customer(customer_id):
     """Modifier un client"""
     if request.method == 'POST':
         try:
+            # Accept JSON or form-encoded data
             data = request.get_json() if request.is_json else request.form
 
             conn = get_db_connection()
@@ -587,21 +626,64 @@ def edit_customer(customer_id):
                     flash('Erreur de connexion à la base de données', 'error')
                     return redirect(url_for('customers.view_customer', customer_id=customer_id))
 
-            cursor = conn.cursor()
-            cursor.execute("""
-                UPDATE customers 
-                SET name = %(name)s, company = %(company)s, email = %(email)s, 
-                    phone = %(phone)s, address = %(address)s, updated_at = NOW()
-                WHERE id = %(id)s
-            """, {
-                'name': data.get('name'),
-                'company': data.get('company', ''),
-                'email': data.get('email'),
-                'phone': data.get('phone', ''),
-                'address': data.get('address', ''),
-                'id': customer_id
-            })
+            # Detect existing columns to avoid updating non-existent fields
+            try:
+                col_cur = conn.cursor()
+                col_cur.execute("SHOW COLUMNS FROM customers")
+                existing_cols = {r[0] for r in col_cur.fetchall()}
+                col_cur.close()
+            except Exception:
+                existing_cols = set()
 
+            # Build a dynamic list of fields to set depending on existing columns
+            field_values = {
+                'name': data.get('name'),
+                'company': data.get('company') or None,
+                'siret': data.get('siret') or None,
+                'email': data.get('email') or None,
+                'phone': data.get('phone') or None,
+                'address': data.get('address') or None,
+                'postal_code': data.get('postal_code') or None,
+                'city': data.get('city') or None,
+                'country': data.get('country') or None,
+                'billing_address': data.get('billing_address') or None,
+                'payment_terms': data.get('payment_terms') or None,
+                'notes': data.get('notes') or None,
+                'tax_number': data.get('tax_number') or None,
+                'preferred_contact_method': data.get('preferred_contact_method') or None,
+                'zone': data.get('zone') or None,
+                'status': data.get('status') or None,
+            }
+
+            # Optionally include customer_type only if column exists
+            include_customer_type = 'customer_type' in existing_cols
+            if include_customer_type:
+                # Normalize French tokens to canonical tokens if present
+                ct_raw = data.get('customer_type')
+                ct_map = {'particulier': 'individual', 'entreprise': 'company', 'government': 'government', 'individual': 'individual', 'company': 'company'}
+                field_values['customer_type'] = ct_map.get(ct_raw, ct_raw)
+
+            # Build SET clause and params dynamically
+            set_clauses = []
+            params = {}
+            for key, val in field_values.items():
+                # Skip customer_type if column not present
+                if key == 'customer_type' and not include_customer_type:
+                    continue
+                set_clauses.append(f"{key} = %({key})s")
+                params[key] = val
+
+            params['id'] = customer_id
+
+            set_sql = ',\n                    '.join(set_clauses) if set_clauses else ''
+            if set_sql:
+                sql = f"UPDATE customers\n                SET {set_sql},\n                    updated_at = NOW()\n                WHERE id = %(id)s"
+            else:
+                # Nothing to update except updated_at
+                sql = "UPDATE customers SET updated_at = NOW() WHERE id = %(id)s"
+
+            cursor = conn.cursor()
+            cursor.execute(sql, params)
             conn.commit()
             cursor.close()
             conn.close()
@@ -611,7 +693,6 @@ def edit_customer(customer_id):
             # Decide next action: normal view or create work order
             create_order_flag = False
             try:
-                # data may be a dict (JSON) or ImmutableMultiDict (form)
                 create_order_flag = str(data.get('save_and_add_order', '')).strip() in ['1', 'true', 'True']
             except Exception:
                 create_order_flag = False

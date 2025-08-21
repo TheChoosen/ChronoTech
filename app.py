@@ -115,10 +115,13 @@ app = create_app()
 
 # Filtre Jinja pour badge type client
 def customer_type_badge(value):
-    if value == 'entreprise':
+    # Expect canonical tokens: 'company', 'individual', 'government'
+    if value == 'company' or value == 'entreprise':
         return 'bg-primary'
-    elif value == 'particulier':
+    elif value == 'individual' or value == 'particulier':
         return 'bg-success'
+    elif value == 'government' or value == 'administration':
+        return 'bg-info'
     return 'bg-secondary'
 app.jinja_env.filters['customer_type_badge'] = customer_type_badge
 

@@ -21,7 +21,9 @@
 <div class="card-body" id="gridView">
     {% if customers %}
     <div class="row">
-        {% for customer in customers %}
+    {% for customer in customers %}
+    {% set _status_l = (customer.status or '')|string|lower %}
+    {% set is_active_flag = ((customer.is_active is defined) and (customer.is_active == 1 or customer.is_active == '1' or customer.is_active is sameas true)) or (_status_l in ['active', 'actif']) %}
         <div class="col-md-6 col-lg-4 mb-4">
             <div class="card h-100 customer-card">
                 <div class="card-body">
@@ -39,7 +41,12 @@
                             <div>
                                 <h6 class="mb-1">{{ customer.name }}
                                     {% if (customer.vehicles_count or 0) == 0 %}
-                                    <span class="badge bg-danger ms-2" title="Aucun véhicule associé">Aucun véhicule</span>
+                                    <i class="fa-solid fa-car text-danger"></i>
+                                    {% endif %}
+                                    {% if not is_active_flag %}
+                                    <span class="badge bg-secondary ms-2" title="Client inactif">Inactif</span>
+                                    {% else %}
+                                    <span class="badge bg-success ms-2" title="Client actif">Actif</span>
                                     {% endif %}
                                 </h6>
                                 <span class="badge {{ customer.customer_type|customer_type_badge }} mb-1">
@@ -130,11 +137,17 @@
                 </div>
                 <div class="card-footer">
                     <div class="d-flex justify-content-between align-items-center">
-                        <span class="badge {{ customer.status|status_badge }}">
-                            {% if customer.status == 'active' %}Actif
-                            {% elif customer.status == 'inactive' %}Inactif
-                            {% elif customer.status == 'prospect' %}Prospect
-                            {% else %}{{ customer.status }}{% endif %}
+                        <span class="customer-status-flag" title="{{ (customer.status or 'Statut inconnu')|capitalize }}">
+                            {% if _status_l in ['active', 'actif'] %}
+                                <i class="fas fa-check-circle text-success" aria-hidden="true"></i>
+                            {% elif _status_l in ['inactive', 'inactif'] %}
+                                <i class="fas fa-times-circle text-secondary" aria-hidden="true"></i>
+                            {% elif _status_l == 'prospect' %}
+                                <i class="fas fa-exclamation-circle text-warning" aria-hidden="true"></i>
+                            {% else %}
+                                <i class="fas fa-question-circle text-muted" aria-hidden="true"></i>
+                            {% endif %}
+                            <span class="visually-hidden">{{ customer.status if customer.status else 'statut inconnu' }}</span>
                         </span>
                         <small class="text-muted">Créé {{ customer.created_at|datetime_format('short') }}</small>
                     </div>
@@ -203,7 +216,20 @@
                 <td>{{ customer.city or '-' }}</td>
                 <td>{{ customer.work_orders_count or 0 }}</td>
                 <td>{{ customer.total_spent|currency if customer.total_spent else '0 €' }}</td>
-                <td><span class="badge {{ customer.status|status_badge }}">{% if customer.status == 'active' %}Actif{% elif customer.status == 'inactive' %}Inactif{% elif customer.status == 'prospect' %}Prospect{% else %}{{ customer.status }}{% endif %}</span></td>
+                <td>
+                    <span class="customer-status-flag" title="{{ (customer.status or 'Statut inconnu')|capitalize }}">
+                        {% if _status_l in ['active', 'actif'] %}
+                            <i class="fas fa-check-circle text-success" aria-hidden="true"></i>
+                        {% elif _status_l in ['inactive', 'inactif'] %}
+                            <i class="fas fa-times-circle text-secondary" aria-hidden="true"></i>
+                        {% elif _status_l == 'prospect' %}
+                            <i class="fas fa-exclamation-circle text-warning" aria-hidden="true"></i>
+                        {% else %}
+                            <i class="fas fa-question-circle text-muted" aria-hidden="true"></i>
+                        {% endif %}
+                        <span class="visually-hidden">{{ customer.status if customer.status else 'statut inconnu' }}</span>
+                    </span>
+                </td>
                 <td>
                     <div class="btn-group" role="group">
                         <a href="{{ url_for('customers.view_customer', customer_id=customer.id) }}" class="btn btn-sm btn-outline-primary clay-button"><i class="fas fa-eye"></i></a>

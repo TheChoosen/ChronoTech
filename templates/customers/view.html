@@ -107,12 +107,16 @@
                                         <tr>
                                             <td><strong>Type :</strong></td>
                                             <td>
+                                                {% if customer.customer_type %}
                                                 <span class="badge {{ customer.customer_type|customer_type_badge }}">
                                                     {% if customer.customer_type == 'individual' %}Particulier
                                                     {% elif customer.customer_type == 'company' %}Entreprise
                                                     {% elif customer.customer_type == 'government' %}Administration
                                                     {% else %}{{ customer.customer_type }}{% endif %}
                                                 </span>
+                                                {% else %}
+                                                <span class="text-muted">Non renseigné</span>
+                                                {% endif %}
                                             </td>
                                         </tr>
                                         <tr>
@@ -704,18 +708,25 @@
 
     function deleteCustomer() {
         if (confirm('Êtes-vous sûr de vouloir supprimer ce client ? Cette action supprimera également tous ses bons de travail associés.')) {
-            fetch(`{{ url_for('customers.delete', id=customer.id) }}`, {
-                method: 'DELETE',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            }).then(response => {
-                if (response.ok) {
-                    window.location.href = `{{ url_for('customers.index') }}`;
-                } else {
+                const url = `{{ url_for('customers.delete', id=customer.id) }}`;
+                const formData = new FormData();
+                formData.append('customer_id', '{{ customer.id }}');
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    body: formData
+                }).then(response => {
+                    if (response.ok) {
+                        // Reload the index page or trigger AJAX refresh
+                        window.location.href = `{{ url_for('customers.index') }}`;
+                    } else {
+                        alert('Erreur lors de la suppression du client');
+                    }
+                }).catch(err => {
+                    console.error('Delete failed', err);
                     alert('Erreur lors de la suppression du client');
-                }
-            });
+                });
         }
     }
 
