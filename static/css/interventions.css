@@ -300,6 +300,7 @@ Design Claymorphism avec fonctionnalités IA
     line-height: 1.5;
     display: -webkit-box;
     -webkit-line-clamp: 3;
+    line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -510,8 +511,8 @@ Design Claymorphism avec fonctionnalités IA
 }
 
 /* ===== MODAL D'ANALYSE IA ===== */
-.ai-suggestions-list {
-    space-y: 1rem;
+.ai-suggestions-list > * + * {
+    margin-top: 1rem;
 }
 
 .ai-suggestion {

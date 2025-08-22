@@ -238,7 +238,7 @@
         formData.append('bon_id', '{{ work_order.claim_number }}');
         if (target_lang) formData.append('target_lang', target_lang);
 
-        try {
+    try {
             if (source === 'mic') {
                 if (!recordedBlob) {
                     throw new Error('Aucun enregistrement disponible');
@@ -251,6 +251,10 @@
                 }
                 formData.append('file', fileInput.files[0]);
             }
+
+            // include destination selection
+            const destination = document.querySelector('input[name="destination"]:checked')?.value || 'notes';
+            formData.append('destination', destination);
 
             const response = await fetch(`/api/openai/audio`, {
                 method: 'POST',
@@ -293,15 +297,50 @@
         
         document.getElementById('resultSection').style.display = 'block';
     }
+    async function addTranscriptionToDestination() {
+        if (!currentTranscription) return;
 
-    function addTranscriptionToNotes() {
-        if (currentTranscription) {
-            const noteContent = document.getElementById('noteContent');
-            if (noteContent) {
-                const prefix = '🎤 Transcription audio:\n\n';
-                const content = currentTranscription;
-                const suffix = currentTranslation ? `\n\n📝 Traduction:\n${currentTranslation}` : '';
-                noteContent.value = prefix + content + suffix;
+        const destination = document.querySelector('input[name="destination"]:checked')?.value || 'notes';
+        const payloadContent = `🎤 Transcription audio:\n\n${currentTranscription}` + (currentTranslation ? `\n\n📝 Traduction:\n${currentTranslation}` : '');
+
+        if (destination === 'comments') {
+            // POST to add_comment endpoint
+            const form = new FormData();
+            form.append('content', payloadContent);
+            const resp = await fetch(`/interventions/${workOrderId}/add_comment`, { method: 'POST', body: form });
+            const result = await resp.json();
+            if (result.success) {
+                // prepend to comments list if present
+                const commentsList = document.getElementById('commentsList');
+                if (commentsList) {
+                    const div = document.createElement('div');
+                    div.className = 'comment-item mb-2 p-2 border rounded';
+                    div.innerHTML = `<div class="small text-muted">${result.comment.technician_name} • ${result.comment.created_at}</div><div class="mt-1">${result.comment.content}</div>`;
+                    commentsList.insertBefore(div, commentsList.firstChild);
+                }
+                alert('Transcription ajoutée aux commentaires internes');
+            } else {
+                alert('Erreur: ' + (result.message || 'Impossible d\'ajouter le commentaire'));
+            }
+        } else {
+            // add to notes via existing add_note endpoint
+            const form = new FormData();
+            form.append('content', payloadContent);
+            form.append('note_type', 'private');
+            const resp = await fetch(`/interventions/${workOrderId}/add_note`, { method: 'POST', body: form });
+            const result = await resp.json();
+            if (result.success) {
+                // update notes list
+                const notesList = document.getElementById('notesList');
+                if (notesList) {
+                    const noteDiv = document.createElement('div');
+                    noteDiv.className = 'note-item';
+                    noteDiv.innerHTML = `<div class="note-header"><i class="fa-solid fa-user me-1"></i>${result.note.technician_name}<span class="note-time">• ${new Date().toLocaleString('fr-FR')}</span></div><div class="note-content">${result.note.content}</div>`;
+                    notesList.insertBefore(noteDiv, notesList.firstChild);
+                }
+                alert('Transcription ajoutée aux notes');
+            } else {
+                alert('Erreur: ' + (result.message || 'Impossible d\'ajouter la note'));
             }
         }
     }
@@ -603,11 +642,35 @@
             alert('Veuillez saisir une note');
             return;
         }
-        
+        const destination = document.querySelector('input[name="destination"]:checked')?.value || 'notes';
+
+        if (destination === 'comments') {
+            const form = new FormData();
+            form.append('content', content);
+            fetch(`/interventions/${workOrderId}/add_comment`, { method: 'POST', body: form })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    document.getElementById('commentContent').value = '';
+                    const commentsList = document.getElementById('commentsList');
+                    if (commentsList) {
+                        const div = document.createElement('div');
+                        div.className = 'comment-item mb-2 p-2 border rounded';
+                        div.innerHTML = `<div class="small text-muted">${result.comment.technician_name} • ${result.comment.created_at}</div><div class="mt-1">${result.comment.content}</div>`;
+                        commentsList.insertBefore(div, commentsList.firstChild);
+                    }
+                } else {
+                    alert('Erreur: ' + result.message);
+                }
+            })
+            .catch(error => { alert('Erreur de connexion: ' + error.message); });
+            return;
+        }
+
         const formData = new FormData();
         formData.append('content', content);
         formData.append('note_type', 'private');
-        
+
         fetch(`/interventions/${workOrderId}/add_note`, {
             method: 'POST',
             body: formData
@@ -616,7 +679,7 @@
         .then(result => {
             if (result.success) {
                 document.getElementById('noteContent').value = '';
-                
+
                 const notesList = document.getElementById('notesList');
                 const noteDiv = document.createElement('div');
                 noteDiv.className = 'note-item';
@@ -627,9 +690,9 @@
                     </div>
                     <div class="note-content">${result.note.content}</div>
                 `;
-                
+
                 notesList.insertBefore(noteDiv, notesList.firstChild);
-                
+
                 const noNotesMsg = notesList.querySelector('.text-muted');
                 if (noNotesMsg && noNotesMsg.textContent.includes('Aucune note')) {
                     noNotesMsg.remove();
@@ -641,6 +704,34 @@
         .catch(error => {
             alert('Erreur de connexion: ' + error.message);
         });
+    }
+
+    function addManualComment() {
+        const content = document.getElementById('commentContent').value.trim();
+        if (!content) {
+            alert('Veuillez saisir un commentaire');
+            return;
+        }
+
+        const form = new FormData();
+        form.append('content', content);
+        fetch(`/interventions/${workOrderId}/add_comment`, { method: 'POST', body: form })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                document.getElementById('commentContent').value = '';
+                const commentsList = document.getElementById('commentsList');
+                if (commentsList) {
+                    const div = document.createElement('div');
+                    div.className = 'comment-item mb-2 p-2 border rounded';
+                    div.innerHTML = `<div class="small text-muted">${result.comment.technician_name} • ${result.comment.created_at}</div><div class="mt-1">${result.comment.content}</div>`;
+                    commentsList.insertBefore(div, commentsList.firstChild);
+                }
+            } else {
+                alert('Erreur: ' + result.message);
+            }
+        })
+        .catch(error => { alert('Erreur de connexion: ' + error.message); });
     }
 
     function updateStatus(status) {
@@ -715,9 +806,10 @@
             playBtn.addEventListener('click', playRecording);
         }
         
-        uploadBtn.addEventListener('click', processAudio);
-        
-        document.getElementById('addToNotesBtn')?.addEventListener('click', addTranscriptionToNotes);
+    uploadBtn.addEventListener('click', processAudio);
+
+    document.getElementById('addToDestinationBtn')?.addEventListener('click', addTranscriptionToDestination);
+    document.getElementById('addCommentBtn')?.addEventListener('click', addManualComment);
         
         // Initialize AI chat
         initializeChat();
@@ -790,7 +882,8 @@
         if (spinner) spinner.style.display = 'inline-block';
 
         try {
-            const response = await fetch(`/interventions/suggestions/${workOrderId}?section=${encodeURIComponent(sectionKey)}`, {
+            const lang = document.getElementById('suggestionsLanguage')?.value || 'fr';
+            const response = await fetch(`/interventions/suggestions/${workOrderId}?section=${encodeURIComponent(sectionKey)}&lang=${encodeURIComponent(lang)}`, {
                 method: 'GET',
                 headers: { 'Content-Type': 'application/json' }
             });
@@ -840,7 +933,8 @@
         document.getElementById('suggestionsFooter').style.display = 'block';
         
         try {
-            const response = await fetch(`/interventions/suggestions/${workOrderId}`, {
+            const lang = document.getElementById('suggestionsLanguage')?.value || 'fr';
+            const response = await fetch(`/interventions/suggestions/${workOrderId}?lang=${encodeURIComponent(lang)}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json'
@@ -959,7 +1053,8 @@
                 mileage: '{{ work_order.vehicle_mileage or "" }}'
             };
             
-            const response = await fetch('/interventions/suggestions/search', {
+        const lang = document.getElementById('suggestionsLanguage')?.value || 'fr';
+        const response = await fetch('/interventions/suggestions/search', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -967,7 +1062,8 @@
                 body: JSON.stringify({
                     query: query,
                     vehicle_info: vehicleInfo,
-                    context: '{{ work_order.description or "" }}'
+            context: '{{ work_order.description or "" }}',
+            language: lang
                 })
             });
             

@@ -1,0 +1,38 @@
+<!-- Notes and Internal Comments Tabs -->
+<div class="notes-comments-section mt-4">
+    <ul class="nav nav-tabs" id="notesCommentsTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="notes-tab" data-bs-toggle="tab" data-bs-target="#notesPane" type="button" role="tab" aria-controls="notesPane" aria-selected="true">Notes</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="comments-tab" data-bs-toggle="tab" data-bs-target="#commentsPane" type="button" role="tab" aria-controls="commentsPane" aria-selected="false">Commentaires internes</button>
+        </li>
+    </ul>
+    <div class="tab-content p-3 border border-top-0" id="notesCommentsTabContent">
+        <div class="tab-pane fade show active" id="notesPane" role="tabpanel" aria-labelledby="notes-tab">
+            {% include 'interventions/_notes_panel.html' %}
+        </div>
+        <div class="tab-pane fade" id="commentsPane" role="tabpanel" aria-labelledby="comments-tab">
+            <div class="mb-3">
+                <label for="commentContent" class="form-label">Nouveau commentaire interne</label>
+                <textarea id="commentContent" class="form-control" rows="3" placeholder="Ajouter un commentaire visible uniquement aux techniciens"></textarea>
+                <div class="mt-2">
+                    <button class="btn btn-sm btn-primary" id="addCommentBtn">Ajouter le commentaire</button>
+                </div>
+            </div>
+
+            <div id="commentsList">
+                {% if comments and comments|length > 0 %}
+                    {% for c in comments %}
+                        <div class="comment-item mb-2 p-2 border rounded">
+                            <div class="small text-muted">{{ c.technician_name or 'Système' }} • {{ c.created_at }}</div>
+                            <div class="mt-1">{{ c.content }}</div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-muted">Aucun commentaire interne</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
