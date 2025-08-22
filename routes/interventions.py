@@ -125,6 +125,16 @@ def intervention_details(work_order_id):
                 ORDER BY im.created_at DESC
             """, (work_order_id,))
             media = cursor.fetchall()
+
+            # Internal comments (not visible to customer)
+            cursor.execute("""
+                SELECT ic.*, u.name as technician_name
+                FROM intervention_comments ic
+                LEFT JOIN users u ON ic.technician_id = u.id
+                WHERE ic.work_order_id = %s
+                ORDER BY ic.created_at DESC
+            """, (work_order_id,))
+            comments = cursor.fetchall()
             
             # Lignes de travail pour référence
             cursor.execute("""
@@ -138,6 +148,7 @@ def intervention_details(work_order_id):
                                  work_order=work_order,
                                  notes=notes,
                                  media=media,
+                                 comments=comments,
                                  work_order_lines=work_order_lines)
     finally:
         conn.close()
@@ -209,6 +220,54 @@ def add_note(work_order_id):
                 'note': new_note
             })
             
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+    finally:
+        conn.close()
+
+
+@bp.route('/<int:work_order_id>/add_comment', methods=['POST'])
+def add_comment(work_order_id):
+    """Add an internal comment (not visible to customer)"""
+    content = request.form.get('content', '').strip()
+    if not content:
+        return jsonify({'success': False, 'message': 'Le contenu du commentaire est requis'})
+
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            # Permission check
+            user_id = session.get('user_id')
+            if not user_id:
+                return jsonify({'success': False, 'message': 'Utilisateur non authentifié'}), 401
+
+            cursor.execute("SELECT id FROM work_orders WHERE id = %s", (work_order_id,))
+            if not cursor.fetchone():
+                return jsonify({'success': False, 'message': 'Intervention non trouvée'}), 404
+
+            # Insert internal comment; caller must ensure this table exists in DB
+            cursor.execute("""
+                INSERT INTO intervention_comments (
+                    work_order_id, technician_id, content, is_private
+                ) VALUES (%s, %s, %s, %s)
+            """, (
+                work_order_id,
+                user_id,
+                content,
+                1
+            ))
+            comment_id = cursor.lastrowid
+            conn.commit()
+
+            cursor.execute("""
+                SELECT ic.*, u.name as technician_name
+                FROM intervention_comments ic
+                LEFT JOIN users u ON ic.technician_id = u.id
+                WHERE ic.id = %s
+            """, (comment_id,))
+            new_comment = cursor.fetchone()
+
+            return jsonify({'success': True, 'message': 'Commentaire interne ajouté', 'comment': new_comment})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
     finally:

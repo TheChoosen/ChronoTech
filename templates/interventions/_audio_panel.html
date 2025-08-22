@@ -71,6 +71,21 @@
                 </div>
             </div>
 
+            <!-- Destination Selector -->
+            <div class="mt-3">
+                <label class="form-label fw-bold">Destination</label>
+                <div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="destination" id="destNotes" value="notes" checked>
+                        <label class="form-check-label" for="destNotes">Notes</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="destination" id="destComments" value="comments">
+                        <label class="form-check-label" for="destComments">Commentaires internes</label>
+                    </div>
+                </div>
+            </div>
+
             <!-- Submit Button -->
             <div class="mt-4">
                 <button class="btn btn-primary btn-lg" id="uploadBtn">
@@ -85,8 +100,8 @@
                 <div id="transcriptionResult"></div>
                 <div id="translationResult" style="display:none;"></div>
                 <div class="mt-3">
-                    <button class="btn btn-success" id="addToNotesBtn">
-                        <i class="fa-solid fa-plus me-1"></i>Ajouter aux notes
+                    <button class="btn btn-success" id="addToDestinationBtn">
+                        <i class="fa-solid fa-plus me-1"></i>Ajouter à la destination sélectionnée
                     </button>
                 </div>
             </div>

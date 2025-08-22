@@ -5,7 +5,16 @@
                     <h3 class="mb-0">Suggestions intelligentes</h3>
                     <small class="text-muted">Générez uniquement les sections nécessaires — ou utilisez la recherche rapide.</small>
                 </div>
-                <div class="text-end">
+                <div class="text-end d-flex align-items-center gap-2">
+                    <div class="input-group input-group-sm me-2">
+                        <label class="input-group-text" for="suggestionsLanguage">Langue</label>
+                        <select id="suggestionsLanguage" class="form-select">
+                            <option value="fr" selected>Français</option>
+                            <option value="en">English</option>
+                            <option value="es">Español</option>
+                            <option value="de">Deutsch</option>
+                        </select>
+                    </div>
                     <div id="suggestionsSpinner" style="display:none;">
                         <div class="spinner-border text-info" role="status" style="width:1.5rem; height:1.5rem;">
                             <span class="visually-hidden">Chargement...</span>

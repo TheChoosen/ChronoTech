@@ -4,6 +4,10 @@ import os
 import io
 import json
 import requests
+import threading
+import time
+import hashlib
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from flask import Blueprint, render_template, request, jsonify, current_app, session
 from drive_helpers.google_drive_helper import get_drive_helper
 from utils import get_db_connection
@@ -16,6 +20,72 @@ from .interventions import get_db_connection as get_intervention_db
 openai_bp = Blueprint('openai', __name__, template_folder='../templates')
 
 OPENAI_API_BASE = os.environ.get('OPENAI_API_BASE', 'https://api.openai.com')
+# Performance / safety configs (can be tuned via environment)
+OPENAI_TIMEOUT = int(os.environ.get('OPENAI_TIMEOUT', '30'))
+OPENAI_SUMMARY_TIMEOUT = int(os.environ.get('OPENAI_SUMMARY_TIMEOUT', str(OPENAI_TIMEOUT)))
+OPENAI_TRANSCRIBE_TIMEOUT = int(os.environ.get('OPENAI_TRANSCRIBE_TIMEOUT', '120'))
+OPENAI_FAST_MODEL = os.environ.get('OPENAI_FAST_MODEL', 'gpt-4o-mini')
+OPENAI_CACHE_TTL = int(os.environ.get('OPENAI_CACHE_TTL', '300'))  # seconds
+OPENAI_MAX_CONTEXT_CHARS = int(os.environ.get('OPENAI_MAX_CONTEXT_CHARS', '6000'))
+OPENAI_PARALLEL_THREADS = int(os.environ.get('OPENAI_PARALLEL_THREADS', '4'))
+
+# Simple in-memory cache to avoid duplicate/combinatorial calls during active sessions
+_ai_response_cache = {}
+_ai_cache_lock = threading.Lock()
+
+def _cache_get(key):
+    with _ai_cache_lock:
+        entry = _ai_response_cache.get(key)
+        if not entry:
+            return None
+        value, expires = entry
+        if time.time() > expires:
+            del _ai_response_cache[key]
+            return None
+        return value
+
+def _cache_set(key, value, ttl=OPENAI_CACHE_TTL):
+    with _ai_cache_lock:
+        _ai_response_cache[key] = (value, time.time() + ttl)
+
+def _short_hash(s: str) -> str:
+    return hashlib.sha256(s.encode('utf-8')).hexdigest()[:16]
+
+def _truncate_context(text: str) -> str:
+    if not text:
+        return ''
+    if len(text) <= OPENAI_MAX_CONTEXT_CHARS:
+        return text
+    # keep the last portion which is usually most relevant
+    return text[-OPENAI_MAX_CONTEXT_CHARS:]
+
+
+def _call_openai(payload, api_key, timeout=OPENAI_TIMEOUT):
+    """Centralized OpenAI call with caching and error handling."""
+    chat_url = f"{OPENAI_API_BASE}/v1/chat/completions"
+    key = _short_hash(json.dumps({'payload': payload, 'model': payload.get('model')}))
+
+    # Try the cache first for idempotent calls
+    cached = _cache_get(key)
+    if cached is not None:
+        return cached
+
+    headers = {'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'}
+    try:
+        resp = requests.post(chat_url, headers=headers, json=payload, timeout=timeout)
+        if resp.status_code == 200:
+            result = resp.json()
+            _cache_set(key, result)
+            return result
+        else:
+            current_app.logger.error('OpenAI call failed %s %s', resp.status_code, resp.text)
+            return {'error': True, 'status_code': resp.status_code, 'text': resp.text}
+    except requests.Timeout:
+        current_app.logger.exception('OpenAI request timed out')
+        return {'error': True, 'text': 'timeout'}
+    except Exception as e:
+        current_app.logger.exception('OpenAI request exception')
+        return {'error': True, 'text': str(e)}
 
 
 @openai_bp.route('/openai/audio')
@@ -169,19 +239,15 @@ def handle_audio_upload():
                 'Authorization': f'Bearer {api_key}',
                 'Content-Type': 'application/json'
             }
-            resp2 = requests.post(chat_url, headers=headers_chat, json=payload, timeout=120)
-            if resp2.status_code == 200:
-                jr = resp2.json()
-                # Attempt to extract assistant message
-                translated_text = None
+            # Use centralized OpenAI helper with a shorter timeout
+            payload['messages'][1]['content'] = _truncate_context(payload['messages'][1]['content'])
+            jr = _call_openai(payload, api_key, timeout=OPENAI_TRANSCRIBE_TIMEOUT)
+            if jr and not jr.get('error'):
                 choices = jr.get('choices') or []
-                if len(choices):
-                    translated_text = choices[0].get('message', {}).get('content') or choices[0].get('text')
-                if translated_text is None:
-                    translated_text = ''
+                translated_text = choices[0].get('message', {}).get('content') or choices[0].get('text') if choices else ''
             else:
-                current_app.logger.error('OpenAI translation error: %s %s', resp2.status_code, resp2.text)
-                return jsonify({'error': 'Translation failed', 'details': resp2.text}), 500
+                current_app.logger.error('OpenAI translation error: %s', jr)
+                return jsonify({'error': 'Translation failed', 'details': jr}), 500
 
         # Optionally save a DB record if configured (use project's DB util)
         db_saved = False
@@ -392,15 +458,22 @@ def generate_summary_route(work_order_id):
             'Content-Type': 'application/json'
         }
 
-        resp = requests.post(chat_url, headers=headers, json=payload, timeout=120)
-        if resp.status_code != 200:
-            return jsonify({
-                'success': False, 
-                'error': 'AI summary generation failed', 
-                'details': resp.text
-            }), 500
+        # Truncate large contexts
+        for m in messages:
+            if m.get('content'):
+                m['content'] = _truncate_context(m['content'])
 
-        result = resp.json()
+        payload = {
+            'model': OPENAI_FAST_MODEL,
+            'messages': messages,
+            'temperature': 0.3,
+            'max_tokens': 2000
+        }
+
+        result = _call_openai(payload, api_key, timeout=OPENAI_SUMMARY_TIMEOUT)
+        if not result or result.get('error'):
+            return jsonify({'success': False, 'error': 'AI summary generation failed', 'details': result}), 500
+
         choices = result.get('choices', [])
         if not choices:
             return jsonify({'success': False, 'error': 'No summary generated'}), 500
@@ -514,19 +587,26 @@ Réponds de manière concise et précise aux questions de suivi. Base tes répon
             'Content-Type': 'application/json'
         }
         
-        resp = requests.post(chat_url, headers=headers, json=payload, timeout=60)
-        if resp.status_code != 200:
-            return jsonify({
-                'success': False,
-                'error': 'AI chat failed',
-                'details': resp.text
-            }), 500
-        
-        result = resp.json()
+        # Truncate history and question
+        for m in messages:
+            if m.get('content'):
+                m['content'] = _truncate_context(m['content'])
+
+        payload = {
+            'model': OPENAI_FAST_MODEL,
+            'messages': messages,
+            'temperature': 0.4,
+            'max_tokens': 1000
+        }
+
+        result = _call_openai(payload, api_key, timeout=OPENAI_TIMEOUT)
+        if not result or result.get('error'):
+            return jsonify({'success': False, 'error': 'AI chat failed', 'details': result}), 500
+
         choices = result.get('choices', [])
         if not choices:
             return jsonify({'success': False, 'error': 'No response generated'}), 500
-        
+
         response = choices[0].get('message', {}).get('content', '')
         
         return jsonify({
@@ -610,12 +690,13 @@ def generate_ai_summary():
         }
 
         headers = {'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'}
-        resp = requests.post(chat_url, headers=headers, json=payload, timeout=60)
-        if resp.status_code != 200:
-            current_app.logger.error('OpenAI summary error: %s %s', resp.status_code, resp.text)
-            return jsonify({'error': 'Summary generation failed', 'details': resp.text}), 500
+        # Truncate prompt/context and use helper
+        payload['messages'][1]['content'] = _truncate_context(payload['messages'][1]['content'])
+        result = _call_openai(payload, api_key, timeout=OPENAI_TIMEOUT)
+        if not result or result.get('error'):
+            current_app.logger.error('OpenAI summary error: %s', result)
+            return jsonify({'error': 'Summary generation failed', 'details': result}), 500
 
-        result = resp.json()
         choices = result.get('choices', [])
         if not choices:
             return jsonify({'error': 'No summary generated'}), 500
@@ -840,8 +921,11 @@ def get_intelligent_suggestions(work_order_id):
             except Exception:
                 pass
 
+        # Determine language (query param 'lang' or default 'fr')
+        lang = request.args.get('lang') or request.args.get('language') or 'fr'
+
         # Perform web research and generate suggestions
-        suggestions = generate_contextual_suggestions(work_order, recent_notes, api_key)
+        suggestions = generate_contextual_suggestions(work_order, recent_notes, api_key, language=lang)
 
         return jsonify({
             'success': True,
@@ -865,11 +949,13 @@ def search_technical_info():
         query = data.get('query', '').strip()
         vehicle_info = data.get('vehicle_info', {})
         context = data.get('context', '')
-        
+        language = data.get('language', 'fr')
+
         if not query:
             return jsonify({'success': False, 'error': 'Search query is required'}), 400
+
         # Perform targeted web search and analysis
-        search_results = perform_technical_search(query, vehicle_info, context, api_key)
+        search_results = perform_technical_search(query, vehicle_info, context, api_key, language=language)
 
         return jsonify({
             'success': True,
@@ -881,7 +967,7 @@ def search_technical_info():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
-def generate_contextual_suggestions(work_order, recent_notes, api_key):
+def generate_contextual_suggestions(work_order, recent_notes, api_key, language='fr'):
     """Generate intelligent suggestions based on intervention context"""
     
     # Build vehicle context
@@ -900,16 +986,27 @@ def generate_contextual_suggestions(work_order, recent_notes, api_key):
     # Perform web research for common issues
     web_research = research_common_issues(vehicle_context, problem_description, api_key)
     
-    # Generate comprehensive suggestions
-    suggestions = {
-        'diagnostic_steps': generate_diagnostic_suggestions(vehicle_context, problem_description, web_research, api_key),
-        'common_parts': get_common_parts_for_issue(vehicle_context, problem_description, api_key),
-        'repair_procedures': get_repair_procedures(vehicle_context, problem_description, web_research, api_key),
-        'safety_warnings': get_safety_warnings(vehicle_context, problem_description, api_key),
-        'time_estimates': get_time_estimates(vehicle_context, problem_description, api_key),
-        'preventive_maintenance': get_preventive_suggestions(vehicle_context, api_key)
+    # Parallelize specialist calls to reduce wall time
+    tasks = {
+        'diagnostic_steps': (generate_diagnostic_suggestions, (vehicle_context, problem_description, web_research, api_key, language)),
+        'common_parts': (get_common_parts_for_issue, (vehicle_context, problem_description, api_key, language)),
+        'repair_procedures': (get_repair_procedures, (vehicle_context, problem_description, web_research, api_key, language)),
+        'safety_warnings': (get_safety_warnings, (vehicle_context, problem_description, api_key, language)),
+        'time_estimates': (get_time_estimates, (vehicle_context, problem_description, api_key, language)),
+        'preventive_maintenance': (get_preventive_suggestions, (vehicle_context, api_key, language))
     }
-    
+
+    suggestions = {}
+    with ThreadPoolExecutor(max_workers=OPENAI_PARALLEL_THREADS) as exec:
+        futures = {exec.submit(func, *args): name for name, (func, args) in tasks.items()}
+        for fut in as_completed(futures):
+            name = futures[fut]
+            try:
+                suggestions[name] = fut.result()
+            except Exception as e:
+                suggestions[name] = f'Failed to generate {name}: {str(e)}'
+
+    suggestions['web_research'] = web_research
     return suggestions
 
 
@@ -935,42 +1032,33 @@ Generate 3 specific search queries that would help find:
 Return only the search queries, one per line."""
 
     payload = {
-        'model': 'gpt-4o-mini',
+        'model': OPENAI_FAST_MODEL,
         'messages': [
             {'role': 'system', 'content': 'You are an expert automotive technician who knows how to research vehicle problems effectively.'},
-            {'role': 'user', 'content': prompt}
+            {'role': 'user', 'content': _truncate_context(prompt)}
         ],
         'temperature': 0.3,
         'max_tokens': 200
     }
-    
-    headers = {
-        'Authorization': f'Bearer {api_key}',
-        'Content-Type': 'application/json'
-    }
-    
+
+    result = _call_openai(payload, api_key, timeout=30)
+    if not result or result.get('error'):
+        return []
+
+    search_queries = result.get('choices', [])[0].get('message', {}).get('content', '').strip().split('\n')
+    research_results = []
     try:
-        resp = requests.post(chat_url, headers=headers, json=payload, timeout=30)
-        if resp.status_code == 200:
-            result = resp.json()
-            search_queries = result['choices'][0]['message']['content'].strip().split('\n')
-            
-            # Simulate web research results (in production, you'd use actual web search)
-            research_results = []
-            for query in search_queries[:2]:  # Limit to 2 queries for performance
-                research_results.append({
-                    'query': query.strip(),
-                    'findings': f"Research findings for: {query.strip()}"
-                })
-            
-            return research_results
-        else:
-            return []
+        for query in search_queries[:2]:  # Limit to 2 queries for performance
+            research_results.append({
+                'query': query.strip(),
+                'findings': f"Research findings for: {query.strip()}"
+            })
+        return research_results
     except Exception:
         return []
 
 
-def generate_diagnostic_suggestions(vehicle_context, problem_description, web_research, api_key):
+def generate_diagnostic_suggestions(vehicle_context, problem_description, web_research, api_key, language='fr'):
     """Generate step-by-step diagnostic suggestions"""
     
     vehicle_info = f"{vehicle_context['year']} {vehicle_context['make']} {vehicle_context['model']}"
@@ -994,10 +1082,10 @@ Provide a logical diagnostic sequence with:
 
 Format as numbered steps, be specific and practical."""
 
-    return call_openai_for_suggestions(prompt, api_key, 'diagnostic expert')
+    return call_openai_for_suggestions(prompt, api_key, 'diagnostic expert', language=language)
 
 
-def get_common_parts_for_issue(vehicle_context, problem_description, api_key):
+def get_common_parts_for_issue(vehicle_context, problem_description, api_key, language='fr'):
     """Get commonly needed parts for this type of issue"""
     
     vehicle_info = f"{vehicle_context['year']} {vehicle_context['make']} {vehicle_context['model']}"
@@ -1016,10 +1104,10 @@ Provide:
 
 Focus on parts with highest failure rates for this vehicle/problem combination."""
 
-    return call_openai_for_suggestions(prompt, api_key, 'parts specialist')
+    return call_openai_for_suggestions(prompt, api_key, 'parts specialist', language=language)
 
 
-def get_repair_procedures(vehicle_context, problem_description, web_research, api_key):
+def get_repair_procedures(vehicle_context, problem_description, web_research, api_key, language='fr'):
     """Get specific repair procedures and tips"""
     
     vehicle_info = f"{vehicle_context['year']} {vehicle_context['make']} {vehicle_context['model']}"
@@ -1043,10 +1131,10 @@ Include:
 
 Be specific to this vehicle model and year."""
 
-    return call_openai_for_suggestions(prompt, api_key, 'repair specialist')
+    return call_openai_for_suggestions(prompt, api_key, 'repair specialist', language=language)
 
 
-def get_safety_warnings(vehicle_context, problem_description, api_key):
+def get_safety_warnings(vehicle_context, problem_description, api_key, language='fr'):
     """Generate safety warnings specific to this repair"""
     
     vehicle_info = f"{vehicle_context['year']} {vehicle_context['make']} {vehicle_context['model']}"
@@ -1066,10 +1154,10 @@ Provide:
 
 Prioritize by risk level - list most critical first."""
 
-    return call_openai_for_suggestions(prompt, api_key, 'safety expert')
+    return call_openai_for_suggestions(prompt, api_key, 'safety expert', language=language)
 
 
-def get_time_estimates(vehicle_context, problem_description, api_key):
+def get_time_estimates(vehicle_context, problem_description, api_key, language='fr'):
     """Get realistic time estimates for diagnosis and repair"""
     
     vehicle_info = f"{vehicle_context['year']} {vehicle_context['make']} {vehicle_context['model']}"
@@ -1094,10 +1182,10 @@ Consider:
 
 Provide time ranges and factors that could extend work."""
 
-    return call_openai_for_suggestions(prompt, api_key, 'time estimation expert')
+    return call_openai_for_suggestions(prompt, api_key, 'time estimation expert', language=language)
 
 
-def get_preventive_suggestions(vehicle_context, api_key):
+def get_preventive_suggestions(vehicle_context, api_key, language='fr'):
     """Get preventive maintenance suggestions"""
     
     vehicle_info = f"{vehicle_context['year']} {vehicle_context['make']} {vehicle_context['model']}"
@@ -1117,44 +1205,39 @@ Provide:
 
 Focus on items that prevent future breakdowns and maintain reliability."""
 
-    return call_openai_for_suggestions(prompt, api_key, 'maintenance specialist')
+    return call_openai_for_suggestions(prompt, api_key, 'maintenance specialist', language=language)
 
 
-def call_openai_for_suggestions(prompt, api_key, specialist_role):
+def call_openai_for_suggestions(prompt, api_key, specialist_role, language='fr'):
     """Helper function to call OpenAI API for suggestions"""
-    
-    chat_url = f"{OPENAI_API_BASE}/v1/chat/completions"
-    
+    # Ensure responses are returned in the requested language
+    lang_map = {'fr': 'Réponds en français.', 'en': 'Respond in English.', 'es': 'Responde en Español.', 'de': 'Antworte auf Deutsch.'}
+    lang_instruction = lang_map.get(language, f'Respond in {language}.')
+
     payload = {
-        'model': 'gpt-4o-mini',
+        'model': OPENAI_FAST_MODEL,
         'messages': [
             {
                 'role': 'system', 
-                'content': f'You are an expert automotive {specialist_role} with 20+ years of experience. Provide practical, actionable advice.'
+                'content': f'You are an expert automotive {specialist_role} with 20+ years of experience. Provide practical, actionable advice. {lang_instruction}'
             },
-            {'role': 'user', 'content': prompt}
+            {'role': 'user', 'content': _truncate_context(prompt)}
         ],
         'temperature': 0.3,
         'max_tokens': 1000
     }
-    
-    headers = {
-        'Authorization': f'Bearer {api_key}',
-        'Content-Type': 'application/json'
-    }
-    
+
+    result = _call_openai(payload, api_key, timeout=OPENAI_TIMEOUT)
+    if not result or result.get('error'):
+        return f"Error generating {specialist_role} suggestions"
+
     try:
-        resp = requests.post(chat_url, headers=headers, json=payload, timeout=60)
-        if resp.status_code == 200:
-            result = resp.json()
-            return result['choices'][0]['message']['content'].strip()
-        else:
-            return f"Error generating {specialist_role} suggestions"
-    except Exception as e:
-        return f"Failed to generate {specialist_role} suggestions: {str(e)}"
+        return result['choices'][0]['message']['content'].strip()
+    except Exception:
+        return f"Error parsing {specialist_role} response"
 
 
-async def perform_technical_search(query, vehicle_info, context, api_key):
+async def perform_technical_search(query, vehicle_info, context, api_key, language='fr'):
     """Perform targeted technical search with AI analysis"""
     
     # Enhanced query with vehicle context
@@ -1163,6 +1246,9 @@ async def perform_technical_search(query, vehicle_info, context, api_key):
     # Use AI to analyze and provide comprehensive answer
     chat_url = f"{OPENAI_API_BASE}/v1/chat/completions"
     
+    lang_map = {'fr': 'Réponds en français.', 'en': 'Respond in English.', 'es': 'Responde en Español.', 'de': 'Antworte auf Deutsch.'}
+    lang_instruction = lang_map.get(language, f'Respond in {language}.')
+
     prompt = f"""Research and provide comprehensive technical information about:
 
 Search Query: {enhanced_query}
@@ -1178,7 +1264,8 @@ Provide:
 6. Potential complications
 7. Related issues to check
 
-Use your automotive knowledge to provide detailed, practical information."""
+Use your automotive knowledge to provide detailed, practical information.
+{lang_instruction}"""
 
     payload = {
         'model': 'gpt-4o-mini',
@@ -1198,16 +1285,15 @@ Use your automotive knowledge to provide detailed, practical information."""
         'Content-Type': 'application/json'
     }
     
+    result = _call_openai(payload, api_key, timeout=OPENAI_TIMEOUT)
+    if not result or result.get('error'):
+        return {'error': 'Search failed', 'query': enhanced_query}
+
     try:
-        resp = requests.post(chat_url, headers=headers, json=payload, timeout=60)
-        if resp.status_code == 200:
-            result = resp.json()
-            return {
-                'analysis': result['choices'][0]['message']['content'].strip(),
-                'query': enhanced_query,
-                'timestamp': datetime.now().isoformat()
-            }
-        else:
-            return {'error': 'Search failed', 'query': enhanced_query}
+        return {
+            'analysis': result['choices'][0]['message']['content'].strip(),
+            'query': enhanced_query,
+            'timestamp': datetime.now().isoformat()
+        }
     except Exception as e:
         return {'error': str(e), 'query': enhanced_query}
