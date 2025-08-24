@@ -1,0 +1,529 @@
+{# Section finances client (factures, paiements, statistiques) #}
+
+{%- from 'customers/_components/macros.html' import stats_card, loading_skeleton -%}
+
+<div class="tab-pane fade {{ 'show active' if active_tab == 'finances' }}" 
+     id="finances" role="tabpanel" data-section="finances">
+     
+    {# Résumé financier #}
+    <div class="row mb-4">
+        {{ stats_card(
+            title="CA Total",
+            value=((financial_summary.total_revenue or 0)|currency),
+            subtitle="Toutes périodes",
+            icon="fas fa-euro-sign",
+            color_class="success"
+        ) }}
+        
+        {{ stats_card(
+            title="En attente",
+            value=((financial_summary.pending_amount or 0)|currency),
+            subtitle=((financial_summary.pending_count or 0)|string + " factures"),
+            icon="fas fa-clock",
+            color_class="warning"
+        ) }}
+        
+        {{ stats_card(
+            title="En retard",
+            value=((financial_summary.overdue_amount or 0)|currency),
+            subtitle=((financial_summary.overdue_count or 0)|string + " factures"),
+            icon="fas fa-exclamation-triangle",
+            color_class="danger"
+        ) }}
+        
+        {{ stats_card(
+            title="Cette année",
+            value=((financial_summary.this_year_revenue or 0)|currency),
+            subtitle="+" + ((financial_summary.growth_percentage or 0)|round(1))|string + "% vs N-1",
+            icon="fas fa-chart-line",
+            color_class="info"
+        ) }}
+    </div>
+    
+    {# Graphique des revenus #}
+    <div class="clay-card mb-4">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Évolution du chiffre d'affaires</h5>
+                <div class="btn-group" role="group">
+                    <input type="radio" class="btn-check" name="revenueChartPeriod" id="chart6m" value="6m" checked>
+                    <label class="btn btn-outline-primary btn-sm" for="chart6m">6M</label>
+                    
+                    <input type="radio" class="btn-check" name="revenueChartPeriod" id="chart1y" value="1y">
+                    <label class="btn btn-outline-primary btn-sm" for="chart1y">1A</label>
+                    
+                    <input type="radio" class="btn-check" name="revenueChartPeriod" id="chart2y" value="2y">
+                    <label class="btn btn-outline-primary btn-sm" for="chart2y">2A</label>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <canvas id="revenueChart" height="100"></canvas>
+        </div>
+    </div>
+    
+    <div class="row">
+        {# Factures récentes #}
+        <div class="col-md-8">
+            <div class="clay-card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-file-invoice me-2"></i>Factures récentes</h5>
+                        <div class="d-flex gap-2">
+                            <select class="form-select form-select-sm" id="invoiceStatusFilter" onchange="filterInvoices()">
+                                <option value="">Tous les statuts</option>
+                                <option value="draft">Brouillon</option>
+                                <option value="sent">Envoyée</option>
+                                <option value="paid">Payée</option>
+                                <option value="overdue">En retard</option>
+                                <option value="cancelled">Annulée</option>
+                            </select>
+                            <button class="clay-button btn-sm" onclick="createInvoice()">
+                                <i class="fas fa-plus me-2"></i>Nouvelle facture
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div id="invoicesLoading" style="display: none;">
+                        {{ loading_skeleton(type="table") }}
+                    </div>
+                    
+                    <div class="table-responsive" id="invoicesTable">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Numéro</th>
+                                    <th>Date</th>
+                                    <th>Montant</th>
+                                    <th>Statut</th>
+                                    <th>Échéance</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="invoicesTableBody">
+                                {% if invoices %}
+                                    {% for invoice in invoices %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ url_for('invoices.view_invoice', invoice_id=invoice.id) }}" 
+                                               class="text-decoration-none fw-bold">
+                                                {{ invoice.number }}
+                                            </a>
+                                        </td>
+                                        <td>{{ invoice.created_at|datetime_format('short') }}</td>
+                                        <td class="fw-bold">{{ invoice.total_amount|currency }}</td>
+                                        <td>
+                                            <span class="clay-badge {{ invoice.status|invoice_status_badge }}">
+                                                {% if invoice.status == 'draft' %}Brouillon
+                                                {% elif invoice.status == 'sent' %}Envoyée
+                                                {% elif invoice.status == 'paid' %}Payée
+                                                {% elif invoice.status == 'overdue' %}En retard
+                                                {% elif invoice.status == 'cancelled' %}Annulée
+                                                {% else %}{{ invoice.status }}{% endif %}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if invoice.due_date %}
+                                                {{ invoice.due_date|datetime_format('short') }}
+                                                {% if invoice.status != 'paid' and invoice.due_date < moment().date() %}
+                                                    <i class="fas fa-exclamation-triangle text-danger ms-1" title="En retard"></i>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="dropdown">
+                                                <button class="clay-button p-1" data-bs-toggle="dropdown">
+                                                    <i class="fas fa-ellipsis-v"></i>
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li><a class="dropdown-item" href="{{ url_for('invoices.view_invoice', invoice_id=invoice.id) }}">
+                                                        <i class="fas fa-eye me-2"></i>Voir
+                                                    </a></li>
+                                                    {% if invoice.status != 'paid' %}
+                                                    <li><a class="dropdown-item" href="{{ url_for('invoices.edit_invoice', invoice_id=invoice.id) }}">
+                                                        <i class="fas fa-edit me-2"></i>Modifier
+                                                    </a></li>
+                                                    {% endif %}
+                                                    <li><a class="dropdown-item" href="#" onclick="duplicateInvoice({{ invoice.id }})">
+                                                        <i class="fas fa-copy me-2"></i>Dupliquer
+                                                    </a></li>
+                                                    <li><a class="dropdown-item" href="#" onclick="downloadInvoice({{ invoice.id }})">
+                                                        <i class="fas fa-download me-2"></i>Télécharger PDF
+                                                    </a></li>
+                                                    {% if invoice.status == 'draft' %}
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    <li><a class="dropdown-item text-danger" href="#" onclick="deleteInvoice({{ invoice.id }})">
+                                                        <i class="fas fa-trash me-2"></i>Supprimer
+                                                    </a></li>
+                                                    {% endif %}
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="6" class="text-center py-4">
+                                            <i class="fas fa-file-invoice fa-2x text-muted mb-2"></i>
+                                            <p class="text-muted mb-0">Aucune facture trouvée</p>
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    {# Pagination pour les factures #}
+                    <div class="card-footer" id="invoicesPagination">
+                        {% if invoices and invoices|length >= 10 %}
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                Affichage de {{ invoices|length }} factures
+                            </small>
+                            <button class="clay-button btn-sm" onclick="loadMoreInvoices()">
+                                <i class="fas fa-plus me-2"></i>Charger plus
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {# Paiements récents #}
+        <div class="col-md-4">
+            <div class="clay-card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-credit-card me-2"></i>Paiements récents</h5>
+                </div>
+                <div class="card-body">
+                    {% if payments %}
+                        {% for payment in payments %}
+                        <div class="d-flex align-items-center mb-3 pb-3 border-bottom">
+                            <div class="flex-shrink-0 me-3">
+                                <div class="avatar-sm bg-success rounded-circle d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-check text-white"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">{{ payment.amount|currency }}</div>
+                                <small class="text-muted">
+                                    {{ payment.payment_method }}
+                                    {% if payment.reference %}• {{ payment.reference }}{% endif %}
+                                </small>
+                                <div class="small text-muted">
+                                    {{ payment.created_at|datetime_format('relative') }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        
+                        <div class="text-center">
+                            <a href="{{ url_for('payments.customer_payments', customer_id=customer.id) }}" 
+                               class="clay-button btn-sm w-100">
+                                Voir tous les paiements
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-credit-card fa-2x text-muted mb-2"></i>
+                            <p class="text-muted mb-0">Aucun paiement</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {# Actions rapides #}
+            <div class="clay-card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-bolt me-2"></i>Actions rapides</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="clay-button" onclick="createInvoice()">
+                            <i class="fas fa-plus me-2"></i>Créer facture
+                        </button>
+                        <button class="clay-button" onclick="recordPayment()">
+                            <i class="fas fa-money-bill me-2"></i>Enregistrer paiement
+                        </button>
+                        <button class="clay-button" onclick="generateStatement()">
+                            <i class="fas fa-file-alt me-2"></i>Relevé de compte
+                        </button>
+                        <button class="clay-button" onclick="sendReminder()">
+                            <i class="fas fa-bell me-2"></i>Relance client
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Variables pour la gestion des finances
+let revenueChart = null;
+let invoicesPage = 1;
+let invoicesLoading = false;
+
+// Initialisation du graphique des revenus
+function initRevenueChart() {
+    const ctx = document.getElementById('revenueChart').getContext('2d');
+    
+    revenueChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Chiffre d\'affaires',
+                data: [],
+                borderColor: 'var(--primary-color)',
+                backgroundColor: 'var(--primary-color-alpha)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return formatCurrency(value);
+                        }
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'CA: ' + formatCurrency(context.parsed.y);
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    // Charger les données initiales
+    loadRevenueData('6m');
+}
+
+// Charger les données de revenus
+function loadRevenueData(period) {
+    fetch(`/api/customers/${customerId}/revenue-chart?period=${period}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                revenueChart.data.labels = data.labels;
+                revenueChart.data.datasets[0].data = data.values;
+                revenueChart.update();
+            }
+        })
+        .catch(error => {
+            console.error('Erreur lors du chargement des données de revenus:', error);
+        });
+}
+
+// Filtrer les factures
+function filterInvoices() {
+    const status = document.getElementById('invoiceStatusFilter').value;
+    
+    document.getElementById('invoicesLoading').style.display = 'block';
+    document.getElementById('invoicesTable').style.display = 'none';
+    
+    fetch(`/api/customers/${customerId}/invoices?status=${status}&page=1`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const tbody = document.getElementById('invoicesTableBody');
+                tbody.innerHTML = '';
+                
+                if (data.invoices.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="text-center py-4">
+                                <i class="fas fa-search fa-2x text-muted mb-2"></i>
+                                <p class="text-muted mb-0">Aucune facture trouvée</p>
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    data.invoices.forEach(invoice => {
+                        tbody.insertAdjacentHTML('beforeend', renderInvoiceRow(invoice));
+                    });
+                }
+                
+                // Reset pagination
+                invoicesPage = 1;
+            }
+        })
+        .catch(error => {
+            console.error('Erreur lors du filtrage des factures:', error);
+            showToast('Erreur lors du filtrage', 'error');
+        })
+        .finally(() => {
+            document.getElementById('invoicesLoading').style.display = 'none';
+            document.getElementById('invoicesTable').style.display = 'block';
+        });
+}
+
+// Charger plus de factures
+function loadMoreInvoices() {
+    if (invoicesLoading) return;
+    
+    invoicesLoading = true;
+    invoicesPage++;
+    
+    const status = document.getElementById('invoiceStatusFilter').value;
+    
+    fetch(`/api/customers/${customerId}/invoices?status=${status}&page=${invoicesPage}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.invoices.length > 0) {
+                const tbody = document.getElementById('invoicesTableBody');
+                data.invoices.forEach(invoice => {
+                    tbody.insertAdjacentHTML('beforeend', renderInvoiceRow(invoice));
+                });
+                
+                // Masquer le bouton si plus de données
+                if (!data.has_more) {
+                    document.getElementById('invoicesPagination').style.display = 'none';
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Erreur lors du chargement des factures:', error);
+            invoicesPage--; // Revert on error
+        })
+        .finally(() => {
+            invoicesLoading = false;
+        });
+}
+
+// Rendre une ligne de facture
+function renderInvoiceRow(invoice) {
+    const statusBadges = {
+        'draft': 'bg-secondary',
+        'sent': 'bg-info',
+        'paid': 'bg-success',
+        'overdue': 'bg-danger',
+        'cancelled': 'bg-dark'
+    };
+    
+    const statusLabels = {
+        'draft': 'Brouillon',
+        'sent': 'Envoyée',
+        'paid': 'Payée',
+        'overdue': 'En retard',
+        'cancelled': 'Annulée'
+    };
+    
+    return `
+        <tr>
+            <td>
+                <a href="/invoices/${invoice.id}" class="text-decoration-none fw-bold">
+                    ${invoice.number}
+                </a>
+            </td>
+            <td>${formatDate(invoice.created_at)}</td>
+            <td class="fw-bold">${formatCurrency(invoice.total_amount)}</td>
+            <td>
+                <span class="clay-badge ${statusBadges[invoice.status] || 'bg-secondary'}">
+                    ${statusLabels[invoice.status] || invoice.status}
+                </span>
+            </td>
+            <td>
+                ${invoice.due_date ? formatDate(invoice.due_date) : '<span class="text-muted">-</span>'}
+                ${invoice.status !== 'paid' && invoice.due_date && new Date(invoice.due_date) < new Date() ? 
+                  '<i class="fas fa-exclamation-triangle text-danger ms-1" title="En retard"></i>' : ''}
+            </td>
+            <td>
+                <div class="dropdown">
+                    <button class="clay-button p-1" data-bs-toggle="dropdown">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="/invoices/${invoice.id}">
+                            <i class="fas fa-eye me-2"></i>Voir
+                        </a></li>
+                        <li><a class="dropdown-item" href="#" onclick="duplicateInvoice(${invoice.id})">
+                            <i class="fas fa-copy me-2"></i>Dupliquer
+                        </a></li>
+                        <li><a class="dropdown-item" href="#" onclick="downloadInvoice(${invoice.id})">
+                            <i class="fas fa-download me-2"></i>Télécharger PDF
+                        </a></li>
+                    </ul>
+                </div>
+            </td>
+        </tr>
+    `;
+}
+
+// Actions rapides
+function createInvoice() {
+    window.location.href = `/invoices/new?customer_id=${customerId}`;
+}
+
+function recordPayment() {
+    // Ouvrir modal pour enregistrer un paiement
+    showPaymentModal(customerId);
+}
+
+function generateStatement() {
+    window.open(`/api/customers/${customerId}/statement`, '_blank');
+}
+
+function sendReminder() {
+    // Logique pour envoyer une relance
+    showReminderModal(customerId);
+}
+
+function duplicateInvoice(invoiceId) {
+    if (confirm('Voulez-vous dupliquer cette facture ?')) {
+        fetch(`/api/invoices/${invoiceId}/duplicate`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Facture dupliquée avec succès', 'success');
+                window.location.href = `/invoices/${data.invoice_id}/edit`;
+            } else {
+                showToast('Erreur lors de la duplication', 'error');
+            }
+        });
+    }
+}
+
+function downloadInvoice(invoiceId) {
+    window.open(`/api/invoices/${invoiceId}/pdf`, '_blank');
+}
+
+// Écouter les changements de période du graphique
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialiser le graphique
+    initRevenueChart();
+    
+    // Écouter les changements de période
+    document.querySelectorAll('input[name="revenueChartPeriod"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.checked) {
+                loadRevenueData(this.value);
+            }
+        });
+    });
+    
+    // Écouter l'activation de l'onglet
+    document.getElementById('finances-tab').addEventListener('shown.bs.tab', function() {
+        if (revenueChart) {
+            revenueChart.resize();
+        }
+    });
+});
+</script>

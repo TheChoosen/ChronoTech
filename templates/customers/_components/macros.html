@@ -1,0 +1,297 @@
+{# Macros réutilisables pour Customer 360 #}
+
+{# Carte d'informations client #}
+{% macro customer_info_card(customer, show_actions=true) %}
+<div class="clay-card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Informations Client</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3 text-center">
+                {% if customer.avatar %}
+                <img src="{{ url_for('static', filename='uploads/avatars/' + customer.avatar) }}" 
+                     alt="{{ customer.name }}" class="avatar-clay mb-3" width="120" height="120">
+                {% else %}
+                <div class="avatar-clay d-flex align-items-center justify-content-center mb-3 mx-auto" 
+                     style="width: 120px; height: 120px; background: linear-gradient(135deg, var(--primary-color), #4c51bf); color: white; font-weight: 600; font-size: 2rem;">
+                    {{ customer.name[:1].upper() if customer.name else 'C' }}
+                </div>
+                {% endif %}
+                
+                {% if show_actions %}
+                <div class="d-flex gap-2 justify-content-center">
+                    <a href="{{ url_for('customers.edit_customer', customer_id=customer.id) }}" 
+                       class="clay-button p-2" title="Modifier">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <button class="clay-button p-2" onclick="generateQuote()" title="Générer devis">
+                        <i class="fas fa-file-invoice"></i>
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+            <div class="col-md-9">
+                <h3 class="mb-3" style="color: var(--text-color);">{{ customer.name }}</h3>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <strong>Type :</strong>
+                            <span class="clay-badge {{ customer.customer_type|customer_type_badge }} ms-2">
+                                {% if customer.customer_type == 'individual' %}Particulier
+                                {% elif customer.customer_type == 'company' %}Entreprise
+                                {% elif customer.customer_type == 'government' %}Administration
+                                {% else %}{{ customer.customer_type }}{% endif %}
+                            </span>
+                        </div>
+                        
+                        {% if customer.email %}
+                        <div class="mb-2">
+                            <i class="fas fa-envelope me-2" style="color: var(--primary-color);"></i>
+                            <a href="mailto:{{ customer.email }}" class="text-decoration-none">{{ customer.email }}</a>
+                        </div>
+                        {% endif %}
+                        
+                        {% if customer.phone %}
+                        <div class="mb-2">
+                            <i class="fas fa-phone me-2" style="color: var(--success-color);"></i>
+                            <a href="tel:{{ customer.phone }}" class="text-decoration-none">{{ customer.phone }}</a>
+                        </div>
+                        {% endif %}
+                        
+                        {% if customer.company %}
+                        <div class="mb-2">
+                            <i class="fas fa-building me-2" style="color: var(--warning-color);"></i>
+                            {{ customer.company }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        {% if customer.address %}
+                        <div class="mb-2">
+                            <i class="fas fa-map-marker-alt me-2" style="color: var(--info-color);"></i>
+                            {{ customer.address }}
+                            {% if customer.city %}<br>{{ customer.postal_code }} {{ customer.city }}{% endif %}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="mb-2">
+                            <i class="fas fa-calendar me-2" style="color: var(--secondary-color);"></i>
+                            Client depuis {{ customer.created_at|datetime_format('short') }}
+                        </div>
+                        
+                        <div class="mb-2">
+                            <i class="fas fa-{{ 'check-circle' if customer.is_active else 'times-circle' }} me-2" 
+                               style="color: {{ 'var(--success-color)' if customer.is_active else 'var(--danger-color)' }};"></i>
+                            {{ 'Actif' if customer.is_active else 'Inactif' }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{# Carte de statistiques #}
+{% macro stats_card(title, value, subtitle, icon, color_class="primary") %}
+<div class="col-md-3 mb-4">
+    <div class="stat-card clay-element p-4 text-center h-100">
+        <div class="stat-icon bg-{{ color_class }} mx-auto mb-3" style="width: 60px; height: 60px;">
+            <i class="{{ icon }} fa-2x"></i>
+        </div>
+        <h3 class="mb-1" style="color: var(--{{ color_class }}-color);">{{ value }}</h3>
+        <h6 class="mb-1" style="color: var(--text-color);">{{ title }}</h6>
+        {% if subtitle %}
+        <small class="text-muted">{{ subtitle }}</small>
+        {% endif %}
+    </div>
+</div>
+{% endmacro %}
+
+{# Timeline item #}
+{% macro timeline_item(activity) %}
+<div class="timeline-item border-left border-3 ps-3 pb-3 mb-3" 
+     style="border-color: var(--primary-color) !important;">
+    <div class="d-flex align-items-start">
+        <div class="flex-shrink-0 me-3">
+            <div class="avatar-sm bg-primary rounded-circle d-flex align-items-center justify-content-center">
+                {% if activity.activity_type == 'workorder' %}
+                    <i class="fas fa-wrench text-white"></i>
+                {% elif activity.activity_type == 'invoice' %}
+                    <i class="fas fa-file-invoice text-white"></i>
+                {% elif activity.activity_type == 'payment' %}
+                    <i class="fas fa-credit-card text-white"></i>
+                {% elif activity.activity_type == 'document' %}
+                    <i class="fas fa-file-alt text-white"></i>
+                {% else %}
+                    <i class="fas fa-circle text-white"></i>
+                {% endif %}
+            </div>
+        </div>
+        <div class="flex-grow-1">
+            <h6 class="mb-1" style="color: var(--text-color);">{{ activity.title }}</h6>
+            {% if activity.description %}
+            <p class="text-muted mb-2">{{ activity.description }}</p>
+            {% endif %}
+            
+            {% if activity.reference_data %}
+            <div class="clay-element p-2 mb-2" style="background: var(--bg-light);">
+                <small>{{ activity.reference_data }}</small>
+            </div>
+            {% endif %}
+            
+            <small class="text-muted">
+                <i class="fas fa-clock me-1"></i>
+                {{ activity.created_at|datetime_format('relative') }}
+                {% if activity.actor_name %}
+                • par {{ activity.actor_name }}
+                {% endif %}
+            </small>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{# Carte de document #}
+{% macro document_card(document) %}
+<div class="col-md-4 mb-3">
+    <div class="clay-card h-100">
+        <div class="card-body p-3">
+            <div class="d-flex align-items-start mb-2">
+                <div class="me-2">
+                    {% set file_ext = document.filename.split('.')[-1].lower() %}
+                    {% if file_ext == 'pdf' %}
+                        <i class="fas fa-file-pdf text-danger fa-2x"></i>
+                    {% elif file_ext in ['jpg', 'jpeg', 'png', 'gif'] %}
+                        <i class="fas fa-file-image text-info fa-2x"></i>
+                    {% elif file_ext in ['doc', 'docx'] %}
+                        <i class="fas fa-file-word text-primary fa-2x"></i>
+                    {% elif file_ext in ['xls', 'xlsx'] %}
+                        <i class="fas fa-file-excel text-success fa-2x"></i>
+                    {% else %}
+                        <i class="fas fa-file text-secondary fa-2x"></i>
+                    {% endif %}
+                </div>
+                <div class="flex-grow-1">
+                    <h6 class="mb-1">{{ document.title }}</h6>
+                    <small class="text-muted">{{ document.filename }}</small>
+                </div>
+                <div class="dropdown">
+                    <button class="clay-button p-1" data-bs-toggle="dropdown">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" onclick="previewDocument({{ document.id }})">
+                            <i class="fas fa-eye me-2"></i>Prévisualiser
+                        </a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('static', filename='uploads/documents/' + document.filename) }}" download>
+                            <i class="fas fa-download me-2"></i>Télécharger
+                        </a></li>
+                        {% if not document.is_signed %}
+                        <li><a class="dropdown-item" href="#" onclick="signDocument({{ document.id }})">
+                            <i class="fas fa-signature me-2"></i>Signer
+                        </a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">{{ (document.file_size / 1024)|round(1) }} KB</small>
+                {% if document.is_signed %}
+                <span class="clay-badge" style="background: var(--success-color); color: white;">
+                    <i class="fas fa-check me-1"></i>Signé
+                </span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{# Section de chargement (skeleton) #}
+{% macro loading_skeleton(type="card") %}
+{% if type == "card" %}
+<div class="clay-element p-4 mb-4">
+    <div class="d-flex align-items-center mb-3">
+        <div class="skeleton-avatar me-3"></div>
+        <div class="flex-grow-1">
+            <div class="skeleton-line mb-2" style="width: 60%;"></div>
+            <div class="skeleton-line" style="width: 40%;"></div>
+        </div>
+    </div>
+    <div class="skeleton-line mb-2"></div>
+    <div class="skeleton-line mb-2"></div>
+    <div class="skeleton-line" style="width: 70%;"></div>
+</div>
+{% elif type == "table" %}
+<div class="clay-element p-0">
+    <div class="table-responsive">
+        <table class="table mb-0">
+            <tbody>
+                {% for i in range(5) %}
+                <tr>
+                    <td><div class="skeleton-line"></div></td>
+                    <td><div class="skeleton-line"></div></td>
+                    <td><div class="skeleton-line"></div></td>
+                    <td><div class="skeleton-line"></div></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endmacro %}
+
+{# Onglets navigation Customer 360 #}
+{% macro customer_360_tabs(customer_id, active_tab="profile") %}
+<div class="nav-tabs-wrapper mb-4">
+    <ul class="nav nav-tabs clay-nav-tabs" id="customer360Tabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link clay-nav {{ 'active' if active_tab == 'profile' }}" 
+                    id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" 
+                    type="button" role="tab" data-section="profile">
+                <i class="fas fa-user me-2"></i>Profil
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link clay-nav {{ 'active' if active_tab == 'activity' }}" 
+                    id="activity-tab" data-bs-toggle="tab" data-bs-target="#activity" 
+                    type="button" role="tab" data-section="activity">
+                <i class="fas fa-history me-2"></i>Activité
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link clay-nav {{ 'active' if active_tab == 'finances' }}" 
+                    id="finances-tab" data-bs-toggle="tab" data-bs-target="#finances" 
+                    type="button" role="tab" data-section="finances">
+                <i class="fas fa-euro-sign me-2"></i>Finances
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link clay-nav {{ 'active' if active_tab == 'documents' }}" 
+                    id="documents-tab" data-bs-toggle="tab" data-bs-target="#documents" 
+                    type="button" role="tab" data-section="documents">
+                <i class="fas fa-file-alt me-2"></i>Documents
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link clay-nav {{ 'active' if active_tab == 'analytics' }}" 
+                    id="analytics-tab" data-bs-toggle="tab" data-bs-target="#analytics" 
+                    type="button" role="tab" data-section="analytics">
+                <i class="fas fa-chart-pie me-2"></i>Analytics
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link clay-nav {{ 'active' if active_tab == 'consents' }}" 
+                    id="consents-tab" data-bs-toggle="tab" data-bs-target="#consents" 
+                    type="button" role="tab" data-section="consents">
+                <i class="fas fa-shield-alt me-2"></i>RGPD
+            </button>
+        </li>
+    </ul>
+</div>
+{% endmacro %}

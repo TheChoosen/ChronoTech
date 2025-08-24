@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Timeline - {{ customer.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header avec retour -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-timeline"></i> Timeline - {{ customer.name }}</h2>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{{ url_for('customers.index') }}">Clients</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('customers.view_customer', customer_id=customer_id) }}">{{ customer.name }}</a></li>
+                            <li class="breadcrumb-item active">Timeline</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div>
+                    <a href="{{ url_for('customers.view_customer', customer_id=customer_id) }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Retour
+                    </a>
+                    <a href="{{ url_for('customers.customer_360', customer_id=customer_id) }}" class="btn btn-primary">
+                        <i class="fas fa-user-circle"></i> Vue 360
+                    </a>
+                </div>
+            </div>
+
+            <!-- Filtres -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form id="timeline-filters" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="activity_type" class="form-label">Type d'activité</label>
+                            <select id="activity_type" name="type" class="form-select">
+                                <option value="">Toutes les activités</option>
+                                <option value="workorder">Bons de travail</option>
+                                <option value="invoice">Factures</option>
+                                <option value="payment">Paiements</option>
+                                <option value="quote">Devis</option>
+                                <option value="email">Emails</option>
+                                <option value="sms">SMS</option>
+                                <option value="call">Appels</option>
+                                <option value="document">Documents</option>
+                                <option value="appointment">Rendez-vous</option>
+                                <option value="note">Notes</option>
+                                <option value="consent">Consentements</option>
+                                <option value="system">Système</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="date_from" class="form-label">Depuis</label>
+                            <input type="date" id="date_from" name="date_from" class="form-control">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="date_to" class="form-label">Jusqu'à</label>
+                            <input type="date" id="date_to" name="date_to" class="form-control">
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Timeline -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-history"></i> Activités récentes
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="timeline-container">
+                        {% include 'customers/_timeline_items.html' %}
+                    </div>
+                    
+                    <!-- Pagination -->
+                    {% if pagination.pages > 1 %}
+                    <nav aria-label="Timeline pagination" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if pagination.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="#" data-page="{{ pagination.prev_num }}">Précédent</a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for page_num in pagination.iter_pages() %}
+                                {% if page_num %}
+                                    {% if page_num != pagination.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="#" data-page="{{ page_num }}">{{ page_num }}</a>
+                                    </li>
+                                    {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                    {% endif %}
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if pagination.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="#" data-page="{{ pagination.next_num }}">Suivant</a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    // Filtrage en temps réel
+    $('#timeline-filters select, #timeline-filters input').on('change', function() {
+        loadTimeline(1);
+    });
+    
+    // Pagination
+    $(document).on('click', '.page-link[data-page]', function(e) {
+        e.preventDefault();
+        var page = $(this).data('page');
+        loadTimeline(page);
+    });
+    
+    function loadTimeline(page) {
+        var params = {
+            page: page || 1,
+            type: $('#activity_type').val(),
+            date_from: $('#date_from').val(),
+            date_to: $('#date_to').val()
+        };
+        
+        $.ajax({
+            url: '{{ url_for("customers.customer_timeline", customer_id=customer_id) }}',
+            method: 'GET',
+            data: params,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(response) {
+                if (response.success) {
+                    // Update timeline content
+                    var timelineHtml = '';
+                    response.activities.forEach(function(activity) {
+                        timelineHtml += renderTimelineItem(activity);
+                    });
+                    $('#timeline-container').html(timelineHtml);
+                    
+                    // Update pagination
+                    updatePagination(response.pagination);
+                } else {
+                    showAlert('error', response.message || 'Erreur lors du chargement');
+                }
+            },
+            error: function() {
+                showAlert('error', 'Erreur de communication avec le serveur');
+            }
+        });
+    }
+    
+    function renderTimelineItem(activity) {
+        var iconClass = getActivityIcon(activity.activity_type);
+        var date = new Date(activity.created_at).toLocaleString('fr-CA');
+        var actor = activity.actor_name || 'Système';
+        
+        return `
+            <div class="timeline-item border-left border-3 border-primary ps-3 pb-3 mb-3">
+                <div class="d-flex align-items-start">
+                    <div class="flex-shrink-0 me-3">
+                        <div class="avatar-sm bg-primary rounded-circle d-flex align-items-center justify-content-center">
+                            <i class="${iconClass} text-white"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">${activity.title}</h6>
+                        ${activity.description ? `<p class="text-muted mb-2">${activity.description}</p>` : ''}
+                        <small class="text-muted">
+                            <i class="fas fa-clock"></i> ${date} 
+                            <span class="mx-2">•</span>
+                            <i class="fas fa-user"></i> ${actor}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    function getActivityIcon(type) {
+        var icons = {
+            'workorder': 'fas fa-wrench',
+            'invoice': 'fas fa-file-invoice',
+            'payment': 'fas fa-credit-card',
+            'quote': 'fas fa-file-alt',
+            'email': 'fas fa-envelope',
+            'sms': 'fas fa-sms',
+            'call': 'fas fa-phone',
+            'document': 'fas fa-file',
+            'appointment': 'fas fa-calendar',
+            'note': 'fas fa-sticky-note',
+            'consent': 'fas fa-shield-alt',
+            'system': 'fas fa-cog'
+        };
+        return icons[type] || 'fas fa-circle';
+    }
+    
+    function updatePagination(pagination) {
+        // Implementation simplified for demo
+        // In production, rebuild the pagination HTML
+    }
+    
+    function showAlert(type, message) {
+        var alertClass = type === 'error' ? 'alert-danger' : 'alert-success';
+        var alert = `<div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>`;
+        $('#timeline-container').prepend(alert);
+    }
+});
+</script>
+{% endblock %}

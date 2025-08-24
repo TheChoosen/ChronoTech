@@ -1,0 +1,558 @@
+{% extends "base.html" %}
+
+{% block title %}Documents - {{ customer.name }} - ChronoTech{% endblock %}
+
+{% block head %}
+<style>
+    .document-card {
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        transition: box-shadow 0.2s;
+    }
+    .document-card:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .document-icon {
+        font-size: 2rem;
+        margin-right: 1rem;
+    }
+    .doc-pdf { color: #dc3545; }
+    .doc-image { color: #20c997; }
+    .doc-word { color: #0d6efd; }
+    .doc-excel { color: #198754; }
+    .doc-other { color: #6c757d; }
+    .document-meta {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    .signature-badge {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        background: #28a745;
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+    }
+    .confidential-badge {
+        background: #dc3545;
+        color: white;
+        padding: 0.125rem 0.375rem;
+        border-radius: 0.25rem;
+        font-size: 0.7rem;
+        margin-left: 0.5rem;
+    }
+    .upload-zone {
+        border: 2px dashed #dee2e6;
+        border-radius: 0.375rem;
+        padding: 2rem;
+        text-align: center;
+        background: #f8f9fa;
+        transition: border-color 0.2s;
+        cursor: pointer;
+    }
+    .upload-zone:hover, .upload-zone.dragover {
+        border-color: #007bff;
+        background: #f0f8ff;
+    }
+    .type-filter {
+        display: inline-block;
+        margin: 0.25rem;
+        padding: 0.375rem 0.75rem;
+        border: 1px solid #dee2e6;
+        border-radius: 1rem;
+        background: white;
+        color: #495057;
+        text-decoration: none;
+        font-size: 0.875rem;
+        transition: all 0.2s;
+    }
+    .type-filter.active, .type-filter:hover {
+        background: #007bff;
+        color: white;
+        border-color: #007bff;
+        text-decoration: none;
+    }
+    .preview-modal .modal-dialog {
+        max-width: 90%;
+    }
+    .preview-content {
+        max-height: 70vh;
+        overflow: auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête avec navigation -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-file-alt me-2"></i>Documents - {{ customer.name }}</h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('customers.index') }}">Clients</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('customers.view_customer', customer_id=customer.id) }}">{{ customer.name }}</a></li>
+                    <li class="breadcrumb-item active">Documents</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <a href="{{ url_for('customers.customer_360', customer_id=customer.id) }}" class="btn btn-outline-primary">
+                <i class="fas fa-eye me-1"></i>Client 360
+            </a>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                <i class="fas fa-upload me-1"></i>Téléverser
+            </button>
+        </div>
+    </div>
+
+    <!-- Statistiques des documents -->
+    {% if type_counts %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">Types de documents</h6>
+                    <div class="d-flex flex-wrap">
+                        <a href="?type=" class="type-filter {% if not selected_type %}active{% endif %}">
+                            Tous ({{ documents|length }})
+                        </a>
+                        {% for type_count in type_counts %}
+                        <a href="?type={{ type_count.document_type }}" class="type-filter {% if selected_type == type_count.document_type %}active{% endif %}">
+                            {{ type_count.document_type|replace('_', ' ')|title }} ({{ type_count.count }})
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Liste des documents -->
+    <div class="row">
+        {% if documents %}
+            {% for document in documents %}
+            <div class="col-md-6 col-lg-4">
+                <div class="document-card position-relative">
+                    {% if document.is_signed %}
+                    <span class="signature-badge">
+                        <i class="fas fa-check-circle me-1"></i>Signé
+                    </span>
+                    {% endif %}
+                    
+                    <div class="d-flex align-items-start">
+                        <div class="document-icon">
+                            {% set file_ext = document.filename.split('.')[-1].lower() %}
+                            {% if file_ext in ['pdf'] %}
+                                <i class="fas fa-file-pdf doc-pdf"></i>
+                            {% elif file_ext in ['jpg', 'jpeg', 'png', 'gif'] %}
+                                <i class="fas fa-file-image doc-image"></i>
+                            {% elif file_ext in ['doc', 'docx'] %}
+                                <i class="fas fa-file-word doc-word"></i>
+                            {% elif file_ext in ['xls', 'xlsx'] %}
+                                <i class="fas fa-file-excel doc-excel"></i>
+                            {% else %}
+                                <i class="fas fa-file doc-other"></i>
+                            {% endif %}
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">
+                                {{ document.title }}
+                                {% if document.is_confidential %}
+                                <span class="confidential-badge">Confidentiel</span>
+                                {% endif %}
+                            </h6>
+                            <div class="document-meta">
+                                <div><strong>Type:</strong> {{ document.document_type|replace('_', ' ')|title }}</div>
+                                {% if document.category %}
+                                <div><strong>Catégorie:</strong> {{ document.category }}</div>
+                                {% endif %}
+                                <div><strong>Fichier:</strong> {{ document.filename }}</div>
+                                <div><strong>Taille:</strong> {{ (document.file_size / 1024)|round(1) }} KB</div>
+                                <div><strong>Ajouté:</strong> {{ document.created_at.strftime('%d/%m/%Y %H:%M') }}</div>
+                                {% if document.created_by_name %}
+                                <div><strong>Par:</strong> {{ document.created_by_name }}</div>
+                                {% endif %}
+                                {% if document.is_signed %}
+                                <div><strong>Signé:</strong> {{ document.signed_at.strftime('%d/%m/%Y %H:%M') }}</div>
+                                {% if document.signed_by %}
+                                <div><strong>Signataire:</strong> {{ document.signed_by }}</div>
+                                {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="mt-3 d-flex justify-content-between">
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="previewDocument({{ document.id }})">
+                                <i class="fas fa-eye"></i> Aperçu
+                            </button>
+                            <a href="{{ url_for('customers.view_document', document_id=document.id) }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-download"></i> Télécharger
+                            </a>
+                        </div>
+                        <div class="btn-group" role="group">
+                            {% if not document.is_signed %}
+                            <button type="button" class="btn btn-sm btn-outline-success" onclick="signDocument({{ document.id }})">
+                                <i class="fas fa-signature"></i> Signer
+                            </button>
+                            {% endif %}
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteDocument({{ document.id }})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <i class="fas fa-file-alt fa-4x text-muted mb-3"></i>
+                    <h5 class="text-muted">Aucun document trouvé</h5>
+                    <p class="text-muted">Commencez par téléverser des documents pour ce client.</p>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                        <i class="fas fa-upload me-1"></i>Téléverser un document
+                    </button>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Pagination -->
+    {% if pagination and pagination.pages > 1 %}
+    <nav aria-label="Document pagination" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if pagination.has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ pagination.prev_num }}{% if selected_type %}&type={{ selected_type }}{% endif %}">Précédent</a>
+            </li>
+            {% endif %}
+            
+            {% for page_num in pagination.iter_pages() %}
+                {% if page_num %}
+                    {% if page_num != pagination.page %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_num }}{% if selected_type %}&type={{ selected_type }}{% endif %}">{{ page_num }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ page_num }}</span>
+                    </li>
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+            
+            {% if pagination.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ pagination.next_num }}{% if selected_type %}&type={{ selected_type }}{% endif %}">Suivant</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<!-- Modal Upload Document -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Téléverser un document</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <!-- Zone de drop -->
+                    <div class="upload-zone" id="uploadZone">
+                        <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-2"></i>
+                        <p class="mb-2">Glissez vos fichiers ici ou <strong>cliquez pour sélectionner</strong></p>
+                        <p class="text-muted small">Formats supportés: PDF, images, Word, Excel (max 50MB)</p>
+                        <input type="file" id="fileInput" name="file" class="d-none" multiple>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="document_type" class="form-label">Type de document *</label>
+                                <select class="form-select" id="document_type" name="document_type" required>
+                                    <option value="">Sélectionner...</option>
+                                    <option value="contract">Contrat</option>
+                                    <option value="fi_agreement">Accord F&I</option>
+                                    <option value="service_agreement">Accord de service</option>
+                                    <option value="invoice">Facture</option>
+                                    <option value="receipt">Reçu</option>
+                                    <option value="id_proof">Pièce d'identité</option>
+                                    <option value="insurance">Assurance</option>
+                                    <option value="warranty">Garantie</option>
+                                    <option value="delivery_proof">Preuve de livraison</option>
+                                    <option value="signature">Signature</option>
+                                    <option value="photo">Photo</option>
+                                    <option value="other">Autre</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="category" class="form-label">Catégorie</label>
+                                <input type="text" class="form-control" id="category" name="category"
+                                       placeholder="ex: contrat_vente, garantie_prolongee">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="title" class="form-label">Titre du document</label>
+                                <input type="text" class="form-control" id="title" name="title"
+                                       placeholder="Sera généré automatiquement si vide">
+                            </div>
+                            <div class="mb-3">
+                                <label for="access_level" class="form-label">Niveau d'accès</label>
+                                <select class="form-select" id="access_level" name="access_level">
+                                    <option value="staff">Personnel uniquement</option>
+                                    <option value="customer">Client et personnel</option>
+                                    <option value="admin">Administrateurs uniquement</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="is_confidential" name="is_confidential">
+                            <label class="form-check-label" for="is_confidential">
+                                Document confidentiel
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress bar -->
+                    <div class="progress d-none" id="uploadProgress">
+                        <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary" id="uploadBtn">
+                        <i class="fas fa-upload me-1"></i>Téléverser
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Preview Document -->
+<div class="modal fade preview-modal" id="previewModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="previewTitle">Aperçu du document</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body preview-content" id="previewContent">
+                <!-- Le contenu sera chargé ici -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                <button type="button" class="btn btn-primary" id="downloadFromPreview">
+                    <i class="fas fa-download me-1"></i>Télécharger
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Signature -->
+<div class="modal fade" id="signatureModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Signer le document</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="signatureForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="signed_by" class="form-label">Nom du signataire *</label>
+                        <input type="text" class="form-control" id="signed_by" name="signed_by" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="signature_provider" class="form-label">Fournisseur de signature</label>
+                        <select class="form-select" id="signature_provider" name="signature_provider">
+                            <option value="internal">Interne</option>
+                            <option value="docusign">DocuSign</option>
+                            <option value="adobe">Adobe Sign</option>
+                            <option value="other">Autre</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="signature_reference" class="form-label">Référence de signature</label>
+                        <input type="text" class="form-control" id="signature_reference" name="signature_reference"
+                               placeholder="Référence externe (optionnel)">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <input type="hidden" id="document_to_sign" name="document_id">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-signature me-1"></i>Confirmer signature
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentDocumentId = null;
+
+// Upload zone drag and drop
+const uploadZone = document.getElementById('uploadZone');
+const fileInput = document.getElementById('fileInput');
+
+uploadZone.addEventListener('click', () => fileInput.click());
+uploadZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadZone.classList.add('dragover');
+});
+uploadZone.addEventListener('dragleave', () => {
+    uploadZone.classList.remove('dragover');
+});
+uploadZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadZone.classList.remove('dragover');
+    fileInput.files = e.dataTransfer.files;
+});
+
+// Upload form
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const progressBar = document.getElementById('uploadProgress');
+    const uploadBtn = document.getElementById('uploadBtn');
+    
+    if (!fileInput.files.length) {
+        alert('Veuillez sélectionner un fichier');
+        return;
+    }
+    
+    // Show progress
+    progressBar.classList.remove('d-none');
+    uploadBtn.disabled = true;
+    
+    fetch(`/customers/{{ customer.id }}/documents`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Document téléversé avec succès');
+            location.reload();
+        } else {
+            alert('Erreur: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Erreur de communication');
+    })
+    .finally(() => {
+        progressBar.classList.add('d-none');
+        uploadBtn.disabled = false;
+    });
+});
+
+// Preview document
+function previewDocument(documentId) {
+    fetch(`/customers/documents/${documentId}?preview=1`)
+    .then(response => response.text())
+    .then(html => {
+        document.getElementById('previewContent').innerHTML = html;
+        document.getElementById('downloadFromPreview').onclick = () => {
+            window.open(`/customers/documents/${documentId}`, '_blank');
+        };
+        new bootstrap.Modal(document.getElementById('previewModal')).show();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Erreur lors du chargement de l\'aperçu');
+    });
+}
+
+// Sign document
+function signDocument(documentId) {
+    currentDocumentId = documentId;
+    document.getElementById('document_to_sign').value = documentId;
+    new bootstrap.Modal(document.getElementById('signatureModal')).show();
+}
+
+// Signature form
+document.getElementById('signatureForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData.entries());
+    
+    fetch(`/customers/documents/${currentDocumentId}/signature`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            signed_by: data.signed_by,
+            provider: data.signature_provider,
+            signature_reference: data.signature_reference,
+            signature_data: JSON.stringify({
+                timestamp: new Date().toISOString(),
+                ip_address: '{{ request.remote_addr }}',
+                user_agent: navigator.userAgent
+            })
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Document signé avec succès');
+            location.reload();
+        } else {
+            alert('Erreur: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Erreur de communication');
+    });
+});
+
+// Delete document
+function deleteDocument(documentId) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer ce document ?')) {
+        fetch(`/customers/documents/${documentId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Document supprimé');
+                location.reload();
+            } else {
+                alert('Erreur: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Erreur de communication');
+        });
+    }
+}
+</script>
+{% endblock %}

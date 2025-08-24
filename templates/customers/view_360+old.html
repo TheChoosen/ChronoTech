@@ -1,0 +1,761 @@
+{% extends "base.html" %}
+
+{% block title %}Client 360 - {{ customer.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header avec informations client -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h2 class="card-title mb-1">
+                                <i class="fas fa-user-circle"></i> {{ customer.name }}
+                                {% if customer.company %}
+                                <small class="opacity-75">- {{ customer.company }}</small>
+                                {% endif %}
+                            </h2>
+                            <div class="d-flex flex-wrap gap-2 mb-2">
+                                <span class="badge bg-light text-dark">
+                                    <i class="fas fa-circle text-{% if customer.is_active %}success{% else %}danger{% endif %}"></i>
+                                    {% if customer.is_active %}Actif{% else %}Inactif{% endif %}
+                                </span>
+                                {% if customer.customer_type %}
+                                <span class="badge bg-info">{{ customer.customer_type.title() }}</span>
+                                {% endif %}
+                                {% if customer.privacy_level and customer.privacy_level != 'normal' %}
+                                <span class="badge bg-warning text-dark">
+                                    <i class="fas fa-shield-alt"></i> {{ customer.privacy_level.title() }}
+                                </span>
+                                {% endif %}
+                                {% for segment in customer.segments %}
+                                <span class="badge bg-secondary">{{ segment }}</span>
+                                {% endfor %}
+                            </div>
+                            <div class="row text-center">
+                                <div class="col-md-2">
+                                    <h4>{{ stats.total_vehicles }}</h4>
+                                    <small>Véhicules</small>
+                                </div>
+                                <div class="col-md-2">
+                                    <h4>{{ stats.total_work_orders }}</h4>
+                                    <small>Bons de travail</small>
+                                </div>
+                                <div class="col-md-2">
+                                    <h4>{{ stats.total_contacts }}</h4>
+                                    <small>Contacts</small>
+                                </div>
+                                <div class="col-md-2">
+                                    <h4>{{ stats.total_addresses }}</h4>
+                                    <small>Adresses</small>
+                                </div>
+                                <div class="col-md-2">
+                                    <h4>{{ stats.active_consents }}</h4>
+                                    <small>Consentements</small>
+                                </div>
+                                <div class="col-md-2">
+                                    <h4>$0.00</h4>
+                                    <small>CA 90j</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <div class="btn-group" role="group">
+                                <a href="{{ url_for('customers.index') }}" class="btn btn-light btn-sm">
+                                    <i class="fas fa-arrow-left"></i> Retour
+                                </a>
+                                <a href="{{ url_for('customers.edit_customer', customer_id=customer.id) }}" class="btn btn-light btn-sm">
+                                    <i class="fas fa-edit"></i> Modifier
+                                </a>
+                                <button class="btn btn-light btn-sm" onclick="window.print()">
+                                    <i class="fas fa-print"></i> Imprimer
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Onglets Client 360 -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <ul class="nav nav-tabs card-header-tabs" id="client360Tabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab">
+                                <i class="fas fa-user"></i> Profil
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="contacts-tab" data-bs-toggle="tab" data-bs-target="#contacts" type="button" role="tab">
+                                <i class="fas fa-address-book"></i> Contacts
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="addresses-tab" data-bs-toggle="tab" data-bs-target="#addresses" type="button" role="tab">
+                                <i class="fas fa-map-marker-alt"></i> Adresses
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="vehicles-tab" data-bs-toggle="tab" data-bs-target="#vehicles" type="button" role="tab">
+                                <i class="fas fa-car"></i> Véhicules
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="finances-tab" data-bs-toggle="tab" data-bs-target="#finances" type="button" role="tab">
+                                <i class="fas fa-dollar-sign"></i> Finances
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="documents-tab" data-bs-toggle="tab" data-bs-target="#documents" type="button" role="tab">
+                                <i class="fas fa-file-alt"></i> Documents
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="activity-tab" data-bs-toggle="tab" data-bs-target="#activity" type="button" role="tab">
+                                <i class="fas fa-history"></i> Activité
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="consents-tab" data-bs-toggle="tab" data-bs-target="#consents" type="button" role="tab">
+                                <i class="fas fa-shield-alt"></i> Consentements
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <div class="tab-content" id="client360TabsContent">
+                        <!-- Onglet Profil -->
+                        <div class="tab-pane fade show active" id="profile" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5><i class="fas fa-info-circle"></i> Informations générales</h5>
+                                    <table class="table table-sm">
+                                        <tr>
+                                            <td><strong>Email:</strong></td>
+                                            <td>{{ customer.email or 'Non renseigné' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Téléphone:</strong></td>
+                                            <td>{{ customer.phone or 'Non renseigné' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Langue:</strong></td>
+                                            <td>{{ customer.language_code or 'fr-CA' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Fuseau horaire:</strong></td>
+                                            <td>{{ customer.timezone or 'America/Montreal' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Canal préféré:</strong></td>
+                                            <td>{{ customer.preferred_contact_channel or 'Email' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Exempté de taxes:</strong></td>
+                                            <td>
+                                                {% if customer.tax_exempt %}
+                                                <span class="badge bg-warning">Oui</span>
+                                                {% else %}
+                                                <span class="badge bg-success">Non</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5><i class="fas fa-tags"></i> Segments & Tags</h5>
+                                    <div class="mb-3">
+                                        {% for segment in customer.segments %}
+                                        <span class="badge bg-primary me-1 mb-1">{{ segment }}</span>
+                                        {% endfor %}
+                                        {% if not customer.segments %}
+                                        <p class="text-muted">Aucun segment défini</p>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <h5><i class="fas fa-file-alt"></i> Identifiants fiscaux</h5>
+                                    <table class="table table-sm">
+                                        {% if customer.tax_number %}
+                                        <tr>
+                                            <td><strong>Numéro de taxe:</strong></td>
+                                            <td>{{ customer.tax_number }}</td>
+                                        </tr>
+                                        {% endif %}
+                                        {% if customer.siret %}
+                                        <tr>
+                                            <td><strong>SIRET:</strong></td>
+                                            <td>{{ customer.siret }}</td>
+                                        </tr>
+                                        {% endif %}
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <button class="btn btn-primary" onclick="editProfile()">
+                                    <i class="fas fa-edit"></i> Modifier le profil
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Onglet Contacts -->
+                        <div class="tab-pane fade" id="contacts" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5><i class="fas fa-address-book"></i> Contacts ({{ contacts|length }})</h5>
+                                <button class="btn btn-primary btn-sm" onclick="addContact()">
+                                    <i class="fas fa-plus"></i> Ajouter un contact
+                                </button>
+                            </div>
+                            
+                            {% if contacts %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Nom</th>
+                                            <th>Rôle</th>
+                                            <th>Email</th>
+                                            <th>Téléphone</th>
+                                            <th>Consentements</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for contact in contacts %}
+                                        <tr {% if contact.is_primary %}class="table-primary"{% endif %}>
+                                            <td>
+                                                {{ contact.name }}
+                                                {% if contact.is_primary %}
+                                                <span class="badge bg-primary ms-1">Principal</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">{{ contact.role.replace('_', ' ').title() }}</span>
+                                            </td>
+                                            <td>{{ contact.email or '-' }}</td>
+                                            <td>{{ contact.phone or '-' }}</td>
+                                            <td>
+                                                {% if contact.opt_in_email %}
+                                                <span class="badge bg-success me-1">Email</span>
+                                                {% endif %}
+                                                {% if contact.opt_in_sms %}
+                                                <span class="badge bg-info">SMS</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary" onclick="editContact({{ contact.id }})">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger" onclick="deleteContact({{ contact.id }})">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-address-book fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">Aucun contact</h5>
+                                <p class="text-muted">Ajoutez des contacts pour faciliter la communication.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Onglet Adresses -->
+                        <div class="tab-pane fade" id="addresses" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5><i class="fas fa-map-marker-alt"></i> Adresses ({{ addresses|length }})</h5>
+                                <button class="btn btn-primary btn-sm" onclick="addAddress()">
+                                    <i class="fas fa-plus"></i> Ajouter une adresse
+                                </button>
+                            </div>
+                            
+                            {% if addresses %}
+                            <div class="row">
+                                {% for address in addresses %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card {% if address.is_primary %}border-primary{% endif %}">
+                                        <div class="card-header d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0">
+                                                {{ address.label }}
+                                                {% if address.is_primary %}
+                                                <span class="badge bg-primary ms-1">Principale</span>
+                                                {% endif %}
+                                            </h6>
+                                            <span class="badge bg-secondary">{{ address.type.title() }}</span>
+                                        </div>
+                                        <div class="card-body">
+                                            <address class="mb-2">
+                                                {{ address.street }}<br>
+                                                {{ address.city }}, {{ address.province }} {{ address.postal_code }}<br>
+                                                {{ address.country }}
+                                            </address>
+                                            
+                                            {% if address.delivery_window_start and address.delivery_window_end %}
+                                            <p class="text-muted mb-2">
+                                                <i class="fas fa-clock"></i> 
+                                                Fenêtre: {{ address.delivery_window_start }} - {{ address.delivery_window_end }}
+                                            </p>
+                                            {% endif %}
+                                            
+                                            {% if address.instructions %}
+                                            <p class="text-muted mb-2">
+                                                <i class="fas fa-info-circle"></i> {{ address.instructions }}
+                                            </p>
+                                            {% endif %}
+                                            
+                                            <div class="btn-group btn-group-sm">
+                                                <button class="btn btn-outline-primary" onclick="editAddress({{ address.id }})">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                {% if address.lat and address.lng %}
+                                                <button class="btn btn-outline-info" onclick="showMap({{ address.lat }}, {{ address.lng }})">
+                                                    <i class="fas fa-map"></i>
+                                                </button>
+                                                {% endif %}
+                                                <button class="btn btn-outline-danger" onclick="deleteAddress({{ address.id }})">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-map-marker-alt fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">Aucune adresse</h5>
+                                <p class="text-muted">Ajoutez des adresses pour la facturation, livraison et service.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Onglet Véhicules -->
+                        <div class="tab-pane fade" id="vehicles" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5><i class="fas fa-car"></i> Véhicules ({{ vehicles|length }})</h5>
+                                <a href="{{ url_for('vehicles.add') }}?customer_id={{ customer.id }}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-plus"></i> Ajouter un véhicule
+                                </a>
+                            </div>
+                            
+                            {% if vehicles %}
+                            <div class="row">
+                                {% for vehicle in vehicles %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h6 class="mb-0">{{ vehicle.brand }} {{ vehicle.model }} ({{ vehicle.year }})</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <p><strong>VIN:</strong> {{ vehicle.vin or 'Non renseigné' }}</p>
+                                            <p><strong>Plaque:</strong> {{ vehicle.license_plate or 'Non renseignée' }}</p>
+                                            <p><strong>Couleur:</strong> {{ vehicle.color or 'Non renseignée' }}</p>
+                                            <p><strong>Kilométrage:</strong> {{ vehicle.mileage or 'Non renseigné' }}</p>
+                                            
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{{ url_for('vehicles.view', id=vehicle.id) }}" class="btn btn-outline-primary">
+                                                    <i class="fas fa-eye"></i> Voir
+                                                </a>
+                                                <a href="{{ url_for('work_orders.create_work_order') }}?vehicle_id={{ vehicle.id }}" class="btn btn-outline-success">
+                                                    <i class="fas fa-wrench"></i> Nouveau BT
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-car fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">Aucun véhicule</h5>
+                                <p class="text-muted">Ajoutez des véhicules pour ce client.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Onglet Finances -->
+                        <div class="tab-pane fade" id="finances" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5><i class="fas fa-dollar-sign"></i> Informations financières</h5>
+                                <a href="{{ url_for('customers.get_customer_finances', customer_id=customer.id) }}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-expand"></i> Vue détaillée
+                                </a>
+                            </div>
+                            
+                            <div id="financesContent">
+                                <div class="text-center py-4">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Chargement...</span>
+                                    </div>
+                                    <p class="mt-2 text-muted">Chargement des informations financières...</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Onglet Documents -->
+                        <div class="tab-pane fade" id="documents" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5><i class="fas fa-file-alt"></i> Documents</h5>
+                                <div>
+                                    <a href="{{ url_for('customers.get_customer_documents', customer_id=customer.id) }}" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-expand"></i> Gérer documents
+                                    </a>
+                                    <button type="button" class="btn btn-primary btn-sm" onclick="uploadDocument()">
+                                        <i class="fas fa-upload"></i> Téléverser
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div id="documentsContent">
+                                <div class="text-center py-4">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Chargement...</span>
+                                    </div>
+                                    <p class="mt-2 text-muted">Chargement des documents...</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Onglet Activité -->
+                        <div class="tab-pane fade" id="activity" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5><i class="fas fa-history"></i> Activité récente</h5>
+                                <a href="{{ url_for('customers.customer_timeline', customer_id=customer.id) }}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-expand"></i> Voir tout
+                                </a>
+                            </div>
+                            
+                            {% if recent_activities %}
+                            <div class="timeline">
+                                {% for activity in recent_activities %}
+                                {% include 'customers/_timeline_items.html' %}
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">Aucune activité récente</h5>
+                                <p class="text-muted">Les activités futures apparaîtront ici.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Onglet Consentements -->
+                        <div class="tab-pane fade" id="consents" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5><i class="fas fa-shield-alt"></i> Consentements RGPD/Loi 25</h5>
+                                <button class="btn btn-outline-info btn-sm" onclick="exportConsents()">
+                                    <i class="fas fa-download"></i> Exporter
+                                </button>
+                            </div>
+                            
+                            <div class="row">
+                                {% set consent_types = ['marketing_email', 'marketing_sms', 'analytics', 'profiling', 'data_sharing', 'service_notifications'] %}
+                                {% for consent_type in consent_types %}
+                                {% set consent = consents|selectattr('consent_type', 'equalto', consent_type)|first %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <h6 class="mb-1">{{ consent_type.replace('_', ' ').title() }}</h6>
+                                                    {% if consent %}
+                                                    <small class="text-muted">
+                                                        {% if consent.is_granted %}
+                                                        Accordé le {{ consent.granted_at.strftime('%Y-%m-%d') if consent.granted_at else 'Date inconnue' }}
+                                                        {% else %}
+                                                        Révoqué le {{ consent.revoked_at.strftime('%Y-%m-%d') if consent.revoked_at else 'Date inconnue' }}
+                                                        {% endif %}
+                                                    </small>
+                                                    {% else %}
+                                                    <small class="text-muted">Non défini</small>
+                                                    {% endif %}
+                                                </div>
+                                                <div>
+                                                    {% if consent and consent.is_granted %}
+                                                    <span class="badge bg-success">Accordé</span>
+                                                    {% elif consent %}
+                                                    <span class="badge bg-danger">Révoqué</span>
+                                                    {% else %}
+                                                    <span class="badge bg-secondary">Non défini</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="mt-2">
+                                                <button class="btn btn-sm btn-outline-success me-1" onclick="updateConsent('{{ consent_type }}', true)">
+                                                    <i class="fas fa-check"></i> Accorder
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger" onclick="updateConsent('{{ consent_type }}', false)">
+                                                    <i class="fas fa-times"></i> Révoquer
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    // Load content when tabs are clicked
+    $('#finances-tab').on('shown.bs.tab', function() {
+        loadFinancesContent();
+    });
+    
+    $('#documents-tab').on('shown.bs.tab', function() {
+        loadDocumentsContent();
+    });
+    
+    // Load finances content
+    function loadFinancesContent() {
+        if ($('#financesContent .spinner-border').length === 0) return; // Already loaded
+        
+        $.ajax({
+            url: '{{ url_for("customers.get_customer_finances", customer_id=customer.id) }}',
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(response) {
+                if (response.success) {
+                    renderFinancesSummary(response);
+                } else {
+                    $('#financesContent').html('<div class="alert alert-warning">Erreur chargement finances</div>');
+                }
+            },
+            error: function() {
+                $('#financesContent').html('<div class="alert alert-danger">Erreur de communication</div>');
+            }
+        });
+    }
+    
+    // Load documents content
+    function loadDocumentsContent() {
+        if ($('#documentsContent .spinner-border').length === 0) return; // Already loaded
+        
+        $.ajax({
+            url: '{{ url_for("customers.get_customer_documents", customer_id=customer.id) }}',
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(response) {
+                if (response.success) {
+                    renderDocumentsSummary(response);
+                } else {
+                    $('#documentsContent').html('<div class="alert alert-warning">Erreur chargement documents</div>');
+                }
+            },
+            error: function() {
+                $('#documentsContent').html('<div class="alert alert-danger">Erreur de communication</div>');
+            }
+        });
+    }
+    
+    // Render finances summary
+    function renderFinancesSummary(data) {
+        const finance = data.finance_profile;
+        const ar = data.ar_summary;
+        const payment = data.payment_summary;
+        
+        let html = `
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">$${parseFloat(finance.credit_limit || 0).toLocaleString()}</h5>
+                            <p class="card-text small">Limite de crédit</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">$${parseFloat(finance.available_credit || 0).toLocaleString()}</h5>
+                            <p class="card-text small">Crédit disponible</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">$${parseFloat(ar.total_outstanding || 0).toLocaleString()}</h5>
+                            <p class="card-text small">Solde ouvert</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">${payment.payment_score || 'N/A'}</h5>
+                            <p class="card-text small">Score paiement</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Profil financier</h6>
+                    <table class="table table-sm">
+                        <tr><td>Conditions de paiement:</td><td>${finance.payment_terms || 'N/A'}</td></tr>
+                        <tr><td>Niveau de prix:</td><td>${finance.price_tier || 'N/A'}</td></tr>
+                        <tr><td>Rabais contractuel:</td><td>${finance.discount_percent || 0}%</td></tr>
+                        <tr><td>Exemption de taxes:</td><td>${finance.tax_exempt ? 'Oui' : 'Non'}</td></tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <h6>Méthodes de paiement</h6>`;
+        
+        if (data.payment_methods && data.payment_methods.length > 0) {
+            data.payment_methods.slice(0, 3).forEach(method => {
+                html += `
+                    <div class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
+                        <div>
+                            <strong>${method.method_type}</strong>
+                            ${method.is_default ? '<span class="badge bg-primary ms-1">Défaut</span>' : ''}
+                            <br><small class="text-muted">${method.masked_number || '****' + (method.last_four || '')}</small>
+                        </div>
+                        <small class="text-muted">${method.provider}</small>
+                    </div>`;
+            });
+        } else {
+            html += '<p class="text-muted">Aucune méthode de paiement enregistrée</p>';
+        }
+        
+        html += `
+                </div>
+            </div>`;
+        
+        $('#financesContent').html(html);
+    }
+    
+    // Render documents summary
+    function renderDocumentsSummary(data) {
+        let html = '';
+        
+        if (data.type_counts && data.type_counts.length > 0) {
+            html += '<div class="mb-3"><h6>Types de documents</h6><div class="d-flex flex-wrap gap-2">';
+            data.type_counts.forEach(type => {
+                html += `<span class="badge bg-secondary">${type.document_type.replace('_', ' ')} (${type.count})</span>`;
+            });
+            html += '</div></div>';
+        }
+        
+        if (data.documents && data.documents.length > 0) {
+            html += '<div class="row">';
+            data.documents.slice(0, 6).forEach(doc => {
+                const isImage = ['jpg', 'jpeg', 'png', 'gif'].includes(doc.filename.split('.').pop().toLowerCase());
+                const isPdf = doc.filename.toLowerCase().endsWith('.pdf');
+                
+                let icon = 'fas fa-file';
+                let iconClass = 'text-secondary';
+                if (isPdf) { icon = 'fas fa-file-pdf'; iconClass = 'text-danger'; }
+                else if (isImage) { icon = 'fas fa-file-image'; iconClass = 'text-success'; }
+                
+                html += `
+                    <div class="col-md-4 mb-3">
+                        <div class="card">
+                            <div class="card-body p-2">
+                                <div class="d-flex align-items-start">
+                                    <i class="${icon} fa-2x ${iconClass} me-2"></i>
+                                    <div class="flex-grow-1">
+                                        <h6 class="card-title mb-1" style="font-size: 0.85rem;">${doc.title}</h6>
+                                        <p class="card-text small text-muted mb-1">${doc.filename}</p>
+                                        <p class="card-text small text-muted">${Math.round(doc.file_size / 1024)} KB</p>
+                                        ${doc.is_signed ? '<span class="badge bg-success">Signé</span>' : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+            html += '</div>';
+            
+            if (data.documents.length > 6) {
+                html += `<p class="text-center text-muted">Et ${data.documents.length - 6} document(s) de plus...</p>`;
+            }
+        } else {
+            html = '<div class="text-center py-4"><i class="fas fa-file-alt fa-3x text-muted mb-3"></i><p class="text-muted">Aucun document trouvé</p></div>';
+        }
+        
+        $('#documentsContent').html(html);
+    }
+    
+    // Upload document function
+    window.uploadDocument = function() {
+        window.location.href = '{{ url_for("customers.get_customer_documents", customer_id=customer.id) }}';
+    };
+
+    // Fonctions pour gérer les consentements
+    window.updateConsent = function(consentType, isGranted) {
+        $.ajax({
+            url: '{{ url_for("customers.update_customer_consent", customer_id=customer.id) }}',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                consent_type: consentType,
+                is_granted: isGranted,
+                source: 'web_form'
+            }),
+            success: function(response) {
+                if (response.success) {
+                    showAlert('success', response.message);
+                    // Recharger l'onglet consentements
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showAlert('error', response.message);
+                }
+            },
+            error: function() {
+                showAlert('error', 'Erreur de communication avec le serveur');
+            }
+        });
+    };
+    
+    // Autres fonctions utilitaires
+    window.showAlert = function(type, message) {
+        var alertClass = type === 'error' ? 'alert-danger' : 'alert-success';
+        var alert = `<div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>`;
+        $('.tab-content').prepend(alert);
+    };
+    
+    // Placeholder functions for future implementation
+    window.editProfile = function() {
+        alert('Fonctionnalité à implémenter: Édition du profil');
+    };
+    
+    window.addContact = function() {
+        alert('Fonctionnalité à implémenter: Ajout de contact');
+    };
+    
+    window.addAddress = function() {
+        alert('Fonctionnalité à implémenter: Ajout d\'adresse');
+    };
+    
+    window.exportConsents = function() {
+        alert('Fonctionnalité à implémenter: Export des consentements');
+    };
+});
+</script>
+{% endblock %}

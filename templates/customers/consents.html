@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+
+{% block title %}Consentements - {{ customer.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-shield-alt"></i> Consentements RGPD/Loi 25</h2>
+                    <p class="text-muted mb-0">Gestion des consentements pour {{ customer.name }}</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('customers.customer_360', customer_id=customer_id) }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Retour Client 360
+                    </a>
+                    <button class="btn btn-outline-info" onclick="exportConsents()">
+                        <i class="fas fa-download"></i> Exporter historique
+                    </button>
+                </div>
+            </div>
+
+            <!-- Alert zone -->
+            <div id="alert-zone"></div>
+
+            <!-- Consentements actuels -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-check-circle"></i> État actuel des consentements
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% set consent_types = [
+                            ('marketing_email', 'Marketing par email', 'Autorisation d\'envoyer des emails promotionnels'),
+                            ('marketing_sms', 'Marketing par SMS', 'Autorisation d\'envoyer des SMS promotionnels'),
+                            ('analytics', 'Analyses et statistiques', 'Utilisation des données à des fins d\'analyse'),
+                            ('profiling', 'Profilage client', 'Création de profils client pour personnalisation'),
+                            ('data_sharing', 'Partage de données', 'Partage avec des partenaires tiers'),
+                            ('service_notifications', 'Notifications de service', 'Communications liées aux services')
+                        ] %}
+                        
+                        {% for consent_type, title, description in consent_types %}
+                        {% set consent = consents|selectattr('consent_type', 'equalto', consent_type)|first %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-left-{{ 'success' if consent and consent.is_granted else 'danger' if consent else 'secondary' }}">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1">{{ title }}</h6>
+                                            <p class="text-muted mb-2 small">{{ description }}</p>
+                                            {% if consent %}
+                                            <small class="text-muted">
+                                                {% if consent.is_granted %}
+                                                <i class="fas fa-check text-success"></i> 
+                                                Accordé le {{ consent.granted_at.strftime('%d/%m/%Y à %H:%M') if consent.granted_at else 'Date inconnue' }}
+                                                {% else %}
+                                                <i class="fas fa-times text-danger"></i> 
+                                                Révoqué le {{ consent.revoked_at.strftime('%d/%m/%Y à %H:%M') if consent.revoked_at else 'Date inconnue' }}
+                                                {% endif %}
+                                                <br>
+                                                <strong>Source:</strong> {{ consent.source.replace('_', ' ').title() }}
+                                                {% if consent.collector_name %}
+                                                <br><strong>Par:</strong> {{ consent.collector_name }}
+                                                {% endif %}
+                                            </small>
+                                            {% else %}
+                                            <small class="text-muted">
+                                                <i class="fas fa-question text-secondary"></i> Statut non défini
+                                            </small>
+                                            {% endif %}
+                                        </div>
+                                        <div class="ms-2">
+                                            {% if consent and consent.is_granted %}
+                                            <span class="badge bg-success">Accordé</span>
+                                            {% elif consent %}
+                                            <span class="badge bg-danger">Révoqué</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">Non défini</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-success" onclick="updateConsent('{{ consent_type }}', true)"
+                                                {% if consent and consent.is_granted %}disabled{% endif %}>
+                                            <i class="fas fa-check"></i> Accorder
+                                        </button>
+                                        <button class="btn btn-outline-danger" onclick="updateConsent('{{ consent_type }}', false)"
+                                                {% if consent and not consent.is_granted %}disabled{% endif %}>
+                                            <i class="fas fa-times"></i> Révoquer
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historique des consentements -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-history"></i> Historique des consentements
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if consents %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Statut</th>
+                                    <th>Date</th>
+                                    <th>Source</th>
+                                    <th>Collecté par</th>
+                                    <th>Version</th>
+                                    <th>IP</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for consent in consents %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-info">{{ consent.consent_type.replace('_', ' ').title() }}</span>
+                                    </td>
+                                    <td>
+                                        {% if consent.is_granted %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check"></i> Accordé
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-times"></i> Révoqué
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if consent.is_granted and consent.granted_at %}
+                                        {{ consent.granted_at.strftime('%d/%m/%Y %H:%M') }}
+                                        {% elif not consent.is_granted and consent.revoked_at %}
+                                        {{ consent.revoked_at.strftime('%d/%m/%Y %H:%M') }}
+                                        {% else %}
+                                        {{ consent.created_at.strftime('%d/%m/%Y %H:%M') }}
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ consent.source.replace('_', ' ').title() }}</td>
+                                    <td>{{ consent.collector_name or 'Système' }}</td>
+                                    <td>v{{ consent.version }}</td>
+                                    <td>
+                                        {% if consent.ip_address %}
+                                        <code>{{ consent.ip_address }}</code>
+                                        {% else %}
+                                        <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-shield-alt fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Aucun consentement enregistré</h5>
+                        <p class="text-muted">Les consentements futurs apparaîtront ici avec leur historique complet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour confirmation -->
+<div class="modal fade" id="consentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmation de consentement</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir <span id="action-text"></span> le consentement <strong id="consent-type-text"></strong> ?</p>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    Cette action sera enregistrée dans l'historique avec horodatage et sera irréversible.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" id="confirm-consent">Confirmer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    let pendingConsentUpdate = null;
+    
+    window.updateConsent = function(consentType, isGranted) {
+        pendingConsentUpdate = { consentType, isGranted };
+        
+        $('#consent-type-text').text(consentType.replace(/_/g, ' '));
+        $('#action-text').text(isGranted ? 'accorder' : 'révoquer');
+        $('#consentModal').modal('show');
+    };
+    
+    $('#confirm-consent').on('click', function() {
+        if (!pendingConsentUpdate) return;
+        
+        const { consentType, isGranted } = pendingConsentUpdate;
+        
+        $.ajax({
+            url: '{{ url_for("customers.update_customer_consent", customer_id=customer_id) }}',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                consent_type: consentType,
+                is_granted: isGranted,
+                source: 'web_form'
+            }),
+            success: function(response) {
+                $('#consentModal').modal('hide');
+                if (response.success) {
+                    showAlert('success', response.message);
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showAlert('error', response.message);
+                }
+            },
+            error: function() {
+                $('#consentModal').modal('hide');
+                showAlert('error', 'Erreur de communication avec le serveur');
+            }
+        });
+        
+        pendingConsentUpdate = null;
+    });
+    
+    window.exportConsents = function() {
+        // TODO: Implémenter l'export CSV/JSON des consentements
+        showAlert('info', 'Fonctionnalité d\'export en cours de développement');
+    };
+    
+    function showAlert(type, message) {
+        const alertClass = {
+            'success': 'alert-success',
+            'error': 'alert-danger',
+            'info': 'alert-info',
+            'warning': 'alert-warning'
+        }[type] || 'alert-info';
+        
+        const alert = `
+            <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        $('#alert-zone').html(alert);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            $('.alert').alert('close');
+        }, 5000);
+    }
+    
+    window.showAlert = showAlert;
+});
+</script>
+
+<style>
+.border-left-success {
+    border-left: 4px solid #28a745 !important;
+}
+.border-left-danger {
+    border-left: 4px solid #dc3545 !important;
+}
+.border-left-secondary {
+    border-left: 4px solid #6c757d !important;
+}
+</style>
+{% endblock %}

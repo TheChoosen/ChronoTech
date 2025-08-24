@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics Client - {{ customer_id }} - ChronoTech{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-chart-line me-2"></i>Analytics Client #{{ customer_id }}</h2>
+                <div>
+                    <a href="{{ url_for('customers.view_customer', customer_id=customer_id) }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Retour
+                    </a>
+                    <button class="btn btn-primary" onclick="calculateRFM()">
+                        <i class="fas fa-calculator me-1"></i>Recalculer RFM
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Score RFM -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-star me-2"></i>Score RFM</h5>
+                </div>
+                <div class="card-body">
+                    {% if analytics %}
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <div class="border rounded p-3">
+                                    <h3 class="text-primary">{{ analytics.recency_score }}/5</h3>
+                                    <p class="mb-0">Récence</p>
+                                    <small class="text-muted">{{ analytics.days_since_last_order }} jours</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="border rounded p-3">
+                                    <h3 class="text-success">{{ analytics.frequency_score }}/5</h3>
+                                    <p class="mb-0">Fréquence</p>
+                                    <small class="text-muted">{{ analytics.total_orders }} commandes</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="border rounded p-3">
+                                    <h3 class="text-warning">{{ analytics.monetary_score }}/5</h3>
+                                    <p class="mb-0">Monétaire</p>
+                                    <small class="text-muted">{{ "%.2f" | format(analytics.avg_order_value) }}€ moy.</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="border rounded p-3">
+                                    <h3 class="text-info">{{ analytics.rfm_segment or 'N/A' }}</h3>
+                                    <p class="mb-0">Segment</p>
+                                    <small class="text-muted">Calculé le {{ analytics.calculated_at.strftime('%d/%m/%Y') if analytics.calculated_at else 'N/A' }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <div class="card border-primary">
+                                    <div class="card-body">
+                                        <h6 class="card-title">LTV 12 mois</h6>
+                                        <h4 class="text-primary">{{ "%.2f" | format(analytics.ltv_12m) }}€</h4>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border-warning">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Risque de Churn</h6>
+                                        <h4 class="text-warning">{{ "%.1f" | format(analytics.churn_risk_score * 100) }}%</h4>
+                                        <div class="progress">
+                                            <div class="progress-bar bg-warning" style="width: {{ analytics.churn_risk_score * 100 }}%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Aucune donnée analytique disponible</p>
+                            <button class="btn btn-primary" onclick="calculateRFM()">
+                                <i class="fas fa-calculator me-1"></i>Calculer maintenant
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPIs -->
+    {% if kpis %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-tachometer-alt me-2"></i>KPIs Détaillés</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="border rounded p-3 text-center">
+                                <h6>Revenus Lifetime</h6>
+                                <h4 class="text-success">{{ "%.2f" | format(kpis.total_revenue_lifetime) }}€</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="border rounded p-3 text-center">
+                                <h6>Commandes Totales</h6>
+                                <h4 class="text-primary">{{ kpis.total_orders_lifetime }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="border rounded p-3 text-center">
+                                <h6>Ancienneté</h6>
+                                <h4 class="text-info">{{ kpis.customer_tenure_days }} jours</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recommandations -->
+    {% if recommendations %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Recommandations</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for rec in recommendations %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ rec.recommendation_type | title }}</h6>
+                                <p class="mb-1">{{ rec.item_type | title }} #{{ rec.item_id }}</p>
+                                <small class="text-muted">Créé le {{ rec.created_at.strftime('%d/%m/%Y') }}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-primary">{{ "%.1f" | format(rec.score * 100) }}%</span>
+                                {% if rec.expires_at %}
+                                    <br><small class="text-muted">Expire le {{ rec.expires_at.strftime('%d/%m/%Y') }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Fidélité -->
+    {% if loyalty_rewards %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-gift me-2"></i>Programme de Fidélité</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for reward in loyalty_rewards %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ reward.reward_type | title }}</h6>
+                                <p class="mb-1">{{ reward.reward_description or 'Récompense de fidélité' }}</p>
+                                <small class="text-muted">{{ reward.earned_date.strftime('%d/%m/%Y') }}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-{{ 'success' if reward.status == 'earned' else 'secondary' }}">
+                                    {{ reward.status | title }}
+                                </span>
+                                {% if reward.points_earned > 0 %}
+                                    <br><small class="text-muted">{{ reward.points_earned }} points</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function calculateRFM() {
+    if (!confirm('Recalculer le score RFM pour ce client ?')) return;
+    
+    fetch(`/customers/{{ customer_id }}/rfm/calculate`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('success', data.message);
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast('error', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showToast('error', 'Erreur lors du calcul RFM');
+    });
+}
+
+function showToast(type, message) {
+    // Créer et afficher un toast Bootstrap
+    const toastHtml = `
+        <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+    
+    let toastContainer = document.querySelector('.toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+        document.body.appendChild(toastContainer);
+    }
+    
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    const toastElement = toastContainer.lastElementChild;
+    const toast = new bootstrap.Toast(toastElement);
+    toast.show();
+}
+</script>
+{% endblock %}

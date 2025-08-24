@@ -1,0 +1,572 @@
+{% extends "base.html" %}
+
+{% block title %}Finances - {{ customer.name }} - ChronoTech{% endblock %}
+
+{% block head %}
+<style>
+    .finance-card {
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    .finance-metric {
+        text-align: center;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 0.375rem;
+        margin-bottom: 0.5rem;
+    }
+    .finance-metric .value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #495057;
+    }
+    .finance-metric .label {
+        font-size: 0.875rem;
+        color: #6c757d;
+        text-transform: uppercase;
+    }
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    .status-none { background: #d4edda; color: #155724; }
+    .status-review { background: #fff3cd; color: #856404; }
+    .status-credit-hold { background: #f8d7da; color: #721c24; }
+    .status-blocked { background: #dc3545; color: white; }
+    .payment-method {
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        padding: 1rem;
+        margin-bottom: 0.5rem;
+        position: relative;
+    }
+    .payment-method.default {
+        border-color: #007bff;
+        background: #f0f8ff;
+    }
+    .payment-method .default-badge {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        background: #007bff;
+        color: white;
+        font-size: 0.7rem;
+        padding: 0.125rem 0.375rem;
+        border-radius: 0.25rem;
+    }
+    .transaction-history {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    .transaction-item {
+        padding: 0.75rem;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .transaction-item:last-child {
+        border-bottom: none;
+    }
+    .amount-positive { color: #28a745; }
+    .amount-negative { color: #dc3545; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête avec navigation -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-dollar-sign me-2"></i>Finances - {{ customer.name }}</h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('customers.index') }}">Clients</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('customers.view_customer', customer_id=customer.id) }}">{{ customer.name }}</a></li>
+                    <li class="breadcrumb-item active">Finances</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <a href="{{ url_for('customers.customer_360', customer_id=customer.id) }}" class="btn btn-outline-primary">
+                <i class="fas fa-eye me-1"></i>Client 360
+            </a>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editFinanceModal">
+                <i class="fas fa-edit me-1"></i>Modifier Profil
+            </button>
+        </div>
+    </div>
+
+    <!-- Métriques financières -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="finance-metric">
+                <div class="value">${{ "{:,.2f}".format(finance_profile.credit_limit) }}</div>
+                <div class="label">Limite de Crédit</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="finance-metric">
+                <div class="value">${{ "{:,.2f}".format(finance_profile.available_credit) }}</div>
+                <div class="label">Crédit Disponible</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="finance-metric">
+                <div class="value">${{ "{:,.2f}".format(ar_summary.total_outstanding) }}</div>
+                <div class="label">Solde Ouvert</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="finance-metric">
+                <div class="value">{{ payment_summary.payment_score or 'N/A' }}</div>
+                <div class="label">Score Paiement</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statut et alertes -->
+    {% if finance_profile.hold_status != 'none' %}
+    <div class="alert alert-warning" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <strong>Compte en restriction :</strong> {{ finance_profile.hold_status|upper }}
+        {% if finance_profile.hold_reason %}
+        - {{ finance_profile.hold_reason }}
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if ar_summary.past_due_amount > 0 %}
+    <div class="alert alert-danger" role="alert">
+        <i class="fas fa-clock me-2"></i>
+        <strong>Factures en retard :</strong> ${{ "{:,.2f}".format(ar_summary.past_due_amount) }}
+        {% if ar_summary.earliest_due_date %}
+        (Plus ancienne: {{ ar_summary.earliest_due_date.strftime('%d/%m/%Y') }})
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <!-- Profil financier -->
+        <div class="col-md-6">
+            <div class="finance-card">
+                <h5 class="mb-3"><i class="fas fa-user-tie me-2"></i>Profil Financier</h5>
+                <table class="table table-sm">
+                    <tr>
+                        <td><strong>Conditions de paiement:</strong></td>
+                        <td>{{ finance_profile.payment_terms|upper }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Niveau de prix:</strong></td>
+                        <td>{{ finance_profile.price_tier|title }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Rabais contractuel:</strong></td>
+                        <td>{{ finance_profile.discount_percent }}%</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Exemption de taxes:</strong></td>
+                        <td>
+                            {% if finance_profile.tax_exempt %}
+                                <span class="badge bg-success">Oui</span>
+                                {% if finance_profile.tax_exempt_number %}
+                                <br><small>{{ finance_profile.tax_exempt_number }}</small>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge bg-secondary">Non</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Statut compte:</strong></td>
+                        <td>
+                            <span class="status-badge status-{{ finance_profile.hold_status }}">
+                                {{ finance_profile.hold_status|replace('_', ' ')|title }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Délai moy. paiement:</strong></td>
+                        <td>{{ payment_summary.average_payment_days or 'N/A' }} jours</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Méthodes de paiement -->
+            <div class="finance-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0"><i class="fas fa-credit-card me-2"></i>Méthodes de Paiement</h5>
+                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addPaymentMethodModal">
+                        <i class="fas fa-plus me-1"></i>Ajouter
+                    </button>
+                </div>
+
+                <div id="paymentMethods">
+                    {% if payment_methods %}
+                        {% for method in payment_methods %}
+                        <div class="payment-method {% if method.is_default %}default{% endif %}">
+                            {% if method.is_default %}
+                            <span class="default-badge">Par défaut</span>
+                            {% endif %}
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ method.method_type|title }}</strong>
+                                    {% if method.brand %}
+                                    <span class="badge bg-light text-dark">{{ method.brand }}</span>
+                                    {% endif %}
+                                    <br>
+                                    <small class="text-muted">
+                                        {% if method.masked_number %}
+                                            {{ method.masked_number }}
+                                        {% elif method.last_four %}
+                                            ****{{ method.last_four }}
+                                        {% endif %}
+                                        {% if method.expiry_date %}
+                                        - Exp: {{ method.expiry_date }}
+                                        {% endif %}
+                                    </small>
+                                    <br>
+                                    <small class="text-muted">{{ method.provider|title }}</small>
+                                </div>
+                                <div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="deletePaymentMethod({{ method.id }})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">Aucune méthode de paiement enregistrée.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Résumé comptes à recevoir -->
+        <div class="col-md-6">
+            <div class="finance-card">
+                <h5 class="mb-3"><i class="fas fa-file-invoice me-2"></i>Comptes à Recevoir</h5>
+                <div class="row">
+                    <div class="col-6">
+                        <div class="text-center">
+                            <div class="h4 mb-1">{{ ar_summary.invoice_count }}</div>
+                            <small class="text-muted">Factures ouvertes</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center">
+                            <div class="h4 mb-1">${{ "{:,.2f}".format(ar_summary.total_outstanding) }}</div>
+                            <small class="text-muted">Total dû</small>
+                        </div>
+                    </div>
+                </div>
+                {% if payment_summary.last_payment_date %}
+                <hr>
+                <div class="text-center">
+                    <strong>Dernier paiement:</strong><br>
+                    ${{ "{:,.2f}".format(payment_summary.last_payment_amount) }}<br>
+                    <small class="text-muted">{{ payment_summary.last_payment_date.strftime('%d/%m/%Y') }}</small>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Historique récent -->
+            <div class="finance-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Historique Récent</h5>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="loadBalanceHistory()">
+                        <i class="fas fa-sync me-1"></i>Actualiser
+                    </button>
+                </div>
+                
+                <div class="transaction-history" id="balanceHistory">
+                    {% if balance_history %}
+                        {% for entry in balance_history[:10] %}
+                        <div class="transaction-item">
+                            <div>
+                                <strong>{{ entry.event_type|replace('_', ' ')|title }}</strong><br>
+                                <small class="text-muted">{{ entry.created_at.strftime('%d/%m/%Y %H:%M') }}</small>
+                                {% if entry.description %}
+                                <br><small>{{ entry.description }}</small>
+                                {% endif %}
+                            </div>
+                            <div class="text-end">
+                                <span class="{% if entry.amount >= 0 %}amount-positive{% else %}amount-negative{% endif %}">
+                                    {% if entry.amount >= 0 %}+{% endif %}<strong>${{ "{:,.2f}".format(entry.amount) }}</strong>
+                                </span><br>
+                                <small class="text-muted">Solde: ${{ "{:,.2f}".format(entry.balance_after) }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">Aucun historique disponible.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Modifier Profil Financier -->
+<div class="modal fade" id="editFinanceModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Modifier Profil Financier</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="financeForm">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="credit_limit" class="form-label">Limite de crédit</label>
+                                <input type="number" class="form-control" id="credit_limit" name="credit_limit" 
+                                       value="{{ finance_profile.credit_limit }}" step="0.01" min="0">
+                            </div>
+                            <div class="mb-3">
+                                <label for="payment_terms" class="form-label">Conditions de paiement</label>
+                                <select class="form-select" id="payment_terms" name="payment_terms">
+                                    <option value="immediate" {% if finance_profile.payment_terms == 'immediate' %}selected{% endif %}>Immédiat</option>
+                                    <option value="net15" {% if finance_profile.payment_terms == 'net15' %}selected{% endif %}>Net 15</option>
+                                    <option value="net30" {% if finance_profile.payment_terms == 'net30' %}selected{% endif %}>Net 30</option>
+                                    <option value="net45" {% if finance_profile.payment_terms == 'net45' %}selected{% endif %}>Net 45</option>
+                                    <option value="net60" {% if finance_profile.payment_terms == 'net60' %}selected{% endif %}>Net 60</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="price_tier" class="form-label">Niveau de prix</label>
+                                <select class="form-select" id="price_tier" name="price_tier">
+                                    <option value="standard" {% if finance_profile.price_tier == 'standard' %}selected{% endif %}>Standard</option>
+                                    <option value="vip" {% if finance_profile.price_tier == 'vip' %}selected{% endif %}>VIP</option>
+                                    <option value="wholesale" {% if finance_profile.price_tier == 'wholesale' %}selected{% endif %}>Gros</option>
+                                    <option value="government" {% if finance_profile.price_tier == 'government' %}selected{% endif %}>Gouvernement</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="discount_percent" class="form-label">Rabais contractuel (%)</label>
+                                <input type="number" class="form-control" id="discount_percent" name="discount_percent" 
+                                       value="{{ finance_profile.discount_percent }}" step="0.01" min="0" max="100">
+                            </div>
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="tax_exempt" name="tax_exempt" 
+                                           {% if finance_profile.tax_exempt %}checked{% endif %}>
+                                    <label class="form-check-label" for="tax_exempt">
+                                        Exemption de taxes
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="tax_exempt_number" class="form-label">Numéro d'exemption</label>
+                                <input type="text" class="form-control" id="tax_exempt_number" name="tax_exempt_number" 
+                                       value="{{ finance_profile.tax_exempt_number or '' }}">
+                            </div>
+                            <div class="mb-3">
+                                <label for="hold_status" class="form-label">Statut compte</label>
+                                <select class="form-select" id="hold_status" name="hold_status">
+                                    <option value="none" {% if finance_profile.hold_status == 'none' %}selected{% endif %}>Normal</option>
+                                    <option value="review" {% if finance_profile.hold_status == 'review' %}selected{% endif %}>En révision</option>
+                                    <option value="credit_hold" {% if finance_profile.hold_status == 'credit_hold' %}selected{% endif %}>Blocage crédit</option>
+                                    <option value="blocked" {% if finance_profile.hold_status == 'blocked' %}selected{% endif %}>Bloqué</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Sauvegarder</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Ajouter Méthode de Paiement -->
+<div class="modal fade" id="addPaymentMethodModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Ajouter Méthode de Paiement</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="paymentMethodForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="provider" class="form-label">Fournisseur</label>
+                        <select class="form-select" id="provider" name="provider" required>
+                            <option value="">Sélectionner...</option>
+                            <option value="stripe">Stripe</option>
+                            <option value="paypal">PayPal</option>
+                            <option value="square">Square</option>
+                            <option value="moneris">Moneris</option>
+                            <option value="other">Autre</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="method_type" class="form-label">Type</label>
+                        <select class="form-select" id="method_type" name="method_type" required>
+                            <option value="">Sélectionner...</option>
+                            <option value="credit_card">Carte de crédit</option>
+                            <option value="debit_card">Carte de débit</option>
+                            <option value="bank_account">Compte bancaire</option>
+                            <option value="paypal">PayPal</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="token" class="form-label">Token sécurisé</label>
+                        <input type="text" class="form-control" id="token" name="token" required
+                               placeholder="Token du fournisseur de paiement">
+                    </div>
+                    <div class="mb-3">
+                        <label for="masked_number" class="form-label">Numéro masqué</label>
+                        <input type="text" class="form-control" id="masked_number" name="masked_number"
+                               placeholder="****1234">
+                    </div>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="mb-3">
+                                <label for="expiry_date" class="form-label">Expiration</label>
+                                <input type="text" class="form-control" id="expiry_date" name="expiry_date"
+                                       placeholder="MM/AA">
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="mb-3">
+                                <label for="brand" class="form-label">Marque</label>
+                                <input type="text" class="form-control" id="brand" name="brand"
+                                       placeholder="Visa, Mastercard...">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="holder_name" class="form-label">Nom du titulaire</label>
+                        <input type="text" class="form-control" id="holder_name" name="holder_name">
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="is_default" name="is_default">
+                            <label class="form-check-label" for="is_default">
+                                Méthode par défaut
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Ajouter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Submit finance form
+document.getElementById('financeForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData.entries());
+    
+    fetch(`/customers/{{ customer.id }}/finances`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Profil financier mis à jour');
+            location.reload();
+        } else {
+            alert('Erreur: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Erreur de communication');
+    });
+});
+
+// Submit payment method form
+document.getElementById('paymentMethodForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData.entries());
+    
+    fetch(`/customers/{{ customer.id }}/payment-methods`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Méthode de paiement ajoutée');
+            location.reload();
+        } else {
+            alert('Erreur: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Erreur de communication');
+    });
+});
+
+// Delete payment method
+function deletePaymentMethod(methodId) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette méthode de paiement ?')) {
+        fetch(`/customers/payment-methods/${methodId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Méthode de paiement supprimée');
+                location.reload();
+            } else {
+                alert('Erreur: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Erreur de communication');
+        });
+    }
+}
+
+// Load balance history
+function loadBalanceHistory() {
+    fetch(`/customers/{{ customer.id }}/balance-history`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update the balance history display
+            console.log('Balance history loaded:', data.history);
+        }
+    })
+    .catch(error => {
+        console.error('Error loading balance history:', error);
+    });
+}
+</script>
+{% endblock %}

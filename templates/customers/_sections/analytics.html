@@ -1,0 +1,725 @@
+{# Section analytics client (graphiques, métriques, insights) #}
+
+{%- from 'customers/_components/macros.html' import stats_card, loading_skeleton -%}
+
+<div class="tab-pane fade {{ 'show active' if active_tab == 'analytics' }}" 
+     id="analytics" role="tabpanel" data-section="analytics">
+     
+    {# Contrôles de période #}
+    <div class="clay-card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-4">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Analytics Client</h5>
+                </div>
+                <div class="col-md-4">
+                    <select class="form-select clay-select" id="analyticsPeriod" onchange="updateAnalytics()">
+                        <option value="3m">3 derniers mois</option>
+                        <option value="6m" selected>6 derniers mois</option>
+                        <option value="1y">Dernière année</option>
+                        <option value="2y">2 dernières années</option>
+                        <option value="all">Toute la période</option>
+                    </select>
+                </div>
+                <div class="col-md-4 text-end">
+                    <button class="clay-button" onclick="exportAnalytics()">
+                        <i class="fas fa-download me-2"></i>Exporter rapport
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {# KPIs principaux #}
+    <div class="row mb-4">
+        {{ stats_card(
+            title="LTV",
+            value=((analytics_data.lifetime_value or 0)|currency),
+            subtitle="Valeur vie client",
+            icon="fas fa-gem",
+            color_class="success"
+        ) }}
+        
+        {{ stats_card(
+            title="Fréquence",
+            value=((analytics_data.avg_frequency or 0)|round(1)) + "/mois",
+            subtitle="Commandes moyennes",
+            icon="fas fa-sync",
+            color_class="info"
+        ) }}
+        
+        {{ stats_card(
+            title="Panier moyen",
+            value=((analytics_data.avg_order_value or 0)|currency),
+            subtitle="Par commande",
+            icon="fas fa-shopping-cart",
+            color_class="warning"
+        ) }}
+        
+        {{ stats_card(
+            title="Satisfaction",
+            value=((analytics_data.satisfaction_score or 0)|round(1)) + "/10",
+            subtitle="Score moyen",
+            icon="fas fa-smile",
+            color_class="primary"
+        ) }}
+    </div>
+    
+    <div class="row">
+        {# Graphique des revenus dans le temps #}
+        <div class="col-md-8">
+            <div class="clay-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Évolution du chiffre d'affaires</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="revenueTimeChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        {# Répartition par type de service #}
+        <div class="col-md-4">
+            <div class="clay-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Services</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="servicesChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        {# Analyse de la saisonnalité #}
+        <div class="col-md-6">
+            <div class="clay-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-calendar me-2"></i>Saisonnalité</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="seasonalityChart" height="150"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        {# Métriques de fidélité #}
+        <div class="col-md-6">
+            <div class="clay-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-heart me-2"></i>Fidélité</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="mb-3">
+                                <h3 class="mb-1" style="color: var(--success-color);" id="retentionRate">
+                                    {{ (analytics_data.retention_rate or 0)|round(1) }}%
+                                </h3>
+                                <small class="text-muted">Taux de rétention</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="mb-3">
+                                <h3 class="mb-1" style="color: var(--primary-color);" id="repeatCustomer">
+                                    {{ (analytics_data.repeat_rate or 0)|round(1) }}%
+                                </h3>
+                                <small class="text-muted">Client récurrent</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="mb-3">
+                                <h3 class="mb-1" style="color: var(--warning-color);" id="churnRisk">
+                                    {{ (analytics_data.churn_risk or 0)|round(1) }}%
+                                </h3>
+                                <small class="text-muted">Risque de perte</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="progress mb-3" style="height: 8px;">
+                        <div class="progress-bar bg-success" role="progressbar" 
+                             style="width: {{ analytics_data.retention_rate or 0 }}%"></div>
+                    </div>
+                    
+                    <div class="clay-element p-3" style="background: var(--bg-light);">
+                        <h6 class="mb-2">Recommandations :</h6>
+                        <ul class="mb-0 small">
+                            {% if analytics_data.churn_risk and analytics_data.churn_risk > 30 %}
+                            <li class="text-warning">⚠️ Risque de perte élevé - Prévoir contact proactif</li>
+                            {% endif %}
+                            {% if analytics_data.days_since_last_order and analytics_data.days_since_last_order > 90 %}
+                            <li class="text-info">💡 Pas de commande depuis {{ analytics_data.days_since_last_order }} jours - Envoyer offre</li>
+                            {% endif %}
+                            {% if analytics_data.satisfaction_score and analytics_data.satisfaction_score > 8 %}
+                            <li class="text-success">⭐ Client très satisfait - Demander recommandation</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {# Comparaison avec la moyenne #}
+    <div class="clay-card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-balance-scale me-2"></i>Comparaison avec la moyenne</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <h6>Chiffre d'affaires</h6>
+                        <div class="position-relative">
+                            <canvas id="revenueComparisonChart" width="100" height="100"></canvas>
+                            <div class="position-absolute top-50 start-50 translate-middle">
+                                <span class="fw-bold" id="revenueVsAvg">+15%</span>
+                            </div>
+                        </div>
+                        <small class="text-muted">vs moyenne client</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <h6>Fréquence</h6>
+                        <div class="position-relative">
+                            <canvas id="frequencyComparisonChart" width="100" height="100"></canvas>
+                            <div class="position-absolute top-50 start-50 translate-middle">
+                                <span class="fw-bold" id="frequencyVsAvg">-5%</span>
+                            </div>
+                        </div>
+                        <small class="text-muted">vs moyenne client</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <h6>Panier moyen</h6>
+                        <div class="position-relative">
+                            <canvas id="basketComparisonChart" width="100" height="100"></canvas>
+                            <div class="position-absolute top-50 start-50 translate-middle">
+                                <span class="fw-bold" id="basketVsAvg">+22%</span>
+                            </div>
+                        </div>
+                        <small class="text-muted">vs moyenne client</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <h6>Satisfaction</h6>
+                        <div class="position-relative">
+                            <canvas id="satisfactionComparisonChart" width="100" height="100"></canvas>
+                            <div class="position-absolute top-50 start-50 translate-middle">
+                                <span class="fw-bold" id="satisfactionVsAvg">+8%</span>
+                            </div>
+                        </div>
+                        <small class="text-muted">vs moyenne client</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {# Insights et prédictions #}
+    <div class="row">
+        <div class="col-md-8">
+            <div class="clay-card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Insights</h5>
+                </div>
+                <div class="card-body">
+                    <div id="insightsContainer">
+                        {% if analytics_insights %}
+                            {% for insight in analytics_insights %}
+                            <div class="clay-element p-3 mb-3">
+                                <div class="d-flex align-items-start">
+                                    <div class="flex-shrink-0 me-3">
+                                        <i class="fas {{ insight.icon }} fa-2x" style="color: {{ insight.color }};"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">{{ insight.title }}</h6>
+                                        <p class="mb-2 text-muted">{{ insight.description }}</p>
+                                        {% if insight.action %}
+                                        <button class="clay-button btn-sm" onclick="{{ insight.action_handler }}">
+                                            {{ insight.action }}
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        <span class="clay-badge" style="background: {{ insight.color }}; color: white;">
+                                            {{ insight.score }}/10
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                                <h6 class="text-muted">Génération d'insights en cours...</h6>
+                                <p class="text-muted">Les insights apparaîtront ici une fois que nous aurons suffisamment de données.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {# Prochaines actions recommandées #}
+        <div class="col-md-4">
+            <div class="clay-card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-tasks me-2"></i>Actions recommandées</h5>
+                </div>
+                <div class="card-body">
+                    <div id="recommendedActions">
+                        {% if recommended_actions %}
+                            {% for action in recommended_actions %}
+                            <div class="d-flex align-items-center mb-3 pb-3 border-bottom">
+                                <div class="flex-shrink-0 me-3">
+                                    <div class="avatar-sm {{ action.priority_class }} rounded-circle d-flex align-items-center justify-content-center">
+                                        <i class="fas {{ action.icon }} text-white"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">{{ action.title }}</h6>
+                                    <small class="text-muted">{{ action.description }}</small>
+                                    <div class="mt-2">
+                                        <button class="clay-button btn-sm w-100" onclick="{{ action.handler }}">
+                                            {{ action.button_text }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-check-circle fa-2x text-success mb-3"></i>
+                                <h6 class="text-muted">Aucune action requise</h6>
+                                <p class="text-muted small">Tout semble bien se passer avec ce client.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Variables pour les graphiques analytics
+let revenueTimeChart = null;
+let servicesChart = null;
+let seasonalityChart = null;
+let comparisonCharts = {};
+
+// Initialisation des graphiques analytics
+function initAnalyticsCharts() {
+    initRevenueTimeChart();
+    initServicesChart();
+    initSeasonalityChart();
+    initComparisonCharts();
+}
+
+// Graphique d'évolution du chiffre d'affaires
+function initRevenueTimeChart() {
+    const ctx = document.getElementById('revenueTimeChart').getContext('2d');
+    
+    revenueTimeChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Chiffre d\'affaires',
+                data: [],
+                borderColor: 'var(--primary-color)',
+                backgroundColor: 'var(--primary-color-alpha)',
+                tension: 0.4,
+                fill: true
+            }, {
+                label: 'Moyenne entreprise',
+                data: [],
+                borderColor: 'var(--secondary-color)',
+                backgroundColor: 'transparent',
+                borderDash: [5, 5],
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return formatCurrency(value);
+                        }
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ' + formatCurrency(context.parsed.y);
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Graphique des services
+function initServicesChart() {
+    const ctx = document.getElementById('servicesChart').getContext('2d');
+    
+    servicesChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: [],
+            datasets: [{
+                data: [],
+                backgroundColor: [
+                    'var(--primary-color)',
+                    'var(--success-color)',
+                    'var(--warning-color)',
+                    'var(--info-color)',
+                    'var(--danger-color)'
+                ],
+                borderWidth: 2,
+                borderColor: 'var(--bg-color)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((context.parsed / total) * 100).toFixed(1);
+                            return context.label + ': ' + formatCurrency(context.parsed) + ' (' + percentage + '%)';
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Graphique de saisonnalité
+function initSeasonalityChart() {
+    const ctx = document.getElementById('seasonalityChart').getContext('2d');
+    
+    seasonalityChart = new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'],
+            datasets: [{
+                label: 'Activité client',
+                data: [],
+                borderColor: 'var(--primary-color)',
+                backgroundColor: 'var(--primary-color-alpha)',
+                pointBackgroundColor: 'var(--primary-color)'
+            }, {
+                label: 'Moyenne entreprise',
+                data: [],
+                borderColor: 'var(--secondary-color)',
+                backgroundColor: 'transparent',
+                borderDash: [5, 5]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                r: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+}
+
+// Graphiques de comparaison (jauges)
+function initComparisonCharts() {
+    const chartIds = ['revenueComparisonChart', 'frequencyComparisonChart', 'basketComparisonChart', 'satisfactionComparisonChart'];
+    
+    chartIds.forEach(chartId => {
+        const ctx = document.getElementById(chartId).getContext('2d');
+        
+        comparisonCharts[chartId] = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                datasets: [{
+                    data: [75, 25], // Exemple: 75% de performance
+                    backgroundColor: ['var(--success-color)', 'var(--bg-light)'],
+                    borderWidth: 0,
+                    cutout: '70%'
+                }]
+            },
+            options: {
+                responsive: false,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        enabled: false
+                    }
+                }
+            }
+        });
+    });
+}
+
+// Mettre à jour tous les analytics
+function updateAnalytics() {
+    const period = document.getElementById('analyticsPeriod').value;
+    
+    // Afficher les indicateurs de chargement
+    showAnalyticsLoading();
+    
+    // Charger les nouvelles données
+    fetch(`/api/customers/${customerId}/analytics?period=${period}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateAnalyticsData(data);
+                updateCharts(data);
+                updateInsights(data.insights);
+                updateRecommendedActions(data.recommended_actions);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur lors de la mise à jour des analytics:', error);
+            showToast('Erreur lors de la mise à jour', 'error');
+        })
+        .finally(() => {
+            hideAnalyticsLoading();
+        });
+}
+
+// Mettre à jour les données analytics
+function updateAnalyticsData(data) {
+    // Mettre à jour les KPIs
+    const kpis = {
+        'lifetime_value': data.lifetime_value,
+        'avg_frequency': data.avg_frequency,
+        'avg_order_value': data.avg_order_value,
+        'satisfaction_score': data.satisfaction_score,
+        'retention_rate': data.retention_rate,
+        'repeat_rate': data.repeat_rate,
+        'churn_risk': data.churn_risk
+    };
+    
+    Object.keys(kpis).forEach(key => {
+        const element = document.getElementById(key);
+        if (element) {
+            if (key.includes('value') || key.includes('avg_order')) {
+                element.textContent = formatCurrency(kpis[key] || 0);
+            } else if (key.includes('rate') || key.includes('risk')) {
+                element.textContent = (kpis[key] || 0).toFixed(1) + '%';
+            } else if (key.includes('frequency')) {
+                element.textContent = (kpis[key] || 0).toFixed(1) + '/mois';
+            } else if (key.includes('score')) {
+                element.textContent = (kpis[key] || 0).toFixed(1) + '/10';
+            }
+        }
+    });
+    
+    // Mettre à jour la barre de progression de rétention
+    const progressBar = document.querySelector('.progress-bar');
+    if (progressBar) {
+        progressBar.style.width = (data.retention_rate || 0) + '%';
+    }
+}
+
+// Mettre à jour les graphiques
+function updateCharts(data) {
+    // Graphique de revenus dans le temps
+    if (revenueTimeChart && data.revenue_timeline) {
+        revenueTimeChart.data.labels = data.revenue_timeline.labels;
+        revenueTimeChart.data.datasets[0].data = data.revenue_timeline.customer_data;
+        revenueTimeChart.data.datasets[1].data = data.revenue_timeline.average_data;
+        revenueTimeChart.update();
+    }
+    
+    // Graphique des services
+    if (servicesChart && data.services_breakdown) {
+        servicesChart.data.labels = data.services_breakdown.labels;
+        servicesChart.data.datasets[0].data = data.services_breakdown.values;
+        servicesChart.update();
+    }
+    
+    // Graphique de saisonnalité
+    if (seasonalityChart && data.seasonality) {
+        seasonalityChart.data.datasets[0].data = data.seasonality.customer_data;
+        seasonalityChart.data.datasets[1].data = data.seasonality.average_data;
+        seasonalityChart.update();
+    }
+    
+    // Graphiques de comparaison
+    if (data.comparison) {
+        const comparisons = {
+            'revenueComparisonChart': data.comparison.revenue,
+            'frequencyComparisonChart': data.comparison.frequency,
+            'basketComparisonChart': data.comparison.basket,
+            'satisfactionComparisonChart': data.comparison.satisfaction
+        };
+        
+        Object.keys(comparisons).forEach(chartId => {
+            const chart = comparisonCharts[chartId];
+            const value = comparisons[chartId];
+            
+            if (chart && value !== undefined) {
+                const percentage = Math.max(0, Math.min(100, value + 50)); // Normaliser entre 0 et 100
+                chart.data.datasets[0].data = [percentage, 100 - percentage];
+                
+                // Couleur selon la performance
+                chart.data.datasets[0].backgroundColor[0] = 
+                    value > 10 ? 'var(--success-color)' :
+                    value > -10 ? 'var(--warning-color)' : 'var(--danger-color)';
+                
+                chart.update();
+                
+                // Mettre à jour le texte
+                const textElement = document.getElementById(chartId.replace('Chart', 'VsAvg'));
+                if (textElement) {
+                    textElement.textContent = (value > 0 ? '+' : '') + value.toFixed(0) + '%';
+                    textElement.className = 'fw-bold ' + 
+                        (value > 10 ? 'text-success' :
+                         value > -10 ? 'text-warning' : 'text-danger');
+                }
+            }
+        });
+    }
+}
+
+// Mettre à jour les insights
+function updateInsights(insights) {
+    const container = document.getElementById('insightsContainer');
+    
+    if (!insights || insights.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                <h6 class="text-muted">Aucun insight disponible</h6>
+                <p class="text-muted">Les insights apparaîtront ici une fois que nous aurons suffisamment de données.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = insights.map(insight => `
+        <div class="clay-element p-3 mb-3">
+            <div class="d-flex align-items-start">
+                <div class="flex-shrink-0 me-3">
+                    <i class="fas ${insight.icon} fa-2x" style="color: ${insight.color};"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h6 class="mb-1">${insight.title}</h6>
+                    <p class="mb-2 text-muted">${insight.description}</p>
+                    ${insight.action ? `
+                    <button class="clay-button btn-sm" onclick="${insight.action_handler}">
+                        ${insight.action}
+                    </button>
+                    ` : ''}
+                </div>
+                <div class="flex-shrink-0">
+                    <span class="clay-badge" style="background: ${insight.color}; color: white;">
+                        ${insight.score}/10
+                    </span>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Mettre à jour les actions recommandées
+function updateRecommendedActions(actions) {
+    const container = document.getElementById('recommendedActions');
+    
+    if (!actions || actions.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <i class="fas fa-check-circle fa-2x text-success mb-3"></i>
+                <h6 class="text-muted">Aucune action requise</h6>
+                <p class="text-muted small">Tout semble bien se passer avec ce client.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = actions.map(action => `
+        <div class="d-flex align-items-center mb-3 pb-3 border-bottom">
+            <div class="flex-shrink-0 me-3">
+                <div class="avatar-sm ${action.priority_class} rounded-circle d-flex align-items-center justify-content-center">
+                    <i class="fas ${action.icon} text-white"></i>
+                </div>
+            </div>
+            <div class="flex-grow-1">
+                <h6 class="mb-1">${action.title}</h6>
+                <small class="text-muted">${action.description}</small>
+                <div class="mt-2">
+                    <button class="clay-button btn-sm w-100" onclick="${action.handler}">
+                        ${action.button_text}
+                    </button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Fonctions d'affichage du loading
+function showAnalyticsLoading() {
+    // Ajouter des squelettes de chargement aux graphiques
+    document.querySelectorAll('#analytics canvas').forEach(canvas => {
+        canvas.style.opacity = '0.5';
+    });
+}
+
+function hideAnalyticsLoading() {
+    document.querySelectorAll('#analytics canvas').forEach(canvas => {
+        canvas.style.opacity = '1';
+    });
+}
+
+// Exporter le rapport analytics
+function exportAnalytics() {
+    const period = document.getElementById('analyticsPeriod').value;
+    window.open(`/api/customers/${customerId}/analytics/export?period=${period}`, '_blank');
+}
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+    // Écouter l'activation de l'onglet
+    document.getElementById('analytics-tab').addEventListener('shown.bs.tab', function() {
+        // Initialiser les graphiques si pas encore fait
+        if (!revenueTimeChart) {
+            initAnalyticsCharts();
+            
+            // Charger les données initiales
+            updateAnalytics();
+        } else {
+            // Redimensionner les graphiques
+            Object.values(comparisonCharts).forEach(chart => {
+                chart.resize();
+            });
+            
+            if (revenueTimeChart) revenueTimeChart.resize();
+            if (servicesChart) servicesChart.resize();
+            if (seasonalityChart) seasonalityChart.resize();
+        }
+    });
+});
+</script>

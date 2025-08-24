@@ -29,10 +29,17 @@ from routes.appointments import bp as appointments_bp
 from routes.vehicles import bp as vehicles_bp
 from routes.products import bp as products_bp
 
-
 # Configuration du logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Import Customer 360 API routes après logger
+try:
+    from routes.customer360_api import customer360_api
+    CUSTOMER360_API_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"Customer 360 API non disponible: {e}")
+    CUSTOMER360_API_AVAILABLE = False
 
 
 # Suppress noisy scanner/probe requests from werkzeug access logs
@@ -175,6 +182,11 @@ def index():
     if 'user_id' in session:
         return redirect(url_for('dashboard'))
     return render_template('index.html')
+
+@app.route('/clay')
+def clay():
+    """Page d'accueil - redirige vers dashboard si connecté"""
+    return render_template('clay.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def auth_login():
@@ -596,6 +608,10 @@ app.register_blueprint(technicians.bp, url_prefix='/technicians')
 app.register_blueprint(analytics.bp, url_prefix='/analytics')
 app.register_blueprint(api.bp, url_prefix='/api')
 app.register_blueprint(openai.openai_bp )
+
+# Enregistrement du blueprint Customer 360 API si disponible
+if CUSTOMER360_API_AVAILABLE:
+    app.register_blueprint(customer360_api, url_prefix='/api/customer360')
 
 # Gestion des erreurs
 @app.errorhandler(404)

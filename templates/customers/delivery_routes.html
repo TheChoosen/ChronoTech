@@ -1,0 +1,475 @@
+{% extends "base.html" %}
+
+{% block title %}Planification Livraisons - ChronoTech{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-route me-2"></i>Planification des Livraisons</h2>
+                <div>
+                    <a href="{{ url_for('customers.index') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Retour clients
+                    </a>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newRouteModal">
+                        <i class="fas fa-plus me-1"></i>Nouvelle tournée
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres et statistiques -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-4">
+                            <label for="dateFilter" class="form-label">Date:</label>
+                            <input type="date" class="form-control" id="dateFilter" value="{{ selected_date }}" onchange="filterByDate()">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="technicianFilter" class="form-label">Technicien:</label>
+                            <select class="form-select" id="technicianFilter" onchange="filterByTechnician()">
+                                <option value="">Tous les techniciens</option>
+                                {% for technician in technicians %}
+                                <option value="{{ technician.id }}" {{ 'selected' if technician_filter == technician.id|string else '' }}>
+                                    {{ technician.prenom }} {{ technician.nom }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="statusFilter" class="form-label">Statut:</label>
+                            <select class="form-select" id="statusFilter" onchange="filterByStatus()">
+                                <option value="" {{ 'selected' if not status_filter else '' }}>Tous</option>
+                                <option value="planned" {{ 'selected' if status_filter == 'planned' else '' }}>Planifiées</option>
+                                <option value="in_progress" {{ 'selected' if status_filter == 'in_progress' else '' }}>En cours</option>
+                                <option value="completed" {{ 'selected' if status_filter == 'completed' else '' }}>Terminées</option>
+                                <option value="cancelled" {{ 'selected' if status_filter == 'cancelled' else '' }}>Annulées</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h6><i class="fas fa-chart-bar me-2"></i>Statistiques du jour</h6>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="h5 mb-0">{{ route_stats.total or 0 }}</div>
+                            <small>Tournées</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="h5 mb-0">{{ route_stats.total_stops or 0 }}</div>
+                            <small>Arrêts</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="h5 mb-0">{{ route_stats.total_km or 0 }}km</div>
+                            <small>Distance</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des tournées -->
+    <div class="row">
+        <div class="col-12">
+            {% if routes %}
+                {% for route in routes %}
+                <div class="card mb-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">
+                                <i class="fas fa-route me-2"></i>{{ route.route_name }}
+                                <span class="badge bg-{{ 
+                                    'success' if route.status == 'completed' 
+                                    else 'primary' if route.status == 'in_progress' 
+                                    else 'secondary' if route.status == 'cancelled' 
+                                    else 'warning' 
+                                }}">
+                                    {% if route.status == 'planned' %}Planifiée
+                                    {% elif route.status == 'in_progress' %}En cours
+                                    {% elif route.status == 'completed' %}Terminée
+                                    {% elif route.status == 'cancelled' %}Annulée
+                                    {% endif %}
+                                </span>
+                            </h6>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <small class="text-muted">{{ route.route_date.strftime('%d/%m/%Y') }}</small>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-cog"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#" onclick="viewRouteDetails({{ route.id }})">
+                                        <i class="fas fa-eye me-2"></i>Voir détails
+                                    </a></li>
+                                    {% if route.status == 'planned' %}
+                                    <li><a class="dropdown-item" href="#" onclick="startRoute({{ route.id }})">
+                                        <i class="fas fa-play me-2"></i>Démarrer
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="editRoute({{ route.id }})">
+                                        <i class="fas fa-edit me-2"></i>Modifier
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item text-danger" href="#" onclick="cancelRoute({{ route.id }})">
+                                        <i class="fas fa-times me-2"></i>Annuler
+                                    </a></li>
+                                    {% elif route.status == 'in_progress' %}
+                                    <li><a class="dropdown-item text-success" href="#" onclick="completeRoute({{ route.id }})">
+                                        <i class="fas fa-check me-2"></i>Terminer
+                                    </a></li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <h6><i class="fas fa-user me-1"></i>Technicien</h6>
+                                <p class="mb-0">{{ route.technician_name or 'Non assigné' }}</p>
+                            </div>
+                            <div class="col-md-3">
+                                <h6><i class="fas fa-clock me-1"></i>Horaires</h6>
+                                <p class="mb-0">
+                                    {{ route.start_time.strftime('%H:%M') if route.start_time else 'Non défini' }} - 
+                                    {{ route.end_time.strftime('%H:%M') if route.end_time else 'Non défini' }}
+                                </p>
+                            </div>
+                            <div class="col-md-3">
+                                <h6><i class="fas fa-map-marker-alt me-1"></i>Distance</h6>
+                                <p class="mb-0">{{ route.total_distance or 0 }} km</p>
+                            </div>
+                            <div class="col-md-3">
+                                <h6><i class="fas fa-list me-1"></i>Arrêts</h6>
+                                <p class="mb-0">{{ route.stop_count or 0 }} client(s)</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Barre de progression -->
+                        {% if route.status == 'in_progress' %}
+                        <div class="mt-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <small class="text-muted">Progression</small>
+                                <small class="text-muted">{{ route.completed_stops or 0 }}/{{ route.stop_count or 0 }} arrêts</small>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: {{ ((route.completed_stops or 0) / (route.stop_count or 1) * 100) | round }}%">
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Arrêts de la tournée (aperçu) -->
+                        {% if route.stops %}
+                        <div class="mt-3">
+                            <h6>Arrêts prévus:</h6>
+                            <div class="row">
+                                {% for stop in route.stops[:3] %}
+                                <div class="col-md-4">
+                                    <div class="border rounded p-2 mb-2 {{ 'bg-success bg-opacity-10' if stop.status == 'completed' else '' }}">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong>{{ stop.customer_name }}</strong>
+                                                <br><small class="text-muted">{{ stop.estimated_time.strftime('%H:%M') if stop.estimated_time else 'Horaire à définir' }}</small>
+                                            </div>
+                                            <div>
+                                                {% if stop.status == 'completed' %}
+                                                    <i class="fas fa-check-circle text-success"></i>
+                                                {% elif stop.status == 'in_progress' %}
+                                                    <i class="fas fa-clock text-primary"></i>
+                                                {% else %}
+                                                    <i class="fas fa-circle text-muted"></i>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                                {% if route.stops|length > 3 %}
+                                <div class="col-md-4">
+                                    <div class="border rounded p-2 mb-2 d-flex align-items-center justify-content-center">
+                                        <small class="text-muted">... et {{ route.stops|length - 3 }} autre(s)</small>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-route fa-3x text-muted mb-3"></i>
+                        <h5>Aucune tournée planifiée</h5>
+                        <p class="text-muted">Créez votre première tournée pour organiser les livraisons.</p>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newRouteModal">
+                            <i class="fas fa-plus me-1"></i>Créer une tournée
+                        </button>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal nouvelle tournée -->
+<div class="modal fade" id="newRouteModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nouvelle Tournée</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="newRouteForm" onsubmit="createRoute(event)">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="routeName" class="form-label">Nom de la tournée *</label>
+                                <input type="text" class="form-control" id="routeName" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="routeDate" class="form-label">Date *</label>
+                                <input type="date" class="form-control" id="routeDate" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="technicianSelect" class="form-label">Technicien</label>
+                                <select class="form-select" id="technicianSelect">
+                                    <option value="">Sélectionner un technicien</option>
+                                    {% for technician in technicians %}
+                                    <option value="{{ technician.id }}">{{ technician.prenom }} {{ technician.nom }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="startTime" class="form-label">Heure de début</label>
+                                <input type="time" class="form-control" id="startTime" value="08:00">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="endTime" class="form-label">Heure de fin</label>
+                                <input type="time" class="form-control" id="endTime" value="17:00">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="routeNotes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="routeNotes" rows="3"></textarea>
+                    </div>
+                    
+                    <!-- Sélection des clients -->
+                    <div class="mb-3">
+                        <label class="form-label">Clients à visiter</label>
+                        <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
+                            <div class="mb-2">
+                                <input type="text" class="form-control" placeholder="Rechercher un client..." 
+                                       onkeyup="filterCustomers(this.value)">
+                            </div>
+                            <div id="customersList">
+                                {% for customer in available_customers %}
+                                <div class="form-check customer-item">
+                                    <input class="form-check-input" type="checkbox" value="{{ customer.id }}" 
+                                           id="customer{{ customer.id }}">
+                                    <label class="form-check-label" for="customer{{ customer.id }}">
+                                        <strong>{{ customer.nom }} {{ customer.prenom }}</strong>
+                                        <br><small class="text-muted">{{ customer.adresse }}, {{ customer.ville }}</small>
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>Créer la tournée
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Définir la date d'aujourd'hui par défaut
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    if (!document.getElementById('routeDate').value) {
+        document.getElementById('routeDate').value = today;
+    }
+});
+
+function filterByDate() {
+    updateFilters();
+}
+
+function filterByTechnician() {
+    updateFilters();
+}
+
+function filterByStatus() {
+    updateFilters();
+}
+
+function updateFilters() {
+    const date = document.getElementById('dateFilter').value;
+    const technician = document.getElementById('technicianFilter').value;
+    const status = document.getElementById('statusFilter').value;
+    
+    const params = new URLSearchParams();
+    if (date) params.append('date', date);
+    if (technician) params.append('technician', technician);
+    if (status) params.append('status', status);
+    
+    window.location.href = `{{ url_for('customers.delivery_routes') }}?${params.toString()}`;
+}
+
+function filterCustomers(searchTerm) {
+    const items = document.querySelectorAll('.customer-item');
+    items.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        item.style.display = text.includes(searchTerm.toLowerCase()) ? 'block' : 'none';
+    });
+}
+
+function createRoute(event) {
+    event.preventDefault();
+    
+    const selectedCustomers = Array.from(document.querySelectorAll('#customersList input[type="checkbox"]:checked'))
+                                  .map(cb => cb.value);
+    
+    if (selectedCustomers.length === 0) {
+        alert('Veuillez sélectionner au moins un client pour la tournée.');
+        return;
+    }
+    
+    const formData = {
+        route_name: document.getElementById('routeName').value,
+        route_date: document.getElementById('routeDate').value,
+        technician_id: document.getElementById('technicianSelect').value || null,
+        start_time: document.getElementById('startTime').value,
+        end_time: document.getElementById('endTime').value,
+        notes: document.getElementById('routeNotes').value,
+        customers: selectedCustomers
+    };
+    
+    fetch('/customers/delivery-routes/create', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('success', data.message);
+            const modal = bootstrap.Modal.getInstance(document.getElementById('newRouteModal'));
+            modal.hide();
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast('error', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showToast('error', 'Erreur lors de la création de la tournée');
+    });
+}
+
+function viewRouteDetails(routeId) {
+    // Rediriger vers la page de détails de la tournée
+    window.location.href = `/customers/delivery-routes/${routeId}`;
+}
+
+function startRoute(routeId) {
+    if (!confirm('Démarrer cette tournée ?')) return;
+    
+    updateRouteStatus(routeId, 'in_progress', 'Tournée démarrée');
+}
+
+function completeRoute(routeId) {
+    if (!confirm('Marquer cette tournée comme terminée ?')) return;
+    
+    updateRouteStatus(routeId, 'completed', 'Tournée terminée');
+}
+
+function cancelRoute(routeId) {
+    if (!confirm('Annuler cette tournée ?')) return;
+    
+    updateRouteStatus(routeId, 'cancelled', 'Tournée annulée');
+}
+
+function updateRouteStatus(routeId, status, message) {
+    fetch(`/customers/delivery-routes/${routeId}/status`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({ status: status })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('success', message);
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast('error', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showToast('error', 'Erreur lors de la mise à jour');
+    });
+}
+
+function showToast(type, message) {
+    const toastHtml = `
+        <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+    
+    let toastContainer = document.querySelector('.toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+        document.body.appendChild(toastContainer);
+    }
+    
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    const toastElement = toastContainer.lastElementChild;
+    const toast = new bootstrap.Toast(toastElement);
+    toast.show();
+}
+</script>
+
+{% endblock %}

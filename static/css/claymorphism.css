@@ -1,0 +1,434 @@
+/* ================================
+   CLAYMORPHISM STYLES FOR CHRONOTECH
+   ================================ */
+
+:root {
+    /* Couleurs principales */
+    --bg-color: #e0e5ec;
+    --text-color: #3d3d3d;
+    --primary-color: #5a67ff;
+    --secondary-color: #e0e5ec;
+    --accent-color: #10b981;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --danger-color: #ef4444;
+    --info-color: #3b82f6;
+    
+    /* Typographie */
+    --font-main: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    
+    /* Géométrie */
+    --border-radius: 15px;
+    --border-radius-lg: 20px;
+    --border-radius-sm: 10px;
+    
+    /* Ombres */
+    --shadow-light: #ffffff;
+    --shadow-dark: #a3b1c6;
+    
+    /* Niveaux d'élévation */
+    --shadow-level-1: 8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light);
+    --shadow-level-2: 12px 12px 24px var(--shadow-dark), -12px -12px 24px var(--shadow-light);
+    --shadow-level-3: 20px 20px 40px var(--shadow-dark), -20px -20px 40px var(--shadow-light);
+    --shadow-pressed: inset 8px 8px 16px var(--shadow-dark), inset -8px -8px 16px var(--shadow-light);
+    --shadow-hover: 15px 15px 30px var(--shadow-dark), -15px -15px 30px var(--shadow-light);
+}
+
+/* ================================
+   ÉLÉMENTS DE BASE
+   ================================ */
+
+.clay-element {
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-level-1);
+    transition: all 0.3s ease;
+    border-radius: var(--border-radius);
+    border: none;
+    position: relative;
+}
+
+.clay-element:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-level-2);
+}
+
+.clay-card {
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-level-1);
+    border-radius: var(--border-radius);
+    border: none;
+    transition: all 0.3s ease;
+    overflow: visible;
+}
+
+.clay-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+
+/* ================================
+   BOUTONS
+   ================================ */
+
+.clay-button {
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-level-1);
+    border: none;
+    border-radius: var(--border-radius);
+    color: var(--text-color);
+    padding: 0.5rem 1rem;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.clay-button:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-level-2);
+    color: var(--text-color);
+}
+
+.clay-button:active {
+    transform: scale(0.98);
+    box-shadow: var(--shadow-pressed);
+}
+
+.clay-button-primary {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #4c51bf 100%);
+    color: #ffffff;
+    box-shadow: var(--shadow-level-1);
+    border: none;
+    border-radius: var(--border-radius);
+    font-weight: 600;
+}
+
+.clay-button-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-level-2);
+    color: #ffffff;
+    background: linear-gradient(135deg, #4c51bf 0%, var(--primary-color) 100%);
+}
+
+.clay-button-primary:active {
+    transform: scale(0.98);
+    box-shadow: var(--shadow-pressed);
+}
+
+/* ================================
+   INPUTS ET FORMULAIRES
+   ================================ */
+
+.clay-input {
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-pressed);
+    border: none;
+    border-radius: var(--border-radius);
+    color: var(--text-color);
+    padding: 0.75rem 1rem;
+    transition: box-shadow 0.3s ease;
+    width: 100%;
+}
+
+.clay-input:focus {
+    box-shadow: var(--shadow-level-1);
+    outline: none;
+    background: var(--secondary-color);
+    color: var(--text-color);
+}
+
+.clay-input::placeholder {
+    color: rgba(61, 61, 61, 0.6);
+}
+
+/* ================================
+   CARTES CLIENTS
+   ================================ */
+
+.customer-card {
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-level-1);
+    border-radius: var(--border-radius);
+    border: none;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
+    overflow: visible;
+}
+
+.customer-card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-level-3);
+    z-index: 50;
+}
+
+.customer-card .card-body {
+    padding: 1.5rem;
+    background: transparent;
+}
+
+/* ================================
+   STATISTIQUES
+   ================================ */
+
+.stat-card {
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-level-1);
+    border-radius: var(--border-radius);
+    border: none;
+    transition: all 0.3s ease;
+    padding: 1.5rem;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-level-2);
+}
+
+.stat-icon {
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-level-1);
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    transition: all 0.3s ease;
+}
+
+.stat-icon.bg-primary { 
+    background: linear-gradient(135deg, var(--primary-color) 0%, #4c51bf 100%);
+    color: white;
+}
+
+.stat-icon.bg-success { 
+    background: linear-gradient(135deg, var(--success-color) 0%, #059669 100%);
+    color: white;
+}
+
+.stat-icon.bg-info { 
+    background: linear-gradient(135deg, var(--info-color) 0%, #2563eb 100%);
+    color: white;
+}
+
+.stat-icon.bg-warning { 
+    background: linear-gradient(135deg, var(--warning-color) 0%, #d97706 100%);
+    color: white;
+}
+
+/* ================================
+   NAVIGATION ET ONGLETS
+   ================================ */
+
+.nav-link.clay-nav {
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-level-1);
+    border: none;
+    border-radius: var(--border-radius);
+    color: var(--text-color);
+    margin: 0 0.25rem;
+    transition: all 0.3s ease;
+}
+
+.nav-link.clay-nav:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-level-2);
+    color: var(--text-color);
+}
+
+.nav-link.clay-nav.active {
+    box-shadow: var(--shadow-pressed);
+    color: var(--primary-color);
+    background: var(--secondary-color);
+}
+
+/* ================================
+   PAGINATION
+   ================================ */
+
+.pagination .page-link {
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-level-1);
+    border: none;
+    border-radius: var(--border-radius);
+    color: var(--text-color);
+    margin: 0 0.25rem;
+    transition: all 0.3s ease;
+}
+
+.pagination .page-link:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-level-2);
+    color: var(--text-color);
+    background: var(--secondary-color);
+}
+
+.pagination .page-item.active .page-link {
+    box-shadow: var(--shadow-pressed);
+    color: var(--primary-color);
+    background: var(--secondary-color);
+}
+
+/* ================================
+   DROPDOWNS
+   ================================ */
+
+.dropdown-menu {
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-level-3);
+    border: none;
+    border-radius: var(--border-radius);
+    z-index: 2050 !important;
+    overflow: visible;
+}
+
+.dropdown-item {
+    color: var(--text-color);
+    border-radius: var(--border-radius-sm);
+    margin: 0.25rem 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background: rgba(90, 103, 255, 0.1);
+    color: var(--primary-color);
+    transform: translateX(3px);
+}
+
+/* ================================
+   BADGES ET LABELS
+   ================================ */
+
+.badge.clay-badge {
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-level-1);
+    color: var(--text-color);
+    border-radius: var(--border-radius-sm);
+    padding: 0.4rem 0.8rem;
+    font-weight: 500;
+}
+
+/* ================================
+   MODALES ET OVERLAYS
+   ================================ */
+
+.modal-content {
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-level-3);
+    border: none;
+    border-radius: var(--border-radius-lg);
+}
+
+/* ================================
+   AVATARS
+   ================================ */
+
+.avatar-clay {
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-level-1);
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.avatar-clay:hover {
+    transform: scale(1.05);
+    box-shadow: var(--shadow-level-2);
+}
+
+/* ================================
+   UTILITAIRES
+   ================================ */
+
+.clay-pressed {
+    box-shadow: var(--shadow-pressed) !important;
+}
+
+.clay-elevated {
+    box-shadow: var(--shadow-level-2) !important;
+}
+
+.clay-floating {
+    box-shadow: var(--shadow-level-3) !important;
+}
+
+/* ================================
+   RESPONSIVE
+   ================================ */
+
+@media (max-width: 768px) {
+    :root {
+        --border-radius: 12px;
+        --border-radius-lg: 16px;
+        --border-radius-sm: 8px;
+    }
+    
+    .clay-element:hover,
+    .clay-card:hover,
+    .customer-card:hover {
+        transform: translateY(-2px);
+    }
+}
+
+/* ================================
+   ANIMATIONS
+   ================================ */
+
+@keyframes clayPulse {
+    0% { box-shadow: var(--shadow-level-1); }
+    50% { box-shadow: var(--shadow-level-2); }
+    100% { box-shadow: var(--shadow-level-1); }
+}
+
+.clay-pulse {
+    animation: clayPulse 2s infinite;
+}
+
+/* ================================
+   OVERRIDE BOOTSTRAP POUR CLAYMORPHISM
+   ================================ */
+
+.card {
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-level-1);
+    border: none;
+    border-radius: var(--border-radius);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #4c51bf 100%);
+    border: none;
+    box-shadow: var(--shadow-level-1);
+    border-radius: var(--border-radius);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #4c51bf 0%, var(--primary-color) 100%);
+    box-shadow: var(--shadow-level-2);
+    transform: translateY(-2px);
+}
+
+.form-control {
+    background: var(--secondary-color);
+    border: none;
+    box-shadow: var(--shadow-pressed);
+    border-radius: var(--border-radius);
+}
+
+.form-control:focus {
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-level-1);
+    border: none;
+}
+
+.form-select {
+    background: var(--secondary-color);
+    border: none;
+    box-shadow: var(--shadow-pressed);
+    border-radius: var(--border-radius);
+}
+
+.form-select:focus {
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-level-1);
+    border: none;
+}

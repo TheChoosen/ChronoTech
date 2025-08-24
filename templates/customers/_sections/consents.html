@@ -1,0 +1,594 @@
+{# Section RGPD et consentements client #}
+
+{%- from 'customers/_components/macros.html' import loading_skeleton -%}
+
+<div class="tab-pane fade {{ 'show active' if active_tab == 'consents' }}" 
+     id="consents" role="tabpanel" data-section="consents">
+     
+    {# Statut RGPD global #}
+    <div class="clay-card mb-4">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-shield-alt me-2"></i>Statut RGPD
+                </h5>
+                <span class="clay-badge {{ 'bg-success' if gdpr_status.compliant else 'bg-warning' }}">
+                    {{ 'Conforme' if gdpr_status.compliant else 'Attention requise' }}
+                </span>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3 text-center">
+                    <div class="mb-3">
+                        <div class="avatar-lg {{ 'bg-success' if gdpr_status.compliant else 'bg-warning' }} rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2">
+                            <i class="fas {{ 'fa-check' if gdpr_status.compliant else 'fa-exclamation' }} fa-2x text-white"></i>
+                        </div>
+                        <h6 class="mb-1">{{ 'Conforme' if gdpr_status.compliant else 'Vérification requise' }}</h6>
+                        <small class="text-muted">Statut global</small>
+                    </div>
+                </div>
+                <div class="col-md-9">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h3 class="mb-1 {{ 'text-success' if gdpr_status.consents_valid >= 80 else 'text-warning' if gdpr_status.consents_valid >= 60 else 'text-danger' }}">
+                                    {{ gdpr_status.consents_valid or 0 }}%
+                                </h3>
+                                <small class="text-muted">Consentements valides</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h3 class="mb-1 text-info">
+                                    {{ gdpr_status.data_retention_days or 0 }}
+                                </h3>
+                                <small class="text-muted">Jours de rétention</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h3 class="mb-1 text-primary">
+                                    {{ gdpr_status.last_review_days or 'N/A' }}
+                                </h3>
+                                <small class="text-muted">Dernière révision (jours)</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if not gdpr_status.compliant %}
+                    <div class="clay-element p-3 mt-3" style="background: var(--warning-color-alpha);">
+                        <h6 class="mb-2"><i class="fas fa-exclamation-triangle me-2"></i>Actions requises :</h6>
+                        <ul class="mb-2">
+                            {% for issue in gdpr_status.issues %}
+                            <li>{{ issue }}</li>
+                            {% endfor %}
+                        </ul>
+                        <button class="clay-button btn-sm" onclick="resolveGdprIssues()">
+                            <i class="fas fa-tools me-2"></i>Résoudre automatiquement
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        {# Consentements actifs #}
+        <div class="col-md-8">
+            <div class="clay-card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-check-square me-2"></i>Consentements</h5>
+                        <button class="clay-button btn-sm" onclick="refreshConsents()">
+                            <i class="fas fa-sync me-2"></i>Actualiser
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="consentsLoading" style="display: none;">
+                        {{ loading_skeleton(type="table") }}
+                    </div>
+                    
+                    <div id="consentsTable">
+                        {% if consents %}
+                            {% for consent in consents %}
+                            <div class="clay-element p-3 mb-3">
+                                <div class="row align-items-center">
+                                    <div class="col-md-1">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" 
+                                                   id="consent_{{ consent.id }}"
+                                                   {{ 'checked' if consent.granted }}
+                                                   onchange="updateConsent({{ consent.id }}, this.checked)">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-7">
+                                        <h6 class="mb-1">{{ consent.purpose_name }}</h6>
+                                        <p class="mb-1 text-muted small">{{ consent.description }}</p>
+                                        <div class="d-flex align-items-center gap-3">
+                                            <small class="text-muted">
+                                                <i class="fas fa-calendar me-1"></i>
+                                                {{ consent.granted_at|datetime_format('short') if consent.granted_at else 'Non accordé' }}
+                                            </small>
+                                            {% if consent.expires_at %}
+                                            <small class="text-muted">
+                                                <i class="fas fa-clock me-1"></i>
+                                                Expire le {{ consent.expires_at|datetime_format('short') }}
+                                            </small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <span class="clay-badge {{ consent.status|consent_status_badge }}">
+                                            {% if consent.status == 'granted' %}Accordé
+                                            {% elif consent.status == 'denied' %}Refusé
+                                            {% elif consent.status == 'expired' %}Expiré
+                                            {% elif consent.status == 'withdrawn' %}Retiré
+                                            {% else %}{{ consent.status }}{% endif %}
+                                        </span>
+                                    </div>
+                                    <div class="col-md-2 text-end">
+                                        <div class="dropdown">
+                                            <button class="clay-button p-1" data-bs-toggle="dropdown">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li><a class="dropdown-item" href="#" onclick="viewConsentHistory({{ consent.id }})">
+                                                    <i class="fas fa-history me-2"></i>Historique
+                                                </a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="updateConsentExpiry({{ consent.id }})">
+                                                    <i class="fas fa-calendar me-2"></i>Modifier expiration
+                                                </a></li>
+                                                {% if consent.granted %}
+                                                <li><a class="dropdown-item text-warning" href="#" onclick="withdrawConsent({{ consent.id }})">
+                                                    <i class="fas fa-times me-2"></i>Retirer consentement
+                                                </a></li>
+                                                {% endif %}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-shield-alt fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">Aucun consentement enregistré</h5>
+                                <p class="text-muted">Les consentements RGPD de ce client apparaîtront ici.</p>
+                                <button class="clay-button" onclick="requestConsents()">
+                                    <i class="fas fa-plus me-2"></i>Demander consentements
+                                </button>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    {# Ajouter un nouveau consentement #}
+                    <div class="border-top pt-3 mt-3">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <select class="form-select clay-select" id="newConsentPurpose">
+                                    <option value="">Sélectionner un type de consentement...</option>
+                                    <option value="marketing">Marketing et communication</option>
+                                    <option value="analytics">Analyse et statistiques</option>
+                                    <option value="personalization">Personnalisation</option>
+                                    <option value="third_party">Partage avec des tiers</option>
+                                    <option value="retention">Conservation des données</option>
+                                    <option value="profiling">Profilage</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <input type="date" class="form-control clay-input" id="newConsentExpiry" 
+                                       placeholder="Date d'expiration">
+                            </div>
+                            <div class="col-md-3">
+                                <button class="clay-button w-100" onclick="addConsent()">
+                                    <i class="fas fa-plus me-2"></i>Ajouter
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {# Actions RGPD et outils #}
+        <div class="col-md-4">
+            <div class="clay-card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-tools me-2"></i>Actions RGPD</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="clay-button" onclick="exportPersonalData()">
+                            <i class="fas fa-download me-2"></i>Exporter données personnelles
+                        </button>
+                        <button class="clay-button" onclick="anonymizeData()">
+                            <i class="fas fa-user-secret me-2"></i>Anonymiser les données
+                        </button>
+                        <button class="clay-button" onclick="deletePersonalData()">
+                            <i class="fas fa-trash me-2"></i>Droit à l'effacement
+                        </button>
+                        <button class="clay-button" onclick="rectifyData()">
+                            <i class="fas fa-edit me-2"></i>Rectification des données
+                        </button>
+                        <button class="clay-button" onclick="auditTrail()">
+                            <i class="fas fa-search me-2"></i>Piste d'audit
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            {# Historique des demandes #}
+            <div class="clay-card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-history me-2"></i>Demandes récentes</h6>
+                </div>
+                <div class="card-body">
+                    {% if gdpr_requests %}
+                        {% for request in gdpr_requests %}
+                        <div class="d-flex align-items-center mb-3 pb-3 border-bottom">
+                            <div class="flex-shrink-0 me-3">
+                                <div class="avatar-sm {{ request.status|request_status_color }} rounded-circle d-flex align-items-center justify-content-center">
+                                    <i class="fas {{ request.type|request_type_icon }} text-white"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">{{ request.type_name }}</h6>
+                                <small class="text-muted">{{ request.created_at|datetime_format('relative') }}</small>
+                                <div class="small">
+                                    <span class="clay-badge {{ request.status|request_status_badge }}">
+                                        {{ request.status_name }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="fas fa-clipboard-list fa-2x text-muted mb-2"></i>
+                            <p class="text-muted mb-0 small">Aucune demande RGPD</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {# Informations légales et conformité #}
+    <div class="clay-card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-gavel me-2"></i>Informations légales</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Base légale du traitement :</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <strong>Contrat :</strong> Exécution du contrat de service
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <strong>Consentement :</strong> Marketing et communication
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <strong>Intérêt légitime :</strong> Amélioration du service
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6>Durées de conservation :</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-clock text-info me-2"></i>
+                            <strong>Données client :</strong> 3 ans après fin de relation
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-clock text-info me-2"></i>
+                            <strong>Factures :</strong> 10 ans (obligation légale)
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-clock text-info me-2"></i>
+                            <strong>Données marketing :</strong> Jusqu'au retrait du consentement
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="clay-element p-3 mt-3" style="background: var(--info-color-alpha);">
+                <h6 class="mb-2"><i class="fas fa-info-circle me-2"></i>Droits du client :</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <ul class="mb-0 small">
+                            <li>Droit d'accès à ses données</li>
+                            <li>Droit de rectification</li>
+                            <li>Droit à l'effacement</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="mb-0 small">
+                            <li>Droit à la portabilité</li>
+                            <li>Droit d'opposition</li>
+                            <li>Droit à la limitation du traitement</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Variables pour la gestion RGPD
+let consentsData = [];
+
+// Fonction pour mettre à jour un consentement
+function updateConsent(consentId, granted) {
+    fetch(`/api/customers/${customerId}/consents/${consentId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            granted: granted,
+            granted_at: granted ? new Date().toISOString() : null
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Consentement mis à jour', 'success');
+            // Mettre à jour l'affichage
+            refreshConsents();
+        } else {
+            // Revert checkbox on error
+            document.getElementById(`consent_${consentId}`).checked = !granted;
+            showToast('Erreur lors de la mise à jour', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        document.getElementById(`consent_${consentId}`).checked = !granted;
+        showToast('Erreur de connexion', 'error');
+    });
+}
+
+// Fonction pour ajouter un nouveau consentement
+function addConsent() {
+    const purpose = document.getElementById('newConsentPurpose').value;
+    const expiry = document.getElementById('newConsentExpiry').value;
+    
+    if (!purpose) {
+        showToast('Veuillez sélectionner un type de consentement', 'warning');
+        return;
+    }
+    
+    fetch(`/api/customers/${customerId}/consents`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            purpose: purpose,
+            expires_at: expiry || null,
+            granted: false
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Consentement ajouté', 'success');
+            
+            // Reset form
+            document.getElementById('newConsentPurpose').value = '';
+            document.getElementById('newConsentExpiry').value = '';
+            
+            // Refresh list
+            refreshConsents();
+        } else {
+            showToast('Erreur lors de l\'ajout', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showToast('Erreur de connexion', 'error');
+    });
+}
+
+// Fonction pour retirer un consentement
+function withdrawConsent(consentId) {
+    if (!confirm('Êtes-vous sûr de vouloir retirer ce consentement ?')) {
+        return;
+    }
+    
+    fetch(`/api/customers/${customerId}/consents/${consentId}/withdraw`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Consentement retiré', 'success');
+            refreshConsents();
+        } else {
+            showToast('Erreur lors du retrait', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showToast('Erreur de connexion', 'error');
+    });
+}
+
+// Fonction pour actualiser les consentements
+function refreshConsents() {
+    document.getElementById('consentsLoading').style.display = 'block';
+    document.getElementById('consentsTable').style.display = 'none';
+    
+    fetch(`/api/customers/${customerId}/consents`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                renderConsents(data.consents);
+                updateGdprStatus(data.gdpr_status);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showToast('Erreur lors du chargement', 'error');
+        })
+        .finally(() => {
+            document.getElementById('consentsLoading').style.display = 'none';
+            document.getElementById('consentsTable').style.display = 'block';
+        });
+}
+
+// Fonction pour afficher l'historique d'un consentement
+function viewConsentHistory(consentId) {
+    fetch(`/api/customers/${customerId}/consents/${consentId}/history`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showConsentHistoryModal(data.history);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showToast('Erreur lors du chargement de l\'historique', 'error');
+        });
+}
+
+// Actions RGPD
+function exportPersonalData() {
+    if (confirm('Voulez-vous exporter toutes les données personnelles de ce client ?')) {
+        window.open(`/api/customers/${customerId}/gdpr/export`, '_blank');
+        
+        // Enregistrer la demande
+        logGdprRequest('export', 'Demande d\'export des données personnelles');
+    }
+}
+
+function anonymizeData() {
+    if (confirm('ATTENTION: Cette action est irréversible. Voulez-vous anonymiser les données de ce client ?')) {
+        fetch(`/api/customers/${customerId}/gdpr/anonymize`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Données anonymisées avec succès', 'success');
+                // Redirection ou refresh
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            } else {
+                showToast('Erreur lors de l\'anonymisation', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showToast('Erreur de connexion', 'error');
+        });
+    }
+}
+
+function deletePersonalData() {
+    if (confirm('ATTENTION: Cette action supprimera définitivement toutes les données personnelles. Êtes-vous sûr ?')) {
+        const reason = prompt('Raison de la suppression (obligatoire):');
+        if (!reason) return;
+        
+        fetch(`/api/customers/${customerId}/gdpr/delete`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ reason: reason })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Données supprimées avec succès', 'success');
+                // Redirection
+                setTimeout(() => {
+                    window.location.href = '/customers';
+                }, 2000);
+            } else {
+                showToast('Erreur lors de la suppression', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showToast('Erreur de connexion', 'error');
+        });
+    }
+}
+
+function rectifyData() {
+    window.location.href = `/customers/${customerId}/edit?source=gdpr`;
+}
+
+function auditTrail() {
+    window.open(`/api/customers/${customerId}/gdpr/audit`, '_blank');
+}
+
+function resolveGdprIssues() {
+    fetch(`/api/customers/${customerId}/gdpr/auto-resolve`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(`${data.resolved_count} problème(s) résolu(s)`, 'success');
+            refreshConsents();
+        } else {
+            showToast('Erreur lors de la résolution automatique', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showToast('Erreur de connexion', 'error');
+    });
+}
+
+function requestConsents() {
+    // Ouvrir modal pour demander des consentements
+    showConsentRequestModal();
+}
+
+// Fonction pour enregistrer une demande RGPD
+function logGdprRequest(type, description) {
+    fetch(`/api/customers/${customerId}/gdpr/requests`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            type: type,
+            description: description
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (!data.success) {
+            console.error('Erreur lors de l\'enregistrement de la demande RGPD');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+    });
+}
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+    // Écouter l'activation de l'onglet
+    document.getElementById('consents-tab').addEventListener('shown.bs.tab', function() {
+        // Charger les données si nécessaire
+        if (document.getElementById('consentsTable').children.length === 0) {
+            refreshConsents();
+        }
+    });
+});
+</script>

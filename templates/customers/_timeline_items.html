@@ -1,0 +1,80 @@
+<!-- Timeline items partial template -->
+{% for activity in activities %}
+<div class="timeline-item border-left border-3 border-primary ps-3 pb-3 mb-3">
+    <div class="d-flex align-items-start">
+        <div class="flex-shrink-0 me-3">
+            <div class="avatar-sm bg-primary rounded-circle d-flex align-items-center justify-content-center">
+                {% if activity.activity_type == 'workorder' %}
+                    <i class="fas fa-wrench text-white"></i>
+                {% elif activity.activity_type == 'invoice' %}
+                    <i class="fas fa-file-invoice text-white"></i>
+                {% elif activity.activity_type == 'payment' %}
+                    <i class="fas fa-credit-card text-white"></i>
+                {% elif activity.activity_type == 'quote' %}
+                    <i class="fas fa-file-alt text-white"></i>
+                {% elif activity.activity_type == 'email' %}
+                    <i class="fas fa-envelope text-white"></i>
+                {% elif activity.activity_type == 'sms' %}
+                    <i class="fas fa-sms text-white"></i>
+                {% elif activity.activity_type == 'call' %}
+                    <i class="fas fa-phone text-white"></i>
+                {% elif activity.activity_type == 'document' %}
+                    <i class="fas fa-file text-white"></i>
+                {% elif activity.activity_type == 'appointment' %}
+                    <i class="fas fa-calendar text-white"></i>
+                {% elif activity.activity_type == 'note' %}
+                    <i class="fas fa-sticky-note text-white"></i>
+                {% elif activity.activity_type == 'consent' %}
+                    <i class="fas fa-shield-alt text-white"></i>
+                {% else %}
+                    <i class="fas fa-circle text-white"></i>
+                {% endif %}
+            </div>
+        </div>
+        <div class="flex-grow-1">
+            <h6 class="mb-1">{{ activity.title }}</h6>
+            {% if activity.description %}
+            <p class="text-muted mb-2">{{ activity.description }}</p>
+            {% endif %}
+            
+            {% if activity.reference_data %}
+            <div class="border rounded p-2 mb-2 bg-light">
+                <small class="text-muted">
+                    <strong>Référence:</strong>
+                    {% if activity.reference_table == 'work_orders' %}
+                        Bon de travail #{{ activity.reference_data.claim_number or activity.reference_id }}
+                        {% if activity.reference_data.status %}
+                        <span class="badge bg-info ms-1">{{ activity.reference_data.status }}</span>
+                        {% endif %}
+                    {% elif activity.reference_table == 'invoices' %}
+                        Facture #{{ activity.reference_data.invoice_number or activity.reference_id }}
+                        {% if activity.reference_data.total_amount %}
+                        <span class="badge bg-success ms-1">${{ "%.2f"|format(activity.reference_data.total_amount) }}</span>
+                        {% endif %}
+                    {% else %}
+                        {{ activity.reference_table }} #{{ activity.reference_id }}
+                    {% endif %}
+                </small>
+            </div>
+            {% endif %}
+            
+            <small class="text-muted">
+                <i class="fas fa-clock"></i> {{ activity.created_at.strftime('%Y-%m-%d %H:%M') if activity.created_at else 'Date inconnue' }}
+                <span class="mx-2">•</span>
+                <i class="fas fa-user"></i> {{ activity.actor_name or 'Système' }}
+                {% if activity.actor_type == 'system' %}
+                <span class="badge bg-secondary ms-1">Auto</span>
+                {% endif %}
+            </small>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+{% if not activities %}
+<div class="text-center py-5">
+    <i class="fas fa-history fa-3x text-muted mb-3"></i>
+    <h5 class="text-muted">Aucune activité trouvée</h5>
+    <p class="text-muted">Les activités futures apparaîtront ici automatiquement.</p>
+</div>
+{% endif %}

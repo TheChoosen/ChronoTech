@@ -1,62 +1,70 @@
-<div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="mb-0">
-        <i class="fas fa-list me-2"></i>Liste des Clients
-        <span class="badge bg-secondary">{{ pagination.total }} résultat(s)</span>
-    </h5>
-    <div class="d-flex gap-2">
-        <div class="btn-group" role="group">
-            <input type="radio" class="btn-check" name="view" id="view-grid" autocomplete="off" checked>
-            <label class="btn btn-outline-secondary btn-sm clay-button" for="view-grid" onclick="switchView('grid')">
-                <i class="fas fa-th"></i>
-            </label>
-            <input type="radio" class="btn-check" name="view" id="view-list" autocomplete="off">
-            <label class="btn btn-outline-secondary btn-sm clay-button" for="view-list" onclick="switchView('list')">
-                <i class="fas fa-list"></i>
-            </label>
+<!-- En-tête avec contrôles de vue -->
+<div class="clay-element p-3 mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 d-flex align-items-center" style="color: var(--text-color);">
+            <i class="fas fa-list me-3"></i>Liste des Clients
+            <span class="clay-badge ms-3">{{ pagination.total }} résultat(s)</span>
+        </h5>
+
+        <!-- Contrôles de vue -->
+        <div class="d-flex gap-2">
+            <button class="nav-link clay-nav active" id="view-grid-btn" onclick="switchView('grid')">
+                <i class="fas fa-th me-2"></i>Grille
+            </button>
+            <button class="nav-link clay-nav" id="view-list-btn" onclick="switchView('list')">
+                <i class="fas fa-list me-2"></i>Liste
+            </button>
         </div>
     </div>
 </div>
 
 <!-- Vue grille (par défaut) -->
-<div class="card-body" id="gridView">
+<div class="card-body p-0" id="gridView">
     {% if customers %}
-    <div class="row">
-    {% for customer in customers %}
-    {% set _status_l = (customer.status or '')|string|lower %}
-    {% set is_active_flag = ((customer.is_active is defined) and (customer.is_active == 1 or customer.is_active == '1' or customer.is_active is sameas true)) or (_status_l in ['active', 'actif']) %}
-        <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card h-100 customer-card">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div class="d-flex align-items-center">
-                            <div class="avatar-circle me-3">
-                                {% if customer.avatar %}
-                                <img src="{{ url_for('static', filename='uploads/avatars/' + customer.avatar) }}" alt="{{ customer.name }}" class="rounded-circle" width="48" height="48">
-                                {% else %}
-                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                                    {{ customer.name[0].upper() }}
-                                </div>
-                                {% endif %}
+    <div class="row g-4 p-4">
+        {% for customer in customers %}
+        {% set _status_l = (customer.status or '')|string|lower %}
+        {% set is_active_flag = ((customer.is_active is defined) and (customer.is_active == 1 or customer.is_active == '1' or customer.is_active is sameas true)) or (_status_l in ['active', 'actif']) %}
+        <div class="col-md-6 col-lg-4">
+            <div class="customer-card h-100 position-relative">
+                <!-- Badge 360 -->
+                <div class="position-absolute" style="top: 15px; right: 15px; z-index: 10;">
+                    <span class="clay-badge" style="background: linear-gradient(135deg, var(--info-color), #2563eb); color: white;" title="Fonctionnalités Customer 360 disponibles">360</span>
+                </div>
+
+                <div class="card-body p-4">
+                    <!-- En-tête client -->
+                    <div class="d-flex align-items-start mb-3">
+                        <div class="me-3">
+                            {% if customer.avatar %}
+                            <img src="{{ url_for('static', filename='uploads/avatars/' + customer.avatar) }}" alt="{{ customer.name }}" class="avatar-clay" width="56" height="56">
+                            {% else %}
+                            <div class="avatar-clay d-flex align-items-center justify-content-center" style="width: 56px; height: 56px; background: linear-gradient(135deg, var(--primary-color), #4c51bf); color: white; font-weight: 600; font-size: 1.2rem;">
+                                {{ customer.name[:1].upper() if customer.name else 'C' }}
                             </div>
-                            <div>
-                                <h6 class="mb-1">{{ customer.name }}
-                                    {% if (customer.vehicles_count or 0) == 0 %}
-                                    <i class="fa-solid fa-car text-danger"></i>
-                                    {% endif %}
-                                    {% if not is_active_flag %}
-                                    <span class="badge bg-secondary ms-2" title="Client inactif">Inactif</span>
-                                    {% else %}
-                                    <span class="badge bg-success ms-2" title="Client actif">Actif</span>
-                                    {% endif %}
-                                </h6>
-                                <span class="badge {{ customer.customer_type|customer_type_badge }} mb-1">
-                                    {% if customer.customer_type == 'individual' %}Particulier
-                                    {% elif customer.customer_type == 'company' %}Entreprise
-                                    {% elif customer.customer_type == 'government' %}Administration
-                                    {% else %}{{ customer.customer_type }}{% endif %}
-                                </span>
-                            </div>
+                            {% endif %}
                         </div>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1 fw-bold" style="color: var(--text-color);">
+                                {{ customer.name }}
+                                {% if (customer.vehicles_count or 0) == 0 %}
+                                <i class="fas fa-car text-danger ms-2" title="Aucun véhicule"></i>
+                                {% endif %}
+                            </h6>
+                            <span class="clay-badge {{ customer.customer_type|customer_type_badge }} mb-1">
+                                {% if customer.customer_type == 'individual' %}Particulier
+                                {% elif customer.customer_type == 'company' %}Entreprise
+                                {% elif customer.customer_type == 'government' %}Administration
+                                {% else %}{{ customer.customer_type }}{% endif %}
+                            </span>
+                            {% if not is_active_flag %}
+                            <span class="clay-badge ms-2" style="background: linear-gradient(135deg, #6b7280, #4b5563); color: white;" title="Client inactif">Inactif</span>
+                            {% else %}
+                            <span class="clay-badge ms-2" style="background: linear-gradient(135deg, var(--success-color), #059669); color: white;" title="Client actif">Actif</span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Menu d'actions -->
                         <div class="dropdown">
                             <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
                                 <i class="fas fa-ellipsis-v"></i>
@@ -68,15 +76,19 @@
                                 <li><a class="dropdown-item" href="{{ url_for('customers.edit_customer', customer_id=customer.id) }}">
                                         <i class="fas fa-edit me-2"></i>Modifier
                                     </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><h6 class="dropdown-header">Customer 360</h6></li>
+                                <li><a class="dropdown-item" href="{{ url_for('customers.customer_360_dashboard', customer_id=customer.id) }}">
+                                        <i class="fas fa-tachometer-alt me-2"></i>Dashboard 360
+                                    </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('customers.customer_timeline', customer_id=customer.id) }}">
+                                        <i class="fas fa-history me-2"></i>Timeline
+                                    </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><h6 class="dropdown-header">Actions</h6></li>
                                 <li><a class="dropdown-item" href="{{ url_for('work_orders.create_work_order', customer_id=customer.id) }}">
                                         <i class="fas fa-plus me-2"></i>Créer un bon de travail
                                     </a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('vehicles.new') }}?customer_id={{ customer.id }}">
-                                        <i class="fas fa-car me-2"></i>Créer un véhicule
-                                    </a></li>
-                                <li>
-                                    <hr class="dropdown-divider">
-                                </li>
                                 {% if current_user.role in ['admin', 'supervisor'] %}
                                 <li><a class="dropdown-item text-danger" href="#" onclick="deleteCustomer({{ customer.id }})">
                                         <i class="fas fa-trash me-2"></i>Supprimer
@@ -86,70 +98,58 @@
                         </div>
                     </div>
 
-                    <div class="customer-info">
+                    <!-- Informations de contact -->
+                    <div class="mb-3">
                         {% if customer.email %}
-                        <p class="mb-1"><i class="fas fa-envelope text-muted me-2"></i><a href="mailto:{{ customer.email }}">{{ customer.email }}</a></p>
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fas fa-envelope me-2" style="color: var(--primary-color); width: 16px;"></i>
+                            <a href="mailto:{{ customer.email }}" class="text-decoration-none" style="color: var(--text-color);">{{ customer.email }}</a>
+                        </div>
                         {% endif %}
                         {% if customer.phone %}
-                        <p class="mb-1"><i class="fas fa-phone text-muted me-2"></i><a href="tel:{{ customer.phone }}">{{ customer.phone }}</a></p>
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fas fa-phone me-2" style="color: var(--success-color); width: 16px;"></i>
+                            <a href="tel:{{ customer.phone }}" class="text-decoration-none" style="color: var(--text-color);">{{ customer.phone }}</a>
+                        </div>
                         {% endif %}
                         {% if customer.city %}
-                        <p class="mb-1"><i class="fas fa-map-marker-alt text-muted me-2"></i>{{ customer.city }}</p>
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fas fa-map-marker-alt me-2" style="color: var(--info-color); width: 16px;"></i>
+                            <span style="color: var(--text-color);">{{ customer.city }}</span>
+                        </div>
                         {% endif %}
                         {% if customer.company %}
-                        <p class="mb-1"><i class="fas fa-building text-muted me-2"></i>{{ customer.company }}</p>
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fas fa-building me-2" style="color: var(--warning-color); width: 16px;"></i>
+                            <span style="color: var(--text-color);">{{ customer.company }}</span>
+                        </div>
                         {% endif %}
                     </div>
 
-                    <hr>
-
-                    <!-- Statistiques client -->
-                    <div class="row text-center">
-                        <div class="col-4">
-                            <div class="stat-item">
-                                <h6 class="mb-0">{{ customer.work_orders_count or 0 }}</h6>
-                                <small class="text-muted">Interventions</small>
-                                <small class="text-muted d-block">Véhicules: {{ customer.vehicles_count or 0 }}</small>
-                                {% if (customer.vehicles_count or 0) == 0 %}
-                                <div class="mt-1"><small class="text-danger">Aucun véhicule associé</small></div>
-                                {% endif %}
+                    <!-- Statistiques clients -->
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <div class="clay-element p-3 text-center">
+                                <div class="fw-bold" style="color: var(--primary-color); font-size: 1.2rem;">{{ customer.work_orders_count or 0 }}</div>
+                                <div class="small text-muted">Interventions</div>
                             </div>
                         </div>
-                        <div class="col-4">
-                            <div class="stat-item">
-                                <h6 class="mb-0">{{ customer.total_spent|currency if customer.total_spent else '0 €' }}</h6>
-                                <small class="text-muted">Total</small>
-                            </div>
-                        </div>
-                        <div class="col-4">
-                            <div class="stat-item">
-                                <h6 class="mb-0">
-                                    {% if customer.last_order_date %}
-                                    {{ customer.last_order_date|days_ago }}j
-                                    {% else %}
-                                    -
-                                    {% endif %}
-                                </h6>
-                                <small class="text-muted">Dernier</small>
+                        <div class="col-6">
+                            <div class="clay-element p-3 text-center">
+                                <div class="fw-bold" style="color: var(--warning-color); font-size: 1.2rem;">{{ customer.total_spent|currency if customer.total_spent else '0 €' }}</div>
+                                <div class="small text-muted">Total</div>
                             </div>
                         </div>
                     </div>
-                </div>
-                <div class="card-footer">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span class="customer-status-flag" title="{{ (customer.status or 'Statut inconnu')|capitalize }}">
-                            {% if _status_l in ['active', 'actif'] %}
-                                <i class="fas fa-check-circle text-success" aria-hidden="true"></i>
-                            {% elif _status_l in ['inactive', 'inactif'] %}
-                                <i class="fas fa-times-circle text-secondary" aria-hidden="true"></i>
-                            {% elif _status_l == 'prospect' %}
-                                <i class="fas fa-exclamation-circle text-warning" aria-hidden="true"></i>
-                            {% else %}
-                                <i class="fas fa-question-circle text-muted" aria-hidden="true"></i>
-                            {% endif %}
-                            <span class="visually-hidden">{{ customer.status if customer.status else 'statut inconnu' }}</span>
-                        </span>
-                        <small class="text-muted">Créé {{ customer.created_at|datetime_format('short') }}</small>
+
+                    <!-- Boutons d'action rapide -->
+                    <div class="d-flex gap-2 mt-3">
+                        <a href="{{ url_for('customers.view_customer', customer_id=customer.id) }}" class="clay-button-primary flex-grow-1 text-center text-decoration-none">
+                            <i class="fas fa-eye me-2"></i>Voir
+                        </a>
+                        <a href="{{ url_for('customers.edit_customer', customer_id=customer.id) }}" class="clay-button flex-grow-1 text-center text-decoration-none">
+                            <i class="fas fa-edit me-2"></i>Modifier
+                        </a>
                     </div>
                 </div>
             </div>
@@ -157,11 +157,13 @@
         {% endfor %}
     </div>
     {% else %}
-    <div class="text-center py-4">
-        <i class="fas fa-users fa-3x text-muted mb-3"></i>
-        <h5>Aucun client trouvé</h5>
-        <p class="text-muted">Commencez par ajouter votre premier client</p>
-        <a href="{{ url_for('customers.add_customer') }}" class="btn btn-primary clay-button-primary">
+    <div class="text-center py-5">
+        <div class="stat-icon bg-primary mx-auto mb-3" style="width: 80px; height: 80px;">
+            <i class="fas fa-users fa-2x"></i>
+        </div>
+        <h5 style="color: var(--text-color);">Aucun client trouvé</h5>
+        <p class="text-muted mb-4">Commencez par ajouter votre premier client</p>
+        <a href="{{ url_for('customers.add_customer') }}" class="clay-button-primary">
             <i class="fas fa-plus me-2"></i>Ajouter un client
         </a>
     </div>
@@ -169,107 +171,143 @@
 </div>
 
 <!-- Vue liste (cachée par défaut) -->
-<div class="table-responsive" id="listView" style="display: none;">
-    <table class="table table-hover">
-        <thead>
-            <tr>
-                <th>Client</th>
-                <th>Type</th>
-                <th>Contact</th>
-                <th>Localisation</th>
-                <th>Interventions</th>
-                <th>Total</th>
-                <th>Statut</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for customer in customers %}
-            <tr>
-                <td>
-                    <div class="d-flex align-items-center">
-                        {% if customer.avatar %}
-                        <img src="{{ url_for('static', filename='uploads/avatars/' + customer.avatar) }}" alt="{{ customer.name }}" class="rounded-circle me-2" width="32" height="32">
+<div class="clay-element p-0" id="listView" style="display: none;">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead style="background: var(--secondary-color);">
+                <tr>
+                    <th class="border-0 fw-semibold" style="color: var(--text-color);">Client</th>
+                    <th class="border-0 fw-semibold" style="color: var(--text-color);">Type</th>
+                    <th class="border-0 fw-semibold" style="color: var(--text-color);">Contact</th>
+                    <th class="border-0 fw-semibold" style="color: var(--text-color);">Localisation</th>
+                    <th class="border-0 fw-semibold" style="color: var(--text-color);">Interventions</th>
+                    <th class="border-0 fw-semibold" style="color: var(--text-color);">Total</th>
+                    <th class="border-0 fw-semibold" style="color: var(--text-color);">Statut</th>
+                    <th class="border-0 fw-semibold" style="color: var(--text-color);">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if customers %}
+                {% for customer in customers %}
+                {% set _status_l = (customer.status or '')|string|lower %}
+                {% set is_active_flag = ((customer.is_active is defined) and (customer.is_active == 1 or customer.is_active == '1' or customer.is_active is sameas true)) or (_status_l in ['active', 'actif']) %}
+                <tr style="border-bottom: 1px solid rgba(0,0,0,0.05);">
+                    <td class="border-0 py-3">
+                        <div class="d-flex align-items-center">
+                            {% if customer.avatar %}
+                            <img src="{{ url_for('static', filename='uploads/avatars/' + customer.avatar) }}" alt="{{ customer.name }}" class="avatar-clay me-3" width="40" height="40">
+                            {% else %}
+                            <div class="avatar-clay d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px; background: linear-gradient(135deg, var(--primary-color), #4c51bf); color: white; font-weight: 600;">
+                                {{ customer.name[:1].upper() if customer.name else 'C' }}
+                            </div>
+                            {% endif %}
+                            <div>
+                                <div class="fw-bold" style="color: var(--text-color);">{{ customer.name }}</div>
+                                {% if customer.company %}
+                                <small class="text-muted">{{ customer.company }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="border-0 py-3">
+                        <span class="clay-badge {{ customer.customer_type|customer_type_badge }}">
+                            {% if customer.customer_type == 'individual' %}Particulier
+                            {% elif customer.customer_type == 'company' %}Entreprise
+                            {% elif customer.customer_type == 'government' %}Administration
+                            {% else %}{{ customer.customer_type }}{% endif %}
+                        </span>
+                    </td>
+                    <td class="border-0 py-3">
+                        {% if customer.email %}<div><a href="mailto:{{ customer.email }}" class="text-decoration-none" style="color: var(--primary-color);">{{ customer.email }}</a></div>{% endif %}
+                        {% if customer.phone %}<div><a href="tel:{{ customer.phone }}" class="text-decoration-none" style="color: var(--success-color);">{{ customer.phone }}</a></div>{% endif %}
+                    </td>
+                    <td class="border-0 py-3" style="color: var(--text-color);">{{ customer.city or '-' }}</td>
+                    <td class="border-0 py-3" style="color: var(--text-color);">{{ customer.work_orders_count or 0 }}</td>
+                    <td class="border-0 py-3 fw-semibold" style="color: var(--warning-color);">{{ customer.total_spent|currency if customer.total_spent else '0 €' }}</td>
+                    <td class="border-0 py-3">
+                        {% if not is_active_flag %}
+                        <span class="clay-badge" style="background: linear-gradient(135deg, #6b7280, #4b5563); color: white;">
+                            Inactif
+                        </span>
                         {% else %}
-                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px; font-size: 14px;">{{ customer.name[0].upper() }}</div>
+                        <span class="clay-badge" style="background: linear-gradient(135deg, var(--success-color), #059669); color: white;">
+                            Actif
+                        </span>
                         {% endif %}
-                        <div>
-                            <div class="fw-bold">{{ customer.name }}</div>
-                            {% if customer.company %}
-                            <small class="text-muted">{{ customer.company }}</small>
+                    </td>
+                    <td class="border-0 py-3">
+                        <div class="d-flex gap-2">
+                            <a href="{{ url_for('customers.view_customer', customer_id=customer.id) }}" class="clay-button p-2" title="Voir">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="{{ url_for('customers.edit_customer', customer_id=customer.id) }}" class="clay-button p-2" title="Modifier">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            {% if current_user.role in ['admin', 'supervisor'] %}
+                            <button class="clay-button p-2" onclick="deleteCustomer({{ customer.id }})" title="Supprimer" style="color: var(--danger-color);">
+                                <i class="fas fa-trash"></i>
+                            </button>
                             {% endif %}
                         </div>
-                    </div>
-                </td>
-                <td>
-                    <span class="badge {{ customer.customer_type|customer_type_badge }}">
-                        {% if customer.customer_type == 'individual' %}Particulier
-                        {% elif customer.customer_type == 'company' %}Entreprise
-                        {% elif customer.customer_type == 'government' %}Administration
-                        {% else %}{{ customer.customer_type }}{% endif %}
-                    </span>
-                </td>
-                <td>
-                    {% if customer.email %}<div><a href="mailto:{{ customer.email }}">{{ customer.email }}</a></div>{% endif %}
-                    {% if customer.phone %}<div><a href="tel:{{ customer.phone }}">{{ customer.phone }}</a></div>{% endif %}
-                </td>
-                <td>{{ customer.city or '-' }}</td>
-                <td>{{ customer.work_orders_count or 0 }}</td>
-                <td>{{ customer.total_spent|currency if customer.total_spent else '0 €' }}</td>
-                <td>
-                    <span class="customer-status-flag" title="{{ (customer.status or 'Statut inconnu')|capitalize }}">
-                        {% if _status_l in ['active', 'actif'] %}
-                            <i class="fas fa-check-circle text-success" aria-hidden="true"></i>
-                        {% elif _status_l in ['inactive', 'inactif'] %}
-                            <i class="fas fa-times-circle text-secondary" aria-hidden="true"></i>
-                        {% elif _status_l == 'prospect' %}
-                            <i class="fas fa-exclamation-circle text-warning" aria-hidden="true"></i>
-                        {% else %}
-                            <i class="fas fa-question-circle text-muted" aria-hidden="true"></i>
-                        {% endif %}
-                        <span class="visually-hidden">{{ customer.status if customer.status else 'statut inconnu' }}</span>
-                    </span>
-                </td>
-                <td>
-                    <div class="btn-group" role="group">
-                        <a href="{{ url_for('customers.view_customer', customer_id=customer.id) }}" class="btn btn-sm btn-outline-primary clay-button"><i class="fas fa-eye"></i></a>
-                        <a href="{{ url_for('customers.edit_customer', customer_id=customer.id) }}" class="btn btn-sm btn-outline-secondary clay-button"><i class="fas fa-edit"></i></a>
-                        {% if current_user.role in ['admin', 'supervisor'] %}
-                        <button class="btn btn-sm btn-outline-danger clay-button" onclick="deleteCustomer({{ customer.id }})"><i class="fas fa-trash"></i></button>
-                        {% endif %}
-                    </div>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center py-5">
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <h5>Aucun client trouvé</h5>
+                        <p class="text-muted">Commencez par ajouter votre premier client</p>
+                        <a href="{{ url_for('customers.add_customer') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Ajouter un client
+                        </a>
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
 </div>
 
-<!-- Pagination -->
+<!-- Pagination avec style Claymorphism -->
 {% if pagination.pages > 1 %}
-<div class="card-footer">
-    <nav aria-label="Pagination clients">
-        <ul class="pagination justify-content-center mb-0">
+<div class="d-flex justify-content-center mt-4">
+    <div class="clay-element rounded-pill p-2">
+        <ul class="pagination mb-0">
             {% if pagination.has_prev %}
-            <li class="page-item"><a class="page-link" href="{{ url_for('customers.index', page=pagination.prev_num, **request.args) }}"><i class="fas fa-chevron-left"></i></a></li>
+            <li class="page-item">
+                <a class="page-link clay-nav" href="{{ url_for('customers.index', page=pagination.prev_num, **request.args) }}">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            </li>
             {% endif %}
 
             {% for page_num in pagination.iter_pages() %}
             {% if page_num %}
             {% if page_num != pagination.page %}
-            <li class="page-item"><a class="page-link" href="{{ url_for('customers.index', page=page_num, **request.args) }}">{{ page_num }}</a></li>
+            <li class="page-item">
+                <a class="page-link clay-nav" href="{{ url_for('customers.index', page=page_num, **request.args) }}">{{ page_num }}</a>
+            </li>
             {% else %}
-            <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
+            <li class="page-item">
+                <span class="page-link clay-nav active">{{ page_num }}</span>
+            </li>
             {% endif %}
             {% else %}
-            <li class="page-item disabled"><span class="page-link">...</span></li>
+            <li class="page-item">
+                <span class="page-link clay-nav disabled" style="opacity: 0.5;">...</span>
+            </li>
             {% endif %}
             {% endfor %}
 
             {% if pagination.has_next %}
-            <li class="page-item"><a class="page-link" href="{{ url_for('customers.index', page=pagination.next_num, **request.args) }}"><i class="fas fa-chevron-right"></i></a></li>
+            <li class="page-item">
+                <a class="page-link clay-nav" href="{{ url_for('customers.index', page=pagination.next_num, **request.args) }}">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
             {% endif %}
         </ul>
-    </nav>
+    </div>
 </div>
 {% endif %}

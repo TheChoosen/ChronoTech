@@ -4,41 +4,87 @@
 
 {% block content %}
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0">
-            <i class="fas fa-user me-2"></i>{{ customer.name }}
-        </h1>
-        <div class="d-flex gap-2">
-            <a href="{{ url_for('customers.edit_customer', customer_id=customer.id) }}"
-                class="btn btn-outline-primary clay-button">
-                <i class="fas fa-edit me-2"></i>Modifier
-            </a>
-            <div class="d-flex gap-2">
-                <a href="{{ url_for('work_orders.create_work_order', customer_id=customer.id) }}"
-                    class="btn btn-primary clay-button-primary">
-                    <i class="fas fa-plus me-2"></i>Créer un bon de travail
+    <!-- En-tête profil client avec style claymorphism -->
+    <div class="clay-card p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <!-- Avatar client -->
+                <div class="me-4">
+                    {% if customer.avatar %}
+                    <img src="{{ url_for('static', filename='uploads/avatars/' + customer.avatar) }}" alt="{{ customer.name }}" class="avatar-clay" width="80" height="80">
+                    {% else %}
+                    <div class="avatar-clay d-flex align-items-center justify-content-center" style="width: 80px; height: 80px; background: linear-gradient(135deg, var(--primary-color), #4c51bf); color: white; font-weight: 600; font-size: 2rem;">
+                        {{ customer.name[0].upper() }}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Informations principales -->
+                <div>
+                    <h1 class="h2 mb-2" style="color: var(--text-color);">{{ customer.name }}</h1>
+                    <div class="d-flex flex-wrap gap-2 mb-2">
+                        <span class="clay-badge {{ customer.customer_type|customer_type_badge }}">
+                            {% if customer.customer_type == 'individual' %}Particulier
+                            {% elif customer.customer_type == 'company' %}Entreprise
+                            {% elif customer.customer_type == 'government' %}Administration
+                            {% else %}{{ customer.customer_type }}{% endif %}
+                        </span>
+                        {% set _status_l = (customer.status or '')|string|lower %}
+                        {% set is_active_flag = ((customer.is_active is defined) and (customer.is_active == 1 or customer.is_active == '1' or customer.is_active is sameas true)) or (_status_l in ['active', 'actif']) %}
+                        {% if not is_active_flag %}
+                        <span class="clay-badge" style="background: linear-gradient(135deg, #6b7280, #4b5563); color: white;">
+                            <i class="fas fa-times-circle me-1"></i>Inactif
+                        </span>
+                        {% else %}
+                        <span class="clay-badge" style="background: linear-gradient(135deg, var(--success-color), #059669); color: white;">
+                            <i class="fas fa-check-circle me-1"></i>Actif
+                        </span>
+                        {% endif %}
+                    </div>
+                    {% if customer.company %}
+                    <p class="text-muted mb-0"><i class="fas fa-building me-2"></i>{{ customer.company }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Actions rapides -->
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="{{ url_for('customers.edit_customer', customer_id=customer.id) }}" class="clay-button">
+                    <i class="fas fa-edit me-2"></i>Modifier
                 </a>
-                <a href="{{ url_for('appointments.create', customer_id=customer.id) }}"
-                    class="btn btn-outline-primary clay-button">
-                    <i class="fas fa-calendar-plus me-2"></i>Créer un rendez-vous
+                
+                <!-- Boutons Customer 360 -->
+                <a href="{{ url_for('customers.customer_360_dashboard', customer_id=customer.id) }}" class="clay-button-primary">
+                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard 360
                 </a>
-                <a class="btn btn-outline-secondary clay-button" href="#vehicles-section">
-                    <i class="fas fa-car me-2"></i>Véhicules
-                </button>
-                <a href="{{ url_for('parts.create_order', customer_id=customer.id) }}"
-                    class="btn btn-outline-secondary clay-button">
-                    <i class="fas fa-box-open me-2"></i>Commander des pièces
+                
+                <div class="dropdown">
+                    <button class="clay-button dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-plus me-2"></i>Actions
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('work_orders.create_work_order', customer_id=customer.id) }}">
+                            <i class="fas fa-tools me-2"></i>Créer un bon de travail
+                        </a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('appointments.create', customer_id=customer.id) }}">
+                            <i class="fas fa-calendar-plus me-2"></i>Créer un rendez-vous
+                        </a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('parts.create_order', customer_id=customer.id) }}">
+                            <i class="fas fa-box-open me-2"></i>Commander des pièces
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{{ url_for('customers.customer_timeline', customer_id=customer.id) }}">
+                            <i class="fas fa-history me-2"></i>Timeline
+                        </a></li>
+                    </ul>
+                </div>
+                
+                <a href="{{ url_for('customers.index') }}" class="clay-button">
+                    <i class="fas fa-arrow-left me-2"></i>Retour
                 </a>
             </div>
-            <a href="{{ url_for('customers.index') }}" class="btn btn-outline-secondary clay-button">
-                <i class="fas fa-arrow-left me-2"></i>Retour
-            </a>
-            <div class="dropdown">
-                <button class="btn btn-outline-secondary clay-button dropdown-toggle" type="button"
-                    data-bs-toggle="dropdown">
-                    <i class="fas fa-ellipsis-v"></i>
-                </button>
-                <ul class="dropdown-menu">
+        </div>
+    </div>
                     <li><a class="dropdown-item" href="#" onclick="exportCustomerData()">
                             <i class="fas fa-download me-2"></i>Exporter données
                         </a></li>
@@ -59,6 +105,47 @@
                 </ul>
             </div>
         </div>
+    </div>
+
+    <!-- Barre de navigation Customer 360 -->
+    <div class="nav-tabs-wrapper mb-4">
+        <ul class="nav nav-tabs">
+            <li class="nav-item">
+                <a class="nav-link active" href="{{ url_for('customers.view_customer', customer_id=customer.id) }}">
+                    <i class="fas fa-user me-2"></i>Profil
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('customers.customer_360_dashboard', customer_id=customer.id) }}">
+                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard 360
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('customers.customer_timeline', customer_id=customer.id) }}">
+                    <i class="fas fa-history me-2"></i>Timeline
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('customers.get_customer_analytics', customer_id=customer.id) }}">
+                    <i class="fas fa-chart-pie me-2"></i>Analytics
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('customers.get_customer_finances', customer_id=customer.id) }}">
+                    <i class="fas fa-euro-sign me-2"></i>Finances
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('customers.get_customer_documents', customer_id=customer.id) }}">
+                    <i class="fas fa-file-alt me-2"></i>Documents
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('customers.get_customer_consents', customer_id=customer.id) }}">
+                    <i class="fas fa-shield-alt me-2"></i>RGPD/Loi 25
+                </a>
+            </li>
+        </ul>
     </div>
 
 

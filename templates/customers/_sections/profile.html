@@ -1,0 +1,271 @@
+{# Section de profil client (informations principales) #}
+
+{%- from 'customers/_components/macros.html' import customer_info_card, stats_card -%}
+
+<div class="tab-pane fade {{ 'show active' if active_tab == 'profile' }}" 
+     id="profile" role="tabpanel" data-section="profile">
+    
+    {# Informations principales #}
+    {{ customer_info_card(customer, show_actions=true) }}
+    
+    {# Statistiques rapides #}
+    <div class="row">
+        {{ stats_card(
+            title="Commandes totales",
+            value=customer_stats.total_orders or 0,
+            subtitle="Cette année",
+            icon="fas fa-shopping-cart",
+            color_class="primary"
+        ) }}
+        
+        {{ stats_card(
+            title="Chiffre d'affaires",
+            value=((customer_stats.total_revenue or 0)|currency),
+            subtitle="Lifetime value",
+            icon="fas fa-euro-sign",
+            color_class="success"
+        ) }}
+        
+        {{ stats_card(
+            title="Interventions",
+            value=customer_stats.total_interventions or 0,
+            subtitle="Réalisées",
+            icon="fas fa-wrench",
+            color_class="warning"
+        ) }}
+        
+        {{ stats_card(
+            title="Satisfaction",
+            value=((customer_stats.avg_rating or 0)|round(1)) + "/5",
+            subtitle="Note moyenne",
+            icon="fas fa-star",
+            color_class="info"
+        ) }}
+    </div>
+    
+    {# Véhicules associés #}
+    {% if customer.vehicles %}
+    <div class="clay-card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-car me-2"></i>Véhicules ({{ customer.vehicles|length }})
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for vehicle in customer.vehicles %}
+                <div class="col-md-6 mb-3">
+                    <div class="clay-element p-3">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                <i class="fas fa-car fa-2x" style="color: var(--primary-color);"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">{{ vehicle.brand }} {{ vehicle.model }}</h6>
+                                <p class="mb-1 text-muted">{{ vehicle.license_plate }}</p>
+                                <small class="text-muted">
+                                    {{ vehicle.year }} • {{ vehicle.fuel_type }}
+                                    {% if vehicle.mileage %}• {{ vehicle.mileage }} km{% endif %}
+                                </small>
+                            </div>
+                            <div>
+                                <a href="{{ url_for('vehicles.view_vehicle', vehicle_id=vehicle.id) }}" 
+                                   class="clay-button p-2" title="Voir détails">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    {# Informations détaillées #}
+    <div class="row">
+        {# Informations de contact #}
+        <div class="col-md-6">
+            <div class="clay-card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-address-book me-2"></i>Contact</h5>
+                </div>
+                <div class="card-body">
+                    {% if customer.secondary_phone %}
+                    <div class="mb-3">
+                        <label class="fw-bold">Téléphone secondaire :</label>
+                        <div class="mt-1">
+                            <i class="fas fa-mobile-alt me-2" style="color: var(--success-color);"></i>
+                            <a href="tel:{{ customer.secondary_phone }}" class="text-decoration-none">
+                                {{ customer.secondary_phone }}
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if customer.emergency_contact %}
+                    <div class="mb-3">
+                        <label class="fw-bold">Contact d'urgence :</label>
+                        <div class="mt-1">
+                            <i class="fas fa-exclamation-triangle me-2" style="color: var(--warning-color);"></i>
+                            {{ customer.emergency_contact }}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if customer.preferred_contact_method %}
+                    <div class="mb-3">
+                        <label class="fw-bold">Méthode de contact préférée :</label>
+                        <div class="mt-1">
+                            <span class="clay-badge" style="background: var(--info-color); color: white;">
+                                {% if customer.preferred_contact_method == 'email' %}
+                                    <i class="fas fa-envelope me-1"></i>Email
+                                {% elif customer.preferred_contact_method == 'phone' %}
+                                    <i class="fas fa-phone me-1"></i>Téléphone
+                                {% elif customer.preferred_contact_method == 'sms' %}
+                                    <i class="fas fa-sms me-1"></i>SMS
+                                {% else %}
+                                    {{ customer.preferred_contact_method }}
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if customer.notes %}
+                    <div class="mb-3">
+                        <label class="fw-bold">Notes :</label>
+                        <div class="clay-element p-3 mt-1" style="background: var(--bg-light);">
+                            {{ customer.notes|nl2br }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        {# Préférences et paramètres #}
+        <div class="col-md-6">
+            <div class="clay-card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-cog me-2"></i>Préférences</h5>
+                </div>
+                <div class="card-body">
+                    {% if customer.language %}
+                    <div class="mb-3">
+                        <label class="fw-bold">Langue :</label>
+                        <div class="mt-1">
+                            <i class="fas fa-globe me-2" style="color: var(--primary-color);"></i>
+                            {{ customer.language|upper }}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if customer.tax_number %}
+                    <div class="mb-3">
+                        <label class="fw-bold">Numéro de TVA :</label>
+                        <div class="mt-1">
+                            <i class="fas fa-receipt me-2" style="color: var(--secondary-color);"></i>
+                            {{ customer.tax_number }}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <label class="fw-bold">Notifications :</label>
+                        <div class="mt-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" 
+                                       {{ 'checked' if customer.email_notifications }} 
+                                       onclick="toggleNotification('email', {{ customer.id }})">
+                                <label class="form-check-label">
+                                    <i class="fas fa-envelope me-2"></i>Email
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" 
+                                       {{ 'checked' if customer.sms_notifications }} 
+                                       onclick="toggleNotification('sms', {{ customer.id }})">
+                                <label class="form-check-label">
+                                    <i class="fas fa-sms me-2"></i>SMS
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="fw-bold">Marketing :</label>
+                        <div class="mt-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" 
+                                       {{ 'checked' if customer.marketing_consent }} 
+                                       onclick="toggleConsent('marketing', {{ customer.id }})">
+                                <label class="form-check-label">
+                                    <i class="fas fa-bullhorn me-2"></i>Consentement marketing
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Fonctions pour mettre à jour les préférences
+function toggleNotification(type, customerId) {
+    // Logique AJAX pour mettre à jour les préférences de notification
+    fetch(`/api/customers/${customerId}/notifications`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            type: type,
+            enabled: event.target.checked
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (!data.success) {
+            event.target.checked = !event.target.checked; // Revert on error
+            showToast('Erreur lors de la mise à jour', 'error');
+        } else {
+            showToast('Préférences mises à jour', 'success');
+        }
+    })
+    .catch(error => {
+        event.target.checked = !event.target.checked; // Revert on error
+        showToast('Erreur de connexion', 'error');
+    });
+}
+
+function toggleConsent(type, customerId) {
+    // Logique AJAX pour mettre à jour les consentements
+    fetch(`/api/customers/${customerId}/consents`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            type: type,
+            enabled: event.target.checked
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (!data.success) {
+            event.target.checked = !event.target.checked; // Revert on error
+            showToast('Erreur lors de la mise à jour', 'error');
+        } else {
+            showToast('Consentement mis à jour', 'success');
+        }
+    })
+    .catch(error => {
+        event.target.checked = !event.target.checked; // Revert on error
+        showToast('Erreur de connexion', 'error');
+    });
+}
+</script>
