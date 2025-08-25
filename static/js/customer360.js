@@ -59,7 +59,7 @@ class Customer360Manager {
             let html = this.cache.get(`section_${sectionName}`);
             
             if (!html) {
-                const response = await fetch(`/api/customers/${this.customerId}/sections/${sectionName}`);
+                const response = await fetch(`/customers/api/customers/${this.customerId}/sections/${sectionName}`);
                 html = await response.text();
                 
                 // Mettre en cache pour 5 minutes

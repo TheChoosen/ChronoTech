@@ -1,12 +1,9 @@
 {# Section documents client (fichiers, contrats, devis) #}
 
 {%- from 'customers/_components/macros.html' import document_card, loading_skeleton -%}
-
-<div class="tab-pane fade {{ 'show active' if active_tab == 'documents' }}" 
-     id="documents" role="tabpanel" data-section="documents">
      
-    {# Barre d'outils documents #}
-    <div class="clay-card mb-4">
+{# Barre d'outils documents #}
+<div class="clay-card mb-4">
         <div class="card-body">
             <div class="row align-items-center">
                 <div class="col-md-4">
@@ -16,11 +13,11 @@
                         </span>
                         <input type="text" class="form-control clay-input" 
                                placeholder="Rechercher un document..." 
-                               id="documentSearch" onkeyup="filterDocuments()">
+                               id="documents-search" onkeyup="filterDocuments()">
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <select class="form-select clay-select" id="documentTypeFilter" onchange="filterDocuments()">
+                    <select class="form-select clay-select" id="documents-type-filter" onchange="filterDocuments()">
                         <option value="">Tous les types</option>
                         <option value="contract">Contrats</option>
                         <option value="quote">Devis</option>
@@ -32,7 +29,7 @@
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <select class="form-select clay-select" id="documentStatusFilter" onchange="filterDocuments()">
+                    <select class="form-select clay-select" id="documents-status-filter" onchange="filterDocuments()">
                         <option value="">Tous les statuts</option>
                         <option value="draft">Brouillon</option>
                         <option value="pending">En attente</option>

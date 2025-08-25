@@ -2,262 +2,258 @@
 
 {%- from 'customers/_components/macros.html' import timeline_item, loading_skeleton -%}
 
-<div class="tab-pane fade {{ 'show active' if active_tab == 'activity' }}" 
-     id="activity" role="tabpanel" data-section="activity">
-     
-    {# Filtres et recherche #}
-    <div class="clay-card mb-4">
-        <div class="card-body">
-            <div class="row align-items-center">
-                <div class="col-md-4">
-                    <div class="input-group">
-                        <span class="input-group-text">
-                            <i class="fas fa-search"></i>
-                        </span>
-                        <input type="text" class="form-control clay-input" 
-                               placeholder="Rechercher dans l'activité..." 
-                               id="activitySearch" onkeyup="filterActivity()">
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <select class="form-select clay-select" id="activityTypeFilter" onchange="filterActivity()">
-                        <option value="">Tous les types</option>
-                        <option value="workorder">Ordres de travail</option>
-                        <option value="invoice">Factures</option>
-                        <option value="payment">Paiements</option>
-                        <option value="document">Documents</option>
-                        <option value="communication">Communications</option>
-                        <option value="system">Système</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <select class="form-select clay-select" id="activityPeriodFilter" onchange="filterActivity()">
-                        <option value="">Toute la période</option>
-                        <option value="today">Aujourd'hui</option>
-                        <option value="week">Cette semaine</option>
-                        <option value="month">Ce mois</option>
-                        <option value="quarter">Ce trimestre</option>
-                        <option value="year">Cette année</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <button class="clay-button w-100" onclick="exportActivity()">
-                        <i class="fas fa-download me-2"></i>Exporter
-                    </button>
+{# Filtres et recherche #}
+<div class="clay-card mb-4">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="fas fa-search"></i>
+                    </span>
+                    <input type="text" class="form-control clay-input" placeholder="Rechercher dans l'activité..."
+                        id="activity-search" onkeyup="filterActivity()">
                 </div>
             </div>
-        </div>
-    </div>
-    
-    {# Timeline d'activité #}
-    <div class="clay-card">
-        <div class="card-header">
-            <h5 class="mb-0">
-                <i class="fas fa-history me-2"></i>Timeline d'activité
-                <span class="badge bg-secondary ms-2" id="activityCount">{{ activities|length if activities }}</span>
-            </h5>
-        </div>
-        <div class="card-body">
-            {# Zone de chargement #}
-            <div id="activityLoading" style="display: none;">
-                {{ loading_skeleton(type="card") }}
-                {{ loading_skeleton(type="card") }}
-                {{ loading_skeleton(type="card") }}
+            <div class="col-md-3">
+                <select class="form-select clay-select" id="activity-type-filter" onchange="filterActivity()">
+                    <option value="">Tous les types</option>
+                    <option value="workorder">Ordres de travail</option>
+                    <option value="invoice">Factures</option>
+                    <option value="payment">Paiements</option>
+                    <option value="document">Documents</option>
+                    <option value="communication">Communications</option>
+                    <option value="system">Système</option>
+                </select>
             </div>
-            
-            {# Timeline des activités #}
-            <div id="activityTimeline">
-                {% if activities %}
-                    {% for activity in activities %}
-                        {{ timeline_item(activity) }}
-                    {% endfor %}
-                {% else %}
-                    <div class="text-center py-5">
-                        <i class="fas fa-clock fa-3x text-muted mb-3"></i>
-                        <h5 class="text-muted">Aucune activité trouvée</h5>
-                        <p class="text-muted">Les activités de ce client apparaîtront ici.</p>
-                    </div>
-                {% endif %}
+            <div class="col-md-3">
+                <select class="form-select clay-select" id="activity-period-filter" onchange="filterActivity()">
+                    <option value="">Toute la période</option>
+                    <option value="today">Aujourd'hui</option>
+                    <option value="week">Cette semaine</option>
+                    <option value="month">Ce mois</option>
+                    <option value="quarter">Ce trimestre</option>
+                    <option value="year">Cette année</option>
+                </select>
             </div>
-            
-            {# Bouton charger plus #}
-            <div id="loadMoreContainer" class="text-center mt-4" style="display: none;">
-                <button class="clay-button" onclick="loadMoreActivity()">
-                    <i class="fas fa-plus me-2"></i>Charger plus d'activités
+            <div class="col-md-2">
+                <button class="clay-button w-100" onclick="exportActivity()">
+                    <i class="fas fa-download me-2"></i>Exporter
                 </button>
-            </div>
-            
-            {# Message fin de liste #}
-            <div id="endOfListMessage" class="text-center mt-4 text-muted" style="display: none;">
-                <small><i class="fas fa-check me-2"></i>Toutes les activités ont été chargées</small>
-            </div>
-        </div>
-    </div>
-    
-    {# Statistiques d'activité #}
-    <div class="row mt-4">
-        <div class="col-md-3">
-            <div class="clay-element p-3 text-center">
-                <h3 class="mb-1" style="color: var(--primary-color);" id="totalActivities">
-                    {{ activity_stats.total if activity_stats else 0 }}
-                </h3>
-                <small class="text-muted">Total activités</small>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="clay-element p-3 text-center">
-                <h3 class="mb-1" style="color: var(--success-color);" id="thisMonthActivities">
-                    {{ activity_stats.this_month if activity_stats else 0 }}
-                </h3>
-                <small class="text-muted">Ce mois</small>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="clay-element p-3 text-center">
-                <h3 class="mb-1" style="color: var(--warning-color);" id="avgMonthlyActivities">
-                    {{ (activity_stats.avg_monthly|round(1)) if activity_stats else 0 }}
-                </h3>
-                <small class="text-muted">Moyenne mensuelle</small>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="clay-element p-3 text-center">
-                <h3 class="mb-1" style="color: var(--info-color);" id="lastActivityDays">
-                    {{ activity_stats.days_since_last if activity_stats else 'N/A' }}
-                </h3>
-                <small class="text-muted">Jours depuis dernière</small>
             </div>
         </div>
     </div>
 </div>
 
+{# Timeline d'activité #}
+<div class="clay-card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-history me-2"></i>Timeline d'activité
+            <span class="badge bg-secondary ms-2" id="activity-count">{{ activities|length if activities }}</span>
+        </h5>
+    </div>
+    <div class="card-body">
+        {# Zone de chargement #}
+        <div id="activity-loading" style="display: none;">
+            {{ loading_skeleton(type="card") }}
+            {{ loading_skeleton(type="card") }}
+            {{ loading_skeleton(type="card") }}
+        </div>
+
+        {# Timeline des activités #}
+        <div id="activity-timeline">
+            {% if activities %}
+            {% for activity in activities %}
+            {{ timeline_item(activity) }}
+            {% endfor %}
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-clock fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Aucune activité trouvée</h5>
+                <p class="text-muted">Les activités de ce client apparaîtront ici.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        {# Bouton charger plus #}
+        <div id="activity-load-more" class="text-center mt-4" style="display: none;">
+            <button class="clay-button" onclick="loadMoreActivity()">
+                <i class="fas fa-plus me-2"></i>Charger plus d'activités
+            </button>
+        </div>
+
+        {# Message fin de liste #}
+        <div id="activity-end-message" class="text-center mt-4 text-muted" style="display: none;">
+            <small><i class="fas fa-check me-2"></i>Toutes les activités ont été chargées</small>
+        </div>
+    </div>
+</div>
+
+{# Statistiques d'activité #}
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="clay-element p-3 text-center">
+            <h3 class="mb-1" style="color: var(--primary-color);" id="activity-total">
+                {{ activity_stats.total_activities or 0 }}
+            </h3>
+            <small class="text-muted">Total activités</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="clay-element p-3 text-center">
+            <h3 class="mb-1" style="color: var(--success-color);" id="activity-this-month">
+                {{ activity_stats.this_month_activities or 0 }}
+            </h3>
+            <small class="text-muted">Ce mois</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="clay-element p-3 text-center">
+            <h3 class="mb-1" style="color: var(--warning-color);" id="activity-avg-monthly">
+                {{ activity_stats.avg_monthly_activities or 0 }}
+            </h3>
+            <small class="text-muted">Moyenne mensuelle</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="clay-element p-3 text-center">
+            <h3 class="mb-1" style="color: var(--info-color);" id="activity-last-days">
+                {{ activity_stats.days_since_last if activity_stats else 'N/A' }}
+            </h3>
+            <small class="text-muted">Jours depuis dernière</small>
+        </div>
+    </div>
+</div>
+</div>
+
 <script>
-let activityPage = 1;
-let activityLoading = false;
-let activityHasMore = true;
+    let activityPage = 1;
+    let activityLoading = false;
+    let activityHasMore = true;
 
-// Variables pour les filtres
-let activityFilters = {
-    search: '',
-    type: '',
-    period: ''
-};
+    // Variables pour les filtres
+    let activityFilters = {
+        search: '',
+        type: '',
+        period: ''
+    };
 
-// Fonction pour filtrer les activités
-function filterActivity() {
-    activityFilters.search = document.getElementById('activitySearch').value.toLowerCase();
-    activityFilters.type = document.getElementById('activityTypeFilter').value;
-    activityFilters.period = document.getElementById('activityPeriodFilter').value;
-    
-    // Reset pagination
-    activityPage = 1;
-    activityHasMore = true;
-    
-    // Afficher le loading
-    document.getElementById('activityLoading').style.display = 'block';
-    document.getElementById('activityTimeline').style.display = 'none';
-    
-    // Charger les activités filtrées
-    loadActivity(true);
-}
+    // Fonction pour filtrer les activités
+    function filterActivity() {
+        activityFilters.search = document.getElementById('activitySearch').value.toLowerCase();
+        activityFilters.type = document.getElementById('activityTypeFilter').value;
+        activityFilters.period = document.getElementById('activityPeriodFilter').value;
 
-// Fonction pour charger les activités
-function loadActivity(reset = false) {
-    if (activityLoading || (!activityHasMore && !reset)) return;
-    
-    activityLoading = true;
-    
-    if (reset) {
+        // Reset pagination
         activityPage = 1;
         activityHasMore = true;
+
+        // Afficher le loading
+        document.getElementById('activityLoading').style.display = 'block';
+        document.getElementById('activityTimeline').style.display = 'none';
+
+        // Charger les activités filtrées
+        loadActivity(true);
     }
-    
-    const params = new URLSearchParams({
-        page: activityPage,
-        search: activityFilters.search,
-        type: activityFilters.type,
-        period: activityFilters.period
-    });
-    
-    fetch(`/api/customers/${customerId}/activity?${params}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const timeline = document.getElementById('activityTimeline');
-                
-                if (reset) {
-                    timeline.innerHTML = '';
-                }
-                
-                if (data.activities.length === 0 && reset) {
-                    timeline.innerHTML = `
+
+    // Fonction pour charger les activités
+    function loadActivity(reset = false) {
+        if (activityLoading || (!activityHasMore && !reset)) return;
+
+        activityLoading = true;
+
+        if (reset) {
+            activityPage = 1;
+            activityHasMore = true;
+        }
+
+        const params = new URLSearchParams({
+            page: activityPage,
+            search: activityFilters.search,
+            type: activityFilters.type,
+            period: activityFilters.period
+        });
+
+        fetch(`/api/customers/${customerId}/activity?${params}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const timeline = document.getElementById('activityTimeline');
+
+                    if (reset) {
+                        timeline.innerHTML = '';
+                    }
+
+                    if (data.activities.length === 0 && reset) {
+                        timeline.innerHTML = `
                         <div class="text-center py-5">
                             <i class="fas fa-search fa-3x text-muted mb-3"></i>
                             <h5 class="text-muted">Aucune activité trouvée</h5>
                             <p class="text-muted">Essayez de modifier vos critères de recherche.</p>
                         </div>
                     `;
-                } else {
-                    data.activities.forEach(activity => {
-                        timeline.insertAdjacentHTML('beforeend', renderTimelineItem(activity));
-                    });
+                    } else {
+                        data.activities.forEach(activity => {
+                            timeline.insertAdjacentHTML('beforeend', renderTimelineItem(activity));
+                        });
+                    }
+
+                    // Mettre à jour les contrôles de pagination
+                    activityHasMore = data.has_more;
+                    document.getElementById('loadMoreContainer').style.display =
+                        activityHasMore ? 'block' : 'none';
+                    document.getElementById('endOfListMessage').style.display =
+                        !activityHasMore && timeline.children.length > 0 ? 'block' : 'none';
+
+                    // Mettre à jour le compteur
+                    document.getElementById('activityCount').textContent = data.total_count;
+
+                    activityPage++;
                 }
-                
-                // Mettre à jour les contrôles de pagination
-                activityHasMore = data.has_more;
-                document.getElementById('loadMoreContainer').style.display = 
-                    activityHasMore ? 'block' : 'none';
-                document.getElementById('endOfListMessage').style.display = 
-                    !activityHasMore && timeline.children.length > 0 ? 'block' : 'none';
-                
-                // Mettre à jour le compteur
-                document.getElementById('activityCount').textContent = data.total_count;
-                
-                activityPage++;
-            }
-        })
-        .catch(error => {
-            console.error('Erreur lors du chargement des activités:', error);
-            showToast('Erreur lors du chargement des activités', 'error');
-        })
-        .finally(() => {
-            activityLoading = false;
-            document.getElementById('activityLoading').style.display = 'none';
-            document.getElementById('activityTimeline').style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Erreur lors du chargement des activités:', error);
+                showToast('Erreur lors du chargement des activités', 'error');
+            })
+            .finally(() => {
+                activityLoading = false;
+                document.getElementById('activityLoading').style.display = 'none';
+                document.getElementById('activityTimeline').style.display = 'block';
+            });
+    }
+
+    // Fonction pour charger plus d'activités
+    function loadMoreActivity() {
+        loadActivity(false);
+    }
+
+    // Fonction pour exporter les activités
+    function exportActivity() {
+        const params = new URLSearchParams({
+            export: 'true',
+            search: activityFilters.search,
+            type: activityFilters.type,
+            period: activityFilters.period
         });
-}
 
-// Fonction pour charger plus d'activités
-function loadMoreActivity() {
-    loadActivity(false);
-}
+        window.location.href = `/api/customers/${customerId}/activity/export?${params}`;
+    }
 
-// Fonction pour exporter les activités
-function exportActivity() {
-    const params = new URLSearchParams({
-        export: 'true',
-        search: activityFilters.search,
-        type: activityFilters.type,
-        period: activityFilters.period
-    });
-    
-    window.location.href = `/api/customers/${customerId}/activity/export?${params}`;
-}
+    // Fonction pour rendre un item de timeline (côté client)
+    function renderTimelineItem(activity) {
+        const iconMap = {
+            'workorder': 'fas fa-wrench',
+            'invoice': 'fas fa-file-invoice',
+            'payment': 'fas fa-credit-card',
+            'document': 'fas fa-file-alt',
+            'communication': 'fas fa-comments',
+            'system': 'fas fa-cog'
+        };
 
-// Fonction pour rendre un item de timeline (côté client)
-function renderTimelineItem(activity) {
-    const iconMap = {
-        'workorder': 'fas fa-wrench',
-        'invoice': 'fas fa-file-invoice',
-        'payment': 'fas fa-credit-card',
-        'document': 'fas fa-file-alt',
-        'communication': 'fas fa-comments',
-        'system': 'fas fa-cog'
-    };
-    
-    const icon = iconMap[activity.activity_type] || 'fas fa-circle';
-    
-    return `
+        const icon = iconMap[activity.activity_type] || 'fas fa-circle';
+
+        return `
         <div class="timeline-item border-left border-3 ps-3 pb-3 mb-3" 
              style="border-color: var(--primary-color) !important;">
             <div class="d-flex align-items-start">
@@ -285,15 +281,15 @@ function renderTimelineItem(activity) {
             </div>
         </div>
     `;
-}
+    }
 
-// Initialisation au chargement de l'onglet
-document.addEventListener('DOMContentLoaded', function() {
-    // Écouter les changements d'onglets
-    document.getElementById('activity-tab').addEventListener('shown.bs.tab', function() {
-        if (document.getElementById('activityTimeline').children.length === 0) {
-            loadActivity(true);
-        }
+    // Initialisation au chargement de l'onglet
+    document.addEventListener('DOMContentLoaded', function () {
+        // Écouter les changements d'onglets
+        document.getElementById('activity-tab').addEventListener('shown.bs.tab', function () {
+            if (document.getElementById('activityTimeline').children.length === 0) {
+                loadActivity(true);
+            }
+        });
     });
-});
 </script>

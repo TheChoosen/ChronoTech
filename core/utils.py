@@ -536,6 +536,60 @@ def init_template_filters(app):
     def datetime_filter(value, format='%d/%m/%Y %H:%M'):
         return format_datetime(value, format)
     
+    @app.template_filter('datetime_format')
+    def datetime_format_filter(value, format_type='default'):
+        """Format une date en fonction du type spécifié."""
+        if not value:
+            return ''
+        
+        try:
+            if isinstance(value, str):
+                value = datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+                
+            formats = {
+                'default': '%d/%m/%Y %H:%M',
+                'short': '%d/%m/%Y',
+                'time': '%H:%M',
+                'full': '%d/%m/%Y à %H:%M',
+                'month_year': '%B %Y',
+                'iso': '%Y-%m-%dT%H:%M:%S',
+                'relative': 'relative'
+            }
+            
+            selected_format = formats.get(format_type, '%d/%m/%Y %H:%M')
+            
+            if format_type == 'relative':
+                # Calcul du temps relatif
+                now = datetime.now()
+                diff = now - value
+                
+                if diff.days < 0:
+                    return f"Dans {abs(diff.days)} jour(s)"
+                elif diff.days == 0:
+                    hours = diff.seconds // 3600
+                    minutes = (diff.seconds % 3600) // 60
+                    if hours > 0:
+                        return f"Il y a {hours}h"
+                    elif minutes > 0:
+                        return f"Il y a {minutes}min"
+                    else:
+                        return "À l'instant"
+                elif diff.days == 1:
+                    return "Hier"
+                elif diff.days < 7:
+                    return f"Il y a {diff.days} jours"
+                elif diff.days < 30:
+                    return f"Il y a {diff.days // 7} semaine(s)"
+                elif diff.days < 365:
+                    return f"Il y a {diff.days // 30} mois"
+                else:
+                    return f"Il y a {diff.days // 365} an(s)"
+            
+            return value.strftime(selected_format)
+        except Exception as e:
+            log_error(f"Erreur formatage date {value}: {e}")
+            return str(value)
+    
     @app.template_filter('duration')
     def duration_filter(value):
         return format_duration(value)
@@ -559,6 +613,101 @@ def init_template_filters(app):
     @app.template_filter('priority_color')
     def priority_color_filter(value):
         return get_priority_color(value)
+        
+    @app.template_filter('escapejs')
+    def escapejs_filter(value):
+        """Échapper les caractères problématiques pour l'inclusion de valeurs dans le JavaScript."""
+        if value is None:
+            return ''
+        value = str(value)
+        chars = {
+            '\\': '\\\\',
+            '"': '\\"',
+            "'": "\\'",
+            '\n': '\\n',
+            '\r': '\\r',
+            '\t': '\\t',
+            '</script>': '<\\/script>',  # Pour éviter les injections XSS
+            '<': '\\u003C',
+            '>': '\\u003E'
+        }
+        for c, r in chars.items():
+            value = value.replace(c, r)
+        return value
+        
+    @app.template_filter('currency')
+    def currency_filter(value):
+        """Formater un nombre en devise (€)."""
+        if value is None:
+            return '0,00 €'
+        try:
+            # Convertir en float si c'est une chaîne
+            if isinstance(value, str):
+                value = float(value.replace(',', '.'))
+            # Formater avec séparateur de milliers et 2 décimales
+            return f"{value:,.2f} €".replace(',', ' ').replace('.', ',')
+        except (ValueError, TypeError) as e:
+            log_warning(f"Erreur formatage devise {value}: {e}")
+            return f"{value} €"
+    
+    @app.template_filter('consent_status_badge')
+    def consent_status_badge_filter(status):
+        """Retourne la classe CSS pour le badge de statut de consentement."""
+        status_classes = {
+            'granted': 'badge-success',
+            'denied': 'badge-danger',
+            'pending': 'badge-warning',
+            'expired': 'badge-secondary',
+            'revoked': 'badge-dark'
+        }
+        return status_classes.get(status, 'badge-secondary')
+    
+    @app.template_filter('invoice_status_badge')
+    def invoice_status_badge_filter(status):
+        """Retourne la classe CSS pour le badge de statut de facture."""
+        status_classes = {
+            'draft': 'badge-secondary',
+            'pending': 'badge-warning',
+            'paid': 'badge-success',
+            'overdue': 'badge-danger',
+            'cancelled': 'badge-dark',
+            'sent': 'badge-info'
+        }
+        return status_classes.get(status, 'badge-secondary')
+
+    @app.template_filter('request_status_color')
+    def request_status_color_filter(status):
+        """Retourne la classe CSS pour la couleur de statut de demande RGPD."""
+        status_classes = {
+            'pending': 'bg-warning',
+            'processed': 'bg-success',
+            'rejected': 'bg-danger',
+            'in_progress': 'bg-info'
+        }
+        return status_classes.get(status, 'bg-secondary')
+
+    @app.template_filter('request_type_icon')
+    def request_type_icon_filter(request_type):
+        """Retourne l'icône FontAwesome pour le type de demande RGPD."""
+        type_icons = {
+            'access': 'fa-eye',
+            'delete': 'fa-trash',
+            'rectify': 'fa-edit',
+            'portability': 'fa-download',
+            'object': 'fa-exclamation-triangle'
+        }
+        return type_icons.get(request_type, 'fa-file')
+
+    @app.template_filter('request_status_badge')
+    def request_status_badge_filter(status):
+        """Retourne la classe CSS pour le badge de statut de demande RGPD."""
+        status_classes = {
+            'pending': 'badge-warning',
+            'processed': 'badge-success',
+            'rejected': 'badge-danger',
+            'in_progress': 'badge-info'
+        }
+        return status_classes.get(status, 'badge-secondary')
 
 if __name__ == "__main__":
     # Tests des fonctions utilitaires

@@ -9,7 +9,7 @@
     {# En-tête Customer 360 #}
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div class="d-flex align-items-center">
-            <a href="{{ url_for('customers.list_customers') }}" class="clay-button me-3" title="Retour à la liste">
+            <a href="{{ url_for('customers.index') }}" class="clay-button me-3" title="Retour à la liste">
                 <i class="fas fa-arrow-left"></i>
             </a>
             <div>
@@ -77,14 +77,14 @@
     {{ customer_360_tabs(customer.id, active_tab|default('profile')) }}
     
     {# Contenu des onglets avec lazy loading #}
-    <div class="tab-content" id="customer360TabsContent">
+    <div class="tab-content" id="customer-360-tab-content">
         {# Onglet Profil - chargé immédiatement #}
         <div class="tab-pane fade {{ 'show active' if active_tab == 'profile' else '' }}" 
-             id="profile" role="tabpanel" data-section="profile">
+             id="tab-content-profile" role="tabpanel" data-section="profile" aria-labelledby="tab-profile">
             {% if active_tab == 'profile' %}
                 {% include 'customers/_sections/profile.html' %}
             {% else %}
-                <div class="text-center py-5" id="profile-placeholder">
+                <div class="text-center py-5" id="placeholder-profile">
                     {{ loading_skeleton(type="card") }}
                     {{ loading_skeleton(type="card") }}
                 </div>
@@ -93,11 +93,11 @@
         
         {# Onglet Activité - lazy loading #}
         <div class="tab-pane fade {{ 'show active' if active_tab == 'activity' else '' }}" 
-             id="activity" role="tabpanel" data-section="activity">
+             id="tab-content-activity" role="tabpanel" data-section="activity" aria-labelledby="tab-activity">
             {% if active_tab == 'activity' %}
                 {% include 'customers/_sections/activity.html' %}
             {% else %}
-                <div class="text-center py-5" id="activity-placeholder">
+                <div class="text-center py-5" id="placeholder-activity">
                     {{ loading_skeleton(type="card") }}
                     {{ loading_skeleton(type="table") }}
                 </div>
@@ -106,11 +106,11 @@
         
         {# Onglet Finances - lazy loading #}
         <div class="tab-pane fade {{ 'show active' if active_tab == 'finances' else '' }}" 
-             id="finances" role="tabpanel" data-section="finances">
+             id="tab-content-finances" role="tabpanel" data-section="finances" aria-labelledby="tab-finances">
             {% if active_tab == 'finances' %}
                 {% include 'customers/_sections/finances.html' %}
             {% else %}
-                <div class="text-center py-5" id="finances-placeholder">
+                <div class="text-center py-5" id="placeholder-finances">
                     {{ loading_skeleton(type="card") }}
                     {{ loading_skeleton(type="table") }}
                 </div>
@@ -119,11 +119,11 @@
         
         {# Onglet Documents - lazy loading #}
         <div class="tab-pane fade {{ 'show active' if active_tab == 'documents' else '' }}" 
-             id="documents" role="tabpanel" data-section="documents">
+             id="tab-content-documents" role="tabpanel" data-section="documents" aria-labelledby="tab-documents">
             {% if active_tab == 'documents' %}
                 {% include 'customers/_sections/documents.html' %}
             {% else %}
-                <div class="text-center py-5" id="documents-placeholder">
+                <div class="text-center py-5" id="placeholder-documents">
                     {{ loading_skeleton(type="card") }}
                     <div class="row">
                         <div class="col-md-4">{{ loading_skeleton(type="card") }}</div>
@@ -136,11 +136,11 @@
         
         {# Onglet Analytics - lazy loading #}
         <div class="tab-pane fade {{ 'show active' if active_tab == 'analytics' else '' }}" 
-             id="analytics" role="tabpanel" data-section="analytics">
+             id="tab-content-analytics" role="tabpanel" data-section="analytics" aria-labelledby="tab-analytics">
             {% if active_tab == 'analytics' %}
                 {% include 'customers/_sections/analytics.html' %}
             {% else %}
-                <div class="text-center py-5" id="analytics-placeholder">
+                <div class="text-center py-5" id="placeholder-analytics">
                     {{ loading_skeleton(type="card") }}
                     <div class="row">
                         <div class="col-md-8">{{ loading_skeleton(type="card") }}</div>
@@ -152,11 +152,11 @@
         
         {# Onglet RGPD - lazy loading #}
         <div class="tab-pane fade {{ 'show active' if active_tab == 'consents' else '' }}" 
-             id="consents" role="tabpanel" data-section="consents">
+             id="tab-content-consents" role="tabpanel" data-section="consents" aria-labelledby="tab-consents">
             {% if active_tab == 'consents' %}
                 {% include 'customers/_sections/consents.html' %}
             {% else %}
-                <div class="text-center py-5" id="consents-placeholder">
+                <div class="text-center py-5" id="placeholder-consents">
                     {{ loading_skeleton(type="card") }}
                     {{ loading_skeleton(type="card") }}
                 </div>
@@ -201,15 +201,30 @@
 // Variables globales Customer 360
 const customerId = {{ customer.id }};
 const customerName = "{{ customer.name|escapejs }}";
-let loadedSections = new Set(['{{ active_tab|default('profile') }}']);
+let loadedSections = new Set(['profile']); // Seul Profile est chargé initialement
 
 // Navigation entre onglets avec lazy loading
 document.addEventListener('DOMContentLoaded', function() {
+    // Activer l'onglet depuis l'URL
+    const params = new URLSearchParams(window.location.search);
+    const activeTab = params.get('tab') || 'profile';
+    
+    // Activer l'onglet correspondant
+    const tabButton = document.querySelector(`[data-section="${activeTab}"]`);
+    if (tabButton) {
+        const bsTab = new bootstrap.Tab(tabButton);
+        bsTab.show();
+        loadSectionIfNeeded(activeTab);
+    }
+    
     // Écouter les changements d'onglets
     const tabButtons = document.querySelectorAll('[data-bs-toggle="tab"]');
     tabButtons.forEach(button => {
         button.addEventListener('shown.bs.tab', function(e) {
             const sectionName = this.getAttribute('data-section');
+            console.log('Tab activated:', sectionName); // Debug
+            
+            // Charger la section si nécessaire
             loadSectionIfNeeded(sectionName);
             
             // Mettre à jour l'URL sans recharger la page
@@ -230,31 +245,52 @@ document.addEventListener('DOMContentLoaded', function() {
             bsTab.show();
         }
     });
-    
-    // Précharger la section suivante de manière proactive
-    setTimeout(() => {
-        preloadNextSection();
-    }, 2000);
 });
 
 // Fonction pour charger une section si nécessaire
-function loadSectionIfNeeded(sectionName) {
-    if (loadedSections.has(sectionName)) {
+function loadSectionIfNeeded(sectionName, forceReload = false) {
+    console.log('Loading section:', sectionName); // Debug
+    
+    if (loadedSections.has(sectionName) && !forceReload) {
+        console.log('Section already loaded:', sectionName); // Debug
         return; // Déjà chargée
     }
     
-    const placeholder = document.getElementById(`${sectionName}-placeholder`);
-    if (!placeholder) {
-        return; // Pas de placeholder, probablement déjà chargée
+    // Profile est toujours chargé côté serveur
+    if (sectionName === 'profile') {
+        loadedSections.add('profile');
+        return;
     }
     
+    const tabContent = document.getElementById(`tab-content-${sectionName}`);
+    if (!tabContent) {
+        console.log('No tab content found for:', sectionName); // Debug
+        return;
+    }
+    
+    // Afficher un indicateur de chargement
+    const loadingHtml = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Chargement...</span>
+            </div>
+            <p class="mt-3">Chargement de la section ${sectionName}...</p>
+        </div>
+    `;
+    tabContent.innerHTML = loadingHtml;
+    
     // Charger la section via AJAX
-    fetch(`/api/customers/${customerId}/sections/${sectionName}`)
-        .then(response => response.text())
+    fetch(`/customers/api/customers/${customerId}/sections/${sectionName}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            return response.text();
+        })
         .then(html => {
-            // Remplacer le placeholder par le contenu réel
-            const tabPane = document.getElementById(sectionName);
-            tabPane.innerHTML = html;
+            console.log('Section loaded successfully:', sectionName); // Debug
+            // Remplacer le contenu
+            tabContent.innerHTML = html;
             
             // Marquer comme chargée
             loadedSections.add(sectionName);
@@ -267,12 +303,12 @@ function loadSectionIfNeeded(sectionName) {
         })
         .catch(error => {
             console.error(`Erreur lors du chargement de la section ${sectionName}:`, error);
-            placeholder.innerHTML = `
+            tabContent.innerHTML = `
                 <div class="text-center py-5">
                     <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
                     <h5 class="text-danger">Erreur de chargement</h5>
                     <p class="text-muted">Impossible de charger cette section.</p>
-                    <button class="clay-button" onclick="loadSectionIfNeeded('${sectionName}')">
+                    <button class="clay-button" onclick="loadSectionIfNeeded('${sectionName}', true)">
                         <i class="fas fa-sync me-2"></i>Réessayer
                     </button>
                 </div>
@@ -283,8 +319,9 @@ function loadSectionIfNeeded(sectionName) {
 // Précharger la section suivante
 function preloadNextSection() {
     const allSections = ['profile', 'activity', 'finances', 'documents', 'analytics', 'consents'];
-    const activeTab = document.querySelector('.nav-link.active').getAttribute('data-section');
-    const currentIndex = allSections.indexOf(activeTab);
+    const activeTab = document.querySelector('.nav-link.active');
+    const activeSection = activeTab ? activeTab.getAttribute('data-section') : null;
+    const currentIndex = allSections.indexOf(activeSection);
     
     if (currentIndex >= 0 && currentIndex < allSections.length - 1) {
         const nextSection = allSections[currentIndex + 1];

@@ -118,8 +118,8 @@ def find_addresses_in_radius(center_lat, center_lng, radius_km, customer_id=None
         log_error(f"Erreur recherche adresses dans rayon: {e}")
         return []
 
-def get_customer_consents(customer_id):
-    """Récupère les consentements d'un client"""
+def fetch_customer_consents(customer_id):
+    """Récupère les consentements d'un client (fonction utilitaire)"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor(pymysql.cursors.DictCursor)
@@ -196,7 +196,7 @@ def update_customer_consent(customer_id, consent_type, granted, user_id, source=
 def check_consent_compliance(customer_id):
     """Vérifie la conformité des consentements d'un client"""
     try:
-        consents = get_customer_consents(customer_id)
+        consents = fetch_customer_consents(customer_id)
         compliance_status = {
             'compliant': True,
             'missing_mandatory': [],
@@ -236,7 +236,7 @@ def check_consent_compliance(customer_id):
 def can_send_communication(customer_id, communication_type='marketing'):
     """Vérifie si on peut envoyer une communication à un client"""
     try:
-        consents = get_customer_consents(customer_id)
+        consents = fetch_customer_consents(customer_id)
         
         # Vérifications de base
         if 'data_processing' not in consents or not consents['data_processing']['granted']:
@@ -301,7 +301,7 @@ bp = Blueprint('customers', __name__)
 def get_customer_consents_api(customer_id):
     """API pour récupérer les consentements d'un client"""
     try:
-        consents = get_customer_consents(customer_id)
+        consents = fetch_customer_consents(customer_id)
         compliance = check_consent_compliance(customer_id)
         
         # Enrichir avec les configurations
@@ -985,12 +985,55 @@ def view_customer(customer_id):
                 conn2.close()
         except Exception:
             vehicles = []
+            
+        # Load contacts for this customer
+        contacts = []
+        try:
+            conn3 = get_db_connection()
+            if conn3:
+                cur3 = conn3.cursor(pymysql.cursors.DictCursor)
+                cur3.execute("SELECT * FROM customer_contacts WHERE customer_id = %s ORDER BY is_primary DESC, role, first_name, last_name", (customer_id,))
+                contacts = cur3.fetchall()
+                cur3.close()
+                conn3.close()
+        except Exception:
+            contacts = []
+            
+        # Load addresses for this customer
+        addresses = []
+        try:
+            conn4 = get_db_connection()
+            if conn4:
+                cur4 = conn4.cursor(pymysql.cursors.DictCursor)
+                cur4.execute("SELECT * FROM customer_addresses WHERE customer_id = %s ORDER BY is_primary DESC, address_type, label", (customer_id,))
+                addresses = cur4.fetchall()
+                cur4.close()
+                conn4.close()
+        except Exception:
+            addresses = []
+            
+        # Préparer les URLs pour le chargement AJAX des sections
+        ajax_endpoints = {
+            'profile': url_for('customers.customer_profile', customer_id=customer_id),
+            'documents': url_for('customers.get_customer_documents', customer_id=customer_id),
+            'timeline': url_for('customers.customer_timeline', customer_id=customer_id),
+            'finances': url_for('customers.get_customer_finances', customer_id=customer_id),
+            'consents': url_for('customers.get_customer_consents', customer_id=customer_id),
+            'analytics': url_for('customers.get_customer_analytics', customer_id=customer_id)
+        }
 
-        return render_template('customers/view.html', customer=customer, work_orders=work_orders,
+        return render_template('customers/view_360_unified.html', customer=customer, work_orders=work_orders,
                                stats=stats, recent_work_orders=recent_work_orders,
                                recent_activities=recent_activities, customer_contacts=customer_contacts,
                                monthly_orders_data=monthly_orders_data, priority_distribution=priority_distribution,
-                               vehicles=vehicles)
+                               vehicles=vehicles, contacts=contacts, addresses=addresses, ajax_endpoints=ajax_endpoints,
+                               active_tab=request.args.get('tab', 'profile'),
+                               customer_stats={
+                                   'total_orders': len(work_orders),
+                                   'total_revenue': 0,
+                                   'total_interventions': len([w for w in work_orders if w.get('status') == 'completed']),
+                                   'avg_rating': 4.5
+                               })
 
     except Exception as e:
         log_error(f"Erreur lors de la récupération du client {customer_id}: {e}")
@@ -2286,17 +2329,25 @@ def customer_360(customer_id):
         cursor.execute("""
             SELECT * FROM customer_contacts
             WHERE customer_id = %s
-            ORDER BY is_primary DESC, role, name
+            ORDER BY is_primary DESC, role, first_name, last_name
         """, [customer_id])
         contacts = cursor.fetchall()
         
-        # Get enhanced addresses
+        # Get enhanced addresses  
         cursor.execute("""
             SELECT * FROM customer_addresses
             WHERE customer_id = %s
-            ORDER BY is_primary DESC, type, label
+            ORDER BY is_primary DESC, address_type, label
         """, [customer_id])
         addresses = cursor.fetchall()
+        
+        # Get vehicles from our new table
+        cursor.execute("""
+            SELECT * FROM customer_vehicles
+            WHERE customer_id = %s
+            ORDER BY created_at DESC
+        """, [customer_id])
+        vehicles = cursor.fetchall()
         
         # Get recent timeline (optimisé avec lazy loading)
         cursor.execute("""
@@ -2308,15 +2359,6 @@ def customer_360(customer_id):
             LIMIT 10
         """, [customer_id])
         recent_activities = cursor.fetchall()
-        
-        # Get vehicles
-        cursor.execute("""
-            SELECT * FROM vehicles
-            WHERE customer_id = %s
-            ORDER BY created_at DESC
-            LIMIT 5
-        """, [customer_id])
-        vehicles = cursor.fetchall()
         
         # ===== OPTIMISATION LAZY LOADING =====
         # Préparer les URLs pour le chargement AJAX des sections lourdes
@@ -2333,7 +2375,7 @@ def customer_360(customer_id):
         conn.close()
         
         return render_template(
-            'customers/view_360.html',
+            'customers/view_360_unified.html',
             customer=customer,
             contacts=contacts,
             addresses=addresses,
@@ -2349,7 +2391,15 @@ def customer_360(customer_id):
             # KPIs calculés
             kpis=kpis,
             # URLs pour lazy loading
-            ajax_endpoints=ajax_endpoints
+            ajax_endpoints=ajax_endpoints,
+            # Ajout des propriétés nécessaires pour les onglets
+            active_tab=request.args.get('tab', 'profile'),
+            customer_stats={
+                'total_orders': 0,
+                'total_revenue': balance_info.get('current_balance', 0) if balance_info else 0,
+                'total_interventions': 0,
+                'avg_rating': 4.5
+            }
         )
         
     except Exception as e:
@@ -4532,6 +4582,205 @@ def format_time_ago(timestamp):
     else:
         return "à l'instant"
 
+# --- Chargement asynchrone des sections Customer 360 ---
+@bp.route('/api/customers/<int:customer_id>/sections/<string:section_name>', methods=['GET'])
+def load_customer_section(customer_id, section_name):
+    """Charge une section spécifique du Customer 360 pour le lazy loading"""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'error': 'Erreur de connexion à la base de données'}), 500
+            
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        
+        # Récupérer les informations du client
+        cursor.execute("SELECT * FROM customers WHERE id = %s", [customer_id])
+        customer = cursor.fetchone()
+        
+        if not customer:
+            return jsonify({'error': 'Client non trouvé'}), 404
+            
+        # Préparer les données communes
+        context = {
+            'customer': customer,
+            'customer_id': customer_id
+        }
+        
+        # Charger les données spécifiques à la section demandée
+        if section_name == 'profile':
+            # Données pour la section profil
+            cursor.execute("""
+                SELECT COUNT(*) as total_orders, 
+                       SUM(total_amount) as total_revenue,
+                       COUNT(DISTINCT work_order_id) as total_work_orders
+                FROM invoices 
+                WHERE customer_id = %s
+            """, [customer_id])
+            customer_stats = cursor.fetchone() or {}
+            context['customer_stats'] = customer_stats
+            
+            # Récupérer les contacts du client
+            cursor.execute("SELECT * FROM customer_contacts WHERE customer_id = %s", [customer_id])
+            context['contacts'] = cursor.fetchall() or []
+            
+            # Récupérer les adresses du client
+            cursor.execute("SELECT * FROM customer_addresses WHERE customer_id = %s", [customer_id])
+            context['addresses'] = cursor.fetchall() or []
+            
+            # Récupérer les véhicules du client
+            cursor.execute("SELECT * FROM vehicles WHERE customer_id = %s", [customer_id])
+            context['vehicles'] = cursor.fetchall() or []
+            
+            template = 'customers/_sections/profile.html'
+            
+        elif section_name == 'activity':
+            # Charger les activités du client
+            cursor.execute("""
+                SELECT ca.*, u.name as actor_name
+                FROM customer_activity ca
+                LEFT JOIN users u ON ca.actor_id = u.id
+                WHERE ca.customer_id = %s
+                ORDER BY ca.created_at DESC
+                LIMIT 20
+            """, [customer_id])
+            context['activities'] = cursor.fetchall() or []
+            
+            # Calculer les statistiques d'activité
+            cursor.execute("""
+                SELECT 
+                    COUNT(*) as total_activities,
+                    COUNT(CASE WHEN ca.created_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH) THEN 1 END) as this_month_activities,
+                    ROUND(COUNT(*) / GREATEST(DATEDIFF(NOW(), MIN(ca.created_at)) / 30, 1), 1) as avg_monthly_activities,
+                    DATEDIFF(NOW(), MAX(ca.created_at)) as days_since_last
+                FROM customer_activity ca
+                WHERE ca.customer_id = %s
+            """, [customer_id])
+            context['activity_stats'] = cursor.fetchone() or {
+                'total_activities': 0,
+                'this_month_activities': 0,
+                'avg_monthly_activities': 0,
+                'days_since_last': 'N/A'
+            }
+            
+            template = 'customers/_sections/activity.html'
+            
+        elif section_name == 'finances':
+            # Charger les données financières
+            cursor.execute("SELECT * FROM customer_finances WHERE customer_id = %s", [customer_id])
+            context['financial_profile'] = cursor.fetchone() or {}
+            
+            # Récupérer les factures
+            cursor.execute("""
+                SELECT * 
+                FROM invoices 
+                WHERE customer_id = %s
+                ORDER BY created_at DESC
+                LIMIT 10
+            """, [customer_id])
+            context['invoices'] = cursor.fetchall() or []
+            
+            # Calculer le résumé financier
+            cursor.execute("""
+                SELECT 
+                    SUM(total_amount) as total_revenue,
+                    SUM(CASE WHEN status = 'pending' THEN total_amount ELSE 0 END) as pending_amount,
+                    COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_count,
+                    SUM(CASE WHEN status = 'overdue' THEN total_amount ELSE 0 END) as overdue_amount,
+                    COUNT(CASE WHEN status = 'overdue' THEN 1 END) as overdue_count,
+                    SUM(CASE WHEN YEAR(created_at) = YEAR(NOW()) THEN total_amount ELSE 0 END) as this_year_revenue,
+                    0 as growth_percentage
+                FROM invoices
+                WHERE customer_id = %s
+            """, [customer_id])
+            context['financial_summary'] = cursor.fetchone() or {
+                'total_revenue': 0,
+                'pending_amount': 0,
+                'pending_count': 0,
+                'overdue_amount': 0,
+                'overdue_count': 0,
+                'this_year_revenue': 0,
+                'growth_percentage': 0
+            }
+            
+            template = 'customers/_sections/finances.html'
+            
+        elif section_name == 'documents':
+            # Charger les documents
+            cursor.execute("""
+                SELECT * 
+                FROM customer_documents
+                WHERE customer_id = %s
+                ORDER BY created_at DESC
+            """, [customer_id])
+            context['documents'] = cursor.fetchall() or []
+            
+            template = 'customers/_sections/documents.html'
+            
+        elif section_name == 'analytics':
+            # Charger les données analytics
+            cursor.execute("""
+                SELECT * 
+                FROM customer_analytics
+                WHERE customer_id = %s
+            """, [customer_id])
+            context['analytics_data'] = cursor.fetchone() or {}
+            
+            template = 'customers/_sections/analytics.html'
+            
+        elif section_name == 'consents':
+            # Charger les consentements
+            cursor.execute("""
+                SELECT * 
+                FROM customer_consents
+                WHERE customer_id = %s AND is_active = 1
+                ORDER BY consent_type, created_at DESC
+            """, [customer_id])
+            consents = cursor.fetchall() or []
+            context['consents'] = consents
+            
+            # Charger les demandes RGPD (si la table existe)
+            try:
+                cursor.execute("""
+                    SELECT * 
+                    FROM gdpr_requests
+                    WHERE customer_id = %s
+                    ORDER BY created_at DESC
+                    LIMIT 10
+                """, [customer_id])
+                context['gdpr_requests'] = cursor.fetchall() or []
+            except Exception:
+                # Table n'existe pas encore, utiliser une liste vide
+                context['gdpr_requests'] = []
+            
+            # Calculer le statut RGPD
+            total_consents = len(consents)
+            valid_consents = len([c for c in consents if c.get('status') == 'granted'])
+            consents_valid_percent = (valid_consents / total_consents * 100) if total_consents > 0 else 0
+            
+            # Créer un objet RGPD status
+            context['gdpr_status'] = {
+                'compliant': consents_valid_percent >= 80,
+                'consents_valid': int(consents_valid_percent),
+                'data_retention_days': 365,  # Valeur par défaut
+                'last_review_days': 30,  # Valeur par défaut
+                'issues': [] if consents_valid_percent >= 80 else ['Certains consentements nécessitent une attention']
+            }
+            
+            template = 'customers/_sections/consents.html'
+            
+        else:
+            return jsonify({'error': 'Section inconnue'}), 404
+            
+        cursor.close()
+        conn.close()
+        
+        # Rendre le template de la section
+        return render_template(template, **context)
+        
+    except Exception as e:
+        log_error(f"Erreur chargement section {section_name} pour client {customer_id}: {e}")
+        return jsonify({'error': f'Erreur lors du chargement de la section: {str(e)}'}), 500
+
 # --- Sprint 7-8: Fonctionnalités avancées ---
 
 @bp.route('/<int:customer_id>/analytics', methods=['GET'])
@@ -5082,3 +5331,758 @@ def get_rfm_segments():
         log_error(f"Erreur segments RFM: {e}")
         flash('Erreur lors de la récupération des segments RFM', 'error')
         return redirect(url_for('customers.index'))
+
+
+# ================================
+# ROUTES API CRUD POUR CUSTOMER 360
+# ================================
+
+# API Véhicules - GET (lister tous)
+@bp.route('/api/customers/<int:customer_id>/vehicles', methods=['GET'])
+def get_vehicles(customer_id):
+    """Récupérer tous les véhicules d'un client"""
+    try:
+        db_config = get_db_config()
+        conn = pymysql.connect(**db_config)
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        
+        # Récupérer les véhicules du client
+        cursor.execute("""
+            SELECT * FROM customer_vehicles 
+            WHERE customer_id = %s 
+            ORDER BY created_at DESC
+        """, (customer_id,))
+        
+        vehicles = cursor.fetchall()
+        
+        # Convertir les dates en strings pour JSON
+        for vehicle in vehicles:
+            if vehicle.get('created_at'):
+                vehicle['created_at'] = vehicle['created_at'].isoformat()
+            if vehicle.get('updated_at'):
+                vehicle['updated_at'] = vehicle['updated_at'].isoformat()
+        
+        conn.close()
+        
+        log_info(f"Véhicules récupérés pour client {customer_id}: {len(vehicles)}")
+        return jsonify({'success': True, 'vehicles': vehicles})
+        
+    except Exception as e:
+        log_error(f"Erreur récupération véhicules: {e}")
+        return jsonify({'success': False, 'message': 'Erreur serveur'}), 500
+
+@bp.route('/api/customers/<int:customer_id>/vehicles', methods=['POST'])
+def create_vehicle(customer_id):
+    """Créer un nouveau véhicule pour un client"""
+    try:
+        data = request.get_json()
+        
+        # Validation des données requises
+        if not data.get('make') or not data.get('model'):
+            return jsonify({'success': False, 'message': 'Marque et modèle requis'}), 400
+        
+        db_config = get_db_config()
+        conn = pymysql.connect(**db_config)
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        
+        # Vérifier que le client existe
+        cursor.execute("SELECT id FROM customers WHERE id = %s", (customer_id,))
+        if not cursor.fetchone():
+            return jsonify({'success': False, 'message': 'Client non trouvé'}), 404
+        
+        # Insérer le véhicule
+        cursor.execute("""
+            INSERT INTO customer_vehicles 
+            (customer_id, make, model, year, license_plate, vin, color, notes, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW())
+        """, (
+            customer_id,
+            data.get('make'),
+            data.get('model'),
+            data.get('year'),
+            data.get('license_plate'),
+            data.get('vin'),
+            data.get('color'),
+            data.get('notes')
+        ))
+        
+        vehicle_id = cursor.lastrowid
+        conn.commit()
+        
+        # Log de l'activité
+        log_activity(
+            customer_id=customer_id,
+            activity_type='vehicle_created',
+            description=f"Véhicule ajouté: {data.get('make')} {data.get('model')}",
+            user_id=session.get('user_id')
+        )
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Véhicule créé avec succès',
+            'vehicle_id': vehicle_id
+        })
+        
+    except Exception as e:
+        log_error(f"Erreur création véhicule: {e}")
+        return jsonify({'success': False, 'message': 'Erreur serveur'}), 500
+
+
+@bp.route('/api/customers/<int:customer_id>/vehicles/<int:vehicle_id>', methods=['GET'])
+def get_vehicle(customer_id, vehicle_id):
+    """Récupérer les données d'un véhicule"""
+    try:
+        db_config = get_db_config()
+        conn = pymysql.connect(**db_config)
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        
+        cursor.execute("""
+            SELECT * FROM customer_vehicles 
+            WHERE id = %s AND customer_id = %s
+        """, (vehicle_id, customer_id))
+        
+        vehicle = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        
+        if not vehicle:
+            return jsonify({'success': False, 'message': 'Véhicule non trouvé'}), 404
+        
+        return jsonify({
+            'success': True,
+            'vehicle': vehicle
+        })
+        
+    except Exception as e:
+        log_error(f"Erreur récupération véhicule: {e}")
+        return jsonify({'success': False, 'message': 'Erreur serveur'}), 500
+
+
+@bp.route('/api/customers/<int:customer_id>/vehicles/<int:vehicle_id>', methods=['PUT'])
+def update_vehicle(customer_id, vehicle_id):
+    """Modifier un véhicule"""
+    try:
+        data = request.get_json()
+        
+        db_config = get_db_config()
+        conn = pymysql.connect(**db_config)
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        
+        # Vérifier que le véhicule existe
+        cursor.execute("""
+            SELECT * FROM customer_vehicles 
+            WHERE id = %s AND customer_id = %s
+        """, (vehicle_id, customer_id))
+        
+        if not cursor.fetchone():
+            return jsonify({'success': False, 'message': 'Véhicule non trouvé'}), 404
+        
+        # Mettre à jour le véhicule
+        cursor.execute("""
+            UPDATE customer_vehicles SET
+                make = %s, model = %s, year = %s, license_plate = %s,
+                vin = %s, color = %s, notes = %s, updated_at = NOW()
+            WHERE id = %s AND customer_id = %s
+        """, (
+            data.get('make'),
+            data.get('model'),
+            data.get('year'),
+            data.get('license_plate'),
+            data.get('vin'),
+            data.get('color'),
+            data.get('notes'),
+            vehicle_id,
+            customer_id
+        ))
+        
+        conn.commit()
+        
+        # Log de l'activité
+        log_activity(
+            customer_id=customer_id,
+            activity_type='vehicle_updated',
+            description=f"Véhicule modifié: {data.get('make')} {data.get('model')}",
+            user_id=session.get('user_id')
+        )
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Véhicule modifié avec succès'
+        })
+        
+    except Exception as e:
+        log_error(f"Erreur modification véhicule: {e}")
+        return jsonify({'success': False, 'message': 'Erreur serveur'}), 500
+
+
+@bp.route('/api/customers/<int:customer_id>/vehicles/<int:vehicle_id>', methods=['DELETE'])
+def delete_vehicle(customer_id, vehicle_id):
+    """Supprimer un véhicule"""
+    try:
+        db_config = get_db_config()
+        conn = pymysql.connect(**db_config)
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        
+        # Récupérer les infos du véhicule avant suppression
+        cursor.execute("""
+            SELECT make, model FROM customer_vehicles 
+            WHERE id = %s AND customer_id = %s
+        """, (vehicle_id, customer_id))
+        
+        vehicle = cursor.fetchone()
+        if not vehicle:
+            return jsonify({'success': False, 'message': 'Véhicule non trouvé'}), 404
+        
+        # Supprimer le véhicule
+        cursor.execute("""
+            DELETE FROM customer_vehicles 
+            WHERE id = %s AND customer_id = %s
+        """, (vehicle_id, customer_id))
+        
+        conn.commit()
+        
+        # Log de l'activité
+        log_activity(
+            customer_id=customer_id,
+            activity_type='vehicle_deleted',
+            description=f"Véhicule supprimé: {vehicle['make']} {vehicle['model']}",
+            user_id=session.get('user_id')
+        )
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Véhicule supprimé avec succès'
+        })
+        
+    except Exception as e:
+        log_error(f"Erreur suppression véhicule: {e}")
+        return jsonify({'success': False, 'message': 'Erreur serveur'}), 500
+
+
+# API Contacts
+@bp.route('/api/customers/<int:customer_id>/contacts', methods=['GET'])
+def get_contacts(customer_id):
+    """Récupérer tous les contacts d'un client"""
+    try:
+        db_config = get_db_config()
+        conn = pymysql.connect(**db_config)
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        
+        # Récupérer les contacts du client
+        cursor.execute("""
+            SELECT * FROM customer_contacts 
+            WHERE customer_id = %s 
+            ORDER BY created_at DESC
+        """, (customer_id,))
+        
+        contacts = cursor.fetchall()
+        
+        # Convertir les dates en strings pour JSON
+        for contact in contacts:
+            if contact.get('created_at'):
+                contact['created_at'] = contact['created_at'].isoformat()
+            if contact.get('updated_at'):
+                contact['updated_at'] = contact['updated_at'].isoformat()
+        
+        conn.close()
+        
+        log_info(f"Contacts récupérés pour client {customer_id}: {len(contacts)}")
+        return jsonify({'success': True, 'contacts': contacts})
+        
+    except Exception as e:
+        log_error(f"Erreur récupération contacts: {e}")
+        return jsonify({'success': False, 'message': 'Erreur serveur'}), 500
+
+@bp.route('/api/customers/<int:customer_id>/contacts', methods=['POST'])
+def api_create_contact(customer_id):
+    """Créer un nouveau contact pour un client"""
+    try:
+        data = request.get_json()
+        
+        # Validation des données requises
+        if not data.get('first_name') or not data.get('last_name'):
+            return jsonify({'success': False, 'message': 'Prénom et nom requis'}), 400
+        
+        db_config = get_db_config()
+        conn = pymysql.connect(**db_config)
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        
+        # Si c'est un contact principal, retirer le statut des autres
+        if data.get('is_primary'):
+            cursor.execute("""
+                UPDATE customer_contacts 
+                SET is_primary = FALSE 
+                WHERE customer_id = %s
+            """, (customer_id,))
+        
+        # Insérer le contact
+        cursor.execute("""
+            INSERT INTO customer_contacts 
+            (customer_id, first_name, last_name, phone, email, role, is_primary, notes, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW())
+        """, (
+            customer_id,
+            data.get('first_name'),
+            data.get('last_name'),
+            data.get('phone'),
+            data.get('email'),
+            data.get('role'),
+            bool(data.get('is_primary')),
+            data.get('notes')
+        ))
+        
+        contact_id = cursor.lastrowid
+        conn.commit()
+        
+        # Log de l'activité
+        log_activity(
+            customer_id=customer_id,
+            activity_type='contact_created',
+            description=f"Contact ajouté: {data.get('first_name')} {data.get('last_name')}",
+            user_id=session.get('user_id')
+        )
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Contact créé avec succès',
+            'contact_id': contact_id
+        })
+        
+    except Exception as e:
+        log_error(f"Erreur création contact: {e}")
+        return jsonify({'success': False, 'message': 'Erreur serveur'}), 500
+
+
+@bp.route('/api/customers/<int:customer_id>/contacts/<int:contact_id>', methods=['GET'])
+def get_contact(customer_id, contact_id):
+    """Récupérer les données d'un contact"""
+    try:
+        db_config = get_db_config()
+        conn = pymysql.connect(**db_config)
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        
+        cursor.execute("""
+            SELECT * FROM customer_contacts 
+            WHERE id = %s AND customer_id = %s
+        """, (contact_id, customer_id))
+        
+        contact = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        
+        if not contact:
+            return jsonify({'success': False, 'message': 'Contact non trouvé'}), 404
+        
+        return jsonify({
+            'success': True,
+            'contact': contact
+        })
+        
+    except Exception as e:
+        log_error(f"Erreur récupération contact: {e}")
+        return jsonify({'success': False, 'message': 'Erreur serveur'}), 500
+
+
+@bp.route('/api/customers/<int:customer_id>/contacts/<int:contact_id>', methods=['PUT'])
+def api_update_contact(customer_id, contact_id):
+    """Modifier un contact"""
+    try:
+        data = request.get_json()
+        
+        db_config = get_db_config()
+        conn = pymysql.connect(**db_config)
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        
+        # Si c'est un contact principal, retirer le statut des autres
+        if data.get('is_primary'):
+            cursor.execute("""
+                UPDATE customer_contacts 
+                SET is_primary = FALSE 
+                WHERE customer_id = %s AND id != %s
+            """, (customer_id, contact_id))
+        
+        # Mettre à jour le contact
+        cursor.execute("""
+            UPDATE customer_contacts SET
+                first_name = %s, last_name = %s, phone = %s, email = %s,
+                role = %s, is_primary = %s, notes = %s, updated_at = NOW()
+            WHERE id = %s AND customer_id = %s
+        """, (
+            data.get('first_name'),
+            data.get('last_name'),
+            data.get('phone'),
+            data.get('email'),
+            data.get('role'),
+            bool(data.get('is_primary')),
+            data.get('notes'),
+            contact_id,
+            customer_id
+        ))
+        
+        conn.commit()
+        
+        # Log de l'activité
+        log_activity(
+            customer_id=customer_id,
+            activity_type='contact_updated',
+            description=f"Contact modifié: {data.get('first_name')} {data.get('last_name')}",
+            user_id=session.get('user_id')
+        )
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Contact modifié avec succès'
+        })
+        
+    except Exception as e:
+        log_error(f"Erreur modification contact: {e}")
+        return jsonify({'success': False, 'message': 'Erreur serveur'}), 500
+
+
+@bp.route('/api/customers/<int:customer_id>/contacts/<int:contact_id>', methods=['DELETE'])
+def api_delete_contact(customer_id, contact_id):
+    """Supprimer un contact"""
+    try:
+        db_config = get_db_config()
+        conn = pymysql.connect(**db_config)
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        
+        # Récupérer les infos du contact avant suppression
+        cursor.execute("""
+            SELECT first_name, last_name FROM customer_contacts 
+            WHERE id = %s AND customer_id = %s
+        """, (contact_id, customer_id))
+        
+        contact = cursor.fetchone()
+        if not contact:
+            return jsonify({'success': False, 'message': 'Contact non trouvé'}), 404
+        
+        # Supprimer le contact
+        cursor.execute("""
+            DELETE FROM customer_contacts 
+            WHERE id = %s AND customer_id = %s
+        """, (contact_id, customer_id))
+        
+        conn.commit()
+        
+        # Log de l'activité
+        log_activity(
+            customer_id=customer_id,
+            activity_type='contact_deleted',
+            description=f"Contact supprimé: {contact['first_name']} {contact['last_name']}",
+            user_id=session.get('user_id')
+        )
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Contact supprimé avec succès'
+        })
+        
+    except Exception as e:
+        log_error(f"Erreur suppression contact: {e}")
+        return jsonify({'success': False, 'message': 'Erreur serveur'}), 500
+
+
+# API Adresses (adapté à la structure existante)
+@bp.route('/api/customers/<int:customer_id>/addresses', methods=['GET'])
+def get_addresses(customer_id):
+    """Récupérer toutes les adresses d'un client"""
+    try:
+        db_config = get_db_config()
+        conn = pymysql.connect(**db_config)
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        
+        # Récupérer les adresses du client depuis la table customer_addresses existante
+        cursor.execute("""
+            SELECT * FROM customer_addresses 
+            WHERE customer_id = %s 
+            ORDER BY is_primary DESC, created_at DESC
+        """, (customer_id,))
+        
+        addresses = cursor.fetchall()
+        
+        # Convertir les dates en strings pour JSON
+        for address in addresses:
+            if address.get('created_at'):
+                address['created_at'] = address['created_at'].isoformat()
+            if address.get('updated_at'):
+                address['updated_at'] = address['updated_at'].isoformat()
+        
+        conn.close()
+        
+        log_info(f"Adresses récupérées pour client {customer_id}: {len(addresses)}")
+        return jsonify({'success': True, 'addresses': addresses})
+        
+    except Exception as e:
+        log_error(f"Erreur récupération adresses: {e}")
+        return jsonify({'success': False, 'message': 'Erreur serveur'}), 500
+
+@bp.route('/api/customers/<int:customer_id>/addresses', methods=['POST'])
+def api_create_address(customer_id):
+    """Créer une nouvelle adresse pour un client"""
+    try:
+        data = request.get_json()
+        
+        # Validation des données requises
+        if not data.get('address_line_1') or not data.get('city') or not data.get('postal_code'):
+            return jsonify({'success': False, 'message': 'Adresse, ville et code postal requis'}), 400
+        
+        db_config = get_db_config()
+        conn = pymysql.connect(**db_config)
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        
+        # Si c'est une adresse principale, retirer le statut des autres
+        if data.get('is_primary'):
+            cursor.execute("""
+                UPDATE customer_addresses 
+                SET is_primary = FALSE 
+                WHERE customer_id = %s
+            """, (customer_id,))
+        
+        # Insérer l'adresse
+        cursor.execute("""
+            INSERT INTO customer_addresses 
+            (customer_id, address_type, label, address_line_1, address_line_2, 
+             city, postal_code, country, is_primary, delivery_instructions, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+        """, (
+            customer_id,
+            data.get('address_type', 'other'),
+            data.get('label'),
+            data.get('address_line_1'),
+            data.get('address_line_2'),
+            data.get('city'),
+            data.get('postal_code'),
+            data.get('country', 'FR'),
+            bool(data.get('is_primary')),
+            data.get('delivery_instructions')
+        ))
+        
+        address_id = cursor.lastrowid
+        conn.commit()
+        
+        # Log de l'activité
+        log_activity(
+            customer_id=customer_id,
+            activity_type='address_created',
+            description=f"Adresse ajoutée: {data.get('address_line_1')}, {data.get('city')}",
+            user_id=session.get('user_id')
+        )
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Adresse créée avec succès',
+            'address_id': address_id
+        })
+        
+    except Exception as e:
+        log_error(f"Erreur création adresse: {e}")
+        return jsonify({'success': False, 'message': 'Erreur serveur'}), 500
+
+
+@bp.route('/api/customers/<int:customer_id>/addresses/<int:address_id>', methods=['GET'])
+def get_address(customer_id, address_id):
+    """Récupérer les données d'une adresse"""
+    try:
+        db_config = get_db_config()
+        conn = pymysql.connect(**db_config)
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        
+        cursor.execute("""
+            SELECT * FROM customer_addresses 
+            WHERE id = %s AND customer_id = %s
+        """, (address_id, customer_id))
+        
+        address = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        
+        if not address:
+            return jsonify({'success': False, 'message': 'Adresse non trouvée'}), 404
+        
+        return jsonify({
+            'success': True,
+            'address': address
+        })
+        
+    except Exception as e:
+        log_error(f"Erreur récupération adresse: {e}")
+        return jsonify({'success': False, 'message': 'Erreur serveur'}), 500
+
+
+@bp.route('/api/customers/<int:customer_id>/addresses/<int:address_id>', methods=['PUT'])
+def api_update_address(customer_id, address_id):
+    """Modifier une adresse"""
+    try:
+        data = request.get_json()
+        
+        db_config = get_db_config()
+        conn = pymysql.connect(**db_config)
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        
+        # Si c'est une adresse principale, retirer le statut des autres
+        if data.get('is_primary'):
+            cursor.execute("""
+                UPDATE customer_addresses 
+                SET is_primary = FALSE 
+                WHERE customer_id = %s AND id != %s
+            """, (customer_id, address_id))
+        
+        # Mettre à jour l'adresse
+        cursor.execute("""
+            UPDATE customer_addresses SET
+                address_type = %s, label = %s, address_line_1 = %s, address_line_2 = %s,
+                city = %s, postal_code = %s, country = %s, is_primary = %s, 
+                delivery_instructions = %s, updated_at = NOW()
+            WHERE id = %s AND customer_id = %s
+        """, (
+            data.get('address_type', 'other'),
+            data.get('label'),
+            data.get('address_line_1'),
+            data.get('address_line_2'),
+            data.get('city'),
+            data.get('postal_code'),
+            data.get('country', 'FR'),
+            bool(data.get('is_primary')),
+            data.get('delivery_instructions'),
+            address_id,
+            customer_id
+        ))
+        
+        conn.commit()
+        
+        # Log de l'activité
+        log_activity(
+            customer_id=customer_id,
+            activity_type='address_updated',
+            description=f"Adresse modifiée: {data.get('address_line_1')}, {data.get('city')}",
+            user_id=session.get('user_id')
+        )
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Adresse modifiée avec succès'
+        })
+        
+    except Exception as e:
+        log_error(f"Erreur modification adresse: {e}")
+        return jsonify({'success': False, 'message': 'Erreur serveur'}), 500
+
+
+@bp.route('/api/customers/<int:customer_id>/addresses/<int:address_id>/set-default', methods=['PUT'])
+def set_default_address(customer_id, address_id):
+    """Définir une adresse comme adresse principale"""
+    try:
+        db_config = get_db_config()
+        conn = pymysql.connect(**db_config)
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        
+        # Retirer le statut principal de toutes les adresses
+        cursor.execute("""
+            UPDATE customer_addresses 
+            SET is_primary = FALSE 
+            WHERE customer_id = %s
+        """, (customer_id,))
+        
+        # Définir la nouvelle adresse principale
+        cursor.execute("""
+            UPDATE customer_addresses 
+            SET is_primary = TRUE 
+            WHERE id = %s AND customer_id = %s
+        """, (address_id, customer_id))
+        
+        if cursor.rowcount == 0:
+            return jsonify({'success': False, 'message': 'Adresse non trouvée'}), 404
+        
+        conn.commit()
+        
+        # Log de l'activité
+        log_activity(
+            customer_id=customer_id,
+            activity_type='address_primary_set',
+            description="Adresse principale modifiée",
+            user_id=session.get('user_id')
+        )
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Adresse définie comme principale'
+        })
+        
+    except Exception as e:
+        log_error(f"Erreur définition adresse principale: {e}")
+        return jsonify({'success': False, 'message': 'Erreur serveur'}), 500
+
+
+@bp.route('/api/customers/<int:customer_id>/addresses/<int:address_id>', methods=['DELETE'])
+def api_delete_address(customer_id, address_id):
+    """Supprimer une adresse"""
+    try:
+        db_config = get_db_config()
+        conn = pymysql.connect(**db_config)
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        
+        # Récupérer les infos de l'adresse avant suppression
+        cursor.execute("""
+            SELECT address_line_1, city FROM customer_addresses 
+            WHERE id = %s AND customer_id = %s
+        """, (address_id, customer_id))
+        
+        address = cursor.fetchone()
+        if not address:
+            return jsonify({'success': False, 'message': 'Adresse non trouvée'}), 404
+        
+        # Supprimer l'adresse
+        cursor.execute("""
+            DELETE FROM customer_addresses 
+            WHERE id = %s AND customer_id = %s
+        """, (address_id, customer_id))
+        
+        conn.commit()
+        
+        # Log de l'activité
+        log_activity(
+            customer_id=customer_id,
+            activity_type='address_deleted',
+            description=f"Adresse supprimée: {address['address_line_1']}, {address['city']}",
+            user_id=session.get('user_id')
+        )
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Adresse supprimée avec succès'
+        })
+        
+    except Exception as e:
+        log_error(f"Erreur suppression adresse: {e}")
+        return jsonify({'success': False, 'message': 'Erreur serveur'}), 500

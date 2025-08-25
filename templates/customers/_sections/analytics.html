@@ -1,19 +1,16 @@
 {# Section analytics client (graphiques, métriques, insights) #}
 
 {%- from 'customers/_components/macros.html' import stats_card, loading_skeleton -%}
-
-<div class="tab-pane fade {{ 'show active' if active_tab == 'analytics' }}" 
-     id="analytics" role="tabpanel" data-section="analytics">
      
-    {# Contrôles de période #}
-    <div class="clay-card mb-4">
+{# Contrôles de période #}
+<div class="clay-card mb-4">
         <div class="card-body">
             <div class="row align-items-center">
                 <div class="col-md-4">
                     <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Analytics Client</h5>
                 </div>
                 <div class="col-md-4">
-                    <select class="form-select clay-select" id="analyticsPeriod" onchange="updateAnalytics()">
+                    <select class="form-select clay-select" id="analytics-period" onchange="updateAnalytics()">
                         <option value="3m">3 derniers mois</option>
                         <option value="6m" selected>6 derniers mois</option>
                         <option value="1y">Dernière année</option>
@@ -42,7 +39,7 @@
         
         {{ stats_card(
             title="Fréquence",
-            value=((analytics_data.avg_frequency or 0)|round(1)) + "/mois",
+            value=((analytics_data.avg_frequency or 0)|round(1)|string) + "/mois",
             subtitle="Commandes moyennes",
             icon="fas fa-sync",
             color_class="info"
@@ -58,7 +55,7 @@
         
         {{ stats_card(
             title="Satisfaction",
-            value=((analytics_data.satisfaction_score or 0)|round(1)) + "/10",
+            value=((analytics_data.satisfaction_score or 0)|round(1)|string) + "/10",
             subtitle="Score moyen",
             icon="fas fa-smile",
             color_class="primary"
@@ -73,7 +70,7 @@
                     <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Évolution du chiffre d'affaires</h5>
                 </div>
                 <div class="card-body">
-                    <canvas id="revenueTimeChart" height="100"></canvas>
+                    <canvas id="analytics-revenue-time-chart" height="100"></canvas>
                 </div>
             </div>
         </div>
@@ -85,7 +82,7 @@
                     <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Services</h5>
                 </div>
                 <div class="card-body">
-                    <canvas id="servicesChart" height="200"></canvas>
+                    <canvas id="analytics-services-chart" height="200"></canvas>
                 </div>
             </div>
         </div>

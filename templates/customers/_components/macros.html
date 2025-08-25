@@ -249,46 +249,52 @@
 {# Onglets navigation Customer 360 #}
 {% macro customer_360_tabs(customer_id, active_tab="profile") %}
 <div class="nav-tabs-wrapper mb-4">
-    <ul class="nav nav-tabs clay-nav-tabs" id="customer360Tabs" role="tablist">
+    <ul class="nav nav-tabs clay-nav-tabs" id="customer-360-tabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link clay-nav {{ 'active' if active_tab == 'profile' }}" 
-                    id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" 
-                    type="button" role="tab" data-section="profile">
+                    id="tab-profile" data-bs-toggle="tab" data-bs-target="#tab-content-profile" 
+                    type="button" role="tab" data-section="profile" 
+                    aria-controls="tab-content-profile" aria-selected="{{ 'true' if active_tab == 'profile' else 'false' }}">
                 <i class="fas fa-user me-2"></i>Profil
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link clay-nav {{ 'active' if active_tab == 'activity' }}" 
-                    id="activity-tab" data-bs-toggle="tab" data-bs-target="#activity" 
-                    type="button" role="tab" data-section="activity">
+                    id="tab-activity" data-bs-toggle="tab" data-bs-target="#tab-content-activity" 
+                    type="button" role="tab" data-section="activity" 
+                    aria-controls="tab-content-activity" aria-selected="{{ 'true' if active_tab == 'activity' else 'false' }}">
                 <i class="fas fa-history me-2"></i>Activité
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link clay-nav {{ 'active' if active_tab == 'finances' }}" 
-                    id="finances-tab" data-bs-toggle="tab" data-bs-target="#finances" 
-                    type="button" role="tab" data-section="finances">
+                    id="tab-finances" data-bs-toggle="tab" data-bs-target="#tab-content-finances" 
+                    type="button" role="tab" data-section="finances" 
+                    aria-controls="tab-content-finances" aria-selected="{{ 'true' if active_tab == 'finances' else 'false' }}">
                 <i class="fas fa-euro-sign me-2"></i>Finances
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link clay-nav {{ 'active' if active_tab == 'documents' }}" 
-                    id="documents-tab" data-bs-toggle="tab" data-bs-target="#documents" 
-                    type="button" role="tab" data-section="documents">
+                    id="tab-documents" data-bs-toggle="tab" data-bs-target="#tab-content-documents" 
+                    type="button" role="tab" data-section="documents" 
+                    aria-controls="tab-content-documents" aria-selected="{{ 'true' if active_tab == 'documents' else 'false' }}">
                 <i class="fas fa-file-alt me-2"></i>Documents
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link clay-nav {{ 'active' if active_tab == 'analytics' }}" 
-                    id="analytics-tab" data-bs-toggle="tab" data-bs-target="#analytics" 
-                    type="button" role="tab" data-section="analytics">
+                    id="tab-analytics" data-bs-toggle="tab" data-bs-target="#tab-content-analytics" 
+                    type="button" role="tab" data-section="analytics" 
+                    aria-controls="tab-content-analytics" aria-selected="{{ 'true' if active_tab == 'analytics' else 'false' }}">
                 <i class="fas fa-chart-pie me-2"></i>Analytics
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link clay-nav {{ 'active' if active_tab == 'consents' }}" 
-                    id="consents-tab" data-bs-toggle="tab" data-bs-target="#consents" 
-                    type="button" role="tab" data-section="consents">
+                    id="tab-consents" data-bs-toggle="tab" data-bs-target="#tab-content-consents" 
+                    type="button" role="tab" data-section="consents" 
+                    aria-controls="tab-content-consents" aria-selected="{{ 'true' if active_tab == 'consents' else 'false' }}">
                 <i class="fas fa-shield-alt me-2"></i>RGPD
             </button>
         </li>

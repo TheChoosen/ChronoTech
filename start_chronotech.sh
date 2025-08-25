@@ -16,6 +16,11 @@ DB_USER="gsicloud"
 DB_PASSWORD="TCOChoosenOne204$"
 DB_HOST="192.168.50.101"
 
+# Délais et nombres de tentatives
+PORT_KILL_ATTEMPTS=3
+PORT_KILL_TIMEOUT=2
+PORT_ALTERNATIVE_RANGE=20  # Chercher dans cette plage de ports alternatifs
+
 # Couleurs pour l'affichage
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -54,36 +59,167 @@ print_info() {
     echo -e "${BLUE}ℹ️  $1${NC}"
 }
 
-# Kill process listening on given port (uses lsof/ss fallback)
+# Kill process listening on given port (uses multiple detection methods + retry)
 kill_port() {
     local port=${1:-$DEFAULT_PORT}
-    # Try lsof first
+    local max_attempts=3
+    local attempt=1
+    local killed=false
+    
+    print_info "Tentative de libération du port $port..."
+    
+    while [ $attempt -le $max_attempts ]; do
+        print_info "Tentative $attempt/$max_attempts..."
+        
+        # Méthode 1: lsof (la plus courante)
+        if command -v lsof &> /dev/null; then
+            local pid
+            pid=$(lsof -ti tcp:$port 2>/dev/null || true)
+            if [ -n "$pid" ]; then
+                local process_info=$(ps -p "$pid" -o comm= 2>/dev/null || echo "Processus inconnu")
+                print_warning "Port $port utilisé par PID $pid ($process_info) - tentative d'arrêt..."
+                if kill -15 $pid 2>/dev/null; then
+                    sleep 1
+                    # Vérifier si le processus est toujours là
+                    if ! lsof -ti tcp:$port 2>/dev/null | grep -q "$pid"; then
+                        print_success "Processus sur le port $port arrêté proprement"
+                        killed=true
+                        break
+                    else
+                        print_warning "Échec de l'arrêt propre, tentative de kill -9..."
+                        kill -9 $pid 2>/dev/null || true
+                        sleep 1
+                        if ! is_port_in_use $port; then
+                            print_success "Processus sur le port $port arrêté avec kill -9"
+                            killed=true
+                            break
+                        fi
+                    fi
+                else
+                    print_warning "Impossible d'arrêter proprement le processus, tentative de kill -9..."
+                    kill -9 $pid 2>/dev/null || true
+                    sleep 1
+                fi
+            fi
+        fi
+        
+        # Méthode 2: ss
+        if ! $killed && command -v ss &> /dev/null; then
+            local pids
+            pids=$(ss -ltnp 2>/dev/null | awk -vP=":$port" '$4 ~ P {print $0}' | sed -n 's/.*pid=\([0-9]*\),.*/\1/p' | tr '\n' ' ')
+            if [ -n "$pids" ]; then
+                print_warning "Port $port utilisé par PID(s): $pids (détecté via ss) - tentative d'arrêt..."
+                for pid in $pids; do
+                    local process_info=$(ps -p "$pid" -o comm= 2>/dev/null || echo "Processus inconnu")
+                    print_info "Tentative d'arrêt du PID $pid ($process_info)..."
+                    kill -15 $pid 2>/dev/null || kill -9 $pid 2>/dev/null || true
+                done
+                sleep 1
+                if ! is_port_in_use $port; then
+                    print_success "Processus sur le port $port arrêtés"
+                    killed=true
+                    break
+                fi
+            fi
+        fi
+        
+        # Méthode 3: netstat (si disponible)
+        if ! $killed && command -v netstat &> /dev/null; then
+            local pids
+            pids=$(netstat -tlnp 2>/dev/null | grep ":$port " | awk '{print $7}' | cut -d'/' -f1 | sort -u | tr '\n' ' ')
+            if [ -n "$pids" ]; then
+                print_warning "Port $port utilisé par PID(s): $pids (détecté via netstat) - tentative d'arrêt..."
+                for pid in $pids; do
+                    [ -n "$pid" ] && kill -15 $pid 2>/dev/null || kill -9 $pid 2>/dev/null || true
+                done
+                sleep 1
+                if ! is_port_in_use $port; then
+                    print_success "Processus sur le port $port arrêtés"
+                    killed=true
+                    break
+                fi
+            fi
+        fi
+        
+        # Vérifier si le port est maintenant libre
+        if ! is_port_in_use $port; then
+            print_success "Port $port libéré avec succès"
+            killed=true
+            break
+        fi
+        
+        # Incrémentation et attente avant nouvelle tentative
+        attempt=$((attempt+1))
+        [ $attempt -le $max_attempts ] && sleep 2
+    done
+    
+    if $killed; then
+        return 0
+    else
+        print_warning "Impossible de libérer le port $port après $max_attempts tentatives"
+        # Afficher plus d'informations de diagnostic
+        print_info "Détails du processus utilisant le port $port:"
+        if command -v lsof &> /dev/null; then
+            lsof -i :$port 2>/dev/null || echo "  Aucune information disponible via lsof"
+        elif command -v ss &> /dev/null; then
+            ss -ltnp | grep ":$port " || echo "  Aucune information disponible via ss"
+        elif command -v netstat &> /dev/null; then
+            netstat -tlnp 2>/dev/null | grep ":$port " || echo "  Aucune information disponible via netstat"
+        fi
+        return 1
+    fi
+}
+
+# Vérifier si un port est utilisé
+is_port_in_use() {
+    local port="$1"
+    
+    # Tester avec différentes méthodes
     if command -v lsof &> /dev/null; then
-        local pid
-        pid=$(lsof -ti tcp:$port || true)
-        if [ -n "$pid" ]; then
-            print_warning "Port $port utilisé par PID(s): $pid — fermeture en cours..."
-            kill -9 $pid || true
-            sleep 0.5
-            print_success "Processus sur le port $port tué"
-            return 0
+        if lsof -i ":$port" &>/dev/null; then
+            return 0  # Port est utilisé
         fi
     fi
-
-    # Fallback to ss
+    
     if command -v ss &> /dev/null; then
-        local pids
-        pids=$(ss -ltnp 2>/dev/null | awk -vP=":$port" '$4 ~ P {print $0}' | sed -n 's/.*pid=\([0-9]*\),.*/\1/p' | tr '\n' ' ')
-        if [ -n "$pids" ]; then
-            print_warning "Port $port utilisé par PID(s): $pids — fermeture en cours..."
-            kill -9 $pids || true
-            sleep 0.5
-            print_success "Processus sur le port $port tué"
-            return 0
+        if ss -ltn | grep -q ":$port "; then
+            return 0  # Port est utilisé
         fi
     fi
+    
+    if command -v netstat &> /dev/null; then
+        if netstat -tuln | grep -q ":$port "; then
+            return 0  # Port est utilisé
+        fi
+    fi
+    
+    # Tenter de se connecter au port pour voir s'il est ouvert
+    if command -v nc &> /dev/null; then
+        if timeout 1 nc -z localhost "$port" &>/dev/null; then
+            return 0  # Port est utilisé
+        fi
+    fi
+    
+    return 1  # Port semble libre
+}
 
-    # No process found
+# Trouver un port libre alternatif
+find_free_port() {
+    local base_port=$1
+    local max_attempts=10
+    local current_port=$base_port
+    
+    for (( i=0; i<max_attempts; i++ )); do
+        if ! is_port_in_use "$current_port"; then
+            echo "$current_port"
+            return 0
+        fi
+        # Incrémenter le port et réessayer
+        current_port=$((current_port + 1))
+    done
+    
+    # Si aucun port libre n'est trouvé, retourner le port original
+    echo "$base_port"
     return 1
 }
 
@@ -553,30 +689,172 @@ start_application() {
     export FLASK_ENV=development
     export FLASK_DEBUG=True
     
-    print_success "Application ChronoTech démarrée!"
-    print_info "URL locale: http://localhost:$DEFAULT_PORT"
-    print_info "URL réseau: http://0.0.0.0:$DEFAULT_PORT"
+    # Gestion du port d'écoute
+    local RUNNING_PORT=$DEFAULT_PORT
+    
+    # Vérifier si le port est libre, sinon tenter de le libérer
+    if is_port_in_use "$DEFAULT_PORT"; then
+        print_warning "Port $DEFAULT_PORT est déjà en utilisation"
+        
+        # Tenter de libérer le port
+        if ! kill_port "$DEFAULT_PORT"; then
+            print_warning "Impossible de libérer le port $DEFAULT_PORT"
+            
+            # Chercher un port alternatif
+            local alt_port=$(find_free_port $((DEFAULT_PORT + 1)))
+            if [ "$alt_port" != "$DEFAULT_PORT" ] && [ -n "$alt_port" ]; then
+                print_info "Port alternatif trouvé: $alt_port"
+                RUNNING_PORT=$alt_port
+                # Mettre à jour les variables d'environnement
+                export FLASK_RUN_PORT=$RUNNING_PORT
+                # Modifier le fichier .env pour la prochaine exécution
+                if [ -f ".env" ]; then
+                    sed -i "s/^PORT=.*/PORT=$RUNNING_PORT/" .env || true
+                fi
+            else
+                print_error "Aucun port alternatif trouvé dans la plage acceptable"
+                print_info "Solutions possibles:"
+                echo "  1. Redémarrez le serveur après avoir arrêté les applications utilisant le port $DEFAULT_PORT"
+                echo "  2. Spécifiez un autre port manuellement avec --port XXXX"
+                echo "  3. Trouvez et arrêtez le processus utilisant le port $DEFAULT_PORT"
+                print_info "Tentative de démarrage avec le port par défaut, mais cela peut échouer..."
+            fi
+        else
+            print_success "Port $DEFAULT_PORT libéré avec succès"
+            # Donner le temps au système d'exploitation de libérer complètement le port
+            sleep 2
+        fi
+    else
+        print_info "Port $DEFAULT_PORT est disponible"
+    fi
+    
+    print_success "Application ChronoTech prête à démarrer!"
+    print_info "URL locale: http://localhost:$RUNNING_PORT"
+    print_info "URL réseau: http://0.0.0.0:$RUNNING_PORT"
     echo ""
     echo -e "${YELLOW}===========================================${NC}"
     echo -e "${YELLOW}  🚀 ChronoTech est maintenant en cours d'exécution${NC}"
     echo -e "${YELLOW}  📱 Interface mobile optimisée disponible${NC}"
     echo -e "${YELLOW}  🤖 Fonctionnalités IA intégrées${NC}"
-    echo -e "${YELLOW}  ⚡ Port: $DEFAULT_PORT${NC}"
+    echo -e "${YELLOW}  ⚡ Port: $RUNNING_PORT${NC}"
     echo -e "${YELLOW}===========================================${NC}"
     echo ""
     echo -e "${CYAN}Appuyez sur Ctrl+C pour arrêter le serveur${NC}"
     
-    # Démarrage du serveur Flask
-        # Try to free the configured port before starting the app (if helper exists)
-        if declare -f kill_port >/dev/null 2>&1; then
-            print_info "Vérification du port $DEFAULT_PORT avant démarrage..."
-            # Attempt to kill any process listening on the port; don't fail the script if this fails
-            kill_port "$DEFAULT_PORT" || print_warning "Impossible de libérer le port $DEFAULT_PORT automatiquement"
-            # Give the OS a moment to release the socket
-            sleep 1
-        fi
+    # Démarrage du serveur Flask avec gestion d'erreur
+    {
+        python -c "
+import sys
+from app import app
+import os
+import logging
+import signal
+import threading
+import time
+from datetime import datetime
+import json
+from flask import jsonify, request
 
-    python app.py
+# Configurer le port et l'hôte
+port = int(os.environ.get('FLASK_RUN_PORT', $RUNNING_PORT))
+host = '0.0.0.0'
+
+# Statistiques de l'application
+app_stats = {
+    'start_time': datetime.now(),
+    'request_count': 0,
+    'error_count': 0,
+    'last_error': None
+}
+
+# Compteur de requêtes et journal d'erreurs
+@app.before_request
+def before_request():
+    app_stats['request_count'] += 1
+    
+@app.errorhandler(Exception)
+def handle_exception(e):
+    app_stats['error_count'] += 1
+    app_stats['last_error'] = {
+        'time': datetime.now().isoformat(),
+        'path': request.path,
+        'error': str(e)
+    }
+    return jsonify({'error': str(e)}), 500
+
+# Endpoint /health pour le monitoring
+@app.route('/health')
+def health_check():
+    uptime = datetime.now() - app_stats['start_time']
+    return jsonify({
+        'status': 'ok',
+        'version': os.environ.get('APP_VERSION', '1.0.0'),
+        'uptime_seconds': uptime.total_seconds(),
+        'requests': app_stats['request_count'],
+        'errors': app_stats['error_count'],
+        'started_at': app_stats['start_time'].isoformat(),
+        'checked_at': datetime.now().isoformat(),
+        'env': os.environ.get('FLASK_ENV', 'development')
+    })
+
+# Gestionnaire de signal pour arrêt propre
+def signal_handler(sig, frame):
+    print('Signal reçu, arrêt propre en cours...')
+    # Autres opérations de nettoyage si nécessaire
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGTERM, signal_handler)
+
+# Journalisation détaillée pour le démarrage
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[logging.StreamHandler()]
+)
+
+try:
+    logging.info(f'Démarrage de ChronoTech sur {host}:{port} (debug: {os.environ.get(\"FLASK_DEBUG\", True)})')
+    app.run(host=host, port=port, debug=True, use_reloader=False)
+except OSError as e:
+    if 'Address already in use' in str(e):
+        logging.error(f'ERREUR: Port {port} déjà utilisé. Utilisez un autre port ou arrêtez le processus qui l\\'utilise.')
+        sys.exit(1)
+    else:
+        logging.error(f'ERREUR: {e}')
+        sys.exit(2)
+except Exception as e:
+    logging.error(f'ERREUR inattendue: {e}')
+    sys.exit(3)
+"
+    } || {
+        code=$?
+        if [ $code -eq 1 ]; then
+            print_error "Échec du démarrage de l'application ChronoTech (erreur port occupé)"
+            if lsof -i ":$RUNNING_PORT" &>/dev/null; then
+                print_info "Processus utilisant le port $RUNNING_PORT:"
+                lsof -i ":$RUNNING_PORT" | tail -n +2
+            fi
+            print_info "Essayez avec un port différent: ./start_chronotech.sh --port $((RUNNING_PORT + 1))"
+        elif [ $code -eq 2 ]; then
+            print_error "Échec du démarrage de l'application ChronoTech (erreur OS)"
+            print_info "Vérifiez les permissions et la configuration système"
+        elif [ $code -eq 3 ]; then
+            print_error "Échec du démarrage de l'application ChronoTech (erreur application)"
+            print_info "Consultez les logs pour plus de détails"
+        else
+            print_error "Échec du démarrage de l'application ChronoTech (code d'erreur: $code)"
+        fi
+        return 1
+    }
+    
+    # Stocker le PID du processus Flask
+    FLASK_PID=$!
+    
+    # Option pour activer le monitoring (désactivé par défaut)
+    if [ "${ENABLE_MONITORING:-false}" = "true" ]; then
+        monitor_application $FLASK_PID $RUNNING_PORT &
+    fi
 }
 
 # Fonction d'aide
@@ -600,16 +878,139 @@ show_help() {
     echo ""
 }
 
+# Recherche et arrête tous les processus Python associés au projet
+kill_python_processes() {
+    local py_search_pattern="$1"  # Motif pour identifier les processus (ex: "app.py")
+    local killed=0
+    
+    print_info "Recherche des processus Python liés à ChronoTech..."
+    
+    # Trouver les processus Python exécutant app.py
+    local python_pids
+    
+    if command -v pgrep &> /dev/null; then
+        python_pids=$(pgrep -f "python.*$py_search_pattern" | tr '\n' ' ')
+    else
+        python_pids=$(ps aux | grep "python.*$py_search_pattern" | grep -v grep | awk '{print $2}' | tr '\n' ' ')
+    fi
+    
+    if [ -z "$python_pids" ]; then
+        print_info "Aucun processus Python associé trouvé"
+        return 0
+    fi
+    
+    print_warning "Processus Python trouvés: $python_pids"
+    
+    # Arrêter les processus trouvés
+    for pid in $python_pids; do
+        if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+            local process_info=$(ps -p "$pid" -o comm= 2>/dev/null || echo "Python")
+            print_info "Arrêt du processus $pid ($process_info)..."
+            
+            # Tentative d'arrêt propre
+            if kill -15 "$pid" 2>/dev/null; then
+                sleep 1
+                if ! kill -0 "$pid" 2>/dev/null; then
+                    print_success "Processus $pid arrêté proprement"
+                    killed=$((killed + 1))
+                else
+                    print_warning "Le processus $pid ne répond pas, envoi de SIGKILL..."
+                    kill -9 "$pid" 2>/dev/null
+                    killed=$((killed + 1))
+                fi
+            else
+                print_warning "Impossible d'arrêter proprement le processus $pid, envoi de SIGKILL..."
+                kill -9 "$pid" 2>/dev/null || true
+                killed=$((killed + 1))
+            fi
+        fi
+    done
+    
+    if [ $killed -gt 0 ]; then
+        print_success "$killed processus Python arrêtés"
+        return 0
+    else
+        print_warning "Impossible d'arrêter les processus Python"
+        return 1
+    fi
+}
+
 # Fonction de nettoyage en cas d'interruption
 cleanup() {
     echo ""
     print_info "Arrêt de ChronoTech..."
+    
+    # Arrêter les processus Python associés
+    kill_python_processes "app.py"
+    
+    # Libérer le port
+    kill_port "$DEFAULT_PORT" >/dev/null 2>&1 || true
+    
     # Désactivation de l'environnement virtuel si activé
     if [[ "$VIRTUAL_ENV" != "" ]]; then
         deactivate
     fi
+    
     print_success "ChronoTech arrêté proprement"
     exit 0
+}
+
+# Vérifie l'état de l'application et redémarre si nécessaire
+monitor_application() {
+    local app_pid=$1
+    local port=$2
+    local monitoring_interval=30  # Vérifier toutes les 30 secondes
+    local max_restarts=3
+    local restart_count=0
+    
+    print_info "Démarrage de la surveillance de l'application (PID: $app_pid, Port: $port)"
+    
+    while true; do
+        sleep $monitoring_interval
+        
+        # Vérifier si le processus est toujours en cours d'exécution
+        if ! kill -0 "$app_pid" 2>/dev/null; then
+            print_warning "Application arrêtée de manière inattendue (PID: $app_pid)"
+            
+            if [ $restart_count -lt $max_restarts ]; then
+                restart_count=$((restart_count + 1))
+                print_info "Tentative de redémarrage ($restart_count/$max_restarts)..."
+                
+                # Libérer le port si nécessaire
+                kill_port "$port" >/dev/null 2>&1
+                
+                # Redémarrage de l'application
+                start_application
+                return $?
+            else
+                print_error "Nombre maximal de redémarrages atteint ($max_restarts)"
+                return 1
+            fi
+        fi
+        
+        # Vérifier que l'application répond toujours sur le port
+        if ! curl -s "http://localhost:$port/health" >/dev/null 2>&1; then
+            print_warning "L'application ne répond plus sur le port $port"
+            
+            if [ $restart_count -lt $max_restarts ]; then
+                restart_count=$((restart_count + 1))
+                print_info "Tentative de redémarrage ($restart_count/$max_restarts)..."
+                
+                # Arrêter le processus actuel
+                kill -15 "$app_pid" 2>/dev/null || kill -9 "$app_pid" 2>/dev/null
+                
+                # Libérer le port
+                kill_port "$port" >/dev/null 2>&1
+                
+                # Redémarrage de l'application
+                start_application
+                return $?
+            else
+                print_error "Nombre maximal de redémarrages atteint ($max_restarts)"
+                return 1
+            fi
+        fi
+    done
 }
 
 # Piégeage des signaux d'interruption

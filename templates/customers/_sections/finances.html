@@ -1,12 +1,16 @@
-{# Section finances client (factures, paiements, statistiques) #}
+{# Section finances client (factures, paiemen                    <input type="radio" class="btn-check" name="revenueChartPeriod" id="finances-chart-6m" value="6m" checked>
+                    <label class="btn btn-outline-primary" for="finances-chart-6m">6 mois</label>
+                    
+                    <input type="radio" class="btn-check" name="revenueChartPeriod" id="finances-chart-1y" value="1y">
+                    <label class="btn btn-outline-primary" for="finances-chart-1y">1 an</label>
+                    
+                    <input type="radio" class="btn-check" name="revenueChartPeriod" id="finances-chart-2y" value="2y">
+                    <label class="btn btn-outline-primary" for="finances-chart-2y">2 ans</label>istiques) #}
 
 {%- from 'customers/_components/macros.html' import stats_card, loading_skeleton -%}
-
-<div class="tab-pane fade {{ 'show active' if active_tab == 'finances' }}" 
-     id="finances" role="tabpanel" data-section="finances">
      
-    {# Résumé financier #}
-    <div class="row mb-4">
+{# Résumé financier #}
+<div class="row mb-4">
         {{ stats_card(
             title="CA Total",
             value=((financial_summary.total_revenue or 0)|currency),
@@ -58,7 +62,7 @@
             </div>
         </div>
         <div class="card-body">
-            <canvas id="revenueChart" height="100"></canvas>
+            <canvas id="finances-revenue-chart" height="100"></canvas>
         </div>
     </div>
     
@@ -70,7 +74,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="fas fa-file-invoice me-2"></i>Factures récentes</h5>
                         <div class="d-flex gap-2">
-                            <select class="form-select form-select-sm" id="invoiceStatusFilter" onchange="filterInvoices()">
+                            <select class="form-select form-select-sm" id="finances-invoice-status-filter" onchange="filterInvoices()">
                                 <option value="">Tous les statuts</option>
                                 <option value="draft">Brouillon</option>
                                 <option value="sent">Envoyée</option>
@@ -106,10 +110,9 @@
                                     {% for invoice in invoices %}
                                     <tr>
                                         <td>
-                                            <a href="{{ url_for('invoices.view_invoice', invoice_id=invoice.id) }}" 
-                                               class="text-decoration-none fw-bold">
+                                            <span class="text-decoration-none fw-bold">
                                                 {{ invoice.number }}
-                                            </a>
+                                            </span>
                                         </td>
                                         <td>{{ invoice.created_at|datetime_format('short') }}</td>
                                         <td class="fw-bold">{{ invoice.total_amount|currency }}</td>
@@ -126,8 +129,8 @@
                                         <td>
                                             {% if invoice.due_date %}
                                                 {{ invoice.due_date|datetime_format('short') }}
-                                                {% if invoice.status != 'paid' and invoice.due_date < moment().date() %}
-                                                    <i class="fas fa-exclamation-triangle text-danger ms-1" title="En retard"></i>
+                                                {% if invoice.status != 'paid' %}
+                                                    <i class="fas fa-exclamation-triangle text-danger ms-1" title="Vérifier échéance"></i>
                                                 {% endif %}
                                             {% else %}
                                                 <span class="text-muted">-</span>
@@ -139,11 +142,11 @@
                                                     <i class="fas fa-ellipsis-v"></i>
                                                 </button>
                                                 <ul class="dropdown-menu">
-                                                    <li><a class="dropdown-item" href="{{ url_for('invoices.view_invoice', invoice_id=invoice.id) }}">
+                                                    <li><a class="dropdown-item" href="#" onclick="alert('Fonctionnalité à implémenter')">
                                                         <i class="fas fa-eye me-2"></i>Voir
                                                     </a></li>
                                                     {% if invoice.status != 'paid' %}
-                                                    <li><a class="dropdown-item" href="{{ url_for('invoices.edit_invoice', invoice_id=invoice.id) }}">
+                                                    <li><a class="dropdown-item" href="#" onclick="alert('Fonctionnalité à implémenter')">
                                                         <i class="fas fa-edit me-2"></i>Modifier
                                                     </a></li>
                                                     {% endif %}
