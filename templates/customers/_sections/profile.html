@@ -4,39 +4,39 @@
 
 {# Informations principales #}
 {{ customer_info_card(customer, show_actions=true) }}
-    
+
 {# Statistiques rapides #}
 <div class="row">
     {{ stats_card(
-        title="Commandes totales",
-        value=customer_stats.total_orders or 0,
-        subtitle="Cette année",
-        icon="fas fa-shopping-cart",
-        color_class="primary"
+    title="Commandes totales",
+    value=customer_stats.total_orders or 0,
+    subtitle="Cette année",
+    icon="fas fa-shopping-cart",
+    color_class="primary"
     ) }}
-    
+
     {{ stats_card(
-        title="Chiffre d'affaires",
-        value=((customer_stats.total_revenue or 0)|currency),
-        subtitle="Lifetime value",
-        icon="fas fa-euro-sign",
-        color_class="success"
+    title="Chiffre d'affaires",
+    value=((customer_stats.total_revenue or 0)|currency),
+    subtitle="Lifetime value",
+    icon="fas fa-euro-sign",
+    color_class="success"
     ) }}
-    
+
     {{ stats_card(
-        title="Interventions",
-        value=customer_stats.total_interventions or 0,
-        subtitle="Réalisées",
-        icon="fas fa-wrench",
-        color_class="warning"
+    title="Interventions",
+    value=customer_stats.total_interventions or 0,
+    subtitle="Réalisées",
+    icon="fas fa-wrench",
+    color_class="warning"
     ) }}
-    
+
     {{ stats_card(
-        title="Satisfaction",
-        value=((customer_stats.avg_rating or 0)|round(1)|string) + "/5",
-        subtitle="Note moyenne",
-        icon="fas fa-star",
-        color_class="info"
+    title="Satisfaction",
+    value=((customer_stats.avg_rating or 0)|round(1)|string) + "/5",
+    subtitle="Note moyenne",
+    icon="fas fa-star",
+    color_class="info"
     ) }}
 </div>
 
@@ -54,44 +54,47 @@
     <div class="card-body">
         <div id="profile-vehicles-list">
             {% if vehicles %}
-                <div class="row">
-                    {% for vehicle in vehicles %}
-                    <div class="col-md-6 col-lg-4 mb-3">
-                        <div class="clay-element p-3">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h6 class="mb-0">{{ vehicle.make }} {{ vehicle.model }}</h6>
-                                <div class="dropdown">
-                                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
-                                        <i class="fas fa-ellipsis-v"></i>
-                                    </button>
-                                    <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item" href="#" onclick="editVehicle({{ vehicle.id }})">
+            <div class="row">
+                {% for vehicle in vehicles %}
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="clay-element p-3">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="mb-0">{{ vehicle.make }} {{ vehicle.model }}</h6>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary" type="button"
+                                    data-bs-toggle="dropdown">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#" onclick="editVehicle({{ vehicle.id }})">
                                             <i class="fas fa-edit me-2"></i>Modifier</a></li>
-                                        <li><a class="dropdown-item text-danger" href="#" onclick="deleteVehicle({{ vehicle.id }})">
+                                    <li><a class="dropdown-item text-danger" href="#"
+                                            onclick="deleteVehicle({{ vehicle.id }})">
                                             <i class="fas fa-trash me-2"></i>Supprimer</a></li>
-                                    </ul>
-                                </div>
+                                </ul>
                             </div>
-                            <p class="text-muted small mb-1">{{ vehicle.year }} • {{ vehicle.license_plate }}</p>
-                            {% if vehicle.vin %}
-                            <p class="text-muted small mb-1">VIN: {{ vehicle.vin }}</p>
-                            {% endif %}
-                            {% if vehicle.color %}
-                            <p class="text-muted small mb-1">Couleur: {{ vehicle.color }}</p>
-                            {% endif %}
-                            {% if vehicle.notes %}
-                            <p class="text-muted small mb-0">{{ vehicle.notes[:50] }}{% if vehicle.notes|length > 50 %}...{% endif %}</p>
-                            {% endif %}
                         </div>
+                        <p class="text-muted small mb-1">{{ vehicle.year }} • {{ vehicle.license_plate }}</p>
+                        {% if vehicle.vin %}
+                        <p class="text-muted small mb-1">VIN: {{ vehicle.vin }}</p>
+                        {% endif %}
+                        {% if vehicle.color %}
+                        <p class="text-muted small mb-1">Couleur: {{ vehicle.color }}</p>
+                        {% endif %}
+                        {% if vehicle.notes %}
+                        <p class="text-muted small mb-0">{{ vehicle.notes[:50] }}{% if vehicle.notes|length > 50 %}...{%
+                            endif %}</p>
+                        {% endif %}
                     </div>
-                    {% endfor %}
                 </div>
+                {% endfor %}
+            </div>
             {% else %}
-                <div class="text-center py-4">
-                    <i class="fas fa-car fa-3x text-muted mb-3"></i>
-                    <h6 class="text-muted">Aucun véhicule enregistré</h6>
-                    <p class="text-muted small">Cliquez sur "Ajouter véhicule" pour commencer</p>
-                </div>
+            <div class="text-center py-4">
+                <i class="fas fa-car fa-3x text-muted mb-3"></i>
+                <h6 class="text-muted">Aucun véhicule enregistré</h6>
+                <p class="text-muted small">Cliquez sur "Ajouter véhicule" pour commencer</p>
+            </div>
             {% endif %}
         </div>
     </div>
@@ -111,75 +114,77 @@
     <div class="card-body">
         <div id="profile-contacts-list">
             {% if contacts %}
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Nom</th>
-                                <th>Téléphone</th>
-                                <th>Email</th>
-                                <th>Rôle</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for contact in contacts %}
-                            <tr>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <div class="avatar me-2">
-                                            <i class="fas fa-user"></i>
-                                        </div>
-                                        <div>
-                                            <strong>{{ contact.first_name }} {{ contact.last_name }}</strong>
-                                            {% if contact.is_primary %}
-                                            <span class="badge bg-primary ms-1">Principal</span>
-                                            {% endif %}
-                                        </div>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Nom</th>
+                            <th>Téléphone</th>
+                            <th>Email</th>
+                            <th>Rôle</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for contact in contacts %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar me-2">
+                                        <i class="fas fa-user"></i>
                                     </div>
-                                </td>
-                                <td>
-                                    {% if contact.phone %}
-                                    <a href="tel:{{ contact.phone }}" class="text-decoration-none">
-                                        <i class="fas fa-phone me-1"></i>{{ contact.phone }}
-                                    </a>
-                                    {% else %}
-                                    <span class="text-muted">-</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if contact.email %}
-                                    <a href="mailto:{{ contact.email }}" class="text-decoration-none">
-                                        <i class="fas fa-envelope me-1"></i>{{ contact.email }}
-                                    </a>
-                                    {% else %}
-                                    <span class="text-muted">-</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <span class="badge bg-info">{{ contact.role or 'Contact' }}</span>
-                                </td>
-                                <td>
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-primary" onclick="editContact({{ contact.id }})" title="Modifier">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button class="btn btn-outline-danger" onclick="deleteContact({{ contact.id }})" title="Supprimer">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
+                                    <div>
+                                        <strong>{{ contact.first_name }} {{ contact.last_name }}</strong>
+                                        {% if contact.is_primary %}
+                                        <span class="badge bg-primary ms-1">Principal</span>
+                                        {% endif %}
                                     </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if contact.phone %}
+                                <a href="tel:{{ contact.phone }}" class="text-decoration-none">
+                                    <i class="fas fa-phone me-1"></i>{{ contact.phone }}
+                                </a>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if contact.email %}
+                                <a href="mailto:{{ contact.email }}" class="text-decoration-none">
+                                    <i class="fas fa-envelope me-1"></i>{{ contact.email }}
+                                </a>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ contact.role or 'Contact' }}</span>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary" onclick="editContact({{ contact.id }})"
+                                        title="Modifier">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger" onclick="deleteContact({{ contact.id }})"
+                                        title="Supprimer">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
             {% else %}
-                <div class="text-center py-4">
-                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
-                    <h6 class="text-muted">Aucun contact enregistré</h6>
-                    <p class="text-muted small">Cliquez sur "Ajouter contact" pour commencer</p>
-                </div>
+            <div class="text-center py-4">
+                <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                <h6 class="text-muted">Aucun contact enregistré</h6>
+                <p class="text-muted small">Cliquez sur "Ajouter contact" pour commencer</p>
+            </div>
             {% endif %}
         </div>
     </div>
@@ -199,56 +204,61 @@
     <div class="card-body">
         <div id="profile-addresses-list">
             {% if addresses %}
-                <div class="row">
-                    {% for address in addresses %}
-                    <div class="col-md-6 mb-3">
-                        <div class="clay-element p-3">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <div>
-                                    <h6 class="mb-1">{{ address.label or address.address_type|title }}
-                                        {% if address.is_primary %}
-                                        <span class="badge bg-success ms-1">Principal</span>
-                                        {% endif %}
-                                    </h6>
-                                    <p class="mb-1 small">{{ address.address_line_1 }}</p>
-                                    {% if address.address_line_2 %}
-                                    <p class="mb-1 small">{{ address.address_line_2 }}</p>
+            <div class="row">
+                {% for address in addresses %}
+                <div class="col-md-6 mb-3">
+                    <div class="clay-element p-3">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <h6 class="mb-1">{{ address.label or address.address_type|title }}
+                                    {% if address.is_primary %}
+                                    <span class="badge bg-success ms-1">Principal</span>
                                     {% endif %}
-                                    <p class="mb-1 small">{{ address.postal_code }} {{ address.city }}</p>
-                                    {% if address.country and address.country != 'FR' %}
-                                    <p class="mb-1 small">{{ address.country }}</p>
-                                    {% endif %}
-                                    {% if address.delivery_instructions %}
-                                    <p class="text-muted small mb-0">{{ address.delivery_instructions[:50] }}{% if address.delivery_instructions|length > 50 %}...{% endif %}</p>
-                                    {% endif %}
-                                </div>
-                                <div class="dropdown">
-                                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
-                                        <i class="fas fa-ellipsis-v"></i>
-                                    </button>
-                                    <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item" href="#" onclick="editAddress({{ address.id }})">
+                                </h6>
+                                <p class="mb-1 small">{{ address.address_line_1 }}</p>
+                                {% if address.address_line_2 %}
+                                <p class="mb-1 small">{{ address.address_line_2 }}</p>
+                                {% endif %}
+                                <p class="mb-1 small">{{ address.postal_code }} {{ address.city }}</p>
+                                {% if address.country and address.country != 'FR' %}
+                                <p class="mb-1 small">{{ address.country }}</p>
+                                {% endif %}
+                                {% if address.delivery_instructions %}
+                                <p class="text-muted small mb-0">{{ address.delivery_instructions[:50] }}{% if
+                                    address.delivery_instructions|length > 50 %}...{% endif %}</p>
+                                {% endif %}
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary" type="button"
+                                    data-bs-toggle="dropdown">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#" onclick="editAddress({{ address.id }})">
                                             <i class="fas fa-edit me-2"></i>Modifier</a></li>
-                                        {% if not address.is_primary %}
-                                        <li><a class="dropdown-item" href="#" onclick="setDefaultAddress({{ address.id }})">
+                                    {% if not address.is_primary %}
+                                    <li><a class="dropdown-item" href="#" onclick="setDefaultAddress({{ address.id }})">
                                             <i class="fas fa-star me-2"></i>Définir comme principal</a></li>
-                                        {% endif %}
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item text-danger" href="#" onclick="deleteAddress({{ address.id }})">
+                                    {% endif %}
+                                    <li>
+                                        <hr class="dropdown-divider">
+                                    </li>
+                                    <li><a class="dropdown-item text-danger" href="#"
+                                            onclick="deleteAddress({{ address.id }})">
                                             <i class="fas fa-trash me-2"></i>Supprimer</a></li>
-                                    </ul>
-                                </div>
+                                </ul>
                             </div>
                         </div>
                     </div>
-                    {% endfor %}
                 </div>
+                {% endfor %}
+            </div>
             {% else %}
-                <div class="text-center py-4">
-                    <i class="fas fa-map-marker-alt fa-3x text-muted mb-3"></i>
-                    <h6 class="text-muted">Aucune adresse de livraison enregistrée</h6>
-                    <p class="text-muted small">Cliquez sur "Ajouter adresse" pour commencer</p>
-                </div>
+            <div class="text-center py-4">
+                <i class="fas fa-map-marker-alt fa-3x text-muted mb-3"></i>
+                <h6 class="text-muted">Aucune adresse de livraison enregistrée</h6>
+                <p class="text-muted small">Cliquez sur "Ajouter adresse" pour commencer</p>
+            </div>
             {% endif %}
         </div>
     </div>
@@ -280,11 +290,13 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="vehicleYear" class="form-label">Année</label>
-                            <input type="number" class="form-control clay-input" id="vehicleYear" name="year" min="1900" max="2030">
+                            <input type="number" class="form-control clay-input" id="vehicleYear" name="year" min="1900"
+                                max="2030">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="vehicleLicensePlate" class="form-label">Plaque d'immatriculation</label>
-                            <input type="text" class="form-control clay-input" id="vehicleLicensePlate" name="license_plate">
+                            <input type="text" class="form-control clay-input" id="vehicleLicensePlate"
+                                name="license_plate">
                         </div>
                     </div>
                     <div class="row">
@@ -325,11 +337,13 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="contactFirstName" class="form-label">Prénom *</label>
-                            <input type="text" class="form-control clay-input" id="contactFirstName" name="first_name" required>
+                            <input type="text" class="form-control clay-input" id="contactFirstName" name="first_name"
+                                required>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="contactLastName" class="form-label">Nom *</label>
-                            <input type="text" class="form-control clay-input" id="contactLastName" name="last_name" required>
+                            <input type="text" class="form-control clay-input" id="contactLastName" name="last_name"
+                                required>
                         </div>
                     </div>
                     <div class="row">
@@ -391,7 +405,8 @@
                     <input type="hidden" id="addressId" name="address_id">
                     <div class="mb-3">
                         <label for="addressName" class="form-label">Nom de l'adresse</label>
-                        <input type="text" class="form-control clay-input" id="addressName" name="name" placeholder="Ex: Domicile, Bureau, Entrepôt...">
+                        <input type="text" class="form-control clay-input" id="addressName" name="name"
+                            placeholder="Ex: Domicile, Bureau, Entrepôt...">
                     </div>
                     <div class="mb-3">
                         <label for="addressStreet" class="form-label">Adresse *</label>
@@ -400,7 +415,8 @@
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label for="addressPostalCode" class="form-label">Code postal *</label>
-                            <input type="text" class="form-control clay-input" id="addressPostalCode" name="postal_code" required>
+                            <input type="text" class="form-control clay-input" id="addressPostalCode" name="postal_code"
+                                required>
                         </div>
                         <div class="col-md-8 mb-3">
                             <label for="addressCity" class="form-label">Ville *</label>
@@ -429,7 +445,8 @@
                     </div>
                     <div class="mb-3">
                         <label for="addressNotes" class="form-label">Instructions de livraison</label>
-                        <textarea class="form-control clay-input" id="addressNotes" name="notes" rows="3" placeholder="Code d'accès, étage, instructions spéciales..."></textarea>
+                        <textarea class="form-control clay-input" id="addressNotes" name="notes" rows="3"
+                            placeholder="Code d'accès, étage, instructions spéciales..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -443,477 +460,466 @@
 
 {# JavaScript pour les fonctionnalités CRUD #}
 <script>
-// Variables pour les modals
-let vehicleModal, contactModal, addressModal;
+    // Variables pour les modals
+    let vehicleModal, contactModal, addressModal;
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialiser les modals
-    vehicleModal = new bootstrap.Modal(document.getElementById('vehicleModal'));
-    contactModal = new bootstrap.Modal(document.getElementById('contactModal'));
-    addressModal = new bootstrap.Modal(document.getElementById('addressModal'));
-    
-    // Gestionnaires de formulaires
-    document.getElementById('vehicleForm').addEventListener('submit', handleVehicleSubmit);
-    document.getElementById('contactForm').addEventListener('submit', handleContactSubmit);
-    document.getElementById('addressForm').addEventListener('submit', handleAddressSubmit);
-});
+    document.addEventListener('DOMContentLoaded', function () {
+        // Initialiser les modals
+        vehicleModal = new bootstrap.Modal(document.getElementById('vehicleModal'));
+        contactModal = new bootstrap.Modal(document.getElementById('contactModal'));
+        addressModal = new bootstrap.Modal(document.getElementById('addressModal'));
 
-// Fonctions pour les véhicules
-function openVehicleModal(vehicleId = null) {
-    const title = document.getElementById('vehicleModalTitle');
-    const form = document.getElementById('vehicleForm');
-    
-    if (vehicleId) {
-        title.textContent = 'Modifier le véhicule';
-        loadVehicleData(vehicleId);
-    } else {
-        title.textContent = 'Ajouter un véhicule';
-        form.reset();
-        document.getElementById('vehicleId').value = '';
+        // Gestionnaires de formulaires
+        document.getElementById('vehicleForm').addEventListener('submit', handleVehicleSubmit);
+        document.getElementById('contactForm').addEventListener('submit', handleContactSubmit);
+        document.getElementById('addressForm').addEventListener('submit', handleAddressSubmit);
+    });
+
+    // Fonctions pour les véhicules
+    function openVehicleModal(vehicleId = null) {
+        const title = document.getElementById('vehicleModalTitle');
+        const form = document.getElementById('vehicleForm');
+
+        if (vehicleId) {
+            title.textContent = 'Modifier le véhicule';
+            loadVehicleData(vehicleId);
+        } else {
+            title.textContent = 'Ajouter un véhicule';
+            form.reset();
+            document.getElementById('vehicleId').value = '';
+        }
+
+        vehicleModal.show();
     }
-    
-    vehicleModal.show();
-}
 
-function editVehicle(vehicleId) {
-    openVehicleModal(vehicleId);
-}
+    function editVehicle(vehicleId) {
+        openVehicleModal(vehicleId);
+    }
 
-function deleteVehicle(vehicleId) {
-    if (confirm('Êtes-vous sûr de vouloir supprimer ce véhicule ?')) {
-        fetch(`/api/customers/${customerId}/vehicles/${vehicleId}`, {
-            method: 'DELETE',
+    function deleteVehicle(vehicleId) {
+        if (confirm('Êtes-vous sûr de vouloir supprimer ce véhicule ?')) {
+            fetch(`/api/customers/${customerId}/vehicles/${vehicleId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast('Véhicule supprimé avec succès', 'success');
+                        reloadProfileSection();
+                    } else {
+                        showToast(data.message || 'Erreur lors de la suppression', 'error');
+                    }
+                })
+                .catch(error => {
+                    showToast('Erreur lors de la suppression', 'error');
+                });
+        }
+    }
+
+    function handleVehicleSubmit(event) {
+        event.preventDefault();
+
+        const formData = new FormData(event.target);
+        const vehicleId = formData.get('vehicle_id');
+        const url = vehicleId ?
+            `/api/customers/${customerId}/vehicles/${vehicleId}` :
+            `/api/customers/${customerId}/vehicles`;
+        const method = vehicleId ? 'PUT' : 'POST';
+
+        const data = Object.fromEntries(formData.entries());
+        data.customer_id = customerId;
+
+        fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(vehicleId ? 'Véhicule modifié avec succès' : 'Véhicule ajouté avec succès', 'success');
+                    vehicleModal.hide();
+                    reloadProfileSection();
+                } else {
+                    showToast(data.message || 'Erreur lors de l\'enregistrement', 'error');
+                }
+            })
+            .catch(error => {
+                showToast('Erreur lors de l\'enregistrement', 'error');
+            });
+    }
+
+    // Fonctions pour les contacts
+    function openContactModal(contactId = null) {
+        const title = document.getElementById('contactModalTitle');
+        const form = document.getElementById('contactForm');
+
+        if (contactId) {
+            title.textContent = 'Modifier le contact';
+            loadContactData(contactId);
+        } else {
+            title.textContent = 'Ajouter un contact';
+            form.reset();
+            document.getElementById('contactId').value = '';
+        }
+
+        contactModal.show();
+    }
+
+    function editContact(contactId) {
+        openContactModal(contactId);
+    }
+
+    function deleteContact(contactId) {
+        if (confirm('Êtes-vous sûr de vouloir supprimer ce contact ?')) {
+            fetch(`/api/customers/${customerId}/contacts/${contactId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast('Contact supprimé avec succès', 'success');
+                        reloadProfileSection();
+                    } else {
+                        showToast(data.message || 'Erreur lors de la suppression', 'error');
+                    }
+                })
+                .catch(error => {
+                    showToast('Erreur lors de la suppression', 'error');
+                });
+        }
+    }
+
+    function handleContactSubmit(event) {
+        event.preventDefault();
+
+        const formData = new FormData(event.target);
+        const contactId = formData.get('contact_id');
+        const url = contactId ?
+            `/api/customers/${customerId}/contacts/${contactId}` :
+            `/api/customers/${customerId}/contacts`;
+        const method = contactId ? 'PUT' : 'POST';
+
+        const data = Object.fromEntries(formData.entries());
+        data.customer_id = customerId;
+
+        fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(contactId ? 'Contact modifié avec succès' : 'Contact ajouté avec succès', 'success');
+                    contactModal.hide();
+                    reloadProfileSection();
+                } else {
+                    showToast(data.message || 'Erreur lors de l\'enregistrement', 'error');
+                }
+            })
+            .catch(error => {
+                showToast('Erreur lors de l\'enregistrement', 'error');
+            });
+    }
+
+    // Fonctions pour les adresses
+    function openAddressModal(addressId = null) {
+        const title = document.getElementById('addressModalTitle');
+        const form = document.getElementById('addressForm');
+
+        if (addressId) {
+            title.textContent = 'Modifier l\'adresse';
+            loadAddressData(addressId);
+        } else {
+            title.textContent = 'Ajouter une adresse';
+            form.reset();
+            document.getElementById('addressId').value = '';
+        }
+
+        addressModal.show();
+    }
+
+    function editAddress(addressId) {
+        openAddressModal(addressId);
+    }
+
+    function deleteAddress(addressId) {
+        if (confirm('Êtes-vous sûr de vouloir supprimer cette adresse ?')) {
+            fetch(`/api/customers/${customerId}/addresses/${addressId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast('Adresse supprimée avec succès', 'success');
+                        reloadProfileSection();
+                    } else {
+                        showToast(data.message || 'Erreur lors de la suppression', 'error');
+                    }
+                })
+                .catch(error => {
+                    showToast('Erreur lors de la suppression', 'error');
+                });
+        }
+    }
+
+    function setDefaultAddress(addressId) {
+        fetch(`/api/customers/${customerId}/addresses/${addressId}/set-default`, {
+            method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
             }
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showToast('Véhicule supprimé avec succès', 'success');
-                reloadProfileSection();
-            } else {
-                showToast(data.message || 'Erreur lors de la suppression', 'error');
-            }
-        })
-        .catch(error => {
-            showToast('Erreur lors de la suppression', 'error');
-        });
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Adresse définie par défaut', 'success');
+                    reloadProfileSection();
+                } else {
+                    showToast(data.message || 'Erreur lors de la modification', 'error');
+                }
+            })
+            .catch(error => {
+                showToast('Erreur lors de la modification', 'error');
+            });
     }
-}
 
-function handleVehicleSubmit(event) {
-    event.preventDefault();
-    
-    const formData = new FormData(event.target);
-    const vehicleId = formData.get('vehicle_id');
-    const url = vehicleId ? 
-        `/api/customers/${customerId}/vehicles/${vehicleId}` : 
-        `/api/customers/${customerId}/vehicles`;
-    const method = vehicleId ? 'PUT' : 'POST';
-    
-    const data = Object.fromEntries(formData.entries());
-    data.customer_id = customerId;
-    
-    fetch(url, {
-        method: method,
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showToast(vehicleId ? 'Véhicule modifié avec succès' : 'Véhicule ajouté avec succès', 'success');
-            vehicleModal.hide();
-            reloadProfileSection();
-        } else {
-            showToast(data.message || 'Erreur lors de l\'enregistrement', 'error');
-        }
-    })
-    .catch(error => {
-        showToast('Erreur lors de l\'enregistrement', 'error');
-    });
-}
+    function handleAddressSubmit(event) {
+        event.preventDefault();
 
-// Fonctions pour les contacts
-function openContactModal(contactId = null) {
-    const title = document.getElementById('contactModalTitle');
-    const form = document.getElementById('contactForm');
-    
-    if (contactId) {
-        title.textContent = 'Modifier le contact';
-        loadContactData(contactId);
-    } else {
-        title.textContent = 'Ajouter un contact';
-        form.reset();
-        document.getElementById('contactId').value = '';
-    }
-    
-    contactModal.show();
-}
+        const formData = new FormData(event.target);
+        const addressId = formData.get('address_id');
+        const url = addressId ?
+            `/api/customers/${customerId}/addresses/${addressId}` :
+            `/api/customers/${customerId}/addresses`;
+        const method = addressId ? 'PUT' : 'POST';
 
-function editContact(contactId) {
-    openContactModal(contactId);
-}
+        const data = Object.fromEntries(formData.entries());
+        data.customer_id = customerId;
 
-function deleteContact(contactId) {
-    if (confirm('Êtes-vous sûr de vouloir supprimer ce contact ?')) {
-        fetch(`/api/customers/${customerId}/contacts/${contactId}`, {
-            method: 'DELETE',
+        fetch(url, {
+            method: method,
             headers: {
                 'Content-Type': 'application/json',
-            }
+            },
+            body: JSON.stringify(data)
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showToast('Contact supprimé avec succès', 'success');
-                reloadProfileSection();
-            } else {
-                showToast(data.message || 'Erreur lors de la suppression', 'error');
-            }
-        })
-        .catch(error => {
-            showToast('Erreur lors de la suppression', 'error');
-        });
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(addressId ? 'Adresse modifiée avec succès' : 'Adresse ajoutée avec succès', 'success');
+                    addressModal.hide();
+                    reloadProfileSection();
+                } else {
+                    showToast(data.message || 'Erreur lors de l\'enregistrement', 'error');
+                }
+            })
+            .catch(error => {
+                showToast('Erreur lors de l\'enregistrement', 'error');
+            });
     }
-}
 
-function handleContactSubmit(event) {
-    event.preventDefault();
-    
-    const formData = new FormData(event.target);
-    const contactId = formData.get('contact_id');
-    const url = contactId ? 
-        `/api/customers/${customerId}/contacts/${contactId}` : 
-        `/api/customers/${customerId}/contacts`;
-    const method = contactId ? 'PUT' : 'POST';
-    
-    const data = Object.fromEntries(formData.entries());
-    data.customer_id = customerId;
-    
-    fetch(url, {
-        method: method,
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showToast(contactId ? 'Contact modifié avec succès' : 'Contact ajouté avec succès', 'success');
-            contactModal.hide();
-            reloadProfileSection();
-        } else {
-            showToast(data.message || 'Erreur lors de l\'enregistrement', 'error');
-        }
-    })
-    .catch(error => {
-        showToast('Erreur lors de l\'enregistrement', 'error');
-    });
-}
-
-// Fonctions pour les adresses
-function openAddressModal(addressId = null) {
-    const title = document.getElementById('addressModalTitle');
-    const form = document.getElementById('addressForm');
-    
-    if (addressId) {
-        title.textContent = 'Modifier l\'adresse';
-        loadAddressData(addressId);
-    } else {
-        title.textContent = 'Ajouter une adresse';
-        form.reset();
-        document.getElementById('addressId').value = '';
+    // Fonctions utilitaires
+    function reloadProfileSection() {
+        loadSectionIfNeeded('profile', true); // Force reload
     }
-    
-    addressModal.show();
-}
 
-function editAddress(addressId) {
-    openAddressModal(addressId);
-}
-
-function deleteAddress(addressId) {
-    if (confirm('Êtes-vous sûr de vouloir supprimer cette adresse ?')) {
-        fetch(`/api/customers/${customerId}/addresses/${addressId}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showToast('Adresse supprimée avec succès', 'success');
-                reloadProfileSection();
-            } else {
-                showToast(data.message || 'Erreur lors de la suppression', 'error');
-            }
-        })
-        .catch(error => {
-            showToast('Erreur lors de la suppression', 'error');
-        });
+    function loadVehicleData(vehicleId) {
+        fetch(`/api/customers/${customerId}/vehicles/${vehicleId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const vehicle = data.vehicle;
+                    document.getElementById('vehicleId').value = vehicle.id;
+                    document.getElementById('vehicleMake').value = vehicle.make || '';
+                    document.getElementById('vehicleModel').value = vehicle.model || '';
+                    document.getElementById('vehicleYear').value = vehicle.year || '';
+                    document.getElementById('vehicleLicensePlate').value = vehicle.license_plate || '';
+                    document.getElementById('vehicleVin').value = vehicle.vin || '';
+                    document.getElementById('vehicleColor').value = vehicle.color || '';
+                    document.getElementById('vehicleNotes').value = vehicle.notes || '';
+                }
+            })
+            .catch(error => {
+                showToast('Erreur lors du chargement des données', 'error');
+            });
     }
-}
 
-function setDefaultAddress(addressId) {
-    fetch(`/api/customers/${customerId}/addresses/${addressId}/set-default`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showToast('Adresse définie par défaut', 'success');
-            reloadProfileSection();
-        } else {
-            showToast(data.message || 'Erreur lors de la modification', 'error');
-        }
-    })
-    .catch(error => {
-        showToast('Erreur lors de la modification', 'error');
-    });
-}
+    function loadContactData(contactId) {
+        fetch(`/api/customers/${customerId}/contacts/${contactId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const contact = data.contact;
+                    document.getElementById('contactId').value = contact.id;
+                    document.getElementById('contactFirstName').value = contact.first_name || '';
+                    document.getElementById('contactLastName').value = contact.last_name || '';
+                    document.getElementById('contactPhone').value = contact.phone || '';
+                    document.getElementById('contactEmail').value = contact.email || '';
+                    document.getElementById('contactRole').value = contact.role || '';
+                    document.getElementById('contactIsPrimary').checked = contact.is_primary || false;
+                    document.getElementById('contactNotes').value = contact.notes || '';
+                }
+            })
+            .catch(error => {
+                showToast('Erreur lors du chargement des données', 'error');
+            });
+    }
 
-function handleAddressSubmit(event) {
-    event.preventDefault();
-    
-    const formData = new FormData(event.target);
-    const addressId = formData.get('address_id');
-    const url = addressId ? 
-        `/api/customers/${customerId}/addresses/${addressId}` : 
-        `/api/customers/${customerId}/addresses`;
-    const method = addressId ? 'PUT' : 'POST';
-    
-    const data = Object.fromEntries(formData.entries());
-    data.customer_id = customerId;
-    
-    fetch(url, {
-        method: method,
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showToast(addressId ? 'Adresse modifiée avec succès' : 'Adresse ajoutée avec succès', 'success');
-            addressModal.hide();
-            reloadProfileSection();
-        } else {
-            showToast(data.message || 'Erreur lors de l\'enregistrement', 'error');
-        }
-    })
-    .catch(error => {
-        showToast('Erreur lors de l\'enregistrement', 'error');
-    });
-}
-
-// Fonctions utilitaires
-function reloadProfileSection() {
-    loadSectionIfNeeded('profile', true); // Force reload
-}
-
-function loadVehicleData(vehicleId) {
-    fetch(`/api/customers/${customerId}/vehicles/${vehicleId}`)
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            const vehicle = data.vehicle;
-            document.getElementById('vehicleId').value = vehicle.id;
-            document.getElementById('vehicleMake').value = vehicle.make || '';
-            document.getElementById('vehicleModel').value = vehicle.model || '';
-            document.getElementById('vehicleYear').value = vehicle.year || '';
-            document.getElementById('vehicleLicensePlate').value = vehicle.license_plate || '';
-            document.getElementById('vehicleVin').value = vehicle.vin || '';
-            document.getElementById('vehicleColor').value = vehicle.color || '';
-            document.getElementById('vehicleNotes').value = vehicle.notes || '';
-        }
-    })
-    .catch(error => {
-        showToast('Erreur lors du chargement des données', 'error');
-    });
-}
-
-function loadContactData(contactId) {
-    fetch(`/api/customers/${customerId}/contacts/${contactId}`)
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            const contact = data.contact;
-            document.getElementById('contactId').value = contact.id;
-            document.getElementById('contactFirstName').value = contact.first_name || '';
-            document.getElementById('contactLastName').value = contact.last_name || '';
-            document.getElementById('contactPhone').value = contact.phone || '';
-            document.getElementById('contactEmail').value = contact.email || '';
-            document.getElementById('contactRole').value = contact.role || '';
-            document.getElementById('contactIsPrimary').checked = contact.is_primary || false;
-            document.getElementById('contactNotes').value = contact.notes || '';
-        }
-    })
-    .catch(error => {
-        showToast('Erreur lors du chargement des données', 'error');
-    });
-}
-
-function loadAddressData(addressId) {
-    fetch(`/api/customers/${customerId}/addresses/${addressId}`)
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            const address = data.address;
-            document.getElementById('addressId').value = address.id;
-            document.getElementById('addressName').value = address.name || '';
-            document.getElementById('addressStreet').value = address.street || '';
-            document.getElementById('addressPostalCode').value = address.postal_code || '';
-            document.getElementById('addressCity').value = address.city || '';
-            document.getElementById('addressCountry').value = address.country || 'France';
-            document.getElementById('addressIsDefault').checked = address.is_default || false;
-            document.getElementById('addressNotes').value = address.notes || '';
-        }
-    })
-    .catch(error => {
-        showToast('Erreur lors du chargement des données', 'error');
-    });
-}
+    function loadAddressData(addressId) {
+        fetch(`/api/customers/${customerId}/addresses/${addressId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const address = data.address;
+                    document.getElementById('addressId').value = address.id;
+                    document.getElementById('addressName').value = address.name || '';
+                    document.getElementById('addressStreet').value = address.street || '';
+                    document.getElementById('addressPostalCode').value = address.postal_code || '';
+                    document.getElementById('addressCity').value = address.city || '';
+                    document.getElementById('addressCountry').value = address.country || 'France';
+                    document.getElementById('addressIsDefault').checked = address.is_default || false;
+                    document.getElementById('addressNotes').value = address.notes || '';
+                }
+            })
+            .catch(error => {
+                showToast('Erreur lors du chargement des données', 'error');
+            });
+    }
 </script>
-                            </div>
-                        </div>
+
+{# Informations détaillées #}
+<div class="row">
+    {# Informations de contact #}
+    <div class="col-md-6">
+        <div class="clay-card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-address-book me-2"></i>Contact</h5>
+            </div>
+            <div class="card-body">
+                {% if customer.secondary_phone %}
+                <div class="mb-3">
+                    <label class="fw-bold">Téléphone secondaire :</label>
+                    <div class="mt-1">
+                        <i class="fas fa-mobile-alt me-2" style="color: var(--success-color);"></i>
+                        <a href="tel:{{ customer.secondary_phone }}" class="text-decoration-none">
+                            {{ customer.secondary_phone }}
+                        </a>
                     </div>
                 </div>
+                {% endif %}
+
+                {% if customer.emergency_contact %}
+                <div class="mb-3">
+                    <label class="fw-bold">Contact d'urgence :</label>
+                    <div class="mt-1">
+                        <i class="fas fa-exclamation-triangle me-2" style="color: var(--warning-color);"></i>
+                        {{ customer.emergency_contact }}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if customer.preferred_contact_method %}
+                <div class="mb-3">
+                    <label class="fw-bold">Méthode de contact préférée :</label>
+                    <div class="mt-1">
+                        <span class="clay-badge" style="background: var(--info-color); color: white;">
+                            {% if customer.preferred_contact_method == 'email' %}
+                            <i class="fas fa-envelope me-1"></i>Email
+                            {% elif customer.preferred_contact_method == 'phone' %}
+                            <i class="fas fa-phone me-1"></i>Téléphone
+                            {% elif customer.preferred_contact_method == 'sms' %}
+                            <i class="fas fa-sms me-1"></i>SMS
+                            {% else %}
+                            {{ customer.preferred_contact_method }}
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if customer.notes %}
+                <div class="mb-3">
+                    <label class="fw-bold">Notes :</label>
+                    <div class="clay-element p-3 mt-1" style="background: var(--bg-light);">
+                        {{ customer.notes|nl2br }}
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
-    
-    {# Informations détaillées #}
-    <div class="row">
-        {# Informations de contact #}
-        <div class="col-md-6">
-            <div class="clay-card">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-address-book me-2"></i>Contact</h5>
-                </div>
-                <div class="card-body">
-                    {% if customer.secondary_phone %}
-                    <div class="mb-3">
-                        <label class="fw-bold">Téléphone secondaire :</label>
-                        <div class="mt-1">
-                            <i class="fas fa-mobile-alt me-2" style="color: var(--success-color);"></i>
-                            <a href="tel:{{ customer.secondary_phone }}" class="text-decoration-none">
-                                {{ customer.secondary_phone }}
-                            </a>
-                        </div>
-                    </div>
-                    {% endif %}
-                    
-                    {% if customer.emergency_contact %}
-                    <div class="mb-3">
-                        <label class="fw-bold">Contact d'urgence :</label>
-                        <div class="mt-1">
-                            <i class="fas fa-exclamation-triangle me-2" style="color: var(--warning-color);"></i>
-                            {{ customer.emergency_contact }}
-                        </div>
-                    </div>
-                    {% endif %}
-                    
-                    {% if customer.preferred_contact_method %}
-                    <div class="mb-3">
-                        <label class="fw-bold">Méthode de contact préférée :</label>
-                        <div class="mt-1">
-                            <span class="clay-badge" style="background: var(--info-color); color: white;">
-                                {% if customer.preferred_contact_method == 'email' %}
-                                    <i class="fas fa-envelope me-1"></i>Email
-                                {% elif customer.preferred_contact_method == 'phone' %}
-                                    <i class="fas fa-phone me-1"></i>Téléphone
-                                {% elif customer.preferred_contact_method == 'sms' %}
-                                    <i class="fas fa-sms me-1"></i>SMS
-                                {% else %}
-                                    {{ customer.preferred_contact_method }}
-                                {% endif %}
-                            </span>
-                        </div>
-                    </div>
-                    {% endif %}
-                    
-                    {% if customer.notes %}
-                    <div class="mb-3">
-                        <label class="fw-bold">Notes :</label>
-                        <div class="clay-element p-3 mt-1" style="background: var(--bg-light);">
-                            {{ customer.notes|nl2br }}
-                        </div>
-                    </div>
-                    {% endif %}
-                </div>
+
+    {# Préférences et paramètres #}
+    <div class="col-md-6">
+        <div class="clay-card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-cog me-2"></i>Préférences</h5>
             </div>
-        </div>
-        
-        {# Préférences et paramètres #}
-        <div class="col-md-6">
-            <div class="clay-card">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-cog me-2"></i>Préférences</h5>
+            <div class="card-body">
+                {% if customer.language %}
+                <div class="mb-3">
+                    <label class="fw-bold">Langue :</label>
+                    <div class="mt-1">
+                        <i class="fas fa-globe me-2" style="color: var(--primary-color);"></i>
+                        {{ customer.language|upper }}
+                    </div>
                 </div>
-                <div class="card-body">
-                    {% if customer.language %}
-                    <div class="mb-3">
-                        <label class="fw-bold">Langue :</label>
-                        <div class="mt-1">
-                            <i class="fas fa-globe me-2" style="color: var(--primary-color);"></i>
-                            {{ customer.language|upper }}
+                {% endif %}
+
+                {% if customer.tax_number %}
+                <div class="mb-3">
+                    <label class="fw-bold">Numéro de TVA :</label>
+                    <div class="mt-1">
+                        <i class="fas fa-receipt me-2" style="color: var(--secondary-color);"></i>
+                        {{ customer.tax_number }}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <label class="fw-bold">Notifications :</label>
+                    <div class="mt-2">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" {{ 'checked' if customer.email_notifications
+                                }} onclick="toggleNotification('email', {{ customer.id }})">
+                            <label class="form-check-label">
+                                <i class="fas fa-envelope me-2"></i>Email
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" {{ 'checked' if customer.sms_notifications
+                                }} onclick="toggleNotification('sms', {{ customer.id }})">
+                            <label class="form-check-label">
+                                <i class="fas fa-sms me-2"></i>SMS
+                            </label>
                         </div>
                     </div>
-                    {% endif %}
-                    
-                    {% if customer.tax_number %}
-                    <div class="mb-3">
-                        <label class="fw-bold">Numéro de TVA :</label>
-                        <div class="mt-1">
-                            <i class="fas fa-receipt me-2" style="color: var(--secondary-color);"></i>
-                            {{ customer.tax_number }}
-                        </div>
-                    </div>
-                    {% endif %}
-                    
-                    <div class="mb-3">
-                        <label class="fw-bold">Notifications :</label>
-                        <div class="mt-2">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" 
-                                       {{ 'checked' if customer.email_notifications }} 
-                                       onclick="toggleNotification('email', {{ customer.id }})">
-                                <label class="form-check-label">
-                                    <i class="fas fa-envelope me-2"></i>Email
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" 
-                                       {{ 'checked' if customer.sms_notifications }} 
-                                       onclick="toggleNotification('sms', {{ customer.id }})">
-                                <label class="form-check-label">
-                                    <i class="fas fa-sms me-2"></i>SMS
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="fw-bold">Marketing :</label>
-                        <div class="mt-2">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" 
-                                       {{ 'checked' if customer.marketing_consent }} 
-                                       onclick="toggleConsent('marketing', {{ customer.id }})">
-                                <label class="form-check-label">
-                                    <i class="fas fa-bullhorn me-2"></i>Consentement marketing
-                                </label>
-                            </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="fw-bold">Marketing :</label>
+                    <div class="mt-2">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" {{ 'checked' if customer.marketing_consent
+                                }} onclick="toggleConsent('marketing', {{ customer.id }})">
+                            <label class="form-check-label">
+                                <i class="fas fa-bullhorn me-2"></i>Consentement marketing
+                            </label>
                         </div>
                     </div>
                 </div>
@@ -923,58 +929,58 @@ function loadAddressData(addressId) {
 </div>
 
 <script>
-// Fonctions pour mettre à jour les préférences
-function toggleNotification(type, customerId) {
-    // Logique AJAX pour mettre à jour les préférences de notification
-    fetch(`/api/customers/${customerId}/notifications`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            type: type,
-            enabled: event.target.checked
+    // Fonctions pour mettre à jour les préférences
+    function toggleNotification(type, customerId) {
+        // Logique AJAX pour mettre à jour les préférences de notification
+        fetch(`/api/customers/${customerId}/notifications`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                type: type,
+                enabled: event.target.checked
+            })
         })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (!data.success) {
-            event.target.checked = !event.target.checked; // Revert on error
-            showToast('Erreur lors de la mise à jour', 'error');
-        } else {
-            showToast('Préférences mises à jour', 'success');
-        }
-    })
-    .catch(error => {
-        event.target.checked = !event.target.checked; // Revert on error
-        showToast('Erreur de connexion', 'error');
-    });
-}
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    event.target.checked = !event.target.checked; // Revert on error
+                    showToast('Erreur lors de la mise à jour', 'error');
+                } else {
+                    showToast('Préférences mises à jour', 'success');
+                }
+            })
+            .catch(error => {
+                event.target.checked = !event.target.checked; // Revert on error
+                showToast('Erreur de connexion', 'error');
+            });
+    }
 
-function toggleConsent(type, customerId) {
-    // Logique AJAX pour mettre à jour les consentements
-    fetch(`/api/customers/${customerId}/consents`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            type: type,
-            enabled: event.target.checked
+    function toggleConsent(type, customerId) {
+        // Logique AJAX pour mettre à jour les consentements
+        fetch(`/api/customers/${customerId}/consents`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                type: type,
+                enabled: event.target.checked
+            })
         })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (!data.success) {
-            event.target.checked = !event.target.checked; // Revert on error
-            showToast('Erreur lors de la mise à jour', 'error');
-        } else {
-            showToast('Consentement mis à jour', 'success');
-        }
-    })
-    .catch(error => {
-        event.target.checked = !event.target.checked; // Revert on error
-        showToast('Erreur de connexion', 'error');
-    });
-}
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    event.target.checked = !event.target.checked; // Revert on error
+                    showToast('Erreur lors de la mise à jour', 'error');
+                } else {
+                    showToast('Consentement mis à jour', 'success');
+                }
+            })
+            .catch(error => {
+                event.target.checked = !event.target.checked; // Revert on error
+                showToast('Erreur de connexion', 'error');
+            });
+    }
 </script>

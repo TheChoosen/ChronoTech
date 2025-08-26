@@ -23,7 +23,7 @@
                 </p>
             </div>
         </div>
-        
+
         <div class="d-flex gap-2">
             <button class="clay-button" onclick="quickActions('call')" title="Appeler le client">
                 <i class="fas fa-phone me-2"></i>Appeler
@@ -39,127 +39,161 @@
                     <i class="fas fa-ellipsis-v"></i>
                 </button>
                 <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="{{ url_for('customers.edit_customer', customer_id=customer.id) }}">
-                        <i class="fas fa-edit me-2"></i>Modifier client
-                    </a></li>
+                    <li><a class="dropdown-item"
+                            href="{{ url_for('customers.edit_customer', customer_id=customer.id) }}">
+                            <i class="fas fa-edit me-2"></i>Modifier client
+                        </a></li>
                     <li><a class="dropdown-item" href="#" onclick="quickActions('duplicate')">
-                        <i class="fas fa-copy me-2"></i>Dupliquer
-                    </a></li>
+                            <i class="fas fa-copy me-2"></i>Dupliquer
+                        </a></li>
                     <li><a class="dropdown-item" href="#" onclick="quickActions('merge')">
-                        <i class="fas fa-code-branch me-2"></i>Fusionner
-                    </a></li>
-                    <li><hr class="dropdown-divider"></li>
+                            <i class="fas fa-code-branch me-2"></i>Fusionner
+                        </a></li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
                     <li><a class="dropdown-item" href="#" onclick="quickActions('export')">
-                        <i class="fas fa-download me-2"></i>Exporter données
-                    </a></li>
+                            <i class="fas fa-download me-2"></i>Exporter données
+                        </a></li>
                     <li><a class="dropdown-item" href="#" onclick="quickActions('print')">
-                        <i class="fas fa-print me-2"></i>Imprimer fiche
-                    </a></li>
-                    <li><hr class="dropdown-divider"></li>
+                            <i class="fas fa-print me-2"></i>Imprimer fiche
+                        </a></li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
                     {% if customer.is_active %}
                     <li><a class="dropdown-item text-warning" href="#" onclick="quickActions('deactivate')">
-                        <i class="fas fa-pause me-2"></i>Désactiver
-                    </a></li>
+                            <i class="fas fa-pause me-2"></i>Désactiver
+                        </a></li>
                     {% else %}
                     <li><a class="dropdown-item text-success" href="#" onclick="quickActions('activate')">
-                        <i class="fas fa-play me-2"></i>Réactiver
-                    </a></li>
+                            <i class="fas fa-play me-2"></i>Réactiver
+                        </a></li>
                     {% endif %}
                     <li><a class="dropdown-item text-danger" href="#" onclick="quickActions('delete')">
-                        <i class="fas fa-trash me-2"></i>Supprimer
-                    </a></li>
+                            <i class="fas fa-trash me-2"></i>Supprimer
+                        </a></li>
                 </ul>
             </div>
         </div>
     </div>
-    
+
     {# Navigation par onglets #}
     {{ customer_360_tabs(customer.id, active_tab|default('profile')) }}
-    
+
     {# Contenu des onglets avec lazy loading #}
+    <style>
+        /* Customer 360 tab content enhancements */
+        #customer-360-tab-content {
+            position: relative;
+            min-height: 320px;
+            /* avoid layout jump during first lazy load */
+        }
+
+        #customer360-loading-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.65);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            transition: opacity .15s ease-in-out;
+        }
+
+        #customer360-loading-overlay.d-none {
+            display: none !important;
+        }
+    </style>
     <div class="tab-content" id="customer-360-tab-content">
+        <div id="customer360-loading-overlay" class="d-none" aria-hidden="true">
+            <div class="text-center">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2 mb-0 small text-muted">Chargement...</p>
+            </div>
+        </div>
         {# Onglet Profil - chargé immédiatement #}
-        <div class="tab-pane fade {{ 'show active' if active_tab == 'profile' else '' }}" 
-             id="tab-content-profile" role="tabpanel" data-section="profile" aria-labelledby="tab-profile">
+        <div class="tab-pane fade {{ 'show active' if active_tab == 'profile' else '' }}" id="tab-content-profile"
+            role="tabpanel" data-section="profile" aria-labelledby="tab-profile">
             {% if active_tab == 'profile' %}
-                {% include 'customers/_sections/profile.html' %}
+            {% include 'customers/_sections/profile.html' %}
             {% else %}
-                <div class="text-center py-5" id="placeholder-profile">
-                    {{ loading_skeleton(type="card") }}
-                    {{ loading_skeleton(type="card") }}
-                </div>
+            <div class="text-center py-5" id="placeholder-profile">
+                {{ loading_skeleton(type="card") }}
+                {{ loading_skeleton(type="card") }}
+            </div>
             {% endif %}
         </div>
-        
+
         {# Onglet Activité - lazy loading #}
-        <div class="tab-pane fade {{ 'show active' if active_tab == 'activity' else '' }}" 
-             id="tab-content-activity" role="tabpanel" data-section="activity" aria-labelledby="tab-activity">
+        <div class="tab-pane fade {{ 'show active' if active_tab == 'activity' else '' }}" id="tab-content-activity"
+            role="tabpanel" data-section="activity" aria-labelledby="tab-activity">
             {% if active_tab == 'activity' %}
-                {% include 'customers/_sections/activity.html' %}
+            {% include 'customers/_sections/activity.html' %}
             {% else %}
-                <div class="text-center py-5" id="placeholder-activity">
-                    {{ loading_skeleton(type="card") }}
-                    {{ loading_skeleton(type="table") }}
-                </div>
+            <div class="text-center py-5" id="placeholder-activity">
+                {{ loading_skeleton(type="card") }}
+                {{ loading_skeleton(type="table") }}
+            </div>
             {% endif %}
         </div>
-        
+
         {# Onglet Finances - lazy loading #}
-        <div class="tab-pane fade {{ 'show active' if active_tab == 'finances' else '' }}" 
-             id="tab-content-finances" role="tabpanel" data-section="finances" aria-labelledby="tab-finances">
+        <div class="tab-pane fade {{ 'show active' if active_tab == 'finances' else '' }}" id="tab-content-finances"
+            role="tabpanel" data-section="finances" aria-labelledby="tab-finances">
             {% if active_tab == 'finances' %}
-                {% include 'customers/_sections/finances.html' %}
+            {% include 'customers/_sections/finances.html' %}
             {% else %}
-                <div class="text-center py-5" id="placeholder-finances">
-                    {{ loading_skeleton(type="card") }}
-                    {{ loading_skeleton(type="table") }}
-                </div>
+            <div class="text-center py-5" id="placeholder-finances">
+                {{ loading_skeleton(type="card") }}
+                {{ loading_skeleton(type="table") }}
+            </div>
             {% endif %}
         </div>
-        
+
         {# Onglet Documents - lazy loading #}
-        <div class="tab-pane fade {{ 'show active' if active_tab == 'documents' else '' }}" 
-             id="tab-content-documents" role="tabpanel" data-section="documents" aria-labelledby="tab-documents">
+        <div class="tab-pane fade {{ 'show active' if active_tab == 'documents' else '' }}" id="tab-content-documents"
+            role="tabpanel" data-section="documents" aria-labelledby="tab-documents">
             {% if active_tab == 'documents' %}
-                {% include 'customers/_sections/documents.html' %}
+            {% include 'customers/_sections/documents.html' %}
             {% else %}
-                <div class="text-center py-5" id="placeholder-documents">
-                    {{ loading_skeleton(type="card") }}
-                    <div class="row">
-                        <div class="col-md-4">{{ loading_skeleton(type="card") }}</div>
-                        <div class="col-md-4">{{ loading_skeleton(type="card") }}</div>
-                        <div class="col-md-4">{{ loading_skeleton(type="card") }}</div>
-                    </div>
+            <div class="text-center py-5" id="placeholder-documents">
+                {{ loading_skeleton(type="card") }}
+                <div class="row">
+                    <div class="col-md-4">{{ loading_skeleton(type="card") }}</div>
+                    <div class="col-md-4">{{ loading_skeleton(type="card") }}</div>
+                    <div class="col-md-4">{{ loading_skeleton(type="card") }}</div>
                 </div>
+            </div>
             {% endif %}
         </div>
-        
+
         {# Onglet Analytics - lazy loading #}
-        <div class="tab-pane fade {{ 'show active' if active_tab == 'analytics' else '' }}" 
-             id="tab-content-analytics" role="tabpanel" data-section="analytics" aria-labelledby="tab-analytics">
+        <div class="tab-pane fade {{ 'show active' if active_tab == 'analytics' else '' }}" id="tab-content-analytics"
+            role="tabpanel" data-section="analytics" aria-labelledby="tab-analytics">
             {% if active_tab == 'analytics' %}
-                {% include 'customers/_sections/analytics.html' %}
+            {% include 'customers/_sections/analytics.html' %}
             {% else %}
-                <div class="text-center py-5" id="placeholder-analytics">
-                    {{ loading_skeleton(type="card") }}
-                    <div class="row">
-                        <div class="col-md-8">{{ loading_skeleton(type="card") }}</div>
-                        <div class="col-md-4">{{ loading_skeleton(type="card") }}</div>
-                    </div>
+            <div class="text-center py-5" id="placeholder-analytics">
+                {{ loading_skeleton(type="card") }}
+                <div class="row">
+                    <div class="col-md-8">{{ loading_skeleton(type="card") }}</div>
+                    <div class="col-md-4">{{ loading_skeleton(type="card") }}</div>
                 </div>
+            </div>
             {% endif %}
         </div>
-        
+
         {# Onglet RGPD - lazy loading #}
-        <div class="tab-pane fade {{ 'show active' if active_tab == 'consents' else '' }}" 
-             id="tab-content-consents" role="tabpanel" data-section="consents" aria-labelledby="tab-consents">
+        <div class="tab-pane fade {{ 'show active' if active_tab == 'consents' else '' }}" id="tab-content-consents"
+            role="tabpanel" data-section="consents" aria-labelledby="tab-consents">
             {% if active_tab == 'consents' %}
-                {% include 'customers/_sections/consents.html' %}
+            {% include 'customers/_sections/consents.html' %}
             {% else %}
-                <div class="text-center py-5" id="placeholder-consents">
-                    {{ loading_skeleton(type="card") }}
-                    {{ loading_skeleton(type="card") }}
-                </div>
+            <div class="text-center py-5" id="placeholder-consents">
+                {{ loading_skeleton(type="card") }}
+                {{ loading_skeleton(type="card") }}
+            </div>
             {% endif %}
         </div>
     </div>
@@ -198,411 +232,18 @@
 </div>
 
 <script>
-// Variables globales Customer 360
-const customerId = {{ customer.id }};
-const customerName = "{{ customer.name|escapejs }}";
-let loadedSections = new Set(['profile']); // Seul Profile est chargé initialement
-
-// Navigation entre onglets avec lazy loading
-document.addEventListener('DOMContentLoaded', function() {
-    // Activer l'onglet depuis l'URL
-    const params = new URLSearchParams(window.location.search);
-    const activeTab = params.get('tab') || 'profile';
-    
-    // Activer l'onglet correspondant
-    const tabButton = document.querySelector(`[data-section="${activeTab}"]`);
-    if (tabButton) {
-        const bsTab = new bootstrap.Tab(tabButton);
-        bsTab.show();
-        loadSectionIfNeeded(activeTab);
-    }
-    
-    // Écouter les changements d'onglets
-    const tabButtons = document.querySelectorAll('[data-bs-toggle="tab"]');
-    tabButtons.forEach(button => {
-        button.addEventListener('shown.bs.tab', function(e) {
-            const sectionName = this.getAttribute('data-section');
-            console.log('Tab activated:', sectionName); // Debug
-            
-            // Charger la section si nécessaire
-            loadSectionIfNeeded(sectionName);
-            
-            // Mettre à jour l'URL sans recharger la page
-            const url = new URL(window.location);
-            url.searchParams.set('tab', sectionName);
-            window.history.pushState({}, '', url);
-        });
-    });
-    
-    // Gérer le bouton retour du navigateur
-    window.addEventListener('popstate', function(e) {
-        const params = new URLSearchParams(window.location.search);
-        const tab = params.get('tab') || 'profile';
-        
-        const tabButton = document.querySelector(`[data-section="${tab}"]`);
-        if (tabButton) {
-            const bsTab = new bootstrap.Tab(tabButton);
-            bsTab.show();
-        }
-    });
-});
-
-// Fonction pour charger une section si nécessaire
-function loadSectionIfNeeded(sectionName, forceReload = false) {
-    console.log('Loading section:', sectionName); // Debug
-    
-    if (loadedSections.has(sectionName) && !forceReload) {
-        console.log('Section already loaded:', sectionName); // Debug
-        return; // Déjà chargée
-    }
-    
-    // Profile est toujours chargé côté serveur
-    if (sectionName === 'profile') {
-        loadedSections.add('profile');
-        return;
-    }
-    
-    const tabContent = document.getElementById(`tab-content-${sectionName}`);
-    if (!tabContent) {
-        console.log('No tab content found for:', sectionName); // Debug
-        return;
-    }
-    
-    // Afficher un indicateur de chargement
-    const loadingHtml = `
-        <div class="text-center py-5">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Chargement...</span>
-            </div>
-            <p class="mt-3">Chargement de la section ${sectionName}...</p>
-        </div>
-    `;
-    tabContent.innerHTML = loadingHtml;
-    
-    // Charger la section via AJAX
-    fetch(`/customers/api/customers/${customerId}/sections/${sectionName}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-            return response.text();
-        })
-        .then(html => {
-            console.log('Section loaded successfully:', sectionName); // Debug
-            // Remplacer le contenu
-            tabContent.innerHTML = html;
-            
-            // Marquer comme chargée
-            loadedSections.add(sectionName);
-            
-            // Déclencher les événements de section chargée
-            const event = new CustomEvent('sectionLoaded', { 
-                detail: { section: sectionName } 
-            });
-            document.dispatchEvent(event);
-        })
-        .catch(error => {
-            console.error(`Erreur lors du chargement de la section ${sectionName}:`, error);
-            tabContent.innerHTML = `
-                <div class="text-center py-5">
-                    <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
-                    <h5 class="text-danger">Erreur de chargement</h5>
-                    <p class="text-muted">Impossible de charger cette section.</p>
-                    <button class="clay-button" onclick="loadSectionIfNeeded('${sectionName}', true)">
-                        <i class="fas fa-sync me-2"></i>Réessayer
-                    </button>
-                </div>
-            `;
-        });
-}
-
-// Précharger la section suivante
-function preloadNextSection() {
-    const allSections = ['profile', 'activity', 'finances', 'documents', 'analytics', 'consents'];
-    const activeTab = document.querySelector('.nav-link.active');
-    const activeSection = activeTab ? activeTab.getAttribute('data-section') : null;
-    const currentIndex = allSections.indexOf(activeSection);
-    
-    if (currentIndex >= 0 && currentIndex < allSections.length - 1) {
-        const nextSection = allSections[currentIndex + 1];
-        if (!loadedSections.has(nextSection)) {
-            setTimeout(() => {
-                loadSectionIfNeeded(nextSection);
-            }, 1000);
-        }
-    }
-}
-
-// Actions rapides
-function quickActions(action) {
-    const modal = new bootstrap.Modal(document.getElementById('quickActionModal'));
-    const title = document.getElementById('quickActionModalTitle');
-    const body = document.getElementById('quickActionModalBody');
-    const confirmBtn = document.getElementById('quickActionConfirm');
-    
-    switch(action) {
-        case 'call':
-            title.textContent = 'Appeler le client';
-            body.innerHTML = `
-                <p>Appeler <strong>${customerName}</strong> au :</p>
-                <div class="list-group">
-                    {% if customer.phone %}
-                    <a href="tel:{{ customer.phone }}" class="list-group-item list-group-item-action">
-                        <i class="fas fa-phone me-2"></i>{{ customer.phone }}
-                        <span class="badge bg-primary ms-2">Principal</span>
-                    </a>
-                    {% endif %}
-                    {% if customer.secondary_phone %}
-                    <a href="tel:{{ customer.secondary_phone }}" class="list-group-item list-group-item-action">
-                        <i class="fas fa-mobile-alt me-2"></i>{{ customer.secondary_phone }}
-                        <span class="badge bg-secondary ms-2">Secondaire</span>
-                    </a>
-                    {% endif %}
-                </div>
-            `;
-            confirmBtn.style.display = 'none';
-            break;
-            
-        case 'email':
-            title.textContent = 'Envoyer un email';
-            body.innerHTML = `
-                <form id="emailForm">
-                    <div class="mb-3">
-                        <label class="form-label">Destinataire :</label>
-                        <input type="email" class="form-control" value="{{ customer.email }}" readonly>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Objet :</label>
-                        <select class="form-select" id="emailSubject">
-                            <option value="">Objet personnalisé...</option>
-                            <option value="Suivi de votre dossier">Suivi de votre dossier</option>
-                            <option value="Devis pour vos travaux">Devis pour vos travaux</option>
-                            <option value="Planification d'intervention">Planification d'intervention</option>
-                            <option value="Facture disponible">Facture disponible</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Message :</label>
-                        <textarea class="form-control" rows="4" id="emailMessage" placeholder="Votre message..."></textarea>
-                    </div>
-                </form>
-            `;
-            confirmBtn.textContent = 'Envoyer';
-            confirmBtn.onclick = () => sendQuickEmail();
-            break;
-            
-        case 'quote':
-            window.location.href = `/quotes/new?customer_id=${customerId}`;
-            return;
-            
-        case 'export':
-            title.textContent = 'Exporter les données client';
-            body.innerHTML = `
-                <p>Sélectionnez les données à exporter pour <strong>${customerName}</strong> :</p>
-                <div class="form-check mb-2">
-                    <input class="form-check-input" type="checkbox" value="profile" id="export_profile" checked>
-                    <label class="form-check-label" for="export_profile">Informations profil</label>
-                </div>
-                <div class="form-check mb-2">
-                    <input class="form-check-input" type="checkbox" value="finances" id="export_finances" checked>
-                    <label class="form-check-label" for="export_finances">Données financières</label>
-                </div>
-                <div class="form-check mb-2">
-                    <input class="form-check-input" type="checkbox" value="activity" id="export_activity">
-                    <label class="form-check-label" for="export_activity">Historique d'activité</label>
-                </div>
-                <div class="form-check mb-2">
-                    <input class="form-check-input" type="checkbox" value="documents" id="export_documents">
-                    <label class="form-check-label" for="export_documents">Documents</label>
-                </div>
-                <hr>
-                <div class="mb-3">
-                    <label class="form-label">Format :</label>
-                    <select class="form-select" id="exportFormat">
-                        <option value="pdf">PDF</option>
-                        <option value="excel">Excel</option>
-                        <option value="csv">CSV</option>
-                    </select>
-                </div>
-            `;
-            confirmBtn.textContent = 'Exporter';
-            confirmBtn.onclick = () => exportCustomerData();
-            break;
-            
-        case 'delete':
-            title.textContent = 'Supprimer le client';
-            body.innerHTML = `
-                <div class="alert alert-danger">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    <strong>Attention !</strong> Cette action est irréversible.
-                </div>
-                <p>Êtes-vous sûr de vouloir supprimer <strong>${customerName}</strong> ?</p>
-                <div class="mb-3">
-                    <label class="form-label">Raison de la suppression :</label>
-                    <textarea class="form-control" rows="3" id="deleteReason" required placeholder="Veuillez indiquer la raison..."></textarea>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="confirmDelete" required>
-                    <label class="form-check-label" for="confirmDelete">
-                        Je confirme vouloir supprimer ce client et toutes ses données
-                    </label>
-                </div>
-            `;
-            confirmBtn.textContent = 'Supprimer';
-            confirmBtn.className = 'btn btn-danger';
-            confirmBtn.onclick = () => deleteCustomer();
-            break;
-            
-        default:
-            showToast('Action non implémentée', 'info');
-            return;
-    }
-    
-    modal.show();
-}
-
-// Fonctions des actions rapides
-function sendQuickEmail() {
-    const subject = document.getElementById('emailSubject').value;
-    const message = document.getElementById('emailMessage').value;
-    
-    if (!message.trim()) {
-        showToast('Veuillez saisir un message', 'warning');
-        return;
-    }
-    
-    fetch(`/api/customers/${customerId}/send-email`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            subject: subject || 'Message de ChronoTech',
-            message: message
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showToast('Email envoyé avec succès', 'success');
-            bootstrap.Modal.getInstance(document.getElementById('quickActionModal')).hide();
-        } else {
-            showToast('Erreur lors de l\'envoi', 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Erreur:', error);
-        showToast('Erreur de connexion', 'error');
-    });
-}
-
-function exportCustomerData() {
-    const selectedData = [];
-    document.querySelectorAll('#quickActionModal input[type="checkbox"]:checked').forEach(cb => {
-        selectedData.push(cb.value);
-    });
-    
-    const format = document.getElementById('exportFormat').value;
-    
-    if (selectedData.length === 0) {
-        showToast('Sélectionnez au moins un type de données', 'warning');
-        return;
-    }
-    
-    const params = new URLSearchParams({
-        data: selectedData.join(','),
-        format: format
-    });
-    
-    window.open(`/api/customers/${customerId}/export?${params}`, '_blank');
-    bootstrap.Modal.getInstance(document.getElementById('quickActionModal')).hide();
-}
-
-function deleteCustomer() {
-    const reason = document.getElementById('deleteReason').value.trim();
-    const confirmed = document.getElementById('confirmDelete').checked;
-    
-    if (!reason) {
-        showToast('Veuillez indiquer une raison', 'warning');
-        return;
-    }
-    
-    if (!confirmed) {
-        showToast('Veuillez confirmer la suppression', 'warning');
-        return;
-    }
-    
-    fetch(`/api/customers/${customerId}`, {
-        method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ reason: reason })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showToast('Client supprimé avec succès', 'success');
-            setTimeout(() => {
-                window.location.href = '/customers';
-            }, 2000);
-        } else {
-            showToast('Erreur lors de la suppression', 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Erreur:', error);
-        showToast('Erreur de connexion', 'error');
-    });
-}
-
-// Système de notifications toast
-function showToast(message, type = 'info') {
-    const toast = document.getElementById('globalToast');
-    const title = document.getElementById('toastTitle');
-    const body = document.getElementById('toastBody');
-    
-    // Configuration selon le type
-    const config = {
-        'success': { title: 'Succès', class: 'text-success', icon: 'fas fa-check-circle' },
-        'error': { title: 'Erreur', class: 'text-danger', icon: 'fas fa-exclamation-circle' },
-        'warning': { title: 'Attention', class: 'text-warning', icon: 'fas fa-exclamation-triangle' },
-        'info': { title: 'Information', class: 'text-info', icon: 'fas fa-info-circle' }
-    };
-    
-    const typeConfig = config[type] || config['info'];
-    
-    title.textContent = typeConfig.title;
-    title.className = `me-auto ${typeConfig.class}`;
-    body.innerHTML = `<i class="${typeConfig.icon} me-2"></i>${message}`;
-    
-    const bsToast = new bootstrap.Toast(toast);
-    bsToast.show();
-}
-
-// Fonctions utilitaires globales
-function formatCurrency(amount) {
-    return new Intl.NumberFormat('fr-FR', {
-        style: 'currency',
-        currency: 'EUR'
-    }).format(amount);
-}
-
-function formatDate(dateString) {
-    return new Date(dateString).toLocaleDateString('fr-FR');
-}
-
-function formatRelativeTime(dateString) {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now - date) / 1000);
-    
-    if (diffInSeconds < 60) return 'À l\'instant';
-    if (diffInSeconds < 3600) return `Il y a ${Math.floor(diffInSeconds / 60)} min`;
-    if (diffInSeconds < 86400) return `Il y a ${Math.floor(diffInSeconds / 3600)}h`;
-    if (diffInSeconds < 2592000) return `Il y a ${Math.floor(diffInSeconds / 86400)} jours`;
-    
-    return formatDate(dateString);
-}
+    // Configuration Customer 360 exposée au script externe
+    window.Customer360Data = {{
+        {
+            'id': customer.id,
+                'name': (customer.name | default ('', true)),
+            'email': (customer.email | default ('', true)),
+            'phone': (customer.phone | default ('', true)),
+            'secondary_phone': (customer.secondary_phone | default ('', true)),
+            'is_active': (customer.is_active | default (false, true)),
+            'initial_tab': (active_tab | default ('profile', true))
+        } | tojson | safe
+    }};
 </script>
+<script src="{{ url_for('static', filename='js/customer360_view.js') }}"></script>
 {% endblock %}
