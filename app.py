@@ -28,6 +28,7 @@ from core.utils import (
 from routes.appointments import bp as appointments_bp
 from routes.vehicles import bp as vehicles_bp
 from routes.products import bp as products_bp
+from routes.invoices import bp as invoices_bp
 
 # Configuration du logging
 logging.basicConfig(level=logging.INFO)
@@ -90,6 +91,10 @@ def create_app(config_class=Config):
         app.register_blueprint(products_bp)
     except Exception as e:
         logger.warning(f"Impossible d'enregistrer products blueprint: {e}")
+    try:
+        app.register_blueprint(invoices_bp)
+    except Exception as e:
+        logger.warning(f"Impossible d'enregistrer invoices blueprint: {e}")
     
     # Configuration de la base de données
     with app.app_context():
@@ -913,6 +918,8 @@ def inject_globals():
         'app_name': 'ChronoTech',
         'app_version': '2.0',
         'current_time': datetime.now(),
+        'datetime': datetime,
+        'timedelta': timedelta,
         'moment': moment
     }
 
@@ -925,5 +932,5 @@ if __name__ == '__main__':
     app.run(
         debug=os.getenv('FLASK_ENV') == 'development',
         host=app.config.get('HOST', '0.0.0.0'),
-        port=app.config.get('PORT', 5010)
+        port=5012
     )

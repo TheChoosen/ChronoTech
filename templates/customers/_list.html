@@ -270,7 +270,7 @@
 </div>
 
 <!-- Pagination avec style Claymorphism -->
-{% if pagination.pages > 1 %}
+{% if pagination and pagination.pages > 1 %}
 <div class="d-flex justify-content-center mt-4">
     <div class="clay-element rounded-pill p-2">
         <ul class="pagination mb-0">

@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Facture #{{ invoice.id }} - ChronoTech{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- En-tête -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0">Facture #{{ invoice.id }}</h1>
+                    <p class="text-muted mb-0">Client: {{ invoice.customer_name }}</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('customers.view_customer', customer_id=invoice.customer_id, tab='finances') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Retour
+                    </a>
+                    <a href="{{ url_for('invoices.edit_invoice', invoice_id=invoice.id) }}" class="btn btn-outline-primary">
+                        <i class="fas fa-edit"></i> Modifier
+                    </a>
+                </div>
+            </div>
+
+            <!-- Détails de la facture -->
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">Détails de la facture</h5>
+                            <span class="badge bg-{{ 'success' if invoice.status == 'paid' else 'warning' if invoice.status == 'sent' else 'secondary' }}">
+                                {{ 'Payée' if invoice.status == 'paid' else 'Envoyée' if invoice.status == 'sent' else 'Ouverte' }}
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Description:</label>
+                                        <div class="border rounded p-3 bg-light">
+                                            {{ invoice.description or 'Aucune description' }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Montant HT:</label>
+                                        <div class="h4 text-primary">
+                                            {{ "%.2f"|format(invoice.total_amount) }} €
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Date de création:</label>
+                                        <div>
+                                            {{ invoice.created_at.strftime('%d/%m/%Y à %H:%M') if invoice.created_at else 'Non renseignée' }}
+                                        </div>
+                                    </div>
+                                    
+                                    {% if invoice.due_date %}
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Date d'échéance:</label>
+                                        <div class="{{ 'text-danger' if invoice.due_date < datetime.utcnow().date() and invoice.status != 'paid' else '' }}">
+                                            {{ invoice.due_date.strftime('%d/%m/%Y') }}
+                                            {% if invoice.due_date < datetime.utcnow().date() and invoice.status != 'paid' %}
+                                                <i class="fas fa-exclamation-triangle text-danger" title="Facture en retard"></i>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <!-- Informations client -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">Informations Client</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-2">
+                                <strong>Nom:</strong><br>
+                                {{ invoice.customer_name }}
+                            </div>
+                            {% if invoice.customer_email %}
+                            <div class="mb-2">
+                                <strong>Email:</strong><br>
+                                <a href="mailto:{{ invoice.customer_email }}">{{ invoice.customer_email }}</a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">Actions</h6>
+                        </div>
+                        <div class="card-body">
+                            {% if invoice.status != 'paid' %}
+                            <div class="d-grid gap-2">
+                                <button type="button" class="btn btn-success btn-sm" onclick="markAsPaid({{ invoice.id }})">
+                                    <i class="fas fa-check"></i> Marquer comme payée
+                                </button>
+                                
+                                {% if invoice.status != 'sent' %}
+                                <button type="button" class="btn btn-info btn-sm" onclick="markAsSent({{ invoice.id }})">
+                                    <i class="fas fa-paper-plane"></i> Marquer comme envoyée
+                                </button>
+                                {% endif %}
+                            </div>
+                            {% else %}
+                            <div class="text-center text-success">
+                                <i class="fas fa-check-circle fa-2x"></i>
+                                <p class="mt-2 mb-0">Facture payée</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Suppression -->
+                    <div class="card mt-3 border-danger">
+                        <div class="card-header bg-danger text-white">
+                            <h6 class="card-title mb-0">Zone de danger</h6>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small">Cette action est irréversible.</p>
+                            <form action="{{ url_for('invoices.delete_invoice', invoice_id=invoice.id) }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette facture ?')">
+                                <button type="submit" class="btn btn-outline-danger btn-sm">
+                                    <i class="fas fa-trash"></i> Supprimer la facture
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function markAsPaid(invoiceId) {
+    if (confirm('Marquer cette facture comme payée ?')) {
+        // Utiliser un formulaire pour envoyer la requête de mise à jour
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/invoices/' + invoiceId + '/update';
+        
+        // Ajouter les champs cachés
+        const statusField = document.createElement('input');
+        statusField.type = 'hidden';
+        statusField.name = 'status';
+        statusField.value = 'paid';
+        form.appendChild(statusField);
+        
+        // Copier les autres données actuelles
+        const descField = document.createElement('input');
+        descField.type = 'hidden';
+        descField.name = 'description';
+        descField.value = '{{ invoice.description }}';
+        form.appendChild(descField);
+        
+        const amountField = document.createElement('input');
+        amountField.type = 'hidden';
+        amountField.name = 'amount';
+        amountField.value = '{{ invoice.total_amount }}';
+        form.appendChild(amountField);
+        
+        {% if invoice.due_date %}
+        const dueDateField = document.createElement('input');
+        dueDateField.type = 'hidden';
+        dueDateField.name = 'due_date';
+        dueDateField.value = '{{ invoice.due_date.strftime("%Y-%m-%d") }}';
+        form.appendChild(dueDateField);
+        {% endif %}
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function markAsSent(invoiceId) {
+    if (confirm('Marquer cette facture comme envoyée ?')) {
+        // Utiliser un formulaire pour envoyer la requête de mise à jour
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/invoices/' + invoiceId + '/update';
+        
+        // Ajouter les champs cachés
+        const statusField = document.createElement('input');
+        statusField.type = 'hidden';
+        statusField.name = 'status';
+        statusField.value = 'sent';
+        form.appendChild(statusField);
+        
+        // Copier les autres données actuelles
+        const descField = document.createElement('input');
+        descField.type = 'hidden';
+        descField.name = 'description';
+        descField.value = '{{ invoice.description }}';
+        form.appendChild(descField);
+        
+        const amountField = document.createElement('input');
+        amountField.type = 'hidden';
+        amountField.name = 'amount';
+        amountField.value = '{{ invoice.total_amount }}';
+        form.appendChild(amountField);
+        
+        {% if invoice.due_date %}
+        const dueDateField = document.createElement('input');
+        dueDateField.type = 'hidden';
+        dueDateField.name = 'due_date';
+        dueDateField.value = '{{ invoice.due_date.strftime("%Y-%m-%d") }}';
+        form.appendChild(dueDateField);
+        {% endif %}
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

@@ -7,7 +7,7 @@
                     <i class="fas fa-users fa-lg"></i>
                 </div>
                 <div>
-                    <h3 class="mb-1 fw-bold" style="color: var(--primary-color);">{{ stats.total_customers }}</h3>
+                    <h3 class="mb-1 fw-bold" style="color: var(--primary-color);">{{ stats.total_customers|default(0) }}</h3>
                     <p class="mb-0 text-muted fw-medium">Total Clients</p>
                 </div>
             </div>
@@ -20,7 +20,7 @@
                     <i class="fas fa-star fa-lg"></i>
                 </div>
                 <div>
-                    <h3 class="mb-1 fw-bold" style="color: var(--success-color);">{{ stats.active_customers }}</h3>
+                    <h3 class="mb-1 fw-bold" style="color: var(--success-color);">{{ stats.active_customers|default(0) }}</h3>
                     <p class="mb-0 text-muted fw-medium">Clients Actifs</p>
                 </div>
             </div>
@@ -33,7 +33,7 @@
                     <i class="fas fa-tools fa-lg"></i>
                 </div>
                 <div>
-                    <h3 class="mb-1 fw-bold" style="color: var(--info-color);">{{ stats.total_work_orders }}</h3>
+                    <h3 class="mb-1 fw-bold" style="color: var(--info-color);">{{ stats.total_work_orders|default(0) }}</h3>
                     <p class="mb-0 text-muted fw-medium">Interventions</p>
                 </div>
             </div>
@@ -46,7 +46,7 @@
                     <i class="fas fa-euro-sign fa-lg"></i>
                 </div>
                 <div>
-                    <h3 class="mb-1 fw-bold" style="color: var(--warning-color);">{{ stats.total_revenue|currency }}</h3>
+                    <h3 class="mb-1 fw-bold" style="color: var(--warning-color);">{{ (stats.total_revenue|default(0))|currency }}</h3>
                     <p class="mb-0 text-muted fw-medium">Chiffre d'Affaires</p>
                 </div>
             </div>

@@ -67,7 +67,7 @@
                     <div class="display-4 text-success mb-2">
                         <i class="fas fa-euro-sign"></i>
                     </div>
-                    <h5 class="card-title">{{ "%.2f" | format(summary_cards.outstanding_amount) }}€</h5>
+                    <h5 class="card-title">{{ "%.2f" | format(summary_cards.outstanding_amount|default(0)) }}€</h5>
                     <p class="card-text text-muted">En attente</p>
                 </div>
             </div>
@@ -268,7 +268,7 @@
                                     <div class="card bg-light">
                                         <div class="card-body text-center">
                                             <h4 class="text-danger">{{ "%.2f" |
-                                                format(financial_summary.outstanding_amount or 0) }}€</h4>
+                                                format((financial_summary.outstanding_amount or 0)|default(0)) }}€</h4>
                                             <p class="mb-0">Montant en attente</p>
                                         </div>
                                     </div>
@@ -276,8 +276,7 @@
                                 <div class="col-md-4 mb-3">
                                     <div class="card bg-light">
                                         <div class="card-body text-center">
-                                            <h4 class="text-success">{{ "%.2f" | format(financial_summary.paid_amount or
-                                                0) }}€</h4>
+                                            <h4 class="text-success">{{ "%.2f" | format((financial_summary.paid_amount or 0)|default(0)) }}€</h4>
                                             <p class="mb-0">Total payé</p>
                                         </div>
                                     </div>
