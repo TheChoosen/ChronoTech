@@ -150,10 +150,28 @@
     const tabContent = document.getElementById(`tab-content-${sectionName}`); if(!tabContent) return;
     tabContent.innerHTML = `<div class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Chargement...</span></div><p class="mt-3">Chargement de la section ${sectionName}...</p></div>`;
     showGlobalLoader();
-    fetch(`/customers/api/customers/${customerId}/sections/${sectionName}`)
+    // AbortController support: cancel any in-flight fetch for this or other sections if needed
+    window.__Customer360FetchControllers = window.__Customer360FetchControllers || {};
+    // Abort previous request for this section
+    if(window.__Customer360FetchControllers[sectionName]){
+      try { window.__Customer360FetchControllers[sectionName].abort(); } catch(e) { /* noop */ }
+    }
+    const controller = new AbortController();
+    window.__Customer360FetchControllers[sectionName] = controller;
+    const signal = controller.signal;
+    fetch(`/customers/api/customers/${customerId}/sections/${sectionName}`, { signal })
       .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.text(); })
-      .then(html=>{ tabContent.innerHTML = html; loadedSections.add(sectionName); document.dispatchEvent(new CustomEvent('sectionLoaded',{detail:{section:sectionName}})); })
-      .catch(err=>{ console.error('Erreur chargement section', sectionName, err); tabContent.innerHTML = `<div class="text-center py-5"><i class=\"fas fa-exclamation-triangle fa-3x text-danger mb-3\"></i><h5 class=\"text-danger\">Erreur de chargement</h5><p class=\"text-muted\">Impossible de charger cette section.</p><button class=\"clay-button\" onclick=\"loadSectionIfNeeded('${sectionName}', true)\"><i class=\"fas fa-sync me-2\"></i>Réessayer</button></div>`; })
+      .then(html=>{ 
+        if(signal.aborted) return; // Ignore if aborted after completion race
+        tabContent.innerHTML = html; 
+        loadedSections.add(sectionName); 
+        document.dispatchEvent(new CustomEvent('sectionLoaded',{detail:{section:sectionName}})); 
+      })
+      .catch(err=>{ 
+        if(err.name === 'AbortError'){ return; } 
+        console.error('Erreur chargement section', sectionName, err); 
+        tabContent.innerHTML = `<div class=\"text-center py-5\"><i class=\"fas fa-exclamation-triangle fa-3x text-danger mb-3\"></i><h5 class=\"text-danger\">Erreur de chargement</h5><p class=\"text-muted\">Impossible de charger cette section.</p><button class=\"clay-button\" onclick=\"loadSectionIfNeeded('${sectionName}', true)\"><i class=\"fas fa-sync me-2\"></i>Réessayer</button></div>`; 
+      })
       .finally(()=> setTimeout(hideGlobalLoader,150));
   }
   window.loadSectionIfNeeded = loadSectionIfNeeded;

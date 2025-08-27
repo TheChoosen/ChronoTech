@@ -1,3 +1,4 @@
+{# DEPRECATED TEMPLATE - Use view_360_unified.html with ?tab=finances. Scheduled for removal after legacy freeze. #}
 {% extends "base.html" %}
 
 {% block title %}Finances - {{ customer.name }} - ChronoTech{% endblock %}
@@ -81,6 +82,13 @@
 
 {% block content %}
 <div class="container-fluid">
+    <div class="alert alert-warning d-flex align-items-center mb-4" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <div>
+            Cette page Finances est <strong>dépréciée</strong>. Utilisez désormais l'interface unifiée Client 360.
+            <a href="{{ url_for('customers.view_customer', customer_id=customer.id, tab='finances') }}" class="alert-link">Aller au nouvel onglet Finances</a>.
+        </div>
+    </div>
     <!-- En-tête avec navigation -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>

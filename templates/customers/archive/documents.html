@@ -1,3 +1,4 @@
+{# DEPRECATED TEMPLATE - Use view_360_unified.html with ?tab=documents. Scheduled for removal after legacy freeze. #}
 {% extends "base.html" %}
 
 {% block title %}Documents - {{ customer.name }} - ChronoTech{% endblock %}
@@ -88,6 +89,13 @@
 
 {% block content %}
 <div class="container-fluid">
+    <div class="alert alert-warning d-flex align-items-center mb-4" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <div>
+            Cette page Documents est <strong>dépréciée</strong>. Consultez et gérez les documents dans Client 360.
+            <a href="{{ url_for('customers.view_customer', customer_id=customer.id, tab='documents') }}" class="alert-link">Ouvrir l'onglet Documents unifié</a>.
+        </div>
+    </div>
     <!-- En-tête avec navigation -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>

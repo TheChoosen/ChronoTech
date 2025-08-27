@@ -22,11 +22,13 @@
                             </p>
                         </div>
                         <div class="text-end">
-                            <span class="badge badge-{{ 'success' if customer.status == 'active' else 'secondary' }} fs-6">
+                            <span
+                                class="badge badge-{{ 'success' if customer.status == 'active' else 'secondary' }} fs-6">
                                 {{ customer.status | title }}
                             </span>
                             <div class="mt-2">
-                                <small class="text-muted">Client depuis {{ customer.created_at.strftime('%B %Y') }}</small>
+                                <small class="text-muted">Client depuis {{ customer.created_at.strftime('%B %Y')
+                                    }}</small>
                             </div>
                         </div>
                     </div>
@@ -90,27 +92,32 @@
                 <div class="card-header bg-white border-bottom">
                     <ul class="nav nav-tabs card-header-tabs" id="client360Tabs" role="tablist">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="timeline-tab" data-bs-toggle="tab" data-bs-target="#timeline" type="button" role="tab">
+                            <button class="nav-link active" id="timeline-tab" data-bs-toggle="tab"
+                                data-bs-target="#timeline" type="button" role="tab">
                                 <i class="fas fa-clock me-2"></i>Timeline
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="vehicles-tab" data-bs-toggle="tab" data-bs-target="#vehicles" type="button" role="tab">
+                            <button class="nav-link" id="vehicles-tab" data-bs-toggle="tab" data-bs-target="#vehicles"
+                                type="button" role="tab">
                                 <i class="fas fa-car me-2"></i>Véhicules
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="finances-tab" data-bs-toggle="tab" data-bs-target="#finances" type="button" role="tab">
+                            <button class="nav-link" id="finances-tab" data-bs-toggle="tab" data-bs-target="#finances"
+                                type="button" role="tab">
                                 <i class="fas fa-chart-line me-2"></i>Finances
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="documents-tab" data-bs-toggle="tab" data-bs-target="#documents" type="button" role="tab">
+                            <button class="nav-link" id="documents-tab" data-bs-toggle="tab" data-bs-target="#documents"
+                                type="button" role="tab">
                                 <i class="fas fa-file-alt me-2"></i>Documents
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="communications-tab" data-bs-toggle="tab" data-bs-target="#communications" type="button" role="tab">
+                            <button class="nav-link" id="communications-tab" data-bs-toggle="tab"
+                                data-bs-target="#communications" type="button" role="tab">
                                 <i class="fas fa-envelope me-2"></i>Communications
                             </button>
                         </li>
@@ -123,50 +130,51 @@
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h5 class="mb-0">Activité récente</h5>
                                 <div>
-                                    <a href="{{ url_for('customers.export_customer_timeline', customer_id=customer.id, format='csv') }}" 
-                                       class="btn btn-outline-primary btn-sm me-2">
+                                    <a href="{{ url_for('customers.export_customer_timeline', customer_id=customer.id, format='csv') }}"
+                                        class="btn btn-outline-primary btn-sm me-2">
                                         <i class="fas fa-download me-1"></i>Export CSV
                                     </a>
-                                    <a href="{{ url_for('customers.customer_timeline', customer_id=customer.id) }}" 
-                                       class="btn btn-primary btn-sm">
+                                    <a href="{{ url_for('customers.customer_timeline', customer_id=customer.id) }}"
+                                        class="btn btn-primary btn-sm">
                                         <i class="fas fa-eye me-1"></i>Voir tout
                                     </a>
                                 </div>
                             </div>
-                            
+
                             {% if recent_timeline %}
-                                <div class="timeline">
-                                    {% for activity in recent_timeline %}
-                                    <div class="timeline-item">
-                                        <div class="timeline-marker bg-primary"></div>
-                                        <div class="timeline-content">
-                                            <div class="d-flex justify-content-between align-items-start">
-                                                <div>
-                                                    <h6 class="mb-1">{{ activity.title }}</h6>
-                                                    {% if activity.description %}
-                                                        <p class="text-muted mb-1">{{ activity.description }}</p>
+                            <div class="timeline">
+                                {% for activity in recent_timeline %}
+                                <div class="timeline-item">
+                                    <div class="timeline-marker bg-primary"></div>
+                                    <div class="timeline-content">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <h6 class="mb-1">{{ activity.title }}</h6>
+                                                {% if activity.description %}
+                                                <p class="text-muted mb-1">{{ activity.description }}</p>
+                                                {% endif %}
+                                                <small class="text-muted">
+                                                    <i class="fas fa-clock me-1"></i>
+                                                    {{ activity.created_at.strftime('%d/%m/%Y %H:%M') }}
+                                                    {% if activity.actor_name %}
+                                                    • par {{ activity.actor_name }}
                                                     {% endif %}
-                                                    <small class="text-muted">
-                                                        <i class="fas fa-clock me-1"></i>
-                                                        {{ activity.created_at.strftime('%d/%m/%Y %H:%M') }}
-                                                        {% if activity.actor_name %}
-                                                            • par {{ activity.actor_name }}
-                                                        {% endif %}
-                                                    </small>
-                                                </div>
-                                                <span class="badge badge-{{ 'primary' if activity.activity_type == 'work_order' else 'success' if activity.activity_type == 'invoice' else 'info' }}">
-                                                    {{ activity.activity_type | title }}
-                                                </span>
+                                                </small>
                                             </div>
+                                            <span
+                                                class="badge badge-{{ 'primary' if activity.activity_type == 'work_order' else 'success' if activity.activity_type == 'invoice' else 'info' }}">
+                                                {{ activity.activity_type | title }}
+                                            </span>
                                         </div>
                                     </div>
-                                    {% endfor %}
                                 </div>
+                                {% endfor %}
+                            </div>
                             {% else %}
-                                <div class="text-center py-4">
-                                    <i class="fas fa-history fa-3x text-muted mb-3"></i>
-                                    <p class="text-muted">Aucune activité récente</p>
-                                </div>
+                            <div class="text-center py-4">
+                                <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">Aucune activité récente</p>
+                            </div>
                             {% endif %}
                         </div>
 
@@ -174,65 +182,66 @@
                         <div class="tab-pane fade" id="vehicles" role="tabpanel">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h5 class="mb-0">Véhicules du client</h5>
-                                <a href="{{ url_for('vehicles.new', customer_id=customer.id) }}" 
-                                   class="btn btn-primary btn-sm">
+                                <a href="{{ url_for('vehicles.new', customer_id=customer.id) }}"
+                                    class="btn btn-primary btn-sm">
                                     <i class="fas fa-plus me-1"></i>Ajouter véhicule
                                 </a>
                             </div>
-                            
+
                             {% if vehicles %}
-                                <div class="row">
-                                    {% for vehicle in vehicles %}
-                                    <div class="col-md-6 mb-3">
-                                        <div class="card border-start border-primary border-3">
-                                            <div class="card-body">
-                                                <div class="d-flex justify-content-between align-items-start">
-                                                    <div>
-                                                        <h6 class="card-title mb-1">
-                                                            {{ vehicle.make }} {{ vehicle.model }}
-                                                            {% if vehicle.year %}({{ vehicle.year }}){% endif %}
-                                                        </h6>
-                                                        <p class="text-muted mb-2">{{ vehicle.license_plate }}</p>
-                                                        <div class="row text-center">
-                                                            <div class="col-4">
-                                                                <small class="text-muted d-block">Interventions</small>
-                                                                <strong>{{ vehicle.total_work_orders }}</strong>
-                                                            </div>
-                                                            <div class="col-4">
-                                                                <small class="text-muted d-block">Ouvertes</small>
-                                                                <strong class="text-warning">{{ vehicle.open_work_orders }}</strong>
-                                                            </div>
-                                                            <div class="col-4">
-                                                                <small class="text-muted d-block">Dernier service</small>
-                                                                <strong>
-                                                                    {% if vehicle.last_service_date %}
-                                                                        {{ vehicle.last_service_date.strftime('%d/%m') }}
-                                                                    {% else %}
-                                                                        -
-                                                                    {% endif %}
-                                                                </strong>
-                                                            </div>
+                            <div class="row">
+                                {% for vehicle in vehicles %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card border-start border-primary border-3">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <h6 class="card-title mb-1">
+                                                        {{ vehicle.make }} {{ vehicle.model }}
+                                                        {% if vehicle.year %}({{ vehicle.year }}){% endif %}
+                                                    </h6>
+                                                    <p class="text-muted mb-2">{{ vehicle.license_plate }}</p>
+                                                    <div class="row text-center">
+                                                        <div class="col-4">
+                                                            <small class="text-muted d-block">Interventions</small>
+                                                            <strong>{{ vehicle.total_work_orders }}</strong>
+                                                        </div>
+                                                        <div class="col-4">
+                                                            <small class="text-muted d-block">Ouvertes</small>
+                                                            <strong class="text-warning">{{ vehicle.open_work_orders
+                                                                }}</strong>
+                                                        </div>
+                                                        <div class="col-4">
+                                                            <small class="text-muted d-block">Dernier service</small>
+                                                            <strong>
+                                                                {% if vehicle.last_service_date %}
+                                                                {{ vehicle.last_service_date.strftime('%d/%m') }}
+                                                                {% else %}
+                                                                -
+                                                                {% endif %}
+                                                            </strong>
                                                         </div>
                                                     </div>
-                                                    <a href="{{ url_for('vehicles.edit', id=vehicle.id) }}" 
-                                                       class="btn btn-outline-primary btn-sm">
-                                                        <i class="fas fa-eye"></i>
-                                                    </a>
                                                 </div>
+                                                <a href="{{ url_for('vehicles.edit', id=vehicle.id) }}"
+                                                    class="btn btn-outline-primary btn-sm">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
                                             </div>
                                         </div>
                                     </div>
-                                    {% endfor %}
                                 </div>
+                                {% endfor %}
+                            </div>
                             {% else %}
-                                <div class="text-center py-4">
-                                    <i class="fas fa-car fa-3x text-muted mb-3"></i>
-                                    <p class="text-muted">Aucun véhicule enregistré</p>
-                                    <a href="{{ url_for('vehicles.new', customer_id=customer.id) }}" 
-                                       class="btn btn-primary">
-                                        <i class="fas fa-plus me-1"></i>Ajouter le premier véhicule
-                                    </a>
-                                </div>
+                            <div class="text-center py-4">
+                                <i class="fas fa-car fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">Aucun véhicule enregistré</p>
+                                <a href="{{ url_for('vehicles.new', customer_id=customer.id) }}"
+                                    class="btn btn-primary">
+                                    <i class="fas fa-plus me-1"></i>Ajouter le premier véhicule
+                                </a>
+                            </div>
                             {% endif %}
                         </div>
 
@@ -240,12 +249,12 @@
                         <div class="tab-pane fade" id="finances" role="tabpanel">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h5 class="mb-0">Résumé financier</h5>
-                                <a href="{{ url_for('customers.get_customer_financial_summary', customer_id=customer.id) }}" 
-                                   class="btn btn-primary btn-sm">
+                                <a href="{{ url_for('customers.get_customer_financial_summary', customer_id=customer.id) }}"
+                                    class="btn btn-primary btn-sm">
                                     <i class="fas fa-chart-bar me-1"></i>Détails complets
                                 </a>
                             </div>
-                            
+
                             <div class="row">
                                 <div class="col-md-4 mb-3">
                                     <div class="card bg-light">
@@ -258,7 +267,8 @@
                                 <div class="col-md-4 mb-3">
                                     <div class="card bg-light">
                                         <div class="card-body text-center">
-                                            <h4 class="text-danger">{{ "%.2f" | format(financial_summary.outstanding_amount or 0) }}€</h4>
+                                            <h4 class="text-danger">{{ "%.2f" |
+                                                format(financial_summary.outstanding_amount or 0) }}€</h4>
                                             <p class="mb-0">Montant en attente</p>
                                         </div>
                                     </div>
@@ -266,7 +276,8 @@
                                 <div class="col-md-4 mb-3">
                                     <div class="card bg-light">
                                         <div class="card-body text-center">
-                                            <h4 class="text-success">{{ "%.2f" | format(financial_summary.paid_amount or 0) }}€</h4>
+                                            <h4 class="text-success">{{ "%.2f" | format(financial_summary.paid_amount or
+                                                0) }}€</h4>
                                             <p class="mb-0">Total payé</p>
                                         </div>
                                     </div>
@@ -278,11 +289,12 @@
                         <div class="tab-pane fade" id="documents" role="tabpanel">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h5 class="mb-0">Documents</h5>
-                                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#uploadDocumentModal">
+                                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
+                                    data-bs-target="#uploadDocumentModal">
                                     <i class="fas fa-upload me-1"></i>Téléverser document
                                 </button>
                             </div>
-                            
+
                             <div id="documentsContainer">
                                 <div class="text-center py-4">
                                     <div class="spinner-border text-primary" role="status">
@@ -300,7 +312,7 @@
                                     <i class="fas fa-envelope me-1"></i>Nouvelle communication
                                 </button>
                             </div>
-                            
+
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="card bg-light">
@@ -363,7 +375,8 @@
                     </div>
                     <div class="mb-3">
                         <label for="file" class="form-label">Fichier</label>
-                        <input type="file" class="form-control" id="file" name="file" accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif" required>
+                        <input type="file" class="form-control" id="file" name="file"
+                            accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif" required>
                         <div class="form-text">Formats acceptés: PDF, DOC, DOCX, TXT, JPG, PNG, GIF</div>
                     </div>
                 </div>
@@ -379,103 +392,103 @@
 </div>
 
 <style>
-.timeline {
-    position: relative;
-    padding: 0;
-}
+    .timeline {
+        position: relative;
+        padding: 0;
+    }
 
-.timeline-item {
-    position: relative;
-    padding-left: 3rem;
-    margin-bottom: 2rem;
-}
+    .timeline-item {
+        position: relative;
+        padding-left: 3rem;
+        margin-bottom: 2rem;
+    }
 
-.timeline-item::before {
-    content: '';
-    position: absolute;
-    left: 1rem;
-    top: 2rem;
-    bottom: -2rem;
-    width: 2px;
-    background: #dee2e6;
-}
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: 1rem;
+        top: 2rem;
+        bottom: -2rem;
+        width: 2px;
+        background: #dee2e6;
+    }
 
-.timeline-item:last-child::before {
-    display: none;
-}
+    .timeline-item:last-child::before {
+        display: none;
+    }
 
-.timeline-marker {
-    position: absolute;
-    left: 0.5rem;
-    top: 0.5rem;
-    width: 1rem;
-    height: 1rem;
-    border-radius: 50%;
-    border: 2px solid #fff;
-    box-shadow: 0 0 0 2px #dee2e6;
-}
+    .timeline-marker {
+        position: absolute;
+        left: 0.5rem;
+        top: 0.5rem;
+        width: 1rem;
+        height: 1rem;
+        border-radius: 50%;
+        border: 2px solid #fff;
+        box-shadow: 0 0 0 2px #dee2e6;
+    }
 
-.timeline-content {
-    background: #f8f9fa;
-    border-radius: 0.5rem;
-    padding: 1rem;
-    border-left: 3px solid #007bff;
-}
+    .timeline-content {
+        background: #f8f9fa;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        border-left: 3px solid #007bff;
+    }
 
-.badge {
-    font-size: 0.75rem;
-}
+    .badge {
+        font-size: 0.75rem;
+    }
 </style>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Chargement des documents au clic sur l'onglet
-    document.getElementById('documents-tab').addEventListener('click', function() {
-        loadDocuments();
-    });
-    
-    // Gestion upload document
-    document.getElementById('uploadDocumentForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        uploadDocument();
-    });
-});
-
-function loadDocuments() {
-    const container = document.getElementById('documentsContainer');
-    
-    fetch(`/customers/{{ customer.id }}/documents/complete`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                renderDocuments(data.documents, data.stats);
-            } else {
-                container.innerHTML = '<div class="alert alert-danger">Erreur chargement documents</div>';
-            }
-        })
-        .catch(error => {
-            console.error('Erreur:', error);
-            container.innerHTML = '<div class="alert alert-danger">Erreur chargement documents</div>';
+    document.addEventListener('DOMContentLoaded', function () {
+        // Chargement des documents au clic sur l'onglet
+        document.getElementById('documents-tab').addEventListener('click', function () {
+            loadDocuments();
         });
-}
 
-function renderDocuments(documents, stats) {
-    const container = document.getElementById('documentsContainer');
-    
-    if (documents.length === 0) {
-        container.innerHTML = `
+        // Gestion upload document
+        document.getElementById('uploadDocumentForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            uploadDocument();
+        });
+    });
+
+    function loadDocuments() {
+        const container = document.getElementById('documentsContainer');
+
+        fetch(`/customers/{{ customer.id }}/documents/complete`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    renderDocuments(data.documents, data.stats);
+                } else {
+                    container.innerHTML = '<div class="alert alert-danger">Erreur chargement documents</div>';
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                container.innerHTML = '<div class="alert alert-danger">Erreur chargement documents</div>';
+            });
+    }
+
+    function renderDocuments(documents, stats) {
+        const container = document.getElementById('documentsContainer');
+
+        if (documents.length === 0) {
+            container.innerHTML = `
             <div class="text-center py-4">
                 <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
                 <p class="text-muted">Aucun document</p>
             </div>
         `;
-        return;
-    }
-    
-    let html = '<div class="row">';
-    documents.forEach(doc => {
-        const statusClass = doc.status === 'signed' ? 'success' : doc.status === 'expired' ? 'danger' : 'warning';
-        html += `
+            return;
+        }
+
+        let html = '<div class="row">';
+        documents.forEach(doc => {
+            const statusClass = doc.status === 'signed' ? 'success' : doc.status === 'expired' ? 'danger' : 'warning';
+            html += `
             <div class="col-md-6 mb-3">
                 <div class="card">
                     <div class="card-body">
@@ -491,54 +504,54 @@ function renderDocuments(documents, stats) {
                 </div>
             </div>
         `;
-    });
-    html += '</div>';
-    
-    container.innerHTML = html;
-}
+        });
+        html += '</div>';
 
-function uploadDocument() {
-    const form = document.getElementById('uploadDocumentForm');
-    const formData = new FormData(form);
-    
-    fetch(`/customers/{{ customer.id }}/documents/upload`, {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            bootstrap.Modal.getInstance(document.getElementById('uploadDocumentModal')).hide();
-            form.reset();
-            loadDocuments(); // Recharger la liste
-            // Afficher notification succès
-            showNotification('Document téléversé avec succès', 'success');
-        } else {
-            showNotification(data.message || 'Erreur upload', 'danger');
-        }
-    })
-    .catch(error => {
-        console.error('Erreur:', error);
-        showNotification('Erreur upload document', 'danger');
-    });
-}
+        container.innerHTML = html;
+    }
 
-function showNotification(message, type) {
-    // Créer et afficher une notification toast
-    const toast = document.createElement('div');
-    toast.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
-    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-    toast.innerHTML = `
+    function uploadDocument() {
+        const form = document.getElementById('uploadDocumentForm');
+        const formData = new FormData(form);
+
+        fetch(`/customers/{{ customer.id }}/documents/upload`, {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('uploadDocumentModal')).hide();
+                    form.reset();
+                    loadDocuments(); // Recharger la liste
+                    // Afficher notification succès
+                    showNotification('Document téléversé avec succès', 'success');
+                } else {
+                    showNotification(data.message || 'Erreur upload', 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                showNotification('Erreur upload document', 'danger');
+            });
+    }
+
+    function showNotification(message, type) {
+        // Créer et afficher une notification toast
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        toast.innerHTML = `
         ${message}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
-    document.body.appendChild(toast);
-    
-    setTimeout(() => {
-        if (toast.parentNode) {
-            toast.parentNode.removeChild(toast);
-        }
-    }, 5000);
-}
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 5000);
+    }
 </script>
 {% endblock %}

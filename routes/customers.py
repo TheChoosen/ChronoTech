@@ -2002,6 +2002,10 @@ def customer_profile(customer_id):
 def get_customer_consents(customer_id):
     """Récupère les consentements d'un client"""
     try:
+        # Legacy direct page deprecated: redirect to unified view (tab=consents) unless AJAX/API
+        if not (request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json):
+            # Permanent redirect to new unified interface
+            return redirect(url_for('customers.view_customer', customer_id=customer_id, tab='consents'), code=301)
         conn = get_db_connection()
         if not conn:
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
@@ -2024,7 +2028,9 @@ def get_customer_consents(customer_id):
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
             return jsonify({'success': True, 'consents': consents})
         
-        return render_template('customers/consents.html', customer_id=customer_id, consents=consents)
+        # Legacy render retained only for AJAX JSON; HTML render removed
+        return jsonify({'success': True, 'consents': consents})
+        
     except Exception as e:
         log_error(f"Erreur récupération consentements: {e}")
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
@@ -2518,15 +2524,9 @@ def get_customer_finances(customer_id):
                 'payment_summary': payment_summary
             })
         
-        return render_template(
-            'customers/finances.html',
-            customer=customer,
-            finance_profile=finance_profile,
-            payment_methods=payment_methods,
-            balance_history=balance_history,
-            ar_summary=ar_summary,
-            payment_summary=payment_summary
-        )
+        # Legacy finances page deprecated: redirect to unified finances tab
+        return redirect(url_for('customers.view_customer', customer_id=customer_id, tab='finances'), code=301)
+        
     except Exception as e:
         log_error(f"Erreur récupération finances client {customer_id}: {e}")
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
@@ -3329,15 +3329,9 @@ def get_customer_documents(customer_id):
                 }
             })
         
-        return render_template(
-            'customers/documents.html',
-            customer=customer,
-            documents=documents,
-            type_counts=type_counts,
-            pagination=pagination,
-            selected_type=document_type,
-            selected_category=category
-        )
+        # Legacy documents page deprecated: redirect to unified documents tab
+        return redirect(url_for('customers.view_customer', customer_id=customer_id, tab='documents'), code=301)
+        
     except Exception as e:
         log_error(f"Erreur récupération documents client {customer_id}: {e}")
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
@@ -4421,11 +4415,8 @@ def get_customer_financial_summary(customer_id):
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
             return jsonify({'success': True, 'financial_summary': financial_summary})
         
-        return render_template(
-            'customers/finances.html',
-            customer_id=customer_id,
-            **financial_summary
-        )
+        # Legacy financial summary page deprecated
+        return redirect(url_for('customers.view_customer', customer_id=customer_id, tab='finances'), code=301)
         
     except Exception as e:
         log_error(f"Erreur résumé financier: {e}")
@@ -4835,8 +4826,8 @@ def get_customer_analytics(customer_id):
         
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
             return jsonify({'success': True, **data})
-        
-        return render_template('customers/analytics.html', customer_id=customer_id, **data)
+        # Legacy full page deprecated: redirect to unified view tab=analytics
+        return redirect(url_for('customers.view_customer', customer_id=customer_id, tab='analytics'), code=301)
     except Exception as e:
         log_error(f"Erreur analytics client: {e}")
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:

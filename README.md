@@ -158,5 +158,37 @@ Pour toute question ou problème :
 - 📋 Issues: GitHub Issues
 - 📖 Documentation: `/docs`
 
+## 🗂️ Gestion des templates legacy Client 360
+
+Des pages legacy (finances, documents, analytics, consents) ont été remplacées par l'interface unifiée Client 360.
+
+Workflow d'archivage / suppression:
+1. Marquage DEPRECATED dans chaque template (fait).
+2. Archivage (déplacement + manifest) :
+  ```bash
+  python scripts/archive_legacy_templates.py --archive
+  ```
+3. Période de grâce contrôlée via variable d'env:
+  ```bash
+  export LEGACY_TEMPLATES_REMOVE_AFTER=2025-10-01
+  ```
+4. Vérification pré-suppression (manuelle):
+  ```bash
+  python scripts/pre_remove_legacy_templates.py --access-log server.log
+  ```
+5. Suppression effective une fois conditions remplies (hook git empêche une suppression prématurée).
+
+Installation hook pre-commit:
+```bash
+chmod +x scripts/pre_remove_legacy_templates.py scripts/git_hook_precommit_legacy_cleanup.sh
+ln -s ../../scripts/git_hook_precommit_legacy_cleanup.sh .git/hooks/pre-commit
+```
+
+Restauration (si nécessaire) depuis un manifest d'archive:
+```bash
+python scripts/archive_legacy_templates.py --restore archive/templates_legacy/<horodatage>/manifest.json
+```
+
+
 ---
 **ChronoTech v2.0** - Développé avec ❤️ pour optimiser la gestion des interventions techniques.

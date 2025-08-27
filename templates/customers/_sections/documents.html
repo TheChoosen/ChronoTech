@@ -2,8 +2,22 @@
 
 {%- from 'customers/_components/macros.html' import document_card, loading_skeleton -%}
      
+{# FIX dropdown masqués + overflow visible + z-index #}
+<style>
+    .customer360-toolbar.card-fix,
+    .customer360-toolbar.card-fix .card-body,
+    .customer360-toolbar.card-fix .card-header { overflow: visible !important; }
+    .customer360-toolbar { position: relative; z-index: 20; }
+    .customer360-toolbar .dropdown-menu { z-index: 10000; }
+    .clay-card.dropdown-context,
+    .clay-card.dropdown-context > .card-body,
+    .clay-card.dropdown-context > .card-header { overflow: visible !important; }
+    /* Portal dropdown (detached into body) */
+    .dropdown-menu.dropdown-portal { position: absolute !important; top: 0; left: 0; margin:0; z-index: 11000; }
+</style>
+
 {# Barre d'outils documents #}
-<div class="clay-card mb-4">
+<div class="clay-card mb-4 customer360-toolbar card-fix dropdown-context">
         <div class="card-body">
             <div class="row align-items-center">
                 <div class="col-md-4">
@@ -39,7 +53,7 @@
                 </div>
                 <div class="col-md-2">
                     <div class="dropdown">
-                        <button class="clay-button w-100" data-bs-toggle="dropdown">
+                        <button class="clay-button w-100" data-bs-toggle="dropdown" data-bs-auto-close="outside">
                             <i class="fas fa-plus me-2"></i>Ajouter
                         </button>
                         <ul class="dropdown-menu">
@@ -265,9 +279,12 @@ let signatureCtx = null;
 
 // Fonction pour filtrer les documents
 function filterDocuments() {
-    documentFilters.search = document.getElementById('documentSearch').value.toLowerCase();
-    documentFilters.type = document.getElementById('documentTypeFilter').value;
-    documentFilters.status = document.getElementById('documentStatusFilter').value;
+    const searchEl = document.getElementById('documents-search');
+    const typeEl = document.getElementById('documents-type-filter');
+    const statusEl = document.getElementById('documents-status-filter');
+    documentFilters.search = (searchEl?.value || '').toLowerCase();
+    documentFilters.type = typeEl?.value || '';
+    documentFilters.status = statusEl?.value || '';
     
     // Reset pagination
     documentsPage = 1;
@@ -634,5 +651,55 @@ document.addEventListener('DOMContentLoaded', function() {
             loadDocuments(true);
         }
     });
+
+    /* Amélioration dropdown: si clipping détecté, on 'portalise' le menu dans body */
+    document.querySelectorAll('.customer360-toolbar .dropdown').forEach(dd => {
+        dd.addEventListener('show.bs.dropdown', function(e){
+            const menu = this.querySelector('.dropdown-menu');
+            if(!menu) return;
+            // Temporarily show to measure
+            menu.style.visibility = 'hidden';
+            menu.classList.add('show');
+            const rect = menu.getBoundingClientRect();
+            menu.classList.remove('show');
+            menu.style.visibility = '';
+            const clipped = rect.top < 0 || rect.left < 0 || rect.right > window.innerWidth || rect.bottom > window.innerHeight;
+            if (clipped) {
+                // Portalize
+                const trigger = this.querySelector('[data-bs-toggle="dropdown"]');
+                const tRect = trigger.getBoundingClientRect();
+                menu.dataset.portalOriginalParent = this.querySelector('.dropdown-menu').parentElement === this ? '1' : '';
+                document.body.appendChild(menu);
+                menu.classList.add('dropdown-portal');
+                positionPortalMenu(menu, tRect);
+                window.addEventListener('scroll', portalScrollHandler, true);
+                window.addEventListener('resize', portalResizeHandler, true);
+                function portalScrollHandler(){ positionPortalMenu(menu, trigger.getBoundingClientRect()); }
+                function portalResizeHandler(){ positionPortalMenu(menu, trigger.getBoundingClientRect()); }
+                menu._portalCleanup = () => {
+                    window.removeEventListener('scroll', portalScrollHandler, true);
+                    window.removeEventListener('resize', portalResizeHandler, true);
+                };
+            }
+        });
+        dd.addEventListener('hidden.bs.dropdown', function(){
+            const menu = document.querySelector('.dropdown-menu.dropdown-portal');
+            if(menu){
+                menu._portalCleanup && menu._portalCleanup();
+                // Return to original dropdown
+                dd.appendChild(menu);
+                menu.classList.remove('dropdown-portal');
+                menu.style.top='';
+                menu.style.left='';
+            }
+        });
+    });
+
+    function positionPortalMenu(menu, triggerRect){
+        const top = triggerRect.bottom + window.scrollY;
+        const left = triggerRect.left + window.scrollX;
+        menu.style.top = top + 'px';
+        menu.style.left = left + 'px';
+    }
 });
 </script>

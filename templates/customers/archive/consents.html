@@ -1,9 +1,17 @@
+{# DEPRECATED TEMPLATE - Use view_360_unified.html with ?tab=consents. Scheduled for removal after legacy freeze. #}
 {% extends "base.html" %}
 
 {% block title %}Consentements - {{ customer.name }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
+    <div class="alert alert-warning d-flex align-items-center mb-4" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <div>
+            Cette page Consentements est <strong>dépréciée</strong>. Gérez désormais les consentements dans Client 360.
+            <a href="{{ url_for('customers.view_customer', customer_id=customer.id, tab='consents') }}" class="alert-link">Accéder à l'onglet Consentements</a>.
+        </div>
+    </div>
     <div class="row">
         <div class="col-12">
             <!-- Header -->
