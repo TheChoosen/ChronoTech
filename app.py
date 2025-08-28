@@ -30,6 +30,15 @@ from routes.vehicles import bp as vehicles_bp
 from routes.products import bp as products_bp
 from routes.invoices import bp as invoices_bp
 
+# Import Sprint 2 API blueprints
+try:
+    from routes.work_orders.api_tasks import api_tasks_bp
+    from routes.interventions.api_interventions import api_interventions_bp
+    SPRINT2_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Sprint 2 blueprints non disponibles: {e}")
+    SPRINT2_AVAILABLE = False
+
 # Configuration du logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -95,6 +104,61 @@ def create_app(config_class=Config):
         app.register_blueprint(invoices_bp)
     except Exception as e:
         logger.warning(f"Impossible d'enregistrer invoices blueprint: {e}")
+    
+    # Register Sprint 2 API blueprints (sécurisés)
+    if SPRINT2_AVAILABLE:
+        try:
+            app.register_blueprint(api_tasks_bp, url_prefix='/api/v1')
+            logger.info("✅ API Tasks blueprint enregistré (Sprint 2) - /api/v1/work_orders/<id>/tasks")
+        except Exception as e:
+            logger.error(f"❌ Erreur enregistrement API Tasks: {e}")
+        
+        try:
+            app.register_blueprint(api_interventions_bp, url_prefix='/api/v1')
+            logger.info("✅ API Interventions blueprint enregistré (Sprint 2) - /api/v1/interventions")
+        except Exception as e:
+            logger.error(f"❌ Erreur enregistrement API Interventions: {e}")
+        
+        try:
+            from routes.ai_routes import ai_bp
+            app.register_blueprint(ai_bp, url_prefix='/api/v1')
+            logger.info("✅ AI Routes blueprint enregistré (Sprint 2) - /api/v1/ai")
+        except Exception as e:
+            logger.error(f"❌ Erreur enregistrement AI Routes: {e}")
+    else:
+        logger.warning("⚠️ Sprint 2 API blueprints non disponibles - fonctionnalités limitées")
+    
+    # Register Sprint 3 blueprints (Interface Mobile, Superviseur & PDF)
+    try:
+        from routes.mobile import mobile_bp
+        app.register_blueprint(mobile_bp, url_prefix='/mobile')
+        logger.info("✅ Mobile blueprint enregistré (Sprint 3) - /mobile")
+    except Exception as e:
+        logger.error(f"❌ Erreur enregistrement Mobile blueprint: {e}")
+    
+    try:
+        from routes.supervisor import supervisor_bp
+        app.register_blueprint(supervisor_bp, url_prefix='/supervisor')
+        logger.info("✅ Supervisor blueprint enregistré (Sprint 3) - /supervisor")
+    except Exception as e:
+        logger.error(f"❌ Erreur enregistrement Supervisor blueprint: {e}")
+    
+    try:
+        from routes.pdf import pdf_bp
+        app.register_blueprint(pdf_bp, url_prefix='/pdf')
+        logger.info("✅ PDF blueprint enregistré (Sprint 3) - /pdf")
+    except Exception as e:
+        logger.error(f"❌ Erreur enregistrement PDF blueprint: {e}")
+    
+    # Register Customer 360 API si disponible
+    if CUSTOMER360_API_AVAILABLE:
+        try:
+            app.register_blueprint(customer360_api, url_prefix='/api/customer360')
+            logger.info("✅ Customer 360 API blueprint enregistré")
+        except Exception as e:
+            logger.error(f"❌ Erreur enregistrement Customer 360 API: {e}")
+    else:
+        logger.warning("⚠️ Customer 360 API non disponible")
     
     # Configuration de la base de données
     with app.app_context():
@@ -602,21 +666,113 @@ def update_settings():
         flash('Erreur lors de la mise à jour des paramètres', 'error')
         return redirect(url_for('settings'))
 
-# Import des modules de routes
-from routes import work_orders, interventions, customers, technicians, analytics, api, openai
+# Import des modules de routes avec gestion des conflits
+ROUTES_AVAILABLE = False
+work_orders_bp = None
+interventions_bp = None
+customers_bp = None
+technicians_bp = None
+analytics_bp = None
+api_bp = None
+
+# Import work_orders.py spécifiquement pour éviter le conflit avec le package
+try:
+    import sys
+    import importlib.util
+    
+    work_orders_spec = importlib.util.spec_from_file_location("work_orders_module", 
+                                                             "/home/amenard/Chronotech/ChronoTech/routes/work_orders.py")
+    work_orders_module = importlib.util.module_from_spec(work_orders_spec)
+    work_orders_spec.loader.exec_module(work_orders_module)
+    work_orders_bp = work_orders_module.bp
+    logger.info("✅ work_orders blueprint importé avec succès")
+except Exception as e:
+    logger.error(f"❌ Erreur import work_orders: {e}")
+
+# Import des autres modules avec gestion d'erreurs individuelles
+try:
+    import routes.interventions as interventions_module
+    interventions_bp = interventions_module.bp
+    logger.info("✅ interventions blueprint importé avec succès")
+except Exception as e:
+    logger.error(f"❌ Erreur import interventions: {e}")
+    
+try:  
+    import routes.customers as customers_module
+    customers_bp = customers_module.bp
+    logger.info("✅ customers blueprint importé avec succès")
+except Exception as e:
+    logger.error(f"❌ Erreur import customers: {e}")
+
+try:
+    import routes.technicians as technicians_module
+    technicians_bp = technicians_module.bp
+    logger.info("✅ technicians blueprint importé avec succès")
+except Exception as e:
+    logger.error(f"❌ Erreur import technicians: {e}")
+
+try:
+    import routes.analytics as analytics_module
+    analytics_bp = analytics_module.bp
+    logger.info("✅ analytics blueprint importé avec succès")
+except Exception as e:
+    logger.error(f"❌ Erreur import analytics: {e}")
+
+try:
+    import routes.api as api_module
+    api_bp = api_module.bp
+    logger.info("✅ api blueprint importé avec succès")
+except Exception as e:
+    logger.error(f"❌ Erreur import api: {e}")
+
+# Vérifier si au moins quelques blueprints sont disponibles
+available_blueprints = sum([bp is not None for bp in [work_orders_bp, interventions_bp, customers_bp, technicians_bp, analytics_bp, api_bp]])
+if available_blueprints > 0:
+    ROUTES_AVAILABLE = True
+    logger.info(f"✅ {available_blueprints}/6 blueprints principaux importés")
+else:
+    logger.error("❌ Aucun blueprint principal n'a pu être importé")
 
 # Enregistrement des blueprints
-app.register_blueprint(work_orders.bp, url_prefix='/work_orders')
-app.register_blueprint(interventions.bp, url_prefix='/interventions')
-app.register_blueprint(customers.bp, url_prefix='/customers')
-app.register_blueprint(technicians.bp, url_prefix='/technicians')
-app.register_blueprint(analytics.bp, url_prefix='/analytics')
-app.register_blueprint(api.bp, url_prefix='/api')
-app.register_blueprint(openai.openai_bp )
-
-# Enregistrement du blueprint Customer 360 API si disponible
-if CUSTOMER360_API_AVAILABLE:
-    app.register_blueprint(customer360_api, url_prefix='/api/customer360')
+if ROUTES_AVAILABLE:
+    try:
+        if work_orders_bp:
+            app.register_blueprint(work_orders_bp, url_prefix='/work_orders')
+            logger.info("✅ Blueprint work_orders enregistré")
+        
+        if interventions_bp:
+            app.register_blueprint(interventions_bp, url_prefix='/interventions')
+            logger.info("✅ Blueprint interventions enregistré")
+        
+        if customers_bp:
+            app.register_blueprint(customers_bp, url_prefix='/customers')
+            logger.info("✅ Blueprint customers enregistré")
+        
+        if technicians_bp:
+            app.register_blueprint(technicians_bp, url_prefix='/technicians')
+            logger.info("✅ Blueprint technicians enregistré")
+        
+        if analytics_bp:
+            app.register_blueprint(analytics_bp, url_prefix='/analytics')
+            logger.info("✅ Blueprint analytics enregistré")
+        
+        if api_bp:
+            app.register_blueprint(api_bp, url_prefix='/api')
+            logger.info("✅ Blueprint api enregistré")
+        
+        # Enregistrer openai si disponible
+        try:
+            from routes.openai import openai_bp
+            app.register_blueprint(openai_bp, url_prefix='/openai')
+            logger.info("✅ OpenAI blueprint enregistré")
+        except ImportError:
+            logger.info("ℹ️ OpenAI blueprint non disponible - continuons sans")
+        
+        logger.info("✅ Tous les blueprints principaux enregistrés")
+    except Exception as e:
+        logger.error(f"❌ Erreur enregistrement blueprints: {e}")
+else:
+    logger.warning("⚠️ Routes principales non disponibles")
 
 # Gestion des erreurs
 @app.errorhandler(404)
@@ -932,5 +1088,5 @@ if __name__ == '__main__':
     app.run(
         debug=os.getenv('FLASK_ENV') == 'development',
         host=app.config.get('HOST', '0.0.0.0'),
-        port=5012
+        port=int(os.getenv('FLASK_PORT', 5013))
     )

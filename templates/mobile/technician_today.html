@@ -1,0 +1,693 @@
+{% extends "base.html" %}
+
+{% block title %}Mes Tâches - {{ today }} - ChronoTech{% endblock %}
+
+{% block head %}
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<style>
+/* Mobile-First CSS pour interface technicien */
+.mobile-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem;
+    margin: -1rem -1rem 1rem -1rem;
+    border-radius: 0 0 20px 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.mobile-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.stat-card {
+    background: rgba(255,255,255,0.2);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 0.75rem;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.3);
+}
+
+.stat-number {
+    font-size: 1.5rem;
+    font-weight: bold;
+    display: block;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    opacity: 0.9;
+}
+
+.task-card {
+    background: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    margin-bottom: 1rem;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.2);
+    backdrop-filter: blur(10px);
+}
+
+.task-header {
+    padding: 1rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.task-title {
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+    color: #2c3e50;
+}
+
+.task-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+    color: #7f8c8d;
+}
+
+.priority-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.priority-urgent { background: #ff6b6b; color: white; }
+.priority-high { background: #ffa500; color: white; }
+.priority-medium { background: #4ecdc4; color: white; }
+.priority-low { background: #95a5a6; color: white; }
+
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.status-pending { background: #f39c12; color: white; }
+.status-assigned { background: #3498db; color: white; }
+.status-in_progress { background: #2ecc71; color: white; animation: pulse 2s infinite; }
+.status-done { background: #27ae60; color: white; }
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+.task-customer {
+    padding: 0.75rem 1rem;
+    background: #f8f9fa;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.customer-name {
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+.vehicle-info {
+    font-size: 0.9rem;
+    color: #7f8c8d;
+    margin-top: 0.25rem;
+}
+
+.task-actions {
+    padding: 1rem;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.action-btn {
+    flex: 1;
+    padding: 0.75rem;
+    border: none;
+    border-radius: 15px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.btn-start {
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    color: white;
+}
+
+.btn-stop {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+}
+
+.btn-details {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+}
+
+.btn-note {
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    color: white;
+}
+
+.action-btn:active {
+    transform: scale(0.98);
+}
+
+.timer-display {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+    color: white;
+    padding: 0.75rem 1rem;
+    font-family: 'Courier New', monospace;
+    font-size: 1.1rem;
+    font-weight: bold;
+    text-align: center;
+    letter-spacing: 0.05em;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #7f8c8d;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.refresh-btn {
+    position: fixed;
+    bottom: 2rem;
+    right: 1rem;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    z-index: 1000;
+}
+
+.refresh-btn:active {
+    transform: scale(0.95);
+}
+
+/* Quick Note Modal */
+.note-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.note-modal-content {
+    background: white;
+    border-radius: 20px;
+    padding: 1.5rem;
+    margin: 1rem;
+    max-width: 400px;
+    width: 100%;
+}
+
+.note-textarea {
+    width: 100%;
+    min-height: 120px;
+    border: 2px solid #e9ecef;
+    border-radius: 15px;
+    padding: 1rem;
+    resize: vertical;
+    font-family: inherit;
+}
+
+.note-textarea:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* Loading states */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+    position: relative;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding: 0.5rem;
+    }
+    
+    .task-actions {
+        flex-direction: column;
+    }
+    
+    .action-btn {
+        padding: 1rem;
+        font-size: 1rem;
+    }
+}
+
+/* Toast notifications */
+.toast-container {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 3000;
+}
+
+.toast {
+    background: white;
+    border-radius: 15px;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    border-left: 4px solid #2ecc71;
+    animation: slideIn 0.3s ease;
+}
+
+.toast.error {
+    border-left-color: #e74c3c;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header mobile avec stats -->
+    <div class="mobile-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="mb-0">Mes Tâches</h4>
+                <small>{{ today.strftime('%A %d %B %Y') }}</small>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span id="current-time"></span>
+                <button class="btn btn-sm btn-light rounded-pill" onclick="refreshTasks()">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="mobile-stats">
+            <div class="stat-card">
+                <span class="stat-number">{{ stats.total_tasks or 0 }}</span>
+                <div class="stat-label">Tâches</div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">{{ stats.completed_tasks or 0 }}</span>
+                <div class="stat-label">Terminées</div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">{{ ((stats.total_minutes_today or 0) // 60) }}h{{ ((stats.total_minutes_today or 0) % 60).zfill(2) if (stats.total_minutes_today or 0) % 60 < 10 else ((stats.total_minutes_today or 0) % 60) }}</span>
+                <div class="stat-label">Temps</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des tâches -->
+    <div class="tasks-container">
+        {% if tasks %}
+            {% for task in tasks %}
+            <div class="task-card" data-task-id="{{ task.id }}">
+                <!-- En-tête de tâche -->
+                <div class="task-header">
+                    <h6 class="task-title">{{ task.title }}</h6>
+                    <div class="task-meta">
+                        <div>
+                            <span class="priority-badge priority-{{ task.priority }}">{{ task.priority|upper }}</span>
+                            <span class="status-badge status-{{ task.status }}">
+                                {% if task.status == 'pending' %}En attente
+                                {% elif task.status == 'assigned' %}Assignée  
+                                {% elif task.status == 'in_progress' %}En cours
+                                {% elif task.status == 'done' %}Terminée
+                                {% endif %}
+                            </span>
+                        </div>
+                        <small class="text-muted">{{ task.claim_number }}</small>
+                    </div>
+                </div>
+
+                <!-- Timer pour intervention active -->
+                {% if task.intervention_status == 'active' %}
+                <div class="timer-display" data-start-time="{{ task.intervention_started }}">
+                    <i class="fas fa-clock"></i>
+                    <span class="timer-text">{{ '%02d:%02d'|format((task.elapsed_minutes // 60), (task.elapsed_minutes % 60)) }}</span>
+                </div>
+                {% endif %}
+
+                <!-- Informations client -->
+                <div class="task-customer">
+                    <div class="customer-name">
+                        <i class="fas fa-user"></i> {{ task.customer_name }}
+                        {% if task.customer_phone %}
+                        <a href="tel:{{ task.customer_phone }}" class="text-primary ms-2">
+                            <i class="fas fa-phone"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% if task.make and task.model %}
+                    <div class="vehicle-info">
+                        <i class="fas fa-car"></i> {{ task.make }} {{ task.model }}
+                        {% if task.license_plate %} - {{ task.license_plate }}{% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Actions -->
+                <div class="task-actions">
+                    {% if task.intervention_status == 'pending' and task.status in ['assigned', 'pending'] %}
+                        <button class="action-btn btn-start" onclick="startTask({{ task.id }})">
+                            <i class="fas fa-play"></i> Démarrer
+                        </button>
+                    {% elif task.intervention_status == 'active' %}
+                        <button class="action-btn btn-stop" onclick="stopTask({{ task.id }})">
+                            <i class="fas fa-stop"></i> Terminer
+                        </button>
+                        <button class="action-btn btn-note" onclick="showNoteModal({{ task.id }})">
+                            <i class="fas fa-sticky-note"></i> Note
+                        </button>
+                    {% endif %}
+                    
+                    {% if task.intervention_id %}
+                    <button class="action-btn btn-details" onclick="window.location.href='{{ url_for('mobile.intervention_mobile_details', intervention_id=task.intervention_id) }}'">
+                        <i class="fas fa-eye"></i> Détails
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">📋</div>
+                <h5>Aucune tâche pour aujourd'hui</h5>
+                <p>Profitez de cette journée plus calme !</p>
+                <button class="btn btn-primary rounded-pill" onclick="refreshTasks()">
+                    <i class="fas fa-sync-alt me-2"></i>Actualiser
+                </button>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal note rapide -->
+<div class="note-modal" id="noteModal">
+    <div class="note-modal-content">
+        <h5 class="mb-3">Ajouter une note</h5>
+        <form id="noteForm">
+            <textarea class="note-textarea" id="noteText" placeholder="Décrivez l'intervention, les problèmes rencontrés, les solutions appliquées..."></textarea>
+            <div class="d-flex gap-2 mt-3">
+                <button type="button" class="btn btn-secondary rounded-pill flex-fill" onclick="hideNoteModal()">
+                    Annuler
+                </button>
+                <button type="submit" class="btn btn-primary rounded-pill flex-fill">
+                    <i class="fas fa-save me-2"></i>Sauvegarder
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Refresh button -->
+<button class="refresh-btn" onclick="refreshTasks()" title="Actualiser">
+    <i class="fas fa-sync-alt"></i>
+</button>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentTaskId = null;
+let timers = {};
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+    updateClock();
+    setInterval(updateClock, 1000);
+    initializeTimers();
+    
+    // Form note
+    document.getElementById('noteForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        saveNote();
+    });
+});
+
+function updateClock() {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('fr-FR', {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    document.getElementById('current-time').textContent = timeString;
+}
+
+function initializeTimers() {
+    document.querySelectorAll('.timer-display').forEach(timer => {
+        const startTime = new Date(timer.dataset.startTime);
+        const taskCard = timer.closest('.task-card');
+        const taskId = taskCard.dataset.taskId;
+        
+        timers[taskId] = setInterval(() => {
+            const now = new Date();
+            const elapsed = Math.floor((now - startTime) / 1000 / 60);
+            const hours = Math.floor(elapsed / 60);
+            const minutes = elapsed % 60;
+            timer.querySelector('.timer-text').textContent = 
+                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        }, 1000);
+    });
+}
+
+function startTask(taskId) {
+    const button = event.target;
+    const originalText = button.innerHTML;
+    
+    button.classList.add('loading');
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Démarrage...';
+    
+    fetch(`/mobile/task/${taskId}/start`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Intervention démarrée !', 'success');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            showToast(data.message, 'error');
+            button.classList.remove('loading');
+            button.innerHTML = originalText;
+        }
+    })
+    .catch(error => {
+        showToast('Erreur de connexion', 'error');
+        button.classList.remove('loading');
+        button.innerHTML = originalText;
+    });
+}
+
+function stopTask(taskId) {
+    if (!confirm('Voulez-vous vraiment terminer cette intervention ?')) {
+        return;
+    }
+    
+    const button = event.target;
+    const originalText = button.innerHTML;
+    
+    button.classList.add('loading');
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Arrêt...';
+    
+    fetch(`/mobile/task/${taskId}/stop`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(`Intervention terminée ! Durée: ${data.duration_minutes} min`, 'success');
+            
+            // Arrêter le timer
+            if (timers[taskId]) {
+                clearInterval(timers[taskId]);
+                delete timers[taskId];
+            }
+            
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } else {
+            showToast(data.message, 'error');
+            button.classList.remove('loading');
+            button.innerHTML = originalText;
+        }
+    })
+    .catch(error => {
+        showToast('Erreur de connexion', 'error');
+        button.classList.remove('loading');
+        button.innerHTML = originalText;
+    });
+}
+
+function showNoteModal(taskId) {
+    currentTaskId = taskId;
+    document.getElementById('noteText').value = '';
+    document.getElementById('noteModal').style.display = 'flex';
+}
+
+function hideNoteModal() {
+    document.getElementById('noteModal').style.display = 'none';
+    currentTaskId = null;
+}
+
+function saveNote() {
+    const noteText = document.getElementById('noteText').value.trim();
+    
+    if (!noteText) {
+        showToast('Veuillez saisir une note', 'error');
+        return;
+    }
+    
+    const submitBtn = document.querySelector('#noteForm button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enregistrement...';
+    submitBtn.disabled = true;
+    
+    const formData = new FormData();
+    formData.append('note', noteText);
+    
+    fetch(`/mobile/task/${currentTaskId}/add_note`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCSRFToken()
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Note enregistrée !', 'success');
+            hideNoteModal();
+        } else {
+            showToast(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        showToast('Erreur de connexion', 'error');
+    })
+    .finally(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+}
+
+function refreshTasks() {
+    const refreshBtn = document.querySelector('.refresh-btn');
+    refreshBtn.style.transform = 'rotate(360deg)';
+    refreshBtn.style.transition = 'transform 0.5s ease';
+    
+    setTimeout(() => {
+        window.location.reload();
+    }, 500);
+}
+
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center">
+            <span>${message}</span>
+            <button class="btn btn-sm btn-link p-0 ms-2" onclick="this.parentElement.parentElement.remove()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    
+    document.getElementById('toastContainer').appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 5000);
+}
+
+function getCSRFToken() {
+    // Récupération du token CSRF si nécessaire
+    const token = document.querySelector('meta[name="csrf-token"]');
+    return token ? token.getAttribute('content') : '';
+}
+
+// Service Worker pour mode hors-ligne (basique)
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/static/sw.js')
+        .then(registration => console.log('SW registered:', registration))
+        .catch(error => console.log('SW registration failed:', error));
+}
+
+// Gestion des événements tactiles pour améliorer l'expérience mobile
+document.addEventListener('touchstart', function() {}, {passive: true});
+
+// Prévenir le zoom accidentel sur les inputs
+document.addEventListener('touchend', function(e) {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        e.target.blur();
+        setTimeout(() => e.target.focus(), 100);
+    }
+});
+</script>
+{% endblock %}

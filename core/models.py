@@ -669,9 +669,239 @@ def get_recent_activities(user_id=None, limit=10):
         logger.error(f"Erreur lors de la récupération des activités récentes: {e}")
         return []
 
+# =====================================================
+# NOUVEAUX MODÈLES SPRINT 1 - ANTI-ORPHAN ARCHITECTURE
+# =====================================================
+
+class WorkOrderTask(BaseModel):
+    """
+    Modèle pour les tâches de bon de travail - SPRINT 1
+    Empêche par design les tâches orphelines
+    """
+    
+    def __init__(self, id=None, work_order_id=None, title=None, description=None,
+                 task_source=None, created_by='operator', status='pending', 
+                 priority='medium', technician_id=None, estimated_minutes=None,
+                 scheduled_start=None, scheduled_end=None, started_at=None, 
+                 completed_at=None, created_at=None, updated_at=None, **kwargs):
+        self.id = id
+        self.work_order_id = work_order_id  # OBLIGATOIRE - Pas d'orphelines!
+        self.title = title
+        self.description = description
+        self.task_source = task_source  # 'requested', 'suggested', 'preventive'
+        self.created_by = created_by  # 'operator', 'ai', 'system'
+        self.status = status  # 'pending', 'assigned', 'in_progress', 'done', 'cancelled'
+        self.priority = priority  # 'low', 'medium', 'high', 'urgent'
+        self.technician_id = technician_id
+        self.estimated_minutes = estimated_minutes
+        self.scheduled_start = scheduled_start
+        self.scheduled_end = scheduled_end
+        self.started_at = started_at
+        self.completed_at = completed_at
+        self.created_at = created_at
+        self.updated_at = updated_at
+        super().__init__(**kwargs)
+    
+    @classmethod
+    def create(cls, work_order_id, title, task_source, **kwargs):
+        """
+        Créer une nouvelle tâche (SPRINT 1 - sécurisée)
+        work_order_id est OBLIGATOIRE
+        """
+        if not work_order_id:
+            raise ValueError("work_order_id is required - no orphan tasks allowed")
+        
+        if task_source not in ['requested', 'suggested', 'preventive']:
+            raise ValueError("task_source must be one of: requested, suggested, preventive")
+        
+        try:
+            query = """
+                INSERT INTO work_order_tasks 
+                (work_order_id, title, description, task_source, created_by, priority)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """
+            
+            db_manager.execute_query(query, (
+                work_order_id, title, kwargs.get('description', ''),
+                task_source, kwargs.get('created_by', 'operator'),
+                kwargs.get('priority', 'medium')
+            ))
+            
+            # Récupérer la tâche créée
+            return cls.get_by_id(db_manager.get_last_insert_id())
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de la création de la tâche: {e}")
+            raise
+    
+    @classmethod
+    def get_by_work_order(cls, work_order_id):
+        """Récupérer toutes les tâches d'un bon de travail"""
+        try:
+            query = """
+                SELECT * FROM work_order_tasks 
+                WHERE work_order_id = %s 
+                ORDER BY created_at ASC
+            """
+            
+            results = db_manager.execute_query(query, (work_order_id,))
+            return [cls(**result) for result in results]
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération des tâches: {e}")
+            return []
+    
+    @classmethod
+    def get_by_id(cls, task_id):
+        """Récupérer une tâche par son ID"""
+        try:
+            query = "SELECT * FROM work_order_tasks WHERE id = %s"
+            results = db_manager.execute_query(query, (task_id,))
+            
+            if results:
+                return cls(**results[0])
+            return None
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération de la tâche {task_id}: {e}")
+            return None
+    
+    def update_status(self, new_status, technician_id=None):
+        """Mettre à jour le statut d'une tâche"""
+        try:
+            update_fields = []
+            params = []
+            
+            # Statut
+            update_fields.append("status = %s")
+            params.append(new_status)
+            
+            # Horodatage automatique selon le statut
+            if new_status == 'in_progress' and not self.started_at:
+                update_fields.append("started_at = NOW()")
+            elif new_status == 'done' and not self.completed_at:
+                update_fields.append("completed_at = NOW()")
+            
+            # Technicien
+            if technician_id:
+                update_fields.append("technician_id = %s")
+                params.append(technician_id)
+            
+            update_fields.append("updated_at = NOW()")
+            params.append(self.id)
+            
+            query = f"""
+                UPDATE work_order_tasks 
+                SET {', '.join(update_fields)}
+                WHERE id = %s
+            """
+            
+            db_manager.execute_query(query, params)
+            self.status = new_status
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de la mise à jour du statut de la tâche {self.id}: {e}")
+            return False
+
+class Intervention(BaseModel):
+    """
+    Modèle pour les interventions - SPRINT 1
+    Relation 1-1 stricte avec WorkOrderTask
+    """
+    
+    def __init__(self, id=None, work_order_id=None, task_id=None, technician_id=None,
+                 started_at=None, ended_at=None, result_status='ok', summary=None,
+                 created_at=None, **kwargs):
+        self.id = id
+        self.work_order_id = work_order_id  # OBLIGATOIRE
+        self.task_id = task_id  # OBLIGATOIRE et UNIQUE
+        self.technician_id = technician_id
+        self.started_at = started_at
+        self.ended_at = ended_at
+        self.result_status = result_status  # 'ok', 'rework', 'cancelled'
+        self.summary = summary
+        self.created_at = created_at
+        super().__init__(**kwargs)
+    
+    @classmethod
+    def create_from_task(cls, task_id, technician_id=None, **kwargs):
+        """
+        Créer une intervention à partir d'une tâche (SPRINT 1 - sécurisée)
+        Vérifie la relation 1-1
+        """
+        try:
+            # Vérifier que la tâche existe et récupérer son work_order_id
+            task = WorkOrderTask.get_by_id(task_id)
+            if not task:
+                raise ValueError(f"Task {task_id} not found")
+            
+            # Vérifier qu'il n'y a pas déjà une intervention pour cette tâche
+            existing_query = "SELECT COUNT(*) as count FROM interventions WHERE task_id = %s"
+            existing_results = db_manager.execute_query(existing_query, (task_id,))
+            
+            if existing_results[0]['count'] > 0:
+                raise ValueError(f"Task {task_id} already has an intervention (1-1 relationship)")
+            
+            # Créer l'intervention
+            query = """
+                INSERT INTO interventions 
+                (work_order_id, task_id, technician_id, summary)
+                VALUES (%s, %s, %s, %s)
+            """
+            
+            db_manager.execute_query(query, (
+                task.work_order_id, task_id, technician_id, 
+                kwargs.get('summary', 'Intervention started')
+            ))
+            
+            # Mettre à jour le statut de la tâche
+            task.update_status('in_progress', technician_id)
+            
+            return cls.get_by_id(db_manager.get_last_insert_id())
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de la création de l'intervention: {e}")
+            raise
+    
+    @classmethod
+    def get_by_id(cls, intervention_id):
+        """Récupérer une intervention par son ID"""
+        try:
+            query = "SELECT * FROM interventions WHERE id = %s"
+            results = db_manager.execute_query(query, (intervention_id,))
+            
+            if results:
+                return cls(**results[0])
+            return None
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération de l'intervention {intervention_id}: {e}")
+            return None
+    
+    @classmethod
+    def get_by_work_order(cls, work_order_id):
+        """Récupérer toutes les interventions d'un bon de travail"""
+        try:
+            query = """
+                SELECT i.*, wot.title as task_title
+                FROM interventions i
+                JOIN work_order_tasks wot ON i.task_id = wot.id
+                WHERE i.work_order_id = %s 
+                ORDER BY i.created_at ASC
+            """
+            
+            results = db_manager.execute_query(query, (work_order_id,))
+            return [cls(**result) for result in results]
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération des interventions: {e}")
+            return []
+
 if __name__ == "__main__":
     # Tests des modèles
-    print("Test des modèles ChronoTech")
+    print("Test des modèles ChronoTech Sprint 1")
     
     # Test de création d'un utilisateur
     user = User(name="Test User", email="test@chronotech.fr", role="technician")
@@ -684,3 +914,25 @@ if __name__ == "__main__":
     # Test des statistiques du tableau de bord
     stats = get_dashboard_stats()
     print(f"Statistiques: {stats}")
+    
+    # Test SPRINT 1 - WorkOrderTask
+    if work_orders:
+        try:
+            # Créer une tâche test
+            task = WorkOrderTask.create(
+                work_order_id=work_orders[0].id,
+                title="Tâche test modèle",
+                task_source="requested",
+                description="Test du modèle WorkOrderTask"
+            )
+            print(f"Tâche créée: {task.to_dict()}")
+            
+            # Créer une intervention
+            intervention = Intervention.create_from_task(
+                task_id=task.id,
+                summary="Test intervention modèle"
+            )
+            print(f"Intervention créée: {intervention.to_dict()}")
+            
+        except Exception as e:
+            print(f"Erreur test Sprint 1: {e}")

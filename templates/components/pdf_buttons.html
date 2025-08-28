@@ -1,0 +1,359 @@
+<!-- 
+Component PDF Buttons - Sprint 3
+Boutons pour générer et télécharger les PDFs
+-->
+
+<!-- Bouton PDF Work Order -->
+<div class="pdf-actions mb-3">
+    <div class="btn-group" role="group">
+        <button type="button" class="btn btn-outline-primary" onclick="generateWorkOrderPDF({{ work_order.id }}, false)">
+            <i class="fas fa-file-pdf"></i> Aperçu PDF
+        </button>
+        <button type="button" class="btn btn-primary" onclick="generateWorkOrderPDF({{ work_order.id }}, true)">
+            <i class="fas fa-download"></i> Télécharger PDF
+        </button>
+    </div>
+    
+    <div class="form-check form-check-inline ms-3">
+        <input class="form-check-input" type="checkbox" id="includeInterventions" checked>
+        <label class="form-check-label" for="includeInterventions">
+            Inclure les interventions
+        </label>
+    </div>
+</div>
+
+<!-- Bouton PDF Intervention (pour mobile) -->
+<div class="pdf-intervention-action">
+    <button type="button" class="btn btn-success btn-sm" onclick="generateInterventionPDF({{ intervention.id }})">
+        <i class="fas fa-file-alt"></i> Rapport PDF
+    </button>
+</div>
+
+<!-- Modal PDF Status -->
+<div class="modal fade" id="pdfModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Génération PDF</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="pdfStatus" class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Génération en cours...</span>
+                    </div>
+                    <p class="mt-3">Génération du PDF en cours...</p>
+                </div>
+                <div id="pdfResult" class="d-none">
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i> PDF généré avec succès !
+                    </div>
+                    <div class="d-grid">
+                        <a id="pdfDownloadLink" href="#" class="btn btn-primary" target="_blank">
+                            <i class="fas fa-download"></i> Télécharger le PDF
+                        </a>
+                    </div>
+                </div>
+                <div id="pdfError" class="d-none">
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        <span id="pdfErrorMessage">Erreur lors de la génération</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript PDF Functions -->
+<script>
+// Génération PDF Work Order
+function generateWorkOrderPDF(workOrderId, download = true) {
+    const includeInterventions = document.getElementById('includeInterventions')?.checked ?? true;
+    
+    if (download) {
+        // Téléchargement direct
+        const url = `/pdf/work-order/${workOrderId}?include_interventions=${includeInterventions}&download=true`;
+        
+        // Créer un lien de téléchargement temporaire
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = '';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Afficher une notification
+        showToast('success', 'Téléchargement du PDF démarré');
+    } else {
+        // Génération avec aperçu
+        showPDFModal();
+        
+        fetch(`/pdf/work-order/${workOrderId}?include_interventions=${includeInterventions}&download=false`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showPDFResult(data.download_url, data.filename, data.size_bytes);
+                } else {
+                    showPDFError(data.error || 'Erreur inconnue');
+                }
+            })
+            .catch(error => {
+                console.error('Erreur génération PDF:', error);
+                showPDFError('Erreur de communication avec le serveur');
+            });
+    }
+}
+
+// Génération PDF Intervention
+function generateInterventionPDF(interventionId) {
+    // Téléchargement direct pour les interventions
+    const url = `/pdf/intervention/${interventionId}`;
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = '';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showToast('success', 'Téléchargement du rapport PDF démarré');
+}
+
+// Génération PDF batch (pour superviseurs)
+function generateBatchPDFs(workOrderIds) {
+    if (!workOrderIds || workOrderIds.length === 0) {
+        showToast('warning', 'Aucun bon de travail sélectionné');
+        return;
+    }
+    
+    showPDFModal();
+    
+    fetch('/pdf/batch/work-orders', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            work_order_ids: workOrderIds,
+            include_interventions: true,
+            zip_download: true
+        })
+    })
+    .then(response => {
+        if (response.ok) {
+            // Si c'est un ZIP, déclencher le téléchargement
+            return response.blob().then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `work_orders_batch_${new Date().getTime()}.zip`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+                
+                hidePDFModal();
+                showToast('success', `${workOrderIds.length} PDFs générés et téléchargés`);
+            });
+        } else {
+            return response.json();
+        }
+    })
+    .then(data => {
+        if (data && !data.success) {
+            showPDFError(data.error || 'Erreur de génération batch');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur génération batch PDF:', error);
+        showPDFError('Erreur de communication avec le serveur');
+    });
+}
+
+// Afficher la modal PDF
+function showPDFModal() {
+    const modal = new bootstrap.Modal(document.getElementById('pdfModal'));
+    
+    // Reset modal state
+    document.getElementById('pdfStatus').classList.remove('d-none');
+    document.getElementById('pdfResult').classList.add('d-none');
+    document.getElementById('pdfError').classList.add('d-none');
+    
+    modal.show();
+}
+
+// Afficher le résultat de génération PDF
+function showPDFResult(downloadUrl, filename, sizeBytes) {
+    document.getElementById('pdfStatus').classList.add('d-none');
+    document.getElementById('pdfResult').classList.remove('d-none');
+    
+    const link = document.getElementById('pdfDownloadLink');
+    link.href = downloadUrl;
+    link.textContent = `Télécharger ${filename} (${formatBytes(sizeBytes)})`;
+}
+
+// Afficher l'erreur PDF
+function showPDFError(message) {
+    document.getElementById('pdfStatus').classList.add('d-none');
+    document.getElementById('pdfError').classList.remove('d-none');
+    document.getElementById('pdfErrorMessage').textContent = message;
+}
+
+// Masquer la modal PDF
+function hidePDFModal() {
+    const modal = bootstrap.Modal.getInstance(document.getElementById('pdfModal'));
+    if (modal) {
+        modal.hide();
+    }
+}
+
+// Formater la taille en bytes
+function formatBytes(bytes, decimals = 2) {
+    if (bytes === 0) return '0 Bytes';
+    
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
+
+// Vérifier le statut du service PDF
+function checkPDFServiceStatus() {
+    fetch('/pdf/status')
+        .then(response => response.json())
+        .then(data => {
+            if (!data.available) {
+                // Masquer les boutons PDF si le service n'est pas disponible
+                const pdfButtons = document.querySelectorAll('.pdf-actions, .pdf-intervention-action');
+                pdfButtons.forEach(btn => {
+                    btn.style.display = 'none';
+                });
+                
+                // Afficher un message d'information
+                console.warn('Service PDF non disponible');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur vérification service PDF:', error);
+        });
+}
+
+// Vérifier le service au chargement
+document.addEventListener('DOMContentLoaded', checkPDFServiceStatus);
+
+// Fonction pour les sélections multiples (superviseur)
+function toggleWorkOrderSelection(workOrderId) {
+    const checkbox = document.getElementById(`wo_${workOrderId}`);
+    if (checkbox) {
+        checkbox.checked = !checkbox.checked;
+        updateSelectedCount();
+    }
+}
+
+function updateSelectedCount() {
+    const checkboxes = document.querySelectorAll('input[name="selected_work_orders"]:checked');
+    const count = checkboxes.length;
+    
+    const batchBtn = document.getElementById('batchPDFBtn');
+    if (batchBtn) {
+        batchBtn.disabled = count === 0;
+        batchBtn.textContent = count > 0 ? `Générer ${count} PDF(s)` : 'Sélectionner des BT';
+    }
+}
+
+function generateSelectedPDFs() {
+    const checkboxes = document.querySelectorAll('input[name="selected_work_orders"]:checked');
+    const workOrderIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+    
+    if (workOrderIds.length > 0) {
+        generateBatchPDFs(workOrderIds);
+    }
+}
+
+// Sélectionner/désélectionner tout
+function toggleSelectAll() {
+    const selectAllCheckbox = document.getElementById('selectAllWorkOrders');
+    const workOrderCheckboxes = document.querySelectorAll('input[name="selected_work_orders"]');
+    
+    workOrderCheckboxes.forEach(checkbox => {
+        checkbox.checked = selectAllCheckbox.checked;
+    });
+    
+    updateSelectedCount();
+}
+</script>
+
+<!-- CSS pour les boutons PDF -->
+<style>
+.pdf-actions {
+    border: 1px solid #e0e6ed;
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+}
+
+.pdf-intervention-action {
+    margin-top: 10px;
+}
+
+.pdf-intervention-action .btn {
+    font-size: 12px;
+    padding: 4px 8px;
+}
+
+#pdfModal .modal-body {
+    min-height: 120px;
+}
+
+.work-order-card {
+    position: relative;
+}
+
+.work-order-card .selection-checkbox {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 10;
+}
+
+.batch-pdf-controls {
+    background: #e3f2fd;
+    border: 1px solid #90caf9;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.selected-count {
+    font-weight: bold;
+    color: #1976d2;
+}
+
+/* Animation pour les boutons de génération */
+.btn-pdf-generating {
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.btn-pdf-generating::after {
+    content: '';
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-left: 8px;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    border-right-color: transparent;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+</style>

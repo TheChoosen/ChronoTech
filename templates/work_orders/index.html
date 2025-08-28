@@ -106,7 +106,23 @@
         </div>
     </div>
 
-  
+    <!-- Contrôles PDF en lot - Sprint 3 -->
+    <div class="batch-pdf-controls mb-4" style="display: none;" id="batchControls">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <strong class="selected-count">0 bon(s) sélectionné(s)</strong>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-primary" id="batchPDFBtn" onclick="generateSelectedPDFs()" disabled>
+                    <i class="fas fa-file-pdf me-2"></i>Générer PDF en lot
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="clearSelection()">
+                    <i class="fas fa-times me-2"></i>Annuler
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Liste des bons de travail -->
     <div class="clay-card">
         <div class="card-body">
@@ -115,6 +131,9 @@
                 <table class="table table-hover">
                     <thead>
                         <tr>
+                            <th>
+                                <input type="checkbox" id="selectAllWorkOrders" onchange="toggleSelectAll()" class="form-check-input">
+                            </th>
                             <th>N° Bon</th>
                             <th>Client</th>
                             <th>Description</th>
@@ -128,6 +147,9 @@
                     <tbody>
                         {% for wo in work_orders %}
                         <tr>
+                            <td>
+                                <input type="checkbox" name="selected_work_orders" value="{{ wo.id }}" class="form-check-input" onchange="updateSelectedCount()">
+                            </td>
                             <td>
                                 <a href="{{ url_for('work_orders.view_work_order', id=wo.id) }}" class="text-decoration-none">
                                     <strong>{{ wo.claim_number }}</strong>
@@ -241,6 +263,9 @@
     </div>
 </div>
 
+<!-- Inclusion des composants PDF Sprint 3 -->
+{% include 'components/pdf_buttons.html' %}
+
 <script>
 function deleteWorkOrder(id) {
     if (confirm('Êtes-vous sûr de vouloir supprimer ce bon de travail ?')) {
@@ -252,6 +277,57 @@ function deleteWorkOrder(id) {
 function exportData() {
     // TODO: Implémenter l'export
     alert('Fonctionnalité d\'export à implémenter');
+}
+
+// Gestion de la sélection en lot - Sprint 3
+function updateSelectedCount() {
+    const checkboxes = document.querySelectorAll('input[name="selected_work_orders"]:checked');
+    const count = checkboxes.length;
+    const batchControls = document.getElementById('batchControls');
+    const selectedCountElement = document.querySelector('.selected-count');
+    const batchBtn = document.getElementById('batchPDFBtn');
+    
+    if (count > 0) {
+        batchControls.style.display = 'block';
+        selectedCountElement.textContent = `${count} bon(s) sélectionné(s)`;
+        batchBtn.disabled = false;
+        batchBtn.textContent = `Générer ${count} PDF(s)`;
+    } else {
+        batchControls.style.display = 'none';
+        batchBtn.disabled = true;
+    }
+}
+
+function toggleSelectAll() {
+    const selectAllCheckbox = document.getElementById('selectAllWorkOrders');
+    const workOrderCheckboxes = document.querySelectorAll('input[name="selected_work_orders"]');
+    
+    workOrderCheckboxes.forEach(checkbox => {
+        checkbox.checked = selectAllCheckbox.checked;
+    });
+    
+    updateSelectedCount();
+}
+
+function clearSelection() {
+    const selectAllCheckbox = document.getElementById('selectAllWorkOrders');
+    const workOrderCheckboxes = document.querySelectorAll('input[name="selected_work_orders"]');
+    
+    selectAllCheckbox.checked = false;
+    workOrderCheckboxes.forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    
+    updateSelectedCount();
+}
+
+function generateSelectedPDFs() {
+    const checkboxes = document.querySelectorAll('input[name="selected_work_orders"]:checked');
+    const workOrderIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+    
+    if (workOrderIds.length > 0) {
+        generateBatchPDFs(workOrderIds);
+    }
 }
 </script>
 {% endblock %}

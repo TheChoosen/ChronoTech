@@ -11,7 +11,9 @@ from utils import get_db_connection
 # googleapiclient helpers
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
-from .interventions import get_db_connection as get_intervention_db
+
+# Import de la fonction de connexion DB depuis core
+from core.database import db_manager
 
 openai_bp = Blueprint('openai', __name__, template_folder='../templates')
 
@@ -295,7 +297,7 @@ def generate_summary_route(work_order_id):
         conversation_history = data.get('conversation_history', [])
 
         # Get work order context from database
-        conn = get_intervention_db()
+        conn = db_manager.get_connection()
         try:
             with conn.cursor() as cursor:
                 # Get comprehensive work order details
@@ -409,7 +411,7 @@ def generate_summary_route(work_order_id):
 
         # Save the AI interaction to database for audit trail (best-effort)
         try:
-            conn2 = get_intervention_db()
+            conn2 = db_manager.get_connection()
             try:
                 with conn2.cursor() as cursor:
                     cursor.execute("""
@@ -459,7 +461,7 @@ def ai_chat_followup(work_order_id):
             return jsonify({'success': False, 'error': 'Question is required'}), 400
         
         # Get current work order context (lighter version for follow-ups)
-        conn = get_intervention_db()
+        conn = db_manager.get_connection()
         try:
             with conn.cursor() as cursor:
                 cursor.execute("""
@@ -555,7 +557,7 @@ def generate_ai_summary():
             return jsonify({'error': 'work_order_id required'}), 400
 
         # Query minimal needed data
-        conn = get_intervention_db()
+        conn = db_manager.get_connection()
         try:
             with conn.cursor() as cursor:
                 cursor.execute("""
@@ -808,7 +810,7 @@ def get_intelligent_suggestions(work_order_id):
     
     try:
         # Get work order context
-        conn = get_intervention_db()
+        conn = db_manager.get_connection()
         try:
             with conn.cursor() as cursor:
                 cursor.execute("""

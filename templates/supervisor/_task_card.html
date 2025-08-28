@@ -1,0 +1,61 @@
+<div class="task-card status-{{ task.status }}" data-task-id="{{ task.id }}" draggable="true">
+    <div class="task-header">
+        <h6 class="task-title">{{ task.title }}</h6>
+        <div class="priority-indicator priority-{{ task.priority }}" title="Priorité {{ task.priority }}"></div>
+    </div>
+    
+    <div class="task-meta">
+        <div class="task-customer">
+            <i class="fas fa-user me-1"></i>{{ task.customer_name }}
+        </div>
+        {% if task.make and task.model %}
+        <div class="task-vehicle">
+            <i class="fas fa-car me-1"></i>{{ task.make }} {{ task.model }}
+            {% if task.license_plate %} - {{ task.license_plate }}{% endif %}
+        </div>
+        {% endif %}
+        <div class="text-muted small">
+            <i class="fas fa-hashtag me-1"></i>{{ task.claim_number }}
+        </div>
+    </div>
+    
+    <!-- Timer pour intervention active -->
+    {% if task.intervention_status == 'active' %}
+    <div class="task-timer" data-start-time="{{ task.intervention_started }}">
+        <i class="fas fa-clock me-1"></i>{{ '%02d:%02d'|format((task.elapsed_minutes // 60), (task.elapsed_minutes % 60)) }}
+    </div>
+    {% endif %}
+    
+    <div class="task-footer">
+        <div class="d-flex align-items-center">
+            {% if task.technician_name %}
+            <div class="technician-avatar me-2" title="{{ task.technician_name }}">
+                {{ task.technician_name[:2]|upper }}
+            </div>
+            <small class="text-muted">{{ task.technician_name }}</small>
+            {% else %}
+            <small class="text-muted"><em>Non assigné</em></small>
+            {% endif %}
+        </div>
+        
+        <div class="task-actions">
+            {% if task.status == 'pending' %}
+            <button class="task-action-btn" data-action="assign" title="Assigner">
+                <i class="fas fa-user-plus"></i>
+            </button>
+            {% elif task.status == 'assigned' %}
+            <button class="task-action-btn" data-action="start" title="Démarrer">
+                <i class="fas fa-play"></i>
+            </button>
+            {% elif task.status == 'in_progress' %}
+            <button class="task-action-btn" data-action="complete" title="Terminer">
+                <i class="fas fa-check"></i>
+            </button>
+            {% endif %}
+            
+            <button class="task-action-btn" data-action="details" title="Détails">
+                <i class="fas fa-eye"></i>
+            </button>
+        </div>
+    </div>
+</div>
