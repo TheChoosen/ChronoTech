@@ -691,11 +691,17 @@ except Exception as e:
 
 # Import des autres modules avec gestion d'erreurs individuelles
 try:
-    import routes.interventions as interventions_module
+    # Import interventions.py spécifiquement comme work_orders
+    interventions_spec = importlib.util.spec_from_file_location("interventions_module", 
+                                                               "/home/amenard/Chronotech/ChronoTech/routes/interventions.py")
+    interventions_module = importlib.util.module_from_spec(interventions_spec)
+    interventions_spec.loader.exec_module(interventions_module)
     interventions_bp = interventions_module.bp
     logger.info("✅ interventions blueprint importé avec succès")
 except Exception as e:
     logger.error(f"❌ Erreur import interventions: {e}")
+    import traceback
+    traceback.print_exc()
     
 try:  
     import routes.customers as customers_module
