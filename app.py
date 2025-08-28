@@ -681,7 +681,7 @@ try:
     import importlib.util
     
     work_orders_spec = importlib.util.spec_from_file_location("work_orders_module", 
-                                                             "/home/amenard/Chronotech/ChronoTech/routes/work_orders.py")
+                                                             "routes/work_orders.py")
     work_orders_module = importlib.util.module_from_spec(work_orders_spec)
     work_orders_spec.loader.exec_module(work_orders_module)
     work_orders_bp = work_orders_module.bp
@@ -693,7 +693,7 @@ except Exception as e:
 try:
     # Import interventions.py spécifiquement comme work_orders
     interventions_spec = importlib.util.spec_from_file_location("interventions_module", 
-                                                               "/home/amenard/Chronotech/ChronoTech/routes/interventions.py")
+                                                               "routes/interventions.py")
     interventions_module = importlib.util.module_from_spec(interventions_spec)
     interventions_spec.loader.exec_module(interventions_module)
     interventions_bp = interventions_module.bp
