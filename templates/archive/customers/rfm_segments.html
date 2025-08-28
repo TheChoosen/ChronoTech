@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+
+{% block title %}Segments RFM - ChronoTech{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-users me-2"></i>Segments RFM</h2>
+                <div>
+                    <a href="{{ url_for('customers.index') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Retour clients
+                    </a>
+                    <button class="btn btn-primary" onclick="calculateAllRFM()">
+                        <i class="fas fa-calculator me-1"></i>Recalculer tous les RFM
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques globales -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Répartition par Segment</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for segment in segments %}
+                        <div class="col-md-4 col-lg-3 mb-3">
+                            <div class="card border-{{ 
+                                'success' if segment.rfm_segment == 'Champions' 
+                                else 'primary' if segment.rfm_segment == 'Loyal'
+                                else 'warning' if segment.rfm_segment == 'At_Risk'
+                                else 'danger' if segment.rfm_segment == 'Lost'
+                                else 'info' if segment.rfm_segment == 'New_Customer'
+                                else 'secondary' 
+                            }}">
+                                <div class="card-header text-center">
+                                    <h6 class="mb-0">{{ segment.rfm_segment or 'Non calculé' }}</h6>
+                                </div>
+                                <div class="card-body text-center">
+                                    <h4 class="text-{{ 
+                                        'success' if segment.rfm_segment == 'Champions' 
+                                        else 'primary' if segment.rfm_segment == 'Loyal'
+                                        else 'warning' if segment.rfm_segment == 'At_Risk'
+                                        else 'danger' if segment.rfm_segment == 'Lost'
+                                        else 'info' if segment.rfm_segment == 'New_Customer'
+                                        else 'secondary' 
+                                    }}">
+                                        {{ segment.customer_count }}
+                                    </h4>
+                                    <p class="mb-1">clients</p>
+                                    
+                                    {% if segment.avg_ltv_12m %}
+                                    <div class="mt-2">
+                                        <small class="text-muted">LTV moy:</small>
+                                        <br><strong>{{ "%.0f" | format(segment.avg_ltv_12m) }}€</strong>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if segment.avg_churn_risk %}
+                                    <div class="mt-2">
+                                        <small class="text-muted">Risque churn:</small>
+                                        <br><strong>{{ "%.1f" | format(segment.avg_churn_risk * 100) }}%</strong>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if segment.avg_days_since_last_order %}
+                                    <div class="mt-2">
+                                        <small class="text-muted">Dernière commande:</small>
+                                        <br><strong>{{ "%.0f" | format(segment.avg_days_since_last_order) }} jours</strong>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Détails des segments -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-table me-2"></i>Détails par Segment</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Segment</th>
+                                    <th>Nombre de clients</th>
+                                    <th>LTV moyenne 12m</th>
+                                    <th>Risque de churn moyen</th>
+                                    <th>Jours depuis dernière commande</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for segment in segments %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-{{ 
+                                            'success' if segment.rfm_segment == 'Champions' 
+                                            else 'primary' if segment.rfm_segment == 'Loyal'
+                                            else 'warning' if segment.rfm_segment == 'At_Risk'
+                                            else 'danger' if segment.rfm_segment == 'Lost'
+                                            else 'info' if segment.rfm_segment == 'New_Customer'
+                                            else 'secondary' 
+                                        }}">
+                                            {{ segment.rfm_segment or 'Non calculé' }}
+                                        </span>
+                                    </td>
+                                    <td>{{ segment.customer_count }}</td>
+                                    <td>
+                                        {% if segment.avg_ltv_12m %}
+                                            {{ "%.2f" | format(segment.avg_ltv_12m) }}€
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if segment.avg_churn_risk %}
+                                            <div class="d-flex align-items-center">
+                                                <div class="progress me-2" style="width: 60px; height: 8px;">
+                                                    <div class="progress-bar bg-{{ 
+                                                        'danger' if segment.avg_churn_risk > 0.7 
+                                                        else 'warning' if segment.avg_churn_risk > 0.4 
+                                                        else 'success' 
+                                                    }}" style="width: {{ segment.avg_churn_risk * 100 }}%"></div>
+                                                </div>
+                                                <small>{{ "%.1f" | format(segment.avg_churn_risk * 100) }}%</small>
+                                            </div>
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if segment.avg_days_since_last_order %}
+                                            {{ "%.0f" | format(segment.avg_days_since_last_order) }} jours
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="viewSegmentCustomers('{{ segment.rfm_segment }}')">
+                                            <i class="fas fa-eye me-1"></i>Voir clients
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour voir les clients d'un segment -->
+<div class="modal fade" id="segmentCustomersModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Clients du segment <span id="modalSegmentName"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="segmentCustomersContent">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Chargement...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function calculateAllRFM() {
+    if (!confirm('Recalculer les scores RFM pour tous les clients ? Cette opération peut prendre du temps.')) return;
+    
+    // Afficher un loader
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Calcul en cours...';
+    button.disabled = true;
+    
+    fetch('/customers/rfm/calculate-all', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('success', data.message);
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            showToast('error', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showToast('error', 'Erreur lors du calcul RFM');
+    })
+    .finally(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+function viewSegmentCustomers(segment) {
+    const modal = new bootstrap.Modal(document.getElementById('segmentCustomersModal'));
+    document.getElementById('modalSegmentName').textContent = segment;
+    
+    // Charger les clients du segment
+    fetch(`/customers?rfm_segment=${encodeURIComponent(segment)}&format=json`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.customers) {
+            let html = '<div class="table-responsive">';
+            html += '<table class="table table-sm">';
+            html += '<thead><tr><th>Nom</th><th>Email</th><th>LTV 12m</th><th>Actions</th></tr></thead>';
+            html += '<tbody>';
+            
+            data.customers.forEach(customer => {
+                html += `<tr>
+                    <td>${customer.name}</td>
+                    <td>${customer.email || ''}</td>
+                    <td>${customer.ltv_12m ? customer.ltv_12m.toFixed(2) + '€' : 'N/A'}</td>
+                    <td>
+                        <a href="/customers/${customer.id}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                    </td>
+                </tr>`;
+            });
+            
+            html += '</tbody></table></div>';
+            document.getElementById('segmentCustomersContent').innerHTML = html;
+        } else {
+            document.getElementById('segmentCustomersContent').innerHTML = 
+                '<div class="alert alert-warning">Aucun client trouvé pour ce segment</div>';
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        document.getElementById('segmentCustomersContent').innerHTML = 
+            '<div class="alert alert-danger">Erreur lors du chargement des clients</div>';
+    });
+    
+    modal.show();
+}
+
+function showToast(type, message) {
+    const toastHtml = `
+        <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+    
+    let toastContainer = document.querySelector('.toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+        document.body.appendChild(toastContainer);
+    }
+    
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    const toastElement = toastContainer.lastElementChild;
+    const toast = new bootstrap.Toast(toastElement);
+    toast.show();
+}
+</script>
+{% endblock %}

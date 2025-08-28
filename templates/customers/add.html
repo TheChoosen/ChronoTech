@@ -4,13 +4,19 @@
 
 {% block content %}
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0">
-            <i class="fas fa-user-plus me-2"></i>Ajouter un Client
-        </h1>
-        <a href="{{ url_for('customers.index') }}" class="btn btn-outline-secondary clay-button">
-            <i class="fas fa-arrow-left me-2"></i>Retour à la liste
-        </a>
+    <!-- En-tête avec style claymorphism -->
+    <div class="clay-element p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="h3 mb-0 d-flex align-items-center">
+                <div class="stat-icon bg-primary me-3" style="width: 50px; height: 50px;">
+                    <i class="fas fa-user-plus"></i>
+                </div>
+                <span style="color: var(--text-color);">Ajouter un Client</span>
+            </h1>
+            <a href="{{ url_for('customers.index') }}" class="clay-button">
+                <i class="fas fa-arrow-left me-2"></i>Retour à la liste
+            </a>
+        </div>
     </div>
 
     <form id="customerForm" method="POST" enctype="multipart/form-data">
@@ -18,36 +24,36 @@
             {{ form.hidden_tag() }}
         {% endif %}
         
-        <div class="row">
+        <div class="row g-4">
             <!-- Contenu principal -->
             <div class="col-lg-8">
                 <!-- Informations de base -->
                 <div class="clay-card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-user me-2"></i>Informations de Base</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
+                    <div class="card-body p-4">
+                        <h5 class="mb-4 d-flex align-items-center" style="color: var(--text-color);">
+                            <i class="fas fa-user me-3 text-primary"></i>Informations de Base
+                        </h5>
+                        <div class="row g-3">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    {{ form.name.label(class="form-label") }}
-                                    {{ form.name(class="form-control clay-input", placeholder="Nom complet ou raison sociale") }}
+                                    {{ form.name.label(class="form-label fw-semibold", style="color: var(--text-color);") }}
+                                    {{ form.name(class="clay-input", placeholder="Nom complet ou raison sociale") }}
                                     {% if form.name.errors %}
-                                    <div class="text-danger small">{{ form.name.errors[0] }}</div>
+                                    <div class="text-danger small mt-1">{{ form.name.errors[0] }}</div>
                                     {% endif %}
                                 </div>
                                 
                                 <div class="mb-3">
-                                    {{ form.customer_type.label(class="form-label") }}
-                                    {{ form.customer_type(class="form-select clay-input", onchange="updateFormFields()") }}
+                                    {{ form.customer_type.label(class="form-label fw-semibold", style="color: var(--text-color);") }}
+                                    {{ form.customer_type(class="clay-input", onchange="updateFormFields()") }}
                                     {% if form.customer_type.errors %}
-                                    <div class="text-danger small">{{ form.customer_type.errors[0] }}</div>
+                                    <div class="text-danger small mt-1">{{ form.customer_type.errors[0] }}</div>
                                     {% endif %}
                                 </div>
 
                                 <div class="mb-3" id="companyField" style="display: none;">
-                                    {{ form.company.label(class="form-label") }}
-                                    {{ form.company(class="form-control clay-input", placeholder="Nom de l'entreprise") }}
+                                    {{ form.company.label(class="form-label fw-semibold", style="color: var(--text-color);") }}
+                                    {{ form.company(class="clay-input", placeholder="Nom de l'entreprise") }}
                                     {% if form.company.errors %}
                                     <div class="text-danger small">{{ form.company.errors[0] }}</div>
                                     {% endif %}

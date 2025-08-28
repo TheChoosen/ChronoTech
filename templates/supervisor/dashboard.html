@@ -1,0 +1,1074 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Superviseur - ChronoTech{% endblock %}
+
+{% block head %}
+<link href="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.css" rel="stylesheet">
+<style>
+/* Dashboard Superviseur - CSS Avancé */
+.supervisor-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    margin: -1rem -1rem 2rem -1rem;
+    border-radius: 0 0 30px 30px;
+    box-shadow: 0 4px 30px rgba(0,0,0,0.1);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 1.5rem;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.2);
+    transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: bold;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.filters-bar {
+    background: white;
+    border-radius: 20px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.filter-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    align-items: end;
+}
+
+.kanban-board {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+    min-height: 600px;
+}
+
+.kanban-column {
+    background: #f8f9fa;
+    border-radius: 20px;
+    padding: 1rem;
+    min-height: 500px;
+}
+
+.column-header {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.column-title {
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.task-count {
+    background: #667eea;
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.kanban-tasks {
+    min-height: 400px;
+    padding: 0.5rem 0;
+}
+
+.task-card {
+    background: white;
+    border-radius: 15px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    cursor: move;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    border-left: 4px solid #667eea;
+    position: relative;
+}
+
+.task-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.task-card.dragging {
+    opacity: 0.5;
+    transform: rotate(5deg);
+}
+
+.task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 0.75rem;
+}
+
+.task-title {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 0.9rem;
+    line-height: 1.3;
+    margin: 0;
+}
+
+.priority-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.priority-urgent { background: #e74c3c; }
+.priority-high { background: #f39c12; }
+.priority-medium { background: #3498db; }
+.priority-low { background: #95a5a6; }
+
+.task-meta {
+    font-size: 0.8rem;
+    color: #7f8c8d;
+    margin-bottom: 0.5rem;
+}
+
+.task-customer {
+    font-weight: 500;
+    color: #2c3e50;
+    margin-bottom: 0.25rem;
+}
+
+.task-vehicle {
+    font-size: 0.8rem;
+    color: #7f8c8d;
+}
+
+.task-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #ecf0f1;
+}
+
+.technician-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.task-timer {
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+    color: #2ecc71;
+    font-weight: 600;
+}
+
+.task-actions {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.task-action-btn {
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 50%;
+    background: #ecf0f1;
+    color: #7f8c8d;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    transition: all 0.2s ease;
+}
+
+.task-action-btn:hover {
+    background: #667eea;
+    color: white;
+    transform: scale(1.1);
+}
+
+/* Status specific styling */
+.column-pending .column-header { border-left: 4px solid #f39c12; }
+.column-assigned .column-header { border-left: 4px solid #3498db; }
+.column-in_progress .column-header { border-left: 4px solid #2ecc71; }
+.column-done .column-header { border-left: 4px solid #27ae60; }
+
+.task-card.status-pending { border-left-color: #f39c12; }
+.task-card.status-assigned { border-left-color: #3498db; }
+.task-card.status-in_progress { border-left-color: #2ecc71; }
+.task-card.status-done { border-left-color: #27ae60; }
+
+/* Drag & Drop feedback */
+.sortable-ghost {
+    opacity: 0.3;
+}
+
+.sortable-chosen {
+    transform: scale(1.05);
+    box-shadow: 0 6px 30px rgba(0,0,0,0.2);
+}
+
+.drop-zone-active {
+    background: rgba(102, 126, 234, 0.1);
+    border: 2px dashed #667eea;
+}
+
+/* Workload section */
+.workload-section {
+    background: white;
+    border-radius: 20px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.workload-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1rem;
+}
+
+.technician-card {
+    background: #f8f9fa;
+    border-radius: 15px;
+    padding: 1rem;
+    border-left: 4px solid #667eea;
+}
+
+.technician-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.technician-name {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.technician-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    text-align: center;
+}
+
+.tech-stat {
+    background: white;
+    padding: 0.5rem;
+    border-radius: 10px;
+}
+
+.tech-stat-number {
+    font-weight: bold;
+    color: #667eea;
+    display: block;
+}
+
+.tech-stat-label {
+    font-size: 0.7rem;
+    color: #7f8c8d;
+}
+
+/* Responsive design */
+@media (max-width: 1200px) {
+    .kanban-board {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .kanban-board {
+        grid-template-columns: 1fr;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .filter-group {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Modal customization */
+.modal-content {
+    border-radius: 20px;
+    border: none;
+}
+
+.modal-header {
+    border-bottom: 1px solid #ecf0f1;
+    border-radius: 20px 20px 0 0;
+}
+
+.modal-footer {
+    border-top: 1px solid #ecf0f1;
+    border-radius: 0 0 20px 20px;
+}
+
+/* Loading states */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.8);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Toast notifications */
+.toast-container {
+    position: fixed;
+    top: 2rem;
+    right: 2rem;
+    z-index: 9998;
+}
+
+.toast {
+    background: white;
+    border-radius: 15px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 0.5rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    border-left: 4px solid #2ecc71;
+    animation: slideInRight 0.3s ease;
+    min-width: 300px;
+}
+
+.toast.error {
+    border-left-color: #e74c3c;
+}
+
+.toast.warning {
+    border-left-color: #f39c12;
+}
+
+@keyframes slideInRight {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header avec statistiques -->
+    <div class="supervisor-header">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h3 class="mb-1">Dashboard Superviseur</h3>
+                <p class="mb-0 opacity-75">Vue d'ensemble et gestion des tâches</p>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-light btn-sm rounded-pill" onclick="refreshDashboard()">
+                    <i class="fas fa-sync-alt me-1"></i>Actualiser
+                </button>
+                <a href="{{ url_for('supervisor.analytics') }}" class="btn btn-light btn-sm rounded-pill">
+                    <i class="fas fa-chart-bar me-1"></i>Analytics
+                </a>
+                <a href="{{ url_for('supervisor.planning') }}" class="btn btn-light btn-sm rounded-pill">
+                    <i class="fas fa-calendar me-1"></i>Planning
+                </a>
+            </div>
+        </div>
+        
+        <!-- Statistiques globales -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-number">{{ stats.total_tasks or 0 }}</span>
+                <div class="stat-label">Tâches Total</div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">{{ stats.active_interventions or 0 }}</span>
+                <div class="stat-label">Interventions Actives</div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">{{ stats.urgent_count or 0 }}</span>
+                <div class="stat-label">Urgences</div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">{{ (stats.avg_duration_minutes or 0)|round|int }}min</span>
+                <div class="stat-label">Durée Moyenne</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="filters-bar">
+        <form id="filtersForm" method="GET">
+            <div class="filter-group">
+                <div>
+                    <label class="form-label">Technicien</label>
+                    <select name="technician" class="form-select" onchange="applyFilters()">
+                        <option value="all" {{ 'selected' if current_filters.technician == 'all' }}>Tous les techniciens</option>
+                        {% for tech in technicians %}
+                        <option value="{{ tech.id }}" {{ 'selected' if current_filters.technician == tech.id|string }}>
+                            {{ tech.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Priorité</label>
+                    <select name="priority" class="form-select" onchange="applyFilters()">
+                        <option value="all" {{ 'selected' if current_filters.priority == 'all' }}>Toutes priorités</option>
+                        <option value="urgent" {{ 'selected' if current_filters.priority == 'urgent' }}>Urgent</option>
+                        <option value="high" {{ 'selected' if current_filters.priority == 'high' }}>Élevée</option>
+                        <option value="medium" {{ 'selected' if current_filters.priority == 'medium' }}>Moyenne</option>
+                        <option value="low" {{ 'selected' if current_filters.priority == 'low' }}>Faible</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Période</label>
+                    <select name="date" class="form-select" onchange="applyFilters()">
+                        <option value="today" {{ 'selected' if current_filters.date == 'today' }}>Aujourd'hui</option>
+                        <option value="week" {{ 'selected' if current_filters.date == 'week' }}>Cette semaine</option>
+                        <option value="month" {{ 'selected' if current_filters.date == 'month' }}>Ce mois</option>
+                        <option value="all" {{ 'selected' if current_filters.date == 'all' }}>Toutes</option>
+                    </select>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-outline-secondary w-100" onclick="resetFilters()">
+                        <i class="fas fa-times me-1"></i>Reset
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Kanban Board -->
+    <div class="kanban-board">
+        <!-- Colonne En Attente -->
+        <div class="kanban-column column-pending">
+            <div class="column-header">
+                <h6 class="column-title">En Attente</h6>
+                <span class="task-count">{{ kanban_data.pending|length }}</span>
+            </div>
+            <div class="kanban-tasks" id="pending-tasks" data-status="pending">
+                {% for task in kanban_data.pending %}
+                {% include 'supervisor/_task_card.html' %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Colonne Assignée -->
+        <div class="kanban-column column-assigned">
+            <div class="column-header">
+                <h6 class="column-title">Assignées</h6>
+                <span class="task-count">{{ kanban_data.assigned|length }}</span>
+            </div>
+            <div class="kanban-tasks" id="assigned-tasks" data-status="assigned">
+                {% for task in kanban_data.assigned %}
+                {% include 'supervisor/_task_card.html' %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Colonne En Cours -->
+        <div class="kanban-column column-in_progress">
+            <div class="column-header">
+                <h6 class="column-title">En Cours</h6>
+                <span class="task-count">{{ kanban_data.in_progress|length }}</span>
+            </div>
+            <div class="kanban-tasks" id="in_progress-tasks" data-status="in_progress">
+                {% for task in kanban_data.in_progress %}
+                {% include 'supervisor/_task_card.html' %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Colonne Terminées -->
+        <div class="kanban-column column-done">
+            <div class="column-header">
+                <h6 class="column-title">Terminées</h6>
+                <span class="task-count">{{ kanban_data.done|length }}</span>
+            </div>
+            <div class="kanban-tasks" id="done-tasks" data-status="done">
+                {% for task in kanban_data.done %}
+                {% include 'supervisor/_task_card.html' %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Charge de travail des techniciens -->
+    <div class="workload-section">
+        <h5 class="mb-3">
+            <i class="fas fa-users me-2"></i>Charge de Travail par Technicien
+        </h5>
+        <div class="workload-grid">
+            {% for tech in workload_stats %}
+            <div class="technician-card">
+                <div class="technician-header">
+                    <div class="technician-name">{{ tech.name }}</div>
+                    <div class="text-muted small">{{ tech.total_minutes // 60 }}h{{ '%02d'|format(tech.total_minutes % 60) }}</div>
+                </div>
+                <div class="technician-stats">
+                    <div class="tech-stat">
+                        <span class="tech-stat-number">{{ tech.task_count }}</span>
+                        <div class="tech-stat-label">Tâches</div>
+                    </div>
+                    <div class="tech-stat">
+                        <span class="tech-stat-number">{{ tech.active_count }}</span>
+                        <div class="tech-stat-label">Actives</div>
+                    </div>
+                    <div class="tech-stat">
+                        <span class="tech-stat-number">{{ tech.completed_count }}</span>
+                        <div class="tech-stat-label">Terminées</div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal détails tâche -->
+<div class="modal fade" id="taskModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Détails de la Tâche</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="taskModalBody">
+                <div class="loading-spinner mx-auto"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown">
+                        Actions
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" onclick="reassignTask()">
+                            <i class="fas fa-user-cog me-2"></i>Réassigner
+                        </a></li>
+                        <li><a class="dropdown-item" href="#" onclick="changeTaskPriority()">
+                            <i class="fas fa-flag me-2"></i>Priorité
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="#" onclick="cancelTask()">
+                            <i class="fas fa-ban me-2"></i>Annuler
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+let sortableInstances = [];
+let currentTaskId = null;
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+    initializeSortable();
+    setupEventListeners();
+    updateTaskTimers();
+    setInterval(updateTaskTimers, 60000); // Update every minute
+});
+
+function initializeSortable() {
+    const columns = ['pending', 'assigned', 'in_progress', 'done'];
+    
+    columns.forEach(status => {
+        const container = document.getElementById(`${status}-tasks`);
+        if (container) {
+            const sortable = new Sortable(container, {
+                group: 'kanban',
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                dragClass: 'sortable-drag',
+                onStart: function(evt) {
+                    document.body.classList.add('dragging');
+                    evt.item.classList.add('dragging');
+                },
+                onEnd: function(evt) {
+                    document.body.classList.remove('dragging');
+                    evt.item.classList.remove('dragging');
+                    
+                    // Check if actually moved
+                    if (evt.from !== evt.to || evt.oldIndex !== evt.newIndex) {
+                        handleTaskMove(evt);
+                    }
+                },
+                onMove: function(evt) {
+                    // Add visual feedback
+                    const related = evt.related;
+                    const from = evt.from;
+                    const to = evt.to;
+                    
+                    if (from !== to) {
+                        to.classList.add('drop-zone-active');
+                        setTimeout(() => to.classList.remove('drop-zone-active'), 100);
+                    }
+                }
+            });
+            
+            sortableInstances.push(sortable);
+        }
+    });
+}
+
+function handleTaskMove(evt) {
+    const taskCard = evt.item;
+    const taskId = taskCard.dataset.taskId;
+    const newStatus = evt.to.dataset.status;
+    const oldStatus = evt.from.dataset.status;
+    
+    if (oldStatus === newStatus) return;
+    
+    showLoading();
+    
+    // Update task status
+    fetch('/supervisor/update_task_status', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            task_id: parseInt(taskId),
+            status: newStatus
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        
+        if (data.success) {
+            // Update task card visual state
+            taskCard.className = taskCard.className.replace(/status-\w+/, `status-${newStatus}`);
+            
+            // Update column counters
+            updateColumnCounters();
+            
+            showToast(`Tâche déplacée vers "${getStatusLabel(newStatus)}"`, 'success');
+        } else {
+            // Revert move
+            const originalContainer = document.getElementById(`${oldStatus}-tasks`);
+            originalContainer.appendChild(taskCard);
+            showToast(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        // Revert move
+        const originalContainer = document.getElementById(`${oldStatus}-tasks`);
+        originalContainer.appendChild(taskCard);
+        showToast('Erreur de connexion', 'error');
+    });
+}
+
+function updateColumnCounters() {
+    const columns = ['pending', 'assigned', 'in_progress', 'done'];
+    
+    columns.forEach(status => {
+        const container = document.getElementById(`${status}-tasks`);
+        const counter = container.closest('.kanban-column').querySelector('.task-count');
+        const count = container.querySelectorAll('.task-card').length;
+        counter.textContent = count;
+    });
+}
+
+function getStatusLabel(status) {
+    const labels = {
+        'pending': 'En Attente',
+        'assigned': 'Assignées', 
+        'in_progress': 'En Cours',
+        'done': 'Terminées'
+    };
+    return labels[status] || status;
+}
+
+function setupEventListeners() {
+    // Task card clicks
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.task-card') && !e.target.closest('.task-action-btn')) {
+            const taskCard = e.target.closest('.task-card');
+            const taskId = taskCard.dataset.taskId;
+            showTaskDetails(taskId);
+        }
+    });
+    
+    // Quick action buttons
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.task-action-btn')) {
+            e.stopPropagation();
+            const btn = e.target.closest('.task-action-btn');
+            const action = btn.dataset.action;
+            const taskCard = btn.closest('.task-card');
+            const taskId = taskCard.dataset.taskId;
+            
+            handleQuickAction(action, taskId, taskCard);
+        }
+    });
+}
+
+function handleQuickAction(action, taskId, taskCard) {
+    switch (action) {
+        case 'assign':
+            showAssignModal(taskId);
+            break;
+        case 'start':
+            updateTaskStatus(taskId, 'in_progress');
+            break;
+        case 'complete':
+            updateTaskStatus(taskId, 'done');
+            break;
+        case 'details':
+            showTaskDetails(taskId);
+            break;
+    }
+}
+
+function showTaskDetails(taskId) {
+    currentTaskId = taskId;
+    const modal = new bootstrap.Modal(document.getElementById('taskModal'));
+    const modalBody = document.getElementById('taskModalBody');
+    
+    modalBody.innerHTML = '<div class="loading-spinner mx-auto"></div>';
+    modal.show();
+    
+    fetch(`/supervisor/task_details/${taskId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                renderTaskDetails(data.task, data.recent_notes);
+            } else {
+                modalBody.innerHTML = `<div class="alert alert-danger">${data.message}</div>`;
+            }
+        })
+        .catch(error => {
+            modalBody.innerHTML = '<div class="alert alert-danger">Erreur de chargement</div>';
+        });
+}
+
+function renderTaskDetails(task, notes) {
+    const modalBody = document.getElementById('taskModalBody');
+    
+    const priorityColors = {
+        'urgent': 'danger',
+        'high': 'warning', 
+        'medium': 'info',
+        'low': 'secondary'
+    };
+    
+    const statusColors = {
+        'pending': 'warning',
+        'assigned': 'info',
+        'in_progress': 'success',
+        'done': 'dark'
+    };
+    
+    modalBody.innerHTML = `
+        <div class="row">
+            <div class="col-md-8">
+                <h6 class="mb-3">${task.title}</h6>
+                
+                <div class="mb-3">
+                    <strong>Bon de travail:</strong> ${task.claim_number} - ${task.wo_title}
+                </div>
+                
+                <div class="mb-3">
+                    <strong>Client:</strong> ${task.customer_name}
+                    ${task.customer_phone ? `<a href="tel:${task.customer_phone}" class="ms-2"><i class="fas fa-phone"></i></a>` : ''}
+                </div>
+                
+                ${task.make && task.model ? `
+                <div class="mb-3">
+                    <strong>Véhicule:</strong> ${task.make} ${task.model}
+                    ${task.license_plate ? ` - ${task.license_plate}` : ''}
+                </div>
+                ` : ''}
+                
+                ${task.description ? `
+                <div class="mb-3">
+                    <strong>Description:</strong><br>
+                    <p class="text-muted">${task.description}</p>
+                </div>
+                ` : ''}
+                
+                ${notes.length > 0 ? `
+                <div class="mb-3">
+                    <strong>Notes récentes:</strong>
+                    <div class="mt-2">
+                        ${notes.map(note => `
+                            <div class="border-start border-primary ps-3 mb-2">
+                                <small class="text-muted">${new Date(note.created_at).toLocaleString()} - ${note.author_name}</small>
+                                <div>${note.note}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                ` : ''}
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title">Informations</h6>
+                        
+                        <div class="mb-2">
+                            <strong>Priorité:</strong><br>
+                            <span class="badge bg-${priorityColors[task.priority]}">${task.priority.toUpperCase()}</span>
+                        </div>
+                        
+                        <div class="mb-2">
+                            <strong>Statut:</strong><br>
+                            <span class="badge bg-${statusColors[task.status]}">${getStatusLabel(task.status)}</span>
+                        </div>
+                        
+                        <div class="mb-2">
+                            <strong>Technicien:</strong><br>
+                            ${task.technician_name || '<em>Non assigné</em>'}
+                        </div>
+                        
+                        ${task.scheduled_start ? `
+                        <div class="mb-2">
+                            <strong>Planifié:</strong><br>
+                            ${new Date(task.scheduled_start).toLocaleString()}
+                        </div>
+                        ` : ''}
+                        
+                        ${task.intervention_started ? `
+                        <div class="mb-2">
+                            <strong>Démarrée:</strong><br>
+                            ${new Date(task.intervention_started).toLocaleString()}
+                        </div>
+                        ` : ''}
+                        
+                        <div class="mb-2">
+                            <strong>Créée:</strong><br>
+                            ${new Date(task.created_at).toLocaleString()}
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="text-center">
+                            <div class="row">
+                                <div class="col">
+                                    <div class="h6 text-primary">${task.notes_count || 0}</div>
+                                    <small class="text-muted">Notes</small>
+                                </div>
+                                <div class="col">
+                                    <div class="h6 text-success">${task.media_count || 0}</div>
+                                    <small class="text-muted">Médias</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function updateTaskTimers() {
+    document.querySelectorAll('.task-timer').forEach(timer => {
+        const startTime = new Date(timer.dataset.startTime);
+        const now = new Date();
+        const elapsed = Math.floor((now - startTime) / 1000 / 60);
+        const hours = Math.floor(elapsed / 60);
+        const minutes = elapsed % 60;
+        timer.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    });
+}
+
+function applyFilters() {
+    document.getElementById('filtersForm').submit();
+}
+
+function resetFilters() {
+    window.location.href = '{{ url_for("supervisor.supervisor_dashboard") }}';
+}
+
+function refreshDashboard() {
+    showLoading();
+    window.location.reload();
+}
+
+function showLoading() {
+    document.getElementById('loadingOverlay').style.display = 'flex';
+}
+
+function hideLoading() {
+    document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center">
+            <span>${message}</span>
+            <button class="btn btn-sm btn-link p-0 ms-2" onclick="this.parentElement.parentElement.remove()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    
+    document.getElementById('toastContainer').appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 5000);
+}
+
+// Quick actions from modal
+function reassignTask() {
+    if (!currentTaskId) return;
+    
+    const technicians = {{ technicians|safe }};
+    let options = '<option value="">Désassigner</option>';
+    technicians.forEach(tech => {
+        options += `<option value="${tech.id}">${tech.name}</option>`;
+    });
+    
+    const html = `
+        <div class="mb-3">
+            <label class="form-label">Sélectionner un technicien</label>
+            <select class="form-select" id="newTechnician">
+                ${options}
+            </select>
+        </div>
+        <button class="btn btn-primary" onclick="performReassign()">Confirmer</button>
+    `;
+    
+    document.getElementById('taskModalBody').innerHTML = html;
+}
+
+function performReassign() {
+    const technicianId = document.getElementById('newTechnician').value;
+    
+    fetch('/supervisor/assign_task', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            task_id: currentTaskId,
+            technician_id: technicianId || null
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message, 'success');
+            bootstrap.Modal.getInstance(document.getElementById('taskModal')).hide();
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            showToast(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        showToast('Erreur de connexion', 'error');
+    });
+}
+
+function updateTaskStatus(taskId, newStatus) {
+    showLoading();
+    
+    fetch('/supervisor/update_task_status', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            task_id: taskId,
+            status: newStatus
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        
+        if (data.success) {
+            showToast(data.message, 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            showToast(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        showToast('Erreur de connexion', 'error');
+    });
+}
+</script>
+{% endblock %}

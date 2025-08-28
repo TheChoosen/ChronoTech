@@ -12,9 +12,13 @@
             <a href="{{ url_for('work_orders.edit_work_order', id=work_order.id) }}" class="btn btn-outline-primary clay-button">
                 <i class="fas fa-edit me-2"></i>Modifier
             </a>
-                        <a href="{{ url_for('work_orders.list_work_orders') }}" class="btn btn-outline-secondary clay-button">
+            <a href="{{ url_for('work_orders.list_work_orders') }}" class="btn btn-outline-secondary clay-button">
                 <i class="fas fa-arrow-left me-2"></i>Retour à la liste
             </a>
+            
+            <!-- Boutons PDF Sprint 3 -->
+            {% include 'components/pdf_buttons.html' %}
+            
             <div class="dropdown">
                 <button class="btn btn-outline-secondary clay-button dropdown-toggle" type="button" 
                         data-bs-toggle="dropdown">

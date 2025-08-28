@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explorateur de Styles Claymorphism</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Configuration de base avec des variables CSS pour un changement de thème facile */
+        :root {
+            --bg-color: #e0e5ec;
+            --text-color: #3d3d3d;
+            --primary-color: #6c63ff;
+            --secondary-color: #e0e5ec;
+            --accent-color: #10b981;
+            --font-main: 'Poppins', sans-serif;
+            --border-radius: 20px;
+            --shadow-light: #ffffff;
+            --shadow-dark: #a3b1c6;
+            /* --- NIVEAUX D'ÉLÉVATION --- */
+            --shadow-level-1: 8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light); /* Base */
+            --shadow-level-2: 12px 12px 24px var(--shadow-dark), -12px -12px 24px var(--shadow-light); /* Survol */
+            --shadow-level-3: 20px 20px 40px var(--shadow-dark), -20px -20px 40px var(--shadow-light); /* Modal */
+            --shadow-pressed: inset 8px 8px 16px var(--shadow-dark), inset -8px -8px 16px var(--shadow-light);
+        }
+
+        /* Thème Claymorphism Doux (Défaut) */
+        .theme-clay-soft {
+            --bg-color: #e0e5ec;
+            --text-color: #5a677a;
+            --primary-color: #5a67ff;
+            --secondary-color: #e0e5ec;
+            --shadow-light: #ffffff;
+            --shadow-dark: #a3b1c6;
+            --border-radius: 20px;
+        }
+
+        /* Application des variables */
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-main);
+            transition: background-color 0.3s ease, color 0.3s ease;
+            position: relative;
+        }
+        
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+            filter: url(#noise-filter);
+            opacity: 0.08;
+        }
+
+        .text-primary { color: var(--primary-color); }
+        .rounded-custom { border-radius: var(--border-radius); }
+        
+        .clay-element {
+            background: var(--secondary-color);
+            box-shadow: var(--shadow-level-1);
+            transition: box-shadow 0.3s ease, transform 0.3s ease;
+        }
+        
+        .clay-element:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-level-2);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: #ffffff;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-level-1);
+            transition: all 0.2s ease-in-out;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+            box-shadow: var(--shadow-pressed);
+        }
+
+        .style-btn.active {
+            transform: scale(1.05);
+            box-shadow: var(--shadow-pressed);
+            z-index: 10;
+        }
+
+        .clay-input {
+            background: var(--secondary-color);
+            box-shadow: var(--shadow-pressed);
+            transition: box-shadow 0.3s ease;
+            border: none;
+            color: var(--text-color);
+            width: 100%;
+            padding: 1rem;
+        }
+        .clay-input:focus {
+            box-shadow: var(--shadow-level-1);
+            outline: none;
+        }
+        
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out, padding 0.5s ease-in-out;
+            padding: 0 1.5rem;
+        }
+        .faq-item.active .faq-answer {
+            max-height: 200px;
+            padding: 1.5rem;
+        }
+        .faq-item.active .faq-icon {
+            transform: rotate(45deg);
+        }
+        .faq-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            box-shadow: var(--shadow-level-3);
+            width: 90%;
+            max-width: 500px;
+            padding: 2rem;
+            position: relative;
+        }
+        .modal-content:hover {
+             transform: translateY(0);
+             box-shadow: var(--shadow-level-3);
+        }
+        .close-modal-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* --- BONIFICATION: Styles pour les états actifs --- */
+        .nav-link.active {
+            box-shadow: var(--shadow-pressed);
+            color: var(--primary-color);
+        }
+        .toggle-label {
+            width: 60px;
+            height: 30px;
+            display: block;
+            border-radius: 15px;
+            position: relative;
+        }
+        .toggle-label::after {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            top: 4px;
+            left: 4px;
+            background: var(--primary-color);
+            box-shadow: var(--shadow-level-1);
+            transition: all 0.3s ease;
+        }
+        #toggle-switch:checked + .toggle-label {
+            box-shadow: var(--shadow-pressed);
+        }
+        #toggle-switch:checked + .toggle-label::after {
+            transform: translateX(30px);
+            background: var(--accent-color);
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body class="theme-clay-soft">
+
+    <svg style="position:absolute; width:0; height:0; overflow:hidden;">
+        <filter id="noise-filter">
+            <feTurbulence 
+                type="fractalNoise" 
+                baseFrequency="0.8" 
+                numOctaves="4" 
+                stitchTiles="stitch"/>
+        </filter>
+    </svg>
+
+    <!-- Panneau de sélection de style -->
+    <div class="sticky top-0 z-50 p-4 mb-8">
+        <div class="container mx-auto flex flex-wrap justify-center items-center gap-4 clay-element rounded-custom p-4">
+            <h2 class="text-lg font-bold mr-4 w-full text-center sm:w-auto sm:text-left">Variations Claymorphism :</h2>
+            <button id="btn-soft" class="style-btn active px-4 py-2 text-sm font-semibold clay-element rounded-custom">Doux</button>
+            <button id="btn-pressed" class="style-btn px-4 py-2 text-sm font-semibold clay-element rounded-custom">Pressé</button>
+            <button id="btn-dark" class="style-btn px-4 py-2 text-sm font-semibold clay-element rounded-custom">Sombre</button>
+            <button id="btn-colorful" class="style-btn px-4 py-2 text-sm font-semibold clay-element rounded-custom">Coloré</button>
+        </div>
+    </div>
+
+    <!-- Contenu de la page de démonstration -->
+    <div class="container mx-auto px-6 py-8">
+
+        <header class="flex justify-between items-center py-4">
+            <h1 class="text-2xl font-bold text-primary">ClayLogo</h1>
+            <nav class="hidden md:flex space-x-2 font-semibold">
+                <a href="#" class="nav-link active px-4 py-2 rounded-custom transition-all duration-200">Accueil</a>
+                <a href="#" class="nav-link px-4 py-2 rounded-custom transition-all duration-200">Services</a>
+                <a href="#" class="nav-link px-4 py-2 rounded-custom transition-all duration-200">Contact</a>
+            </nav>
+        </header>
+
+        <main class="text-center my-16 md:my-24">
+            <h2 class="text-4xl md:text-6xl font-bold tracking-tight leading-tight mb-4">
+                Explorez le Design <span class="text-primary">Organique</span>
+            </h2>
+            <p class="max-w-2xl mx-auto text-lg md:text-xl opacity-80 mb-8">
+                Chaque style offre une sensation tactile unique. Trouvez celle qui correspond à votre projet.
+            </p>
+            <div class="flex justify-center items-center gap-4">
+                <button class="btn-primary font-bold py-4 px-10 text-lg">Découvrir</button>
+                <button id="open-modal-btn" class="clay-element font-bold py-4 px-10 text-lg">Ouvrir Pop-up</button>
+            </div>
+        </main>
+        
+        <!-- ... (Le reste du contenu HTML reste identique) ... -->
+        
+        <div class="mb-24">
+            <h3 class="text-3xl font-bold text-center mb-12">Dernières Nouvelles</h3>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="clay-element rounded-custom overflow-hidden">
+                    <img src="https://placehold.co/600x400/6c63ff/FFFFFF?text=Article+1" alt="Image article 1" class="w-full h-48 object-cover">
+                    <div class="p-6">
+                        <h4 class="font-bold text-xl mb-2">Lancement de notre V2</h4>
+                        <p class="opacity-70">Découvrez les nouvelles fonctionnalités qui vont changer votre quotidien.</p>
+                    </div>
+                </div>
+                <div class="clay-element rounded-custom overflow-hidden">
+                    <img src="https://placehold.co/600x400/ff6b81/FFFFFF?text=Article+2" alt="Image article 2" class="w-full h-48 object-cover">
+                    <div class="p-6">
+                        <h4 class="font-bold text-xl mb-2">Le Design en 2025</h4>
+                        <p class="opacity-70">Les tendances à ne pas manquer pour des interfaces réussies.</p>
+                    </div>
+                </div>
+                <div class="clay-element rounded-custom overflow-hidden">
+                    <img src="https://placehold.co/600x400/5a67ff/FFFFFF?text=Article+3" alt="Image article 3" class="w-full h-48 object-cover">
+                    <div class="p-6">
+                        <h4 class="font-bold text-xl mb-2">Partenariat Stratégique</h4>
+                        <p class="opacity-70">Nous nous associons pour vous offrir encore plus de possibilités.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-24">
+            <h3 class="text-3xl font-bold text-center mb-12">Nos Offres</h3>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="clay-element p-8 rounded-custom text-center flex flex-col">
+                    <h4 class="text-2xl font-bold mb-2">Basique</h4>
+                    <p class="text-4xl font-bold mb-4 text-primary">19€</p>
+                    <ul class="space-y-2 opacity-70 mb-8 flex-grow">
+                        <li>1 Projet</li>
+                        <li>Analyses de base</li>
+                        <li>Support par email</li>
+                    </ul>
+                    <button class="btn-primary font-bold py-3 px-8 w-full">Choisir</button>
+                </div>
+                <div class="clay-element p-8 rounded-custom text-center flex flex-col transform md:scale-105">
+                     <h4 class="text-2xl font-bold mb-2">Pro</h4>
+                    <p class="text-4xl font-bold mb-4 text-primary">49€</p>
+                    <ul class="space-y-2 opacity-70 mb-8 flex-grow">
+                        <li>10 Projets</li>
+                        <li>Analyses avancées</li>
+                        <li>Support prioritaire</li>
+                        <li>Intégrations API</li>
+                    </ul>
+                    <button class="btn-primary font-bold py-3 px-8 w-full">Choisir</button>
+                </div>
+                <div class="clay-element p-8 rounded-custom text-center flex flex-col">
+                     <h4 class="text-2xl font-bold mb-2">Entreprise</h4>
+                    <p class="text-4xl font-bold mb-4 text-primary">99€</p>
+                    <ul class="space-y-2 opacity-70 mb-8 flex-grow">
+                        <li>Projets illimités</li>
+                        <li>Analyses complètes</li>
+                        <li>Support 24/7</li>
+                        <li>Accès en avant-première</li>
+                    </ul>
+                    <button class="btn-primary font-bold py-3 px-8 w-full">Choisir</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="max-w-2xl mx-auto mb-24">
+            <h3 class="text-3xl font-bold text-center mb-8">Laissez-nous un message</h3>
+            <div class="clay-element p-8 md:p-12 rounded-custom">
+                <form class="space-y-6">
+                    <div>
+                        <label for="name" class="block mb-2 font-semibold">Nom</label>
+                        <input type="text" id="name" class="clay-input rounded-custom">
+                    </div>
+                    <div>
+                        <label for="email" class="block mb-2 font-semibold">Email</label>
+                        <input type="email" id="email" class="clay-input rounded-custom">
+                    </div>
+                    <div>
+                        <label for="message" class="block mb-2 font-semibold">Message</label>
+                        <textarea id="message" rows="4" class="clay-input rounded-custom"></textarea>
+                    </div>
+                    <!-- NOUVEAU: Interrupteur (Toggle) -->
+                    <div class="flex items-center justify-between pt-2">
+                        <label for="toggle-switch" class="font-semibold opacity-80">Recevoir notre newsletter</label>
+                        <div>
+                            <input type="checkbox" id="toggle-switch" class="hidden">
+                            <label for="toggle-switch" class="toggle-label clay-element cursor-pointer"></label>
+                        </div>
+                    </div>
+                    <div class="text-center pt-4">
+                        <button type="submit" class="btn-primary font-bold py-3 px-8 text-lg">Envoyer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <footer class="clay-element rounded-custom p-10">
+            <p class="text-center opacity-60 mt-10 pt-8 border-t" style="border-color: rgba(0,0,0,0.1)">&copy; 2024 Claymorphism Explorer. Tous droits réservés.</p>
+        </footer>
+
+    </div>
+
+    <!-- Fenêtre modale -->
+    <div id="modal-overlay" class="modal-overlay">
+        <div class="modal-content clay-element rounded-custom">
+            <button id="close-modal-btn" class="close-modal-btn clay-element rounded-custom">×</button>
+            <h3 class="text-2xl font-bold mb-4 text-center">Fenêtre Pop-up</h3>
+            <p class="opacity-80 text-center">Cet élément utilise une ombre de niveau 3 pour se démarquer nettement du reste de la page, créant une hiérarchie visuelle claire.</p>
+        </div>
+    </div>
+
+    <script>
+        // Script pour le changement de thème
+        const body = document.querySelector('body');
+        const buttons = document.querySelectorAll('.style-btn');
+
+        // Script pour la FAQ
+        const faqContainer = document.getElementById('faq-container');
+        if (faqContainer) {
+            faqContainer.addEventListener('click', function(e) {
+                const questionHeader = e.target.closest('.faq-question');
+                if (!questionHeader) return;
+                
+                const faqItem = questionHeader.parentElement;
+                const currentlyActive = document.querySelector('.faq-item.active');
+
+                if (currentlyActive && currentlyActive !== faqItem) {
+                    currentlyActive.classList.remove('active');
+                }
+                
+                faqItem.classList.toggle('active');
+            });
+        }
+
+        // Script pour la fenêtre modale
+        const openModalBtn = document.getElementById('open-modal-btn');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const modalOverlay = document.getElementById('modal-overlay');
+
+        if(openModalBtn && closeModalBtn && modalOverlay) {
+            openModalBtn.addEventListener('click', () => {
+                modalOverlay.classList.add('active');
+            });
+
+            closeModalBtn.addEventListener('click', () => {
+                modalOverlay.classList.remove('active');
+            });
+
+            modalOverlay.addEventListener('click', (e) => {
+                if (e.target === modalOverlay) {
+                    modalOverlay.classList.remove('active');
+                }
+            });
+        }
+
+        // NOUVEAU: Script pour les onglets de navigation
+        const navLinks = document.querySelectorAll('.nav-link');
+        if (navLinks.length > 0) {
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault(); // Empêche le rechargement de la page
+                    navLinks.forEach(l => l.classList.remove('active'));
+                    e.currentTarget.classList.add('active');
+                });
+            });
+        }
+    </script>
+
+</body>
+</html>

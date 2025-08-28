@@ -1,0 +1,712 @@
+{% extends "base.html" %}
+
+{% block title %}Intervention #{{ intervention.id }} - ChronoTech{% endblock %}
+
+{% block head %}
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<style>
+/* Mobile-First CSS pour détails intervention */
+.mobile-intervention-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem;
+    margin: -1rem -1rem 1rem -1rem;
+    border-radius: 0 0 20px 20px;
+}
+
+.intervention-status {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-top: 0.5rem;
+}
+
+.status-active {
+    background: #2ecc71;
+    animation: pulse 2s infinite;
+}
+
+.status-completed {
+    background: #27ae60;
+}
+
+.status-pending {
+    background: #f39c12;
+}
+
+.details-section {
+    background: white;
+    border-radius: 20px;
+    margin-bottom: 1rem;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.section-header {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-bottom: 1px solid #e9ecef;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.section-content {
+    padding: 1rem;
+}
+
+.customer-info {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.info-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+}
+
+.info-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+}
+
+.info-text {
+    flex: 1;
+}
+
+.info-label {
+    font-size: 0.8rem;
+    color: #7f8c8d;
+    display: block;
+}
+
+.info-value {
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+.timer-section {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+    color: white;
+    padding: 1.5rem;
+    text-align: center;
+    border-radius: 20px;
+    margin-bottom: 1rem;
+}
+
+.timer-display {
+    font-family: 'Courier New', monospace;
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin: 0.5rem 0;
+    letter-spacing: 0.1em;
+}
+
+.quick-actions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.action-btn {
+    padding: 1rem;
+    border: none;
+    border-radius: 20px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    color: white;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+
+.action-btn i {
+    font-size: 1.5rem;
+}
+
+.btn-stop {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+}
+
+.btn-note {
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+}
+
+.btn-photo {
+    background: linear-gradient(135deg, #9b59b6, #8e44ad);
+}
+
+.btn-back {
+    background: linear-gradient(135deg, #34495e, #2c3e50);
+}
+
+.notes-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.note-item {
+    background: #f8f9fa;
+    border-radius: 15px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    border-left: 4px solid #667eea;
+}
+
+.note-meta {
+    font-size: 0.8rem;
+    color: #7f8c8d;
+    margin-bottom: 0.5rem;
+}
+
+.note-content {
+    color: #2c3e50;
+    line-height: 1.5;
+}
+
+.media-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
+}
+
+.media-item {
+    aspect-ratio: 1;
+    border-radius: 15px;
+    overflow: hidden;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    cursor: pointer;
+}
+
+.media-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.media-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0,0,0,0.7));
+    color: white;
+    padding: 0.5rem;
+    font-size: 0.8rem;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: #7f8c8d;
+}
+
+/* Modal styles */
+.modal {
+    background: rgba(0,0,0,0.8);
+}
+
+.modal-content {
+    border-radius: 20px;
+    border: none;
+}
+
+.modal-header {
+    border-bottom: 1px solid #e9ecef;
+    border-radius: 20px 20px 0 0;
+}
+
+.form-control {
+    border-radius: 15px;
+    border: 2px solid #e9ecef;
+    padding: 0.75rem 1rem;
+}
+
+.form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.btn {
+    border-radius: 15px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .quick-actions {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+    
+    .action-btn {
+        flex-direction: row;
+        justify-content: center;
+        padding: 1rem 1.5rem;
+    }
+    
+    .timer-display {
+        font-size: 2rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header intervention -->
+    <div class="mobile-intervention-header">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h5 class="mb-1">{{ intervention.task_title }}</h5>
+                <div class="text-light opacity-75">{{ intervention.claim_number }}</div>
+            </div>
+            <div class="text-end">
+                <div class="intervention-status status-{{ intervention.intervention_status if intervention.started_at and not intervention.ended_at else 'completed' if intervention.ended_at else 'pending' }}">
+                    {% if intervention.started_at and not intervention.ended_at %}
+                        <i class="fas fa-play-circle"></i> En cours
+                    {% elif intervention.ended_at %}
+                        <i class="fas fa-check-circle"></i> Terminée
+                    {% else %}
+                        <i class="fas fa-clock"></i> En attente
+                    {% endif %}
+                </div>
+                <div class="small mt-1">
+                    Intervention #{{ intervention.id }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timer si intervention active -->
+    {% if intervention.started_at and not intervention.ended_at %}
+    <div class="timer-section">
+        <div class="small">Temps écoulé</div>
+        <div class="timer-display" data-start-time="{{ intervention.started_at }}">
+            {{ '%02d:%02d'|format((intervention.elapsed_minutes // 60), (intervention.elapsed_minutes % 60)) }}
+        </div>
+        <div class="small opacity-75">
+            Démarrée à {{ intervention.started_at.strftime('%H:%M') }}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Actions rapides -->
+    <div class="quick-actions">
+        {% if intervention.started_at and not intervention.ended_at %}
+        <button class="action-btn btn-stop" onclick="stopIntervention()">
+            <i class="fas fa-stop"></i>
+            <span>Terminer</span>
+        </button>
+        <button class="action-btn btn-note" onclick="showNoteModal()">
+            <i class="fas fa-sticky-note"></i>
+            <span>Ajouter Note</span>
+        </button>
+        {% endif %}
+        
+        <button class="action-btn btn-photo" onclick="showPhotoModal()">
+            <i class="fas fa-camera"></i>
+            <span>Prendre Photo</span>
+        </button>
+        <a href="{{ url_for('mobile.mobile_today') }}" class="action-btn btn-back">
+            <i class="fas fa-arrow-left"></i>
+            <span>Retour</span>
+        </a>
+    </div>
+
+    <!-- Informations client & véhicule -->
+    <div class="details-section">
+        <div class="section-header">
+            <i class="fas fa-user me-2"></i>Informations Client
+        </div>
+        <div class="section-content">
+            <div class="customer-info">
+                <div class="info-row">
+                    <div class="info-icon">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="info-text">
+                        <span class="info-label">Client</span>
+                        <div class="info-value">{{ intervention.customer_name }}</div>
+                    </div>
+                    {% if intervention.customer_phone %}
+                    <a href="tel:{{ intervention.customer_phone }}" class="btn btn-sm btn-outline-primary rounded-pill">
+                        <i class="fas fa-phone"></i>
+                    </a>
+                    {% endif %}
+                </div>
+                
+                {% if intervention.make and intervention.model %}
+                <div class="info-row">
+                    <div class="info-icon">
+                        <i class="fas fa-car"></i>
+                    </div>
+                    <div class="info-text">
+                        <span class="info-label">Véhicule</span>
+                        <div class="info-value">
+                            {{ intervention.make }} {{ intervention.model }}
+                            {% if intervention.license_plate %}
+                            <br><small class="text-muted">{{ intervention.license_plate }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="info-row">
+                    <div class="info-icon">
+                        <i class="fas fa-flag"></i>
+                    </div>
+                    <div class="info-text">
+                        <span class="info-label">Priorité</span>
+                        <div class="info-value">
+                            <span class="badge bg-{{ 'danger' if intervention.priority == 'urgent' else 'warning' if intervention.priority == 'high' else 'info' if intervention.priority == 'medium' else 'secondary' }}">
+                                {{ intervention.priority|upper }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Description tâche -->
+    {% if intervention.task_description %}
+    <div class="details-section">
+        <div class="section-header">
+            <i class="fas fa-clipboard-list me-2"></i>Description
+        </div>
+        <div class="section-content">
+            <p class="mb-0">{{ intervention.task_description }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Notes d'intervention -->
+    <div class="details-section">
+        <div class="section-header">
+            <i class="fas fa-sticky-note me-2"></i>Notes d'Intervention
+            <span class="badge bg-primary rounded-pill ms-2">{{ notes|length }}</span>
+        </div>
+        <div class="section-content">
+            {% if notes %}
+            <div class="notes-list">
+                {% for note in notes %}
+                <div class="note-item">
+                    <div class="note-meta">
+                        <i class="fas fa-user-circle me-1"></i>{{ note.author_name }}
+                        <span class="ms-2">{{ note.created_at.strftime('%d/%m/%Y à %H:%M') }}</span>
+                    </div>
+                    <div class="note-content">{{ note.note }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-sticky-note fa-2x mb-2 opacity-50"></i>
+                <p class="mb-0">Aucune note d'intervention</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Médias -->
+    <div class="details-section">
+        <div class="section-header">
+            <i class="fas fa-images me-2"></i>Photos & Documents
+            <span class="badge bg-primary rounded-pill ms-2">{{ media|length }}</span>
+        </div>
+        <div class="section-content">
+            {% if media %}
+            <div class="media-grid">
+                {% for item in media %}
+                <div class="media-item" onclick="openMediaViewer('{{ item.file_path }}', '{{ item.media_type }}')">
+                    {% if item.media_type == 'photo' %}
+                    <img src="{{ url_for('static', filename='uploads/interventions/' + item.file_path) }}" alt="Photo intervention">
+                    {% else %}
+                    <i class="fas fa-file fa-2x text-primary"></i>
+                    {% endif %}
+                    <div class="media-overlay">
+                        {{ item.created_at.strftime('%H:%M') }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-camera fa-2x mb-2 opacity-50"></i>
+                <p class="mb-0">Aucune photo ou document</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal Note -->
+<div class="modal fade" id="noteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Ajouter une note</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="noteForm">
+                    <div class="mb-3">
+                        <label for="noteText" class="form-label">Description de l'intervention</label>
+                        <textarea class="form-control" id="noteText" rows="4" 
+                                placeholder="Décrivez les actions effectuées, les problèmes rencontrés, les solutions appliquées..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" onclick="saveNote()">
+                    <i class="fas fa-save me-2"></i>Enregistrer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Photo -->
+<div class="modal fade" id="photoModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Prendre une photo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="photoForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="photoFile" class="form-label">Sélectionner une photo</label>
+                        <input type="file" class="form-control" id="photoFile" accept="image/*" capture="environment">
+                    </div>
+                    <div class="mb-3">
+                        <label for="photoDescription" class="form-label">Description (optionnel)</label>
+                        <input type="text" class="form-control" id="photoDescription" 
+                               placeholder="Ex: État avant réparation, pièce défectueuse...">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" onclick="uploadPhoto()">
+                    <i class="fas fa-upload me-2"></i>Envoyer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Media Viewer Modal -->
+<div class="modal fade" id="mediaViewer" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Média</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div id="mediaContent"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let timer = null;
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+    initializeTimer();
+});
+
+function initializeTimer() {
+    const timerDisplay = document.querySelector('.timer-display');
+    if (timerDisplay) {
+        const startTime = new Date(timerDisplay.dataset.startTime);
+        
+        timer = setInterval(() => {
+            const now = new Date();
+            const elapsed = Math.floor((now - startTime) / 1000 / 60);
+            const hours = Math.floor(elapsed / 60);
+            const minutes = elapsed % 60;
+            timerDisplay.textContent = 
+                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        }, 1000);
+    }
+}
+
+function stopIntervention() {
+    if (!confirm('Voulez-vous vraiment terminer cette intervention ?')) {
+        return;
+    }
+    
+    const taskId = {{ intervention.task_id }};
+    
+    fetch(`/mobile/task/${taskId}/stop`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert(`Intervention terminée ! Durée: ${data.duration_minutes} minutes`, 'success');
+            
+            if (timer) {
+                clearInterval(timer);
+            }
+            
+            setTimeout(() => {
+                window.location.href = '{{ url_for("mobile.mobile_today") }}';
+            }, 2000);
+        } else {
+            showAlert(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        showAlert('Erreur de connexion', 'error');
+    });
+}
+
+function showNoteModal() {
+    const modal = new bootstrap.Modal(document.getElementById('noteModal'));
+    modal.show();
+}
+
+function saveNote() {
+    const noteText = document.getElementById('noteText').value.trim();
+    
+    if (!noteText) {
+        showAlert('Veuillez saisir une note', 'error');
+        return;
+    }
+    
+    const taskId = {{ intervention.task_id }};
+    const formData = new FormData();
+    formData.append('note', noteText);
+    
+    fetch(`/mobile/task/${taskId}/add_note`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('Note enregistrée !', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('noteModal')).hide();
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            showAlert(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        showAlert('Erreur de connexion', 'error');
+    });
+}
+
+function showPhotoModal() {
+    const modal = new bootstrap.Modal(document.getElementById('photoModal'));
+    modal.show();
+}
+
+function uploadPhoto() {
+    const fileInput = document.getElementById('photoFile');
+    const description = document.getElementById('photoDescription').value;
+    
+    if (!fileInput.files[0]) {
+        showAlert('Veuillez sélectionner une photo', 'error');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('photo', fileInput.files[0]);
+    formData.append('description', description);
+    
+    const interventionId = {{ intervention.id }};
+    
+    fetch(`/api/v1/interventions/${interventionId}/upload_media`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('Photo envoyée !', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('photoModal')).hide();
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            showAlert(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        showAlert('Erreur de connexion', 'error');
+    });
+}
+
+function openMediaViewer(filePath, mediaType) {
+    const modal = new bootstrap.Modal(document.getElementById('mediaViewer'));
+    const content = document.getElementById('mediaContent');
+    
+    if (mediaType === 'photo') {
+        content.innerHTML = `<img src="{{ url_for('static', filename='uploads/interventions/') }}${filePath}" class="img-fluid" alt="Photo intervention">`;
+    } else {
+        content.innerHTML = `<div class="text-center">
+            <i class="fas fa-file fa-4x text-primary mb-3"></i>
+            <p>Document: ${filePath}</p>
+            <a href="{{ url_for('static', filename='uploads/interventions/') }}${filePath}" class="btn btn-primary" download>
+                <i class="fas fa-download me-2"></i>Télécharger
+            </a>
+        </div>`;
+    }
+    
+    modal.show();
+}
+
+function showAlert(message, type = 'success') {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'error' ? 'danger' : 'success'} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+</script>
+{% endblock %}

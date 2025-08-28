@@ -1,5 +1,6 @@
 Flask==2.2.2
 Flask-PyMySQL
+flask-login>=0.6.2
 python-dotenv
 PyMySQL
 Werkzeug==2.2.3
@@ -20,3 +21,9 @@ httplib2>=0.22.0
 
 # Flask extensions
 Flask-WTF>=1.1.1
+
+# PDF Generation - Sprint 3
+# WeasyPrint pour génération PDF à partir de HTML/CSS (option premium)
+weasyprint>=60.0
+# ReportLab pour génération PDF programmée (fallback)
+reportlab>=4.0.0

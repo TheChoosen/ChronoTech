@@ -1,60 +1,53 @@
-<div class="row mb-4">
+<!-- Statistiques avec style Claymorphism -->
+<div class="row g-4 mb-5">
     <div class="col-md-3">
-        <div class="clay-card text-center">
-            <div class="card-body">
-                <div class="d-flex align-items-center justify-content-center">
-                    <div class="icon-shape bg-primary text-white rounded-circle me-3">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <div>
-                        <h3 class="mb-0">{{ stats.total_customers }}</h3>
-                        <p class="text-muted mb-0">Total Clients</p>
-                    </div>
+        <div class="stat-card">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-primary">
+                    <i class="fas fa-users fa-lg"></i>
+                </div>
+                <div>
+                    <h3 class="mb-1 fw-bold" style="color: var(--primary-color);">{{ stats.total_customers|default(0) }}</h3>
+                    <p class="mb-0 text-muted fw-medium">Total Clients</p>
                 </div>
             </div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="clay-card text-center">
-            <div class="card-body">
-                <div class="d-flex align-items-center justify-content-center">
-                    <div class="icon-shape bg-success text-white rounded-circle me-3">
-                        <i class="fas fa-star"></i>
-                    </div>
-                    <div>
-                        <h3 class="mb-0">{{ stats.active_customers }}</h3>
-                        <p class="text-muted mb-0">Clients Actifs</p>
-                    </div>
+        <div class="stat-card">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-success">
+                    <i class="fas fa-star fa-lg"></i>
+                </div>
+                <div>
+                    <h3 class="mb-1 fw-bold" style="color: var(--success-color);">{{ stats.active_customers|default(0) }}</h3>
+                    <p class="mb-0 text-muted fw-medium">Clients Actifs</p>
                 </div>
             </div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="clay-card text-center">
-            <div class="card-body">
-                <div class="d-flex align-items-center justify-content-center">
-                    <div class="icon-shape bg-info text-white rounded-circle me-3">
-                        <i class="fas fa-tools"></i>
-                    </div>
-                    <div>
-                        <h3 class="mb-0">{{ stats.total_work_orders }}</h3>
-                        <p class="text-muted mb-0">Interventions</p>
-                    </div>
+        <div class="stat-card">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-info">
+                    <i class="fas fa-tools fa-lg"></i>
+                </div>
+                <div>
+                    <h3 class="mb-1 fw-bold" style="color: var(--info-color);">{{ stats.total_work_orders|default(0) }}</h3>
+                    <p class="mb-0 text-muted fw-medium">Interventions</p>
                 </div>
             </div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="clay-card text-center">
-            <div class="card-body">
-                <div class="d-flex align-items-center justify-content-center">
-                    <div class="icon-shape bg-warning text-white rounded-circle me-3">
-                        <i class="fas fa-euro-sign"></i>
-                    </div>
-                    <div>
-                        <h3 class="mb-0">{{ stats.total_revenue|currency }}</h3>
-                        <p class="text-muted mb-0">Chiffre d'Affaires</p>
-                    </div>
+        <div class="stat-card">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-warning">
+                    <i class="fas fa-euro-sign fa-lg"></i>
+                </div>
+                <div>
+                    <h3 class="mb-1 fw-bold" style="color: var(--warning-color);">{{ (stats.total_revenue|default(0))|currency }}</h3>
+                    <p class="mb-0 text-muted fw-medium">Chiffre d'Affaires</p>
                 </div>
             </div>
         </div>

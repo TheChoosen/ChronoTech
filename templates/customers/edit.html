@@ -450,20 +450,29 @@ function searchAddress() {
 
 // Suppression du client
 function deleteCustomer() {
-    if (confirm('Êtes-vous sûr de vouloir supprimer ce client ? Cette action supprimera également tous ses bons de travail associés.')) {
-        fetch(`{{ url_for('customers.delete', id=customer.id) }}`, {
-            method: 'DELETE',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        }).then(response => {
-            if (response.ok) {
-                window.location.href = `{{ url_for('customers.index') }}`;
-            } else {
-                alert('Erreur lors de la suppression du client');
-            }
-        });
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce client ? Cette action supprimera également tous ses bons de travail associés.')) {
+        return;
     }
+
+    const url = `{{ url_for('customers.delete', id=customer.id) }}`;
+    const formData = new FormData();
+    formData.append('customer_id', '{{ customer.id }}');
+
+    fetch(url, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: formData
+    }).then(response => {
+        if (response.ok) {
+            // Redirect to the list (AJAX refresh could be used if present)
+            window.location.href = `{{ url_for('customers.index') }}`;
+        } else {
+            alert('Erreur lors de la suppression du client');
+        }
+    }).catch(err => {
+        console.error('Delete failed', err);
+        alert('Erreur lors de la suppression du client');
+    });
 }
 
 // Détection des changements

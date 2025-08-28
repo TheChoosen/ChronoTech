@@ -4,17 +4,49 @@
 
 {% block content %}
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0">
-            <i class="fas fa-users me-2"></i>Gestion des Clients
-        </h1>
-        <div class="d-flex gap-2">
-            <a href="{{ url_for('customers.add_customer') }}" class="btn btn-primary clay-button-primary">
-                <i class="fas fa-plus me-2"></i>Nouveau Client
-            </a>
-            <button class="btn btn-outline-secondary clay-button" onclick="exportCustomers()">
-                <i class="fas fa-download me-2"></i>Exporter
-            </button>
+    <!-- En-tête avec style claymorphism -->
+    <div class="clay-element p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="h3 mb-0 d-flex align-items-center">
+                <div class="stat-icon bg-primary me-3" style="width: 50px; height: 50px;">
+                    <i class="fas fa-users"></i>
+                </div>
+                <span style="color: var(--text-color);">Gestion des Clients</span>
+            </h1>
+            <div class="d-flex gap-3">
+                <!-- Menu Outils Avancés -->
+                <div class="dropdown">
+                    <button class="clay-button dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-tools me-2"></i>Outils avancés
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><h6 class="dropdown-header">Analytics</h6></li>
+                        <li><a class="dropdown-item" href="{{ url_for('customers.get_rfm_segments') }}">
+                            <i class="fas fa-chart-pie me-2"></i>Segments RFM
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><h6 class="dropdown-header">Gestion</h6></li>
+                        <li><a class="dropdown-item" href="{{ url_for('customers.list_customer_duplicates') }}">
+                            <i class="fas fa-clone me-2"></i>Gestion des doublons
+                        </a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('customers.delivery_routes') }}">
+                            <i class="fas fa-route me-2"></i>Planification des routes
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><h6 class="dropdown-header">Outils</h6></li>
+                        <li><a class="dropdown-item" href="#" onclick="detectAllDuplicates()">
+                            <i class="fas fa-search me-2"></i>Détecter doublons
+                        </a></li>
+                    </ul>
+                </div>
+                
+                <a href="{{ url_for('customers.add_customer') }}" class="clay-button-primary">
+                    <i class="fas fa-plus me-2"></i>Nouveau Client
+                </a>
+                <button class="clay-button" onclick="exportCustomers()">
+                    <i class="fas fa-download me-2"></i>Exporter
+                </button>
+            </div>
         </div>
     </div>
 
@@ -23,91 +55,63 @@
         {% include 'customers/_stats.html' %}
     </div>
 
-    <!-- Filtres et recherche -->
+    <!-- Filtres et recherche avec style claymorphism -->
     <div class="clay-card mb-4">
-        <div class="card-body">
+        <div class="card-body p-4">
             <form method="GET" id="filterForm" action="{{ url_for('customers.index') }}">
                 <div class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label">Recherche</label>
-                        <div class="input-group">
-                            <input type="text" class="form-control clay-input" name="search"
-                                value="{{ request.args.get('search', '') }}" placeholder="Nom, email, téléphone...">
-                            <button class="btn btn-outline-secondary" type="submit">
-                                <i class="fas fa-search"></i>
+                    <!-- Recherche -->
+                    <div class="col-md-6 col-lg-3">
+                        <label class="form-label fw-semibold" style="color: var(--text-color);">Recherche</label>
+                        <div class="position-relative">
+                            <input type="text" class="clay-input form-control" name="search" 
+                                value="{{ request.args.get('search', '') }}" 
+                                placeholder="Nom, email, téléphone...">
+                            <i class="fas fa-search position-absolute" style="right: 15px; top: 50%; transform: translateY(-50%); opacity: 0.5;"></i>
+                        </div>
+                    </div>
+
+                    <!-- Type de client -->
+                    <div class="col-md-6 col-lg-3">
+                        <label class="form-label fw-semibold" style="color: var(--text-color);">Type</label>
+                        <select class="clay-input form-select" name="customer_type">
+                            <option value="">Tous les types</option>
+                            <option value="individual" {% if request.args.get('customer_type') == 'individual' %}selected{% endif %}>Particulier</option>
+                            <option value="company" {% if request.args.get('customer_type') == 'company' %}selected{% endif %}>Entreprise</option>
+                            <option value="government" {% if request.args.get('customer_type') == 'government' %}selected{% endif %}>Administration</option>
+                        </select>
+                    </div>
+
+                    <!-- Statut -->
+                    <div class="col-md-6 col-lg-3">
+                        <label class="form-label fw-semibold" style="color: var(--text-color);">Statut</label>
+                        <select class="clay-input form-select" name="status">
+                            <option value="">Tous les statuts</option>
+                            <option value="active" {% if request.args.get('status') == 'active' %}selected{% endif %}>Actif</option>
+                            <option value="inactive" {% if request.args.get('status') == 'inactive' %}selected{% endif %}>Inactif</option>
+                        </select>
+                    </div>
+
+                    <!-- Ville -->
+                    <div class="col-md-6 col-lg-3">
+                        <label class="form-label fw-semibold" style="color: var(--text-color);">Ville</label>
+                        <input type="text" class="clay-input form-control" name="city" 
+                            value="{{ request.args.get('city', '') }}" 
+                            placeholder="Filtrer par ville">
+                    </div>
+
+                    <!-- Boutons -->
+                    <div class="col-12">
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{{ url_for('customers.index') }}" class="clay-button">
+                                <i class="fas fa-times me-2"></i>Réinitialiser
+                            </a>
+                            <button type="submit" class="clay-button-primary">
+                                <i class="fas fa-filter me-2"></i>Filtrer
                             </button>
                         </div>
                     </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Type</label>
-                        <select class="form-select clay-input" name="customer_type">
-                            <option value="">Tous les types</option>
-                            <option value="individual" {{ 'selected' if request.args.get('customer_type')=='individual'
-                                }}>
-                                Particulier
-                            </option>
-                            <option value="company" {{ 'selected' if request.args.get('customer_type')=='company' }}>
-                                Entreprise
-                            </option>
-                            <option value="government" {{ 'selected' if request.args.get('customer_type')=='government'
-                                }}>
-                                Administration
-                            </option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Zone</label>
-                        <select class="form-select clay-input" name="zone">
-                            <option value="">Toutes zones</option>
-                            {% for zone in zones %}
-                            <option value="{{ zone }}" {{ 'selected' if request.args.get('zone')==zone }}>
-                                {{ zone }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Statut</label>
-                        <select class="form-select clay-input" name="status">
-                            <option value="">Tous statuts</option>
-                            <option value="active" {{ 'selected' if request.args.get('status')=='active' }}>
-                                Actif
-                            </option>
-                            <option value="inactive" {{ 'selected' if request.args.get('status')=='inactive' }}>
-                                Inactif
-                            </option>
-                            <option value="prospect" {{ 'selected' if request.args.get('status')=='prospect' }}>
-                                Prospect
-                            </option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Tri</label>
-                        <select class="form-select clay-input" name="sort">
-                            <option value="name" {{ 'selected' if request.args.get('sort')=='name' }}>
-                                Nom A-Z
-                            </option>
-                            <option value="name_desc" {{ 'selected' if request.args.get('sort')=='name_desc' }}>
-                                Nom Z-A
-                            </option>
-                            <option value="created_date" {{ 'selected' if request.args.get('sort')=='created_date' }}>
-                                Plus récents
-                            </option>
-                            <option value="last_order" {{ 'selected' if request.args.get('sort')=='last_order' }}>
-                                Dernière commande
-                            </option>
-                        </select>
-                    </div>
                 </div>
-
-                {% if request.args.get('search') or request.args.get('customer_type') or request.args.get('zone') or
-                request.args.get('status') %}
-                <div class="mt-3">
-                    <a href="{{ url_for('customers.index') }}" class="btn btn-sm btn-outline-secondary clay-button">
-                        <i class="fas fa-times me-1"></i>Effacer les filtres
-                    </a>
-                </div>
-                {% endif %}
             </form>
         </div>
     </div>
@@ -332,13 +336,19 @@
     function switchView(viewType) {
         const gridView = document.getElementById('gridView');
         const listView = document.getElementById('listView');
+        const gridBtn = document.getElementById('view-grid-btn');
+        const listBtn = document.getElementById('view-list-btn');
 
         if (viewType === 'grid') {
             gridView.style.display = 'block';
             listView.style.display = 'none';
+            gridBtn.classList.add('active');
+            listBtn.classList.remove('active');
         } else {
             gridView.style.display = 'none';
             listView.style.display = 'block';
+            gridBtn.classList.remove('active');
+            listBtn.classList.add('active');
         }
     }
 
@@ -374,40 +384,144 @@
     }
 
     function exportCustomers() {
-        // window.location.href = `/customers/export?{{ request.query_string.decode() }}`;
+        const params = new URLSearchParams(window.location.search);
+        window.location.href = `/customers/export?${params.toString()}`;
     }
 
-    // Style CSS pour les cartes clients (prévenir chevauchement et gérer z-index)
+    function detectAllDuplicates() {
+        if (!confirm('Lancer la détection de doublons sur tous les clients ? Cette opération peut prendre du temps.')) return;
+        
+        fetch('/customers/duplicates/detect', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                if (data.duplicates_found > 0) {
+                    if (confirm('Voulez-vous voir les doublons détectés ?')) {
+                        window.location.href = '/customers/duplicates';
+                    }
+                }
+            } else {
+                alert('Erreur: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur lors de la détection des doublons');
+        });
+    }
+
+    // Style CSS pour les cartes clients - style claymorphism
     const style = document.createElement('style');
     style.textContent = `
+/* Cartes clients avec effet claymorphism */
 .customer-card {
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-    border: 1px solid rgba(0,0,0,0.08);
-    position: relative; /* create stacking context */
+    background: var(--secondary-color, #e0e5ec);
+    box-shadow: var(--shadow-level-1, 8px 8px 16px #a3b1c6, -8px -8px 16px #ffffff);
+    border: none;
+    border-radius: var(--border-radius, 15px);
+    transition: all 0.3s ease;
+    position: relative;
     z-index: 1;
+    overflow: visible;
 }
+
 .customer-card:hover {
     transform: translateY(-6px);
-    box-shadow: 0 12px 30px rgba(0,0,0,0.18);
-    z-index: 50; /* bring hovered card above neighbors */
+    box-shadow: var(--shadow-level-3, 20px 20px 40px #a3b1c6, -20px -20px 40px #ffffff);
+    z-index: 50;
 }
-/* Ensure dropdown menus and popovers appear above cards */
+
+/* Icônes de statut avec style claymorphism */
+.stat-icon {
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-level-1, 8px 8px 16px #a3b1c6, -8px -8px 16px #ffffff);
+}
+
+/* Styles pour les avatars */
+.avatar-clay {
+    box-shadow: var(--shadow-level-1, 8px 8px 16px #a3b1c6, -8px -8px 16px #ffffff);
+    transition: all 0.3s ease;
+}
+
+.avatar-clay:hover {
+    transform: scale(1.05);
+    box-shadow: var(--shadow-level-2, 12px 12px 24px #a3b1c6, -12px -12px 24px #ffffff);
+}
+
+/* Assurer que les dropdowns apparaissent au-dessus des cartes */
 .dropdown-menu {
-    z-index: 1050; /* above typical Bootstrap modals */
+    z-index: 2050 !important;
+    background: var(--secondary-color, #e0e5ec);
+    box-shadow: var(--shadow-level-3, 20px 20px 40px #a3b1c6, -20px -20px 40px #ffffff);
+    border: none;
+    border-radius: var(--border-radius, 15px);
 }
-.icon-shape {
-    width: 48px;
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+
+/* Styles pour les badges */
+.clay-badge {
+    padding: 0.4rem 0.8rem;
+    border-radius: var(--border-radius-sm, 10px);
+    font-weight: 500;
+    font-size: 0.85rem;
 }
-.stat-item h6 {
-    color: #495057;
-    font-weight: 600;
+
+/* Pagination style claymorphism */
+.pagination .page-link {
+    border: none;
+    background: transparent;
+    margin: 0 0.25rem;
+    border-radius: var(--border-radius, 15px);
 }
-.avatar-circle {
-    min-width: 48px;
+
+/* Petits éléments avec effet clay */
+.small-clay-element {
+    background: var(--secondary-color, #e0e5ec);
+    box-shadow: var(--shadow-level-1, 4px 4px 8px #a3b1c6, -4px -4px 8px #ffffff);
+    border-radius: var(--border-radius-sm, 10px);
+    transition: all 0.2s ease;
+}
+
+.small-clay-element:hover {
+    box-shadow: var(--shadow-level-2, 6px 6px 12px #a3b1c6, -6px -6px 12px #ffffff);
+}
+
+/* Améliorer les states de focus */
+.clay-input:focus,
+.clay-button:focus,
+.clay-button-primary:focus {
+    outline: 2px solid var(--primary-color, #5a67ff);
+    outline-offset: 2px;
+}
+
+/* Animation de loading pour les états AJAX */
+.customers-loading-overlay {
+    background: rgba(224, 229, 236, 0.8) !important;
+    backdrop-filter: blur(2px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .customer-card:hover {
+        transform: translateY(-3px);
+    }
+    
+    .stat-icon {
+        width: 48px !important;
+        height: 48px !important;
+    }
+    
+    .avatar-clay {
+        width: 40px !important;
+        height: 40px !important;
+    }
 }
 `;
     document.head.appendChild(style);

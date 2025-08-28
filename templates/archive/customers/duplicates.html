@@ -1,0 +1,337 @@
+{% extends "base.html" %}
+
+{% block title %}Doublons Clients - ChronoTech{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-clone me-2"></i>Gestion des Doublons</h2>
+                <div>
+                    <a href="{{ url_for('customers.index') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Retour clients
+                    </a>
+                    <button class="btn btn-warning" onclick="detectDuplicates()">
+                        <i class="fas fa-search me-1"></i>Détecter doublons
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <label for="statusFilter" class="form-label">Statut:</label>
+                            <select class="form-select" id="statusFilter" onchange="filterByStatus()">
+                                <option value="detected" {{ 'selected' if status_filter == 'detected' else '' }}>Détectés</option>
+                                <option value="reviewed" {{ 'selected' if status_filter == 'reviewed' else '' }}>Revus</option>
+                                <option value="merged" {{ 'selected' if status_filter == 'merged' else '' }}>Fusionnés</option>
+                                <option value="ignored" {{ 'selected' if status_filter == 'ignored' else '' }}>Ignorés</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-info-circle text-info me-2"></i>
+                                <small class="text-muted">{{ duplicates|length }} doublon(s) trouvé(s)</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des doublons -->
+    <div class="row">
+        <div class="col-12">
+            {% if duplicates %}
+                {% for duplicate in duplicates %}
+                <div class="card mb-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">
+                                <span class="badge bg-{{ 
+                                    'warning' if duplicate.confidence_score >= 0.8 
+                                    else 'info' if duplicate.confidence_score >= 0.6 
+                                    else 'secondary' 
+                                }}">
+                                    {{ "%.0f" | format(duplicate.confidence_score * 100) }}% de similarité
+                                </span>
+                                <span class="badge bg-{{ 
+                                    'success' if duplicate.status == 'merged' 
+                                    else 'primary' if duplicate.status == 'reviewed' 
+                                    else 'secondary' if duplicate.status == 'ignored' 
+                                    else 'warning' 
+                                }}">
+                                    {{ duplicate.status | title }}
+                                </span>
+                            </h6>
+                        </div>
+                        <div>
+                            <small class="text-muted">Détecté le {{ duplicate.created_at.strftime('%d/%m/%Y %H:%M') }}</small>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Client principal -->
+                            <div class="col-md-5">
+                                <div class="border rounded p-3 bg-light">
+                                    <h6 class="text-primary"><i class="fas fa-user me-1"></i>Client Principal</h6>
+                                    <p class="mb-1"><strong>{{ duplicate.primary_name }}</strong></p>
+                                    <p class="mb-1">{{ duplicate.primary_email or 'Pas d\'email' }}</p>
+                                    <p class="mb-1">{{ duplicate.primary_phone or 'Pas de téléphone' }}</p>
+                                    <a href="{{ url_for('customers.view_customer', customer_id=duplicate.customer_id_primary) }}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye me-1"></i>Voir
+                                    </a>
+                                </div>
+                            </div>
+                            
+                            <!-- Séparateur -->
+                            <div class="col-md-2 text-center d-flex align-items-center justify-content-center">
+                                <div>
+                                    <i class="fas fa-arrows-alt-h fa-2x text-muted"></i>
+                                    <br>
+                                    <small class="text-muted">vs</small>
+                                </div>
+                            </div>
+                            
+                            <!-- Client doublon -->
+                            <div class="col-md-5">
+                                <div class="border rounded p-3 bg-warning bg-opacity-10">
+                                    <h6 class="text-warning"><i class="fas fa-user-plus me-1"></i>Client Doublon</h6>
+                                    <p class="mb-1"><strong>{{ duplicate.duplicate_name }}</strong></p>
+                                    <p class="mb-1">{{ duplicate.duplicate_email or 'Pas d\'email' }}</p>
+                                    <p class="mb-1">{{ duplicate.duplicate_phone or 'Pas de téléphone' }}</p>
+                                    <a href="{{ url_for('customers.view_customer', customer_id=duplicate.customer_id_duplicate) }}" 
+                                       class="btn btn-sm btn-outline-warning">
+                                        <i class="fas fa-eye me-1"></i>Voir
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Critères de correspondance -->
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <h6>Critères de correspondance:</h6>
+                                <div class="d-flex gap-2">
+                                    {% if duplicate.match_criteria %}
+                                        {% set criteria = duplicate.match_criteria | tojsondict %}
+                                        {% if criteria.email %}
+                                            <span class="badge bg-success"><i class="fas fa-envelope me-1"></i>Email identique</span>
+                                        {% endif %}
+                                        {% if criteria.phone %}
+                                            <span class="badge bg-success"><i class="fas fa-phone me-1"></i>Téléphone identique</span>
+                                        {% endif %}
+                                        {% if criteria.name_similarity %}
+                                            <span class="badge bg-info"><i class="fas fa-user me-1"></i>Nom similaire</span>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Actions -->
+                        {% if duplicate.status == 'detected' %}
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-success" onclick="reviewDuplicate({{ duplicate.id }}, 'merge')">
+                                        <i class="fas fa-compress-arrows-alt me-1"></i>Fusionner
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="reviewDuplicate({{ duplicate.id }}, 'ignore')">
+                                        <i class="fas fa-times me-1"></i>Ignorer
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Notes de review -->
+                        {% if duplicate.notes %}
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <strong>Notes:</strong> {{ duplicate.notes }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                        <h5>Aucun doublon {{ 'détecté' if status_filter == 'detected' else status_filter }}</h5>
+                        <p class="text-muted">
+                            {% if status_filter == 'detected' %}
+                                Excellente qualité de données ! Aucun doublon n'a été détecté.
+                            {% else %}
+                                Aucun doublon avec le statut "{{ status_filter }}" trouvé.
+                            {% endif %}
+                        </p>
+                        {% if status_filter == 'detected' %}
+                        <button class="btn btn-primary" onclick="detectDuplicates()">
+                            <i class="fas fa-search me-1"></i>Relancer la détection
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmation de fusion -->
+<div class="modal fade" id="mergeConfirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmer la fusion</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Cette action va fusionner les deux clients. Toutes les données du client doublon seront transférées vers le client principal et le doublon sera désactivé.
+                </div>
+                <div class="mb-3">
+                    <label for="mergeNotes" class="form-label">Notes (optionnel):</label>
+                    <textarea class="form-control" id="mergeNotes" rows="3" placeholder="Raison de la fusion..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-success" onclick="confirmMerge()">
+                    <i class="fas fa-compress-arrows-alt me-1"></i>Confirmer la fusion
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentDuplicateId = null;
+let currentAction = null;
+
+function filterByStatus() {
+    const status = document.getElementById('statusFilter').value;
+    window.location.href = `{{ url_for('customers.list_customer_duplicates') }}?status=${status}`;
+}
+
+function detectDuplicates() {
+    if (!confirm('Lancer la détection de doublons ? Cette opération peut prendre du temps.')) return;
+    
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Détection...';
+    button.disabled = true;
+    
+    fetch('/customers/duplicates/detect', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('success', data.message);
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            showToast('error', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showToast('error', 'Erreur lors de la détection');
+    })
+    .finally(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+function reviewDuplicate(duplicateId, action) {
+    currentDuplicateId = duplicateId;
+    currentAction = action;
+    
+    if (action === 'merge') {
+        const modal = new bootstrap.Modal(document.getElementById('mergeConfirmModal'));
+        modal.show();
+    } else {
+        const notes = prompt('Notes (optionnel):');
+        performReview(duplicateId, action, notes || '');
+    }
+}
+
+function confirmMerge() {
+    const notes = document.getElementById('mergeNotes').value;
+    const modal = bootstrap.Modal.getInstance(document.getElementById('mergeConfirmModal'));
+    modal.hide();
+    
+    performReview(currentDuplicateId, currentAction, notes);
+}
+
+function performReview(duplicateId, action, notes) {
+    fetch(`/customers/duplicates/${duplicateId}/review`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            action: action,
+            notes: notes
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('success', data.message);
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast('error', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showToast('error', 'Erreur lors de la review');
+    });
+}
+
+function showToast(type, message) {
+    const toastHtml = `
+        <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+    
+    let toastContainer = document.querySelector('.toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+        document.body.appendChild(toastContainer);
+    }
+    
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    const toastElement = toastContainer.lastElementChild;
+    const toast = new bootstrap.Toast(toastElement);
+    toast.show();
+}
+</script>
+
+{% endblock %}

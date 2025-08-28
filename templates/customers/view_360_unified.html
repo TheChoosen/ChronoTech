@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+{% block title %}{{ customer.name }} - Customer 360{% endblock %}
+
+{# Import des macros et sections #}
+{%- from 'customers/_components/macros.html' import customer_360_tabs, loading_skeleton -%}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    {# En-tête Customer 360 #}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center">
+            <a href="{{ url_for('customers.index') }}" class="clay-button me-3" title="Retour à la liste">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div>
+                <h1 class="mb-0" style="color: var(--text-color);">{{ customer.name }}</h1>
+                <p class="text-muted mb-0">
+                    <i class="fas fa-user me-2"></i>Customer 360
+                    <span class="ms-3">
+                        <i class="fas fa-calendar me-1"></i>
+                        Client depuis {{ customer.created_at|datetime_format('short') }}
+                    </span>
+                </p>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button class="clay-button" onclick="quickActions('call')" title="Appeler le client">
+                <i class="fas fa-phone me-2"></i>Appeler
+            </button>
+            <button class="clay-button" onclick="quickActions('email')" title="Envoyer un email">
+                <i class="fas fa-envelope me-2"></i>Email
+            </button>
+            <button class="clay-button" onclick="quickActions('quote')" title="Créer un devis">
+                <i class="fas fa-file-invoice me-2"></i>Devis
+            </button>
+            <div class="dropdown">
+                <button class="clay-button" data-bs-toggle="dropdown" title="Plus d'actions">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item"
+                            href="{{ url_for('customers.edit_customer', customer_id=customer.id) }}">
+                            <i class="fas fa-edit me-2"></i>Modifier client
+                        </a></li>
+                    <li><a class="dropdown-item" href="#" onclick="quickActions('duplicate')">
+                            <i class="fas fa-copy me-2"></i>Dupliquer
+                        </a></li>
+                    <li><a class="dropdown-item" href="#" onclick="quickActions('merge')">
+                            <i class="fas fa-code-branch me-2"></i>Fusionner
+                        </a></li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+                    <li><a class="dropdown-item" href="#" onclick="quickActions('export')">
+                            <i class="fas fa-download me-2"></i>Exporter données
+                        </a></li>
+                    <li><a class="dropdown-item" href="#" onclick="quickActions('print')">
+                            <i class="fas fa-print me-2"></i>Imprimer fiche
+                        </a></li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+                    {% if customer.is_active %}
+                    <li><a class="dropdown-item text-warning" href="#" onclick="quickActions('deactivate')">
+                            <i class="fas fa-pause me-2"></i>Désactiver
+                        </a></li>
+                    {% else %}
+                    <li><a class="dropdown-item text-success" href="#" onclick="quickActions('activate')">
+                            <i class="fas fa-play me-2"></i>Réactiver
+                        </a></li>
+                    {% endif %}
+                    <li><a class="dropdown-item text-danger" href="#" onclick="quickActions('delete')">
+                            <i class="fas fa-trash me-2"></i>Supprimer
+                        </a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    {# Navigation par onglets #}
+    {{ customer_360_tabs(customer.id, active_tab|default('profile')) }}
+
+    {# Contenu des onglets avec lazy loading #}
+    <style>
+        /* Customer 360 tab content enhancements */
+        #customer-360-tab-content {
+            position: relative;
+            min-height: 320px;
+            /* avoid layout jump during first lazy load */
+        }
+
+        #customer360-loading-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.65);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            transition: opacity .15s ease-in-out;
+        }
+
+        #customer360-loading-overlay.d-none {
+            display: none !important;
+        }
+    </style>
+    <div class="tab-content" id="customer-360-tab-content">
+        <div id="customer360-loading-overlay" class="d-none" aria-hidden="true">
+            <div class="text-center">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2 mb-0 small text-muted">Chargement...</p>
+            </div>
+        </div>
+        {# Onglet Profil - chargé immédiatement #}
+        <div class="tab-pane fade {{ 'show active' if active_tab == 'profile' else '' }}" id="tab-content-profile"
+            role="tabpanel" data-section="profile" aria-labelledby="tab-profile">
+            {% if active_tab == 'profile' %}
+            {% include 'customers/_sections/profile.html' %}
+            {% else %}
+            <div class="text-center py-5" id="placeholder-profile">
+                {{ loading_skeleton(type="card") }}
+                {{ loading_skeleton(type="card") }}
+            </div>
+            {% endif %}
+        </div>
+
+        {# Onglet Activité - lazy loading #}
+        <div class="tab-pane fade {{ 'show active' if active_tab == 'activity' else '' }}" id="tab-content-activity"
+            role="tabpanel" data-section="activity" aria-labelledby="tab-activity">
+            {% if active_tab == 'activity' %}
+            {% include 'customers/_sections/activity.html' %}
+            {% else %}
+            <div class="text-center py-5" id="placeholder-activity">
+                {{ loading_skeleton(type="card") }}
+                {{ loading_skeleton(type="table") }}
+            </div>
+            {% endif %}
+        </div>
+
+        {# Onglet Finances - lazy loading #}
+        <div class="tab-pane fade {{ 'show active' if active_tab == 'finances' else '' }}" id="tab-content-finances"
+            role="tabpanel" data-section="finances" aria-labelledby="tab-finances">
+            {% if active_tab == 'finances' %}
+            {% include 'customers/_sections/finances.html' %}
+            {% else %}
+            <div class="text-center py-5" id="placeholder-finances">
+                {{ loading_skeleton(type="card") }}
+                {{ loading_skeleton(type="table") }}
+            </div>
+            {% endif %}
+        </div>
+
+        {# Onglet Documents - lazy loading #}
+        <div class="tab-pane fade {{ 'show active' if active_tab == 'documents' else '' }}" id="tab-content-documents"
+            role="tabpanel" data-section="documents" aria-labelledby="tab-documents">
+            {% if active_tab == 'documents' %}
+            {% include 'customers/_sections/documents.html' %}
+            {% else %}
+            <div class="text-center py-5" id="placeholder-documents">
+                {{ loading_skeleton(type="card") }}
+                <div class="row">
+                    <div class="col-md-4">{{ loading_skeleton(type="card") }}</div>
+                    <div class="col-md-4">{{ loading_skeleton(type="card") }}</div>
+                    <div class="col-md-4">{{ loading_skeleton(type="card") }}</div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        {# Onglet Analytics - lazy loading #}
+        <div class="tab-pane fade {{ 'show active' if active_tab == 'analytics' else '' }}" id="tab-content-analytics"
+            role="tabpanel" data-section="analytics" aria-labelledby="tab-analytics">
+            {% if active_tab == 'analytics' %}
+            {% include 'customers/_sections/analytics.html' %}
+            {% else %}
+            <div class="text-center py-5" id="placeholder-analytics">
+                {{ loading_skeleton(type="card") }}
+                <div class="row">
+                    <div class="col-md-8">{{ loading_skeleton(type="card") }}</div>
+                    <div class="col-md-4">{{ loading_skeleton(type="card") }}</div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        {# Onglet RGPD - lazy loading #}
+        <div class="tab-pane fade {{ 'show active' if active_tab == 'consents' else '' }}" id="tab-content-consents"
+            role="tabpanel" data-section="consents" aria-labelledby="tab-consents">
+            {% if active_tab == 'consents' %}
+            {% include 'customers/_sections/consents.html' %}
+            {% else %}
+            <div class="text-center py-5" id="placeholder-consents">
+                {{ loading_skeleton(type="card") }}
+                {{ loading_skeleton(type="card") }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{# Toast notifications #}
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="globalToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto" id="toastTitle">Notification</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body" id="toastBody">
+            Message
+        </div>
+    </div>
+</div>
+
+{# Modals communes #}
+<div class="modal fade" id="quickActionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="quickActionModalTitle">Action</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="quickActionModalBody">
+                {# Contenu dynamique #}
+            </div>
+            <div class="modal-footer" id="quickActionModalFooter">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="clay-button" id="quickActionConfirm">Confirmer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Configuration Customer 360 exposée au script externe
+    window.Customer360Data = {{
+        {
+            'id': customer.id,
+                'name': (customer.name | default ('', true)),
+            'email': (customer.email | default ('', true)),
+            'phone': (customer.phone | default ('', true)),
+            'secondary_phone': (customer.secondary_phone | default ('', true)),
+            'is_active': (customer.is_active | default (false, true)),
+            'initial_tab': (active_tab | default ('profile', true))
+        } | tojson | safe
+    }};
+</script>
+<script src="{{ url_for('static', filename='js/customer360_view.js') }}"></script>
+{% endblock %}

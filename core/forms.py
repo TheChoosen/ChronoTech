@@ -4,7 +4,8 @@ from wtforms.validators import DataRequired, Email, Length, Optional
 
 class CustomerForm(FlaskForm):
     name = StringField('Nom', validators=[DataRequired(), Length(max=255)])
-    customer_type = SelectField('Type', choices=[('particulier', 'Particulier'), ('entreprise', 'Entreprise')], validators=[Optional()])
+    # Use canonical tokens internally (English) but display French labels
+    customer_type = SelectField('Type', choices=[('individual', 'Particulier'), ('company', 'Entreprise'), ('government', 'Administration')], validators=[Optional()])
     company = StringField('Société', validators=[Optional(), Length(max=255)])
     siret = StringField('SIRET', validators=[Optional(), Length(max=14)])
     email = StringField('Email', validators=[DataRequired(), Email(), Length(max=255)])
