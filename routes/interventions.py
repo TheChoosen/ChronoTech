@@ -93,14 +93,14 @@ def intervention_details(work_order_id):
             work_order = cursor.fetchone()
             if not work_order:
                 flash('Intervention non trouvée', 'error')
-                return redirect(url_for('interventions.list_interventions'))
+                return redirect(url_for('api_interventions.list_interventions'))
             
             # Vérification des permissions
             user_role = session.get('user_role')
             if (user_role == 'technician' and 
                 work_order['assigned_technician_id'] != session.get('user_id')):
                 flash('Accès non autorisé', 'error')
-                return redirect(url_for('interventions.list_interventions'))
+                return redirect(url_for('api_interventions.list_interventions'))
             
             # Notes d'intervention
             cursor.execute("""
@@ -341,7 +341,7 @@ def mobile_interface():
     """Interface mobile optimisée pour techniciens (mode rapide)"""
     user_role = session.get('user_role')
     if user_role != 'technician':
-        return redirect(url_for('interventions.list_interventions'))
+        return redirect(url_for('api_interventions.list_interventions'))
     
     conn = get_db_connection()
     try:

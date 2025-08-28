@@ -677,13 +677,11 @@ api_bp = None
 
 # Import work_orders.py spécifiquement pour éviter le conflit avec le package
 try:
-    import sys
+    # Import work_orders.py file directly to avoid package conflict
     import importlib.util
-    
-    work_orders_spec = importlib.util.spec_from_file_location("work_orders_module", 
-                                                             "/home/amenard/Chronotech/ChronoTech/routes/work_orders.py")
-    work_orders_module = importlib.util.module_from_spec(work_orders_spec)
-    work_orders_spec.loader.exec_module(work_orders_module)
+    spec = importlib.util.spec_from_file_location("work_orders_module", "routes/work_orders.py")
+    work_orders_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(work_orders_module)
     work_orders_bp = work_orders_module.bp
     logger.info("✅ work_orders blueprint importé avec succès")
 except Exception as e:
@@ -691,11 +689,11 @@ except Exception as e:
 
 # Import des autres modules avec gestion d'erreurs individuelles
 try:
-    # Import interventions.py spécifiquement comme work_orders
-    interventions_spec = importlib.util.spec_from_file_location("interventions_module", 
-                                                               "/home/amenard/Chronotech/ChronoTech/routes/interventions.py")
-    interventions_module = importlib.util.module_from_spec(interventions_spec)
-    interventions_spec.loader.exec_module(interventions_module)
+    # Import interventions.py file directly to avoid package conflict
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("interventions_module", "routes/interventions.py")
+    interventions_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(interventions_module)
     interventions_bp = interventions_module.bp
     logger.info("✅ interventions blueprint importé avec succès")
 except Exception as e:
