@@ -26,7 +26,31 @@ def index():
                 cur.execute("SELECT id, sku, name, price, stock, description FROM products ORDER BY name")
                 products = cur.fetchall()
         except Exception as e:
-            log_error(f"Erreur récupération produits: {e}")
+            # try create table if missing
+            try:
+                if hasattr(e, 'args') and e.args and isinstance(e.args[0], int) and e.args[0] == 1146:
+                    with conn.cursor() as cur:
+                        cur.execute("""
+                            CREATE TABLE IF NOT EXISTS products (
+                                id INT AUTO_INCREMENT PRIMARY KEY,
+                                sku VARCHAR(100) DEFAULT NULL,
+                                name VARCHAR(255) NOT NULL,
+                                price DECIMAL(10,2) DEFAULT NULL,
+                                stock INT DEFAULT NULL,
+                                description TEXT,
+                                created_by_user_id INT DEFAULT NULL,
+                                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+                        """)
+                        conn.commit()
+                    # retry select
+                    with conn.cursor(pymysql.cursors.DictCursor) as cur:
+                        cur.execute("SELECT id, sku, name, price, stock, description FROM products ORDER BY name")
+                        products = cur.fetchall()
+                else:
+                    log_error(f"Erreur récupération produits: {e}")
+            except Exception as e2:
+                log_error(f"Erreur récupération produits (retry): {e2}")
         finally:
             try:
                 conn.close()

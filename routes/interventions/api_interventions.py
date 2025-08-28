@@ -59,7 +59,7 @@ def check_intervention_access(intervention_id: int) -> tuple[bool, dict]:
                     i.*,
                     wot.title as task_title,
                     wot.work_order_id,
-                    wo.title as wo_title,
+                    wo.claim_number as wo_title,
                     wo.assigned_technician_id as wo_technician_id,
                     u.name as technician_name
                 FROM interventions i
@@ -179,7 +179,7 @@ def list_interventions():
                         wot.title as task_title,
                         wot.task_source,
                         wot.priority as task_priority,
-                        wo.title as wo_title,
+                        wo.claim_number as wo_title,
                         wo.status as wo_status,
                         u.name as technician_name,
                         c.name as customer_name,
