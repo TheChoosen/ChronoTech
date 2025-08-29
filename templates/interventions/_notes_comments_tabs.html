@@ -1,37 +1,61 @@
 <!-- Notes and Internal Comments Tabs -->
-<div class="notes-comments-section mt-4">
-    <ul class="nav nav-tabs" id="notesCommentsTab" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="notes-tab" data-bs-toggle="tab" data-bs-target="#notesPane" type="button" role="tab" aria-controls="notesPane" aria-selected="true">Notes</button>
+<div class="notes-comments-section" style="padding: 0; overflow: hidden;">
+    <ul class="nav nav-tabs" id="notesCommentsTab" role="tablist"
+        style="background: transparent; border-bottom: 1px solid var(--shadow-dark); margin: 0;">
+        <li class="nav-item" role="presentation" style="flex: 1;">
+            <button class="nav-link active clay-element" id="notes-tab" data-bs-toggle="tab" data-bs-target="#notesPane"
+                type="button" role="tab" aria-controls="notesPane" aria-selected="true"
+                style="width: 100%; border: none; border-radius: 0; border-bottom: 3px solid var(--primary-color); background: var(--secondary-color); color: var(--text-color); font-weight: 600;">
+                <i class="fas fa-sticky-note me-2"></i>Notes
+            </button>
         </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="comments-tab" data-bs-toggle="tab" data-bs-target="#commentsPane" type="button" role="tab" aria-controls="commentsPane" aria-selected="false">Commentaires internes</button>
+        <li class="nav-item" role="presentation" style="flex: 1;">
+            <button class="nav-link clay-element" id="comments-tab" data-bs-toggle="tab" data-bs-target="#commentsPane"
+                type="button" role="tab" aria-controls="commentsPane" aria-selected="false"
+                style="width: 100%; border: none; border-radius: 0; background: var(--secondary-color); color: var(--text-color); font-weight: 600;">
+                <i class="fas fa-comments me-2"></i>Commentaires internes
+            </button>
         </li>
     </ul>
-    <div class="tab-content p-3 border border-top-0" id="notesCommentsTabContent">
+    <div class="tab-content" id="notesCommentsTabContent" style="padding: 1.5rem; background: var(--secondary-color);">
         <div class="tab-pane fade show active" id="notesPane" role="tabpanel" aria-labelledby="notes-tab">
             {% include 'interventions/_notes_panel.html' %}
         </div>
         <div class="tab-pane fade" id="commentsPane" role="tabpanel" aria-labelledby="comments-tab">
-            <div class="mb-3">
-                <label for="commentContent" class="form-label">Nouveau commentaire interne</label>
-                <textarea id="commentContent" class="form-control" rows="3" placeholder="Ajouter un commentaire visible uniquement aux techniciens"></textarea>
-                <div class="mt-2">
-                    <button class="btn btn-sm btn-primary" id="addCommentBtn">Ajouter le commentaire</button>
+            <div class="notes-section">
+                <div class="mb-3">
+                    <label for="commentContent" class="form-label" style="font-weight: 600; color: var(--text-color);">
+                        <i class="fas fa-comment-medical me-1"></i>Nouveau commentaire interne
+                    </label>
+                    <textarea id="commentContent" class="clay-input" rows="3"
+                        placeholder="Ajouter un commentaire visible uniquement aux techniciens"
+                        style="resize: vertical;"></textarea>
+                    <div class="mt-2">
+                        <button class="clay-button-primary" id="addCommentBtn" style="padding: 0.5rem 1rem;">
+                            <i class="fas fa-plus me-1"></i>Ajouter le commentaire
+                        </button>
+                    </div>
                 </div>
-            </div>
 
-            <div id="commentsList">
-                {% if comments and comments|length > 0 %}
+                <div id="commentsList">
+                    {% if comments and comments|length > 0 %}
                     {% for c in comments %}
-                        <div class="comment-item mb-2 p-2 border rounded">
-                            <div class="small text-muted">{{ c.technician_name or 'Système' }} • {{ c.created_at }}</div>
-                            <div class="mt-1">{{ c.content }}</div>
+                    <div class="comment-item clay-element mb-2"
+                        style="padding: 1rem; border-radius: var(--border-radius);">
+                        <div class="small" style="color: var(--text-color); opacity: 0.8; margin-bottom: 0.5rem;">
+                            <i class="fas fa-user me-1"></i>{{ c.technician_name or 'Système' }} • {{ c.created_at }}
                         </div>
+                        <div style="color: var(--text-color);">{{ c.content }}</div>
+                    </div>
                     {% endfor %}
-                {% else %}
-                    <div class="text-muted">Aucun commentaire interne</div>
-                {% endif %}
+                    {% else %}
+                    <div class="clay-element" style="padding: 2rem; text-align: center;">
+                        <i class="fas fa-comment-slash"
+                            style="font-size: 2rem; color: var(--text-color); opacity: 0.5; margin-bottom: 1rem;"></i>
+                        <p style="color: var(--text-color); opacity: 0.8; margin: 0;">Aucun commentaire interne</p>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>

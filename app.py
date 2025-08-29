@@ -691,9 +691,9 @@ except Exception as e:
 
 # Import des autres modules avec gestion d'erreurs individuelles
 try:
-    # Import interventions.py spécifiquement comme work_orders
+    # Import interventions.py spécifiquement pour éviter le conflit avec le package
     interventions_spec = importlib.util.spec_from_file_location("interventions_module", 
-                                                               "routes/interventions.py")
+                                                               "/home/amenard/Chronotech/ChronoTech/routes/interventions.py")
     interventions_module = importlib.util.module_from_spec(interventions_spec)
     interventions_spec.loader.exec_module(interventions_module)
     interventions_bp = interventions_module.bp
@@ -702,6 +702,7 @@ except Exception as e:
     logger.error(f"❌ Erreur import interventions: {e}")
     import traceback
     traceback.print_exc()
+    interventions_bp = None
     
 try:  
     import routes.customers as customers_module

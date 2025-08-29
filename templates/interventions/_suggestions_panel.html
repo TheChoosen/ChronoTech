@@ -1,14 +1,16 @@
         <!-- Intelligent Suggestions Section -->
-        <div class="audio-section suggestions-section">
+        <div class="audio-section suggestions-section" style="padding: 1.5rem; background: var(--secondary-color);">
             <div class="d-flex justify-content-between align-items-start mb-2">
                 <div>
-                    <h3 class="mb-0">Suggestions intelligentes</h3>
-                    <small class="text-muted">Générez uniquement les sections nécessaires — ou utilisez la recherche rapide.</small>
+                    <h3 class="mb-0" style="color: var(--text-color); font-weight: 600;">
+                        <i class="fas fa-brain me-2 text-primary"></i>Suggestions intelligentes
+                    </h3>
+                    <small style="color: var(--text-color); opacity: 0.8;">Générez uniquement les sections nécessaires — ou utilisez la recherche rapide.</small>
                 </div>
                 <div class="text-end d-flex align-items-center gap-2">
                     <div class="input-group input-group-sm me-2">
-                        <label class="input-group-text" for="suggestionsLanguage">Langue</label>
-                        <select id="suggestionsLanguage" class="form-select">
+                        <label class="input-group-text clay-element" for="suggestionsLanguage" style="background: var(--secondary-color); color: var(--text-color); border: none;">Langue</label>
+                        <select id="suggestionsLanguage" class="clay-input" style="font-size: 0.875rem;">
                             <option value="fr" selected>Français</option>
                             <option value="en">English</option>
                             <option value="es">Español</option>
@@ -16,7 +18,7 @@
                         </select>
                     </div>
                     <div id="suggestionsSpinner" style="display:none;">
-                        <div class="spinner-border text-info" role="status" style="width:1.5rem; height:1.5rem;">
+                        <div class="loading-spinner" style="width:1.5rem; height:1.5rem; border-width: 2px;">
                             <span class="visually-hidden">Chargement...</span>
                         </div>
                     </div>
@@ -26,11 +28,11 @@
             <!-- Quick Search -->
             <div class="mb-3 suggestions-actions">
                 <div class="input-group">
-                    <input id="quickSearchInput" type="text" class="form-control" placeholder="Recherche technique rapide (ex: bruit, voyant, fuite)">
-                    <button class="btn btn-outline-secondary" id="clearSearchBtn" title="Effacer">
+                    <input id="quickSearchInput" type="text" class="clay-input" placeholder="Recherche technique rapide (ex: bruit, voyant, fuite)" style="border-radius: var(--border-radius) 0 0 var(--border-radius);">
+                    <button class="clay-button" id="clearSearchBtn" title="Effacer" style="border-radius: 0; padding: 0.75rem;">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
-                    <button class="btn btn-primary" id="quickSearchBtn">
+                    <button class="clay-button-primary" id="quickSearchBtn" style="border-radius: 0 var(--border-radius) var(--border-radius) 0; padding: 0.75rem 1rem;">
                         <i class="fa-solid fa-search me-1"></i>Rechercher
                     </button>
                 </div>
@@ -38,14 +40,14 @@
 
             <!-- Search Results -->
             <div id="quickSearchResults" class="mb-3" style="display:none;">
-                <div id="searchResultsContent"></div>
+                <div id="searchResultsContent" class="clay-element" style="padding: 1rem; border-radius: var(--border-radius); background: var(--secondary-color);"></div>
             </div>
 
             <!-- Accordion with suggestion sections -->
             <div class="accordion" id="suggestionsAccordion">
-                <div class="accordion-item">
+                <div class="accordion-item" style="background: transparent; border: none; margin-bottom: 1rem;">
                     <h2 class="accordion-header" id="headingDiag">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDiag" aria-expanded="false" aria-controls="collapseDiag">
+                        <button class="accordion-button collapsed clay-element" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDiag" aria-expanded="false" aria-controls="collapseDiag" style="background: var(--secondary-color); color: var(--text-color); border: none; border-radius: var(--border-radius); font-weight: 600;">
                             <i class="fa-solid fa-stethoscope me-2 text-primary"></i> Diagnostic
                         </button>
                     </h2>

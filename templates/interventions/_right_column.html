@@ -1,55 +1,83 @@
-<!-- Right Column content (do not include .col- wrapper here; `details.html` provides the column) -->
+<!-- Right Column content -->
     <!-- Work Order Details -->
-    <div class="card mb-3">
-            <div class="card-header">
-                <h5><i class="fa-solid fa-clipboard-list me-2"></i>Détails de l'intervention</h5>
+    <div class="clay-card mb-3" style="padding: 1.5rem;">
+            <div class="card-header" style="background: transparent; border: none; padding: 0 0 1rem 0;">
+                <h5 style="margin: 0; color: var(--text-color); font-weight: 600;">
+                    <i class="fa-solid fa-clipboard-list me-2 text-primary"></i>Détails de l'intervention
+                </h5>
             </div>
-            <div class="card-body">
-                <p><strong>Statut:</strong> 
-                    <span class="badge bg-{{ 'success' if work_order.status == 'completed' else 'warning' if work_order.status == 'in_progress' else 'secondary' }}">
+            <div class="card-body" style="padding: 0;">
+                <div class="detail-item" style="margin-bottom: 1rem;">
+                    <strong style="color: var(--text-color);">Statut:</strong> 
+                    <span class="clay-element" style="display: inline-block; padding: 0.25rem 0.75rem; border-radius: var(--border-radius-sm); margin-left: 0.5rem; background: {{ 'var(--success-color)' if work_order.status == 'completed' else 'var(--warning-color)' if work_order.status == 'in_progress' else 'var(--secondary-color)' }}; color: {{ 'white' if work_order.status in ['completed', 'in_progress'] else 'var(--text-color)' }};">
                         {{ work_order.status }}
                     </span>
-                </p>
-                <p><strong>Priorité:</strong> {{ work_order.priority or 'Normal' }}</p>
-                <p><strong>Date programmée:</strong> 
-                    {{ work_order.scheduled_date.strftime('%d/%m/%Y') if work_order.scheduled_date and work_order.scheduled_date.strftime else 'Non définie' }}
-                </p>
-                <p><strong>Technicien:</strong> {{ work_order.technician_name or 'Non assigné' }}</p>
-                <hr>
-                <p><strong>Description:</strong></p>
-                <p class="text-muted">{{ work_order.description or 'Aucune description disponible.' }}</p>
+                </div>
+                <div class="detail-item" style="margin-bottom: 1rem;">
+                    <strong style="color: var(--text-color);">Priorité:</strong> 
+                    <span style="color: var(--text-color);">{{ work_order.priority or 'Normal' }}</span>
+                </div>
+                <div class="detail-item" style="margin-bottom: 1rem;">
+                    <strong style="color: var(--text-color);">Date programmée:</strong> 
+                    <span style="color: var(--text-color);">{{ work_order.scheduled_date.strftime('%d/%m/%Y') if work_order.scheduled_date and work_order.scheduled_date.strftime else 'Non définie' }}</span>
+                </div>
+                <div class="detail-item" style="margin-bottom: 1rem;">
+                    <strong style="color: var(--text-color);">Technicien:</strong> 
+                    <span style="color: var(--text-color);">{{ work_order.technician_name or 'Non assigné' }}</span>
+                </div>
+                <hr style="border-color: var(--shadow-dark); opacity: 0.3;">
+                <div class="detail-item">
+                    <strong style="color: var(--text-color);">Description:</strong>
+                    <p class="text-muted" style="margin-top: 0.5rem; color: var(--text-color); opacity: 0.8;">{{ work_order.description or 'Aucune description disponible.' }}</p>
+                </div>
             </div>
         </div>
 
         <!-- Customer Information -->
-        <div class="card">
-            <div class="card-header">
-                <h5><i class="fa-solid fa-user me-2"></i>Client</h5>
+        <div class="clay-card" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+            <div class="card-header" style="background: transparent; border: none; padding: 0 0 1rem 0;">
+                <h5 style="margin: 0; color: var(--text-color); font-weight: 600;">
+                    <i class="fa-solid fa-user me-2 text-primary"></i>Client
+                </h5>
             </div>
-            <div class="card-body">
-                <p><strong>Nom:</strong> {{ work_order.customer_name }}</p>
-                <p><strong>Téléphone:</strong> {{ work_order.customer_phone or 'N/A' }}</p>
-                <p><strong>Email:</strong> {{ work_order.customer_email or 'N/A' }}</p>
+            <div class="card-body" style="padding: 0;">
+                <div class="detail-item" style="margin-bottom: 1rem;">
+                    <strong style="color: var(--text-color);">Nom:</strong> 
+                    <span style="color: var(--text-color);">{{ work_order.customer_name }}</span>
+                </div>
+                <div class="detail-item" style="margin-bottom: 1rem;">
+                    <strong style="color: var(--text-color);">Téléphone:</strong> 
+                    <span style="color: var(--text-color);">{{ work_order.customer_phone or 'N/A' }}</span>
+                </div>
+                <div class="detail-item" style="margin-bottom: 1rem;">
+                    <strong style="color: var(--text-color);">Email:</strong> 
+                    <span style="color: var(--text-color);">{{ work_order.customer_email or 'N/A' }}</span>
+                </div>
                 {% if work_order.customer_address %}
-                <p><strong>Adresse:</strong> {{ work_order.customer_address }}</p>
+                <div class="detail-item">
+                    <strong style="color: var(--text-color);">Adresse:</strong> 
+                    <span style="color: var(--text-color);">{{ work_order.customer_address }}</span>
+                </div>
                 {% endif %}
             </div>
         </div>
 
         <!-- Quick Actions -->
-        <div class="card mt-3">
-            <div class="card-header">
-                <h5><i class="fa-solid fa-bolt me-2"></i>Actions rapides</h5>
+        <div class="clay-card mt-3" style="padding: 1.5rem;">
+            <div class="card-header" style="background: transparent; border: none; padding: 0 0 1rem 0;">
+                <h5 style="margin: 0; color: var(--text-color); font-weight: 600;">
+                    <i class="fa-solid fa-bolt me-2 text-primary"></i>Actions rapides
+                </h5>
             </div>
-            <div class="card-body">
+            <div class="card-body" style="padding: 0;">
                 <div class="d-grid gap-2">
-                    <button class="btn btn-success" onclick="updateStatus('in_progress')">
+                    <button class="clay-button-primary" onclick="updateStatus('in_progress')" style="width: 100%; padding: 0.75rem;">
                         <i class="fa-solid fa-play me-1"></i>Démarrer
                     </button>
-                    <button class="btn btn-warning" onclick="updateStatus('completed')">
+                    <button class="clay-button" onclick="updateStatus('completed')" style="width: 100%; padding: 0.75rem; background: var(--success-color); color: white;">
                         <i class="fa-solid fa-check me-1"></i>Terminer
                     </button>
-                    <button class="btn btn-info" onclick="requestParts()">
+                    <button class="clay-button" onclick="requestParts()" style="width: 100%; padding: 0.75rem; background: var(--info-color); color: white;">
                         <i class="fa-solid fa-cogs me-1"></i>Demander pièces
                     </button>
                 </div>

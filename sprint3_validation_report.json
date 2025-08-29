@@ -1,0 +1,91 @@
+{
+  "completion_percentage": 26.666666666666668,
+  "test_results": {
+    "interface_mobile": {},
+    "dashboard_superviseur": {},
+    "service_pdf": {},
+    "templates": {
+      "templates/mobile/technician_today.html": {
+        "exists": true,
+        "status": "\u2705"
+      },
+      "templates/mobile/intervention_details.html": {
+        "exists": true,
+        "status": "\u2705"
+      },
+      "templates/supervisor/dashboard.html": {
+        "exists": true,
+        "status": "\u2705"
+      },
+      "templates/supervisor/_task_card.html": {
+        "exists": true,
+        "status": "\u2705"
+      },
+      "templates/pdf/work_order.html": {
+        "exists": false,
+        "status": "\u274c"
+      },
+      "templates/pdf/intervention_report.html": {
+        "exists": false,
+        "status": "\u274c"
+      }
+    },
+    "routes": {
+      "routes/mobile.py": {
+        "exists": true,
+        "lines": 436,
+        "has_endpoints": false,
+        "status": "\u26a0\ufe0f"
+      },
+      "routes/supervisor.py": {
+        "exists": true,
+        "lines": 502,
+        "has_endpoints": false,
+        "status": "\u26a0\ufe0f"
+      },
+      "routes/pdf.py": {
+        "exists": true,
+        "lines": 434,
+        "has_endpoints": false,
+        "status": "\u26a0\ufe0f"
+      }
+    },
+    "static_files": {
+      "static/css/mobile.css": {
+        "exists": false,
+        "status": "\u274c"
+      },
+      "static/css/supervisor.css": {
+        "exists": false,
+        "status": "\u274c"
+      },
+      "static/js/mobile.js": {
+        "exists": false,
+        "status": "\u274c"
+      },
+      "static/js/supervisor.js": {
+        "exists": false,
+        "status": "\u274c"
+      },
+      "static/js/kanban.js": {
+        "exists": false,
+        "status": "\u274c"
+      },
+      "static/js/pdf-viewer.js": {
+        "exists": false,
+        "status": "\u274c"
+      }
+    }
+  },
+  "missing_elements": [
+    "templates: templates/pdf/work_order.html",
+    "templates: templates/pdf/intervention_report.html",
+    "static_files: static/css/mobile.css",
+    "static_files: static/css/supervisor.css",
+    "static_files: static/js/mobile.js",
+    "static_files: static/js/supervisor.js",
+    "static_files: static/js/kanban.js",
+    "static_files: static/js/pdf-viewer.js"
+  ],
+  "timestamp": "2025-08-28"
+}

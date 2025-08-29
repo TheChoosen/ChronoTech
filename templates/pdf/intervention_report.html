@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rapport d'Intervention #{{ intervention.id }} - ChronoTech</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+            @bottom-center {
+                content: "Page " counter(page) " sur " counter(pages);
+                font-size: 10px;
+                color: #666;
+            }
+        }
+        
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 2cm;
+            border-bottom: 2px solid #38a169;
+            padding-bottom: 20px;
+        }
+        
+        .logo-section {
+            flex: 1;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #38a169;
+            margin-bottom: 10px;
+        }
+        
+        .company-info {
+            font-size: 10px;
+            color: #666;
+        }
+        
+        .document-info {
+            text-align: right;
+            flex: 1;
+        }
+        
+        .doc-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #38a169;
+            margin-bottom: 10px;
+        }
+        
+        .doc-number {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .doc-date {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .section {
+            margin-bottom: 25px;
+        }
+        
+        .section-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #38a169;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 5px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .info-grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .info-box {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #38a169;
+        }
+        
+        .info-box.success {
+            background: #f0fff4;
+            border-left-color: #38a169;
+        }
+        
+        .info-box.warning {
+            background: #fffaf0;
+            border-left-color: #dd6b20;
+        }
+        
+        .info-box.error {
+            background: #fed7d7;
+            border-left-color: #e53e3e;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            color: #4a5568;
+            margin-bottom: 5px;
+        }
+        
+        .info-value {
+            font-size: 13px;
+        }
+        
+        .status-ok {
+            color: #38a169;
+            font-weight: bold;
+        }
+        
+        .status-rework {
+            color: #dd6b20;
+            font-weight: bold;
+        }
+        
+        .status-cancelled {
+            color: #e53e3e;
+            font-weight: bold;
+        }
+        
+        .timeline {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #38a169;
+        }
+        
+        .timeline-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 3px;
+            border-left: 3px solid #e2e8f0;
+        }
+        
+        .timeline-time {
+            font-weight: bold;
+            color: #38a169;
+            min-width: 80px;
+            margin-right: 15px;
+        }
+        
+        .timeline-content {
+            flex: 1;
+        }
+        
+        .notes-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .notes-table th,
+        .notes-table td {
+            border: 1px solid #e2e8f0;
+            padding: 10px;
+            text-align: left;
+            vertical-align: top;
+        }
+        
+        .notes-table th {
+            background: #f7fafc;
+            font-weight: bold;
+            color: #2d3748;
+        }
+        
+        .note-row:nth-child(even) {
+            background: #f8fafc;
+        }
+        
+        .media-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .media-item {
+            text-align: center;
+            border: 1px solid #e2e8f0;
+            border-radius: 5px;
+            padding: 10px;
+            background: #f8fafc;
+        }
+        
+        .media-placeholder {
+            width: 100%;
+            height: 120px;
+            background: #e2e8f0;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+            font-size: 24px;
+            color: #a0aec0;
+        }
+        
+        .summary-box {
+            background: linear-gradient(135deg, #f0fff4 0%, #e6fffa 100%);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #38a169;
+            margin: 20px 0;
+        }
+        
+        .summary-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #22543d;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 20px;
+            font-size: 10px;
+            color: #666;
+        }
+        
+        .signatures {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-top: 30px;
+        }
+        
+        .signature-box {
+            text-align: center;
+            border: 1px solid #e2e8f0;
+            padding: 20px;
+            height: 80px;
+            position: relative;
+        }
+        
+        .signature-label {
+            position: absolute;
+            bottom: 5px;
+            left: 0;
+            right: 0;
+            font-size: 10px;
+            color: #666;
+        }
+        
+        .highlight {
+            background: #fff5b2;
+            padding: 2px 4px;
+            border-radius: 2px;
+        }
+        
+        .print-only {
+            display: none;
+        }
+        
+        @media print {
+            .print-only {
+                display: block;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- En-tête du document -->
+    <div class="header">
+        <div class="logo-section">
+            <div class="logo">ChronoTech</div>
+            <div class="company-info">
+                Système de Gestion d'Interventions<br>
+                {{ company_address or "123 Rue de l'Innovation, 75001 Paris" }}<br>
+                Tél: {{ company_phone or "01 23 45 67 89" }} | Email: {{ company_email or "contact@chronotech.fr" }}
+            </div>
+        </div>
+        <div class="document-info">
+            <div class="doc-title">RAPPORT D'INTERVENTION</div>
+            <div class="doc-number">#{{ intervention.id }}</div>
+            <div class="doc-date">{{ intervention.started_at.strftime('%d/%m/%Y') if intervention.started_at else "Date non définie" }}</div>
+            <div class="doc-date">
+                <span class="status-{{ intervention.result_status or 'ok' }}">
+                    {{ intervention.result_status.upper() if intervention.result_status else "TERMINÉ" }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informations générales -->
+    <div class="section">
+        <div class="section-title">📋 Informations Générales</div>
+        <div class="info-grid">
+            <div class="info-box">
+                <div class="info-label">Bon de Travail</div>
+                <div class="info-value">
+                    #{{ work_order.id if work_order else "N/A" }}<br>
+                    Créé le: {{ work_order.created_at.strftime('%d/%m/%Y') if work_order and work_order.created_at else "Date inconnue" }}
+                </div>
+            </div>
+            <div class="info-box">
+                <div class="info-label">Technicien</div>
+                <div class="info-value">
+                    {{ technician_name or "Nom non défini" }}<br>
+                    ID: {{ intervention.technician_id if intervention.technician_id else "Non assigné" }}
+                </div>
+            </div>
+        </div>
+        <div class="info-grid">
+            <div class="info-box">
+                <div class="info-label">Client</div>
+                <div class="info-value">
+                    {{ customer_name or "Nom non défini" }}<br>
+                    {% if customer_phone %}Tél: {{ customer_phone }}<br>{% endif %}
+                    {% if customer_email %}Email: {{ customer_email }}{% endif %}
+                </div>
+            </div>
+            <div class="info-box">
+                <div class="info-label">Véhicule</div>
+                <div class="info-value">
+                    {{ vehicle_info or "Informations véhicule non disponibles" }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chronologie de l'intervention -->
+    <div class="section">
+        <div class="section-title">⏱️ Chronologie de l'Intervention</div>
+        <div class="timeline">
+            {% if intervention.started_at %}
+            <div class="timeline-item">
+                <div class="timeline-time">{{ intervention.started_at.strftime('%H:%M') }}</div>
+                <div class="timeline-content"><strong>Début d'intervention</strong></div>
+            </div>
+            {% endif %}
+            
+            {% for note in notes %}
+            <div class="timeline-item">
+                <div class="timeline-time">{{ note.created_at.strftime('%H:%M') if note.created_at else "--:--" }}</div>
+                <div class="timeline-content">{{ note.note }}</div>
+            </div>
+            {% endfor %}
+            
+            {% if intervention.ended_at %}
+            <div class="timeline-item">
+                <div class="timeline-time">{{ intervention.ended_at.strftime('%H:%M') }}</div>
+                <div class="timeline-content"><strong>Fin d'intervention</strong></div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="info-grid-3">
+            <div class="info-box success">
+                <div class="info-label">Durée Totale</div>
+                <div class="info-value">
+                    {% if intervention.started_at and intervention.ended_at %}
+                    {{ ((intervention.ended_at - intervention.started_at).total_seconds() / 3600) | round(2) }} heures
+                    {% else %}
+                    Non calculable
+                    {% endif %}
+                </div>
+            </div>
+            <div class="info-box">
+                <div class="info-label">Statut Final</div>
+                <div class="info-value status-{{ intervention.result_status or 'ok' }}">
+                    {% if intervention.result_status == 'ok' %}
+                    ✅ TERMINÉ AVEC SUCCÈS
+                    {% elif intervention.result_status == 'rework' %}
+                    ⚠️ NÉCESSITE RETOUCHE
+                    {% elif intervention.result_status == 'cancelled' %}
+                    ❌ ANNULÉ
+                    {% else %}
+                    ✅ TERMINÉ
+                    {% endif %}
+                </div>
+            </div>
+            <div class="info-box">
+                <div class="info-label">Nombre de Notes</div>
+                <div class="info-value">
+                    {{ notes|length if notes else 0 }} entrées
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Résumé des travaux effectués -->
+    {% if intervention.summary %}
+    <div class="section">
+        <div class="section-title">📝 Résumé des Travaux Effectués</div>
+        <div class="summary-box">
+            <div class="summary-title">Résumé Technicien</div>
+            {{ intervention.summary }}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Tâches effectuées -->
+    {% if task %}
+    <div class="section">
+        <div class="section-title">🔧 Tâche Principale</div>
+        <div class="info-box {{ 'success' if task.status == 'done' else 'warning' }}">
+            <div class="info-label">{{ task.title or "Tâche sans titre" }}</div>
+            <div class="info-value">
+                {{ task.description or "Aucune description" }}<br>
+                <strong>Statut:</strong> 
+                <span class="highlight">{{ task.status.upper() if task.status else "STATUT INCONNU" }}</span>
+                {% if task.completed_at %}
+                <br><strong>Complétée le:</strong> {{ task.completed_at.strftime('%d/%m/%Y à %H:%M') }}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Notes détaillées -->
+    {% if notes %}
+    <div class="section">
+        <div class="section-title">📌 Notes Détaillées</div>
+        <table class="notes-table">
+            <thead>
+                <tr>
+                    <th style="width: 15%">Heure</th>
+                    <th style="width: 20%">Auteur</th>
+                    <th style="width: 65%">Note</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for note in notes %}
+                <tr class="note-row">
+                    <td>{{ note.created_at.strftime('%H:%M') if note.created_at else "--:--" }}</td>
+                    <td>{{ note.author_name or "Technicien" }}</td>
+                    <td>{{ note.note }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- Médias de l'intervention -->
+    {% if media %}
+    <div class="section">
+        <div class="section-title">📸 Médias de l'Intervention</div>
+        <div class="media-grid">
+            {% for media_item in media %}
+            <div class="media-item">
+                <div class="media-placeholder">
+                    {% if media_item.media_type == 'photo' %}
+                    📷
+                    {% elif media_item.media_type == 'doc' %}
+                    📄
+                    {% else %}
+                    📎
+                    {% endif %}
+                </div>
+                <div style="font-size: 10px;">
+                    {{ media_item.file_path.split('/')[-1] if media_item.file_path else "Fichier" }}<br>
+                    {{ media_item.created_at.strftime('%d/%m %H:%M') if media_item.created_at else "Date inconnue" }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="section">
+        <div class="section-title">📸 Médias de l'Intervention</div>
+        <div class="info-box">
+            <div class="info-value">
+                <em>Aucun média (photo, document) associé à cette intervention.</em>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recommandations et suivi -->
+    {% if recommendations %}
+    <div class="section">
+        <div class="section-title">💡 Recommandations et Suivi</div>
+        <div class="info-box warning">
+            <div class="info-label">Recommandations Technicien</div>
+            <div class="info-value">
+                {{ recommendations }}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Zone de signatures -->
+    <div class="section">
+        <div class="section-title">✍️ Validation</div>
+        <div class="signatures">
+            <div class="signature-box">
+                <div class="signature-label">Signature Client<br>(Travaux acceptés)</div>
+            </div>
+            <div class="signature-box">
+                <div class="signature-label">Signature Technicien<br>{{ technician_name or "Technicien" }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pied de page -->
+    <div class="footer">
+        <div style="text-align: center;">
+            <strong>ChronoTech - Rapport d'Intervention Technique</strong><br>
+            Document généré le {{ current_datetime.strftime('%d/%m/%Y à %H:%M') if current_datetime else datetime.now().strftime('%d/%m/%Y à %H:%M') }}<br>
+            <em>Ce rapport certifie l'exécution des travaux décrits ci-dessus</em><br>
+            {% if intervention.id %}
+            <small>Référence intervention: {{ intervention.id }} | Bon de travail: {{ work_order.id if work_order else "N/A" }}</small>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

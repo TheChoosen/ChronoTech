@@ -1,17 +1,158 @@
-<div class="vehicle-info">
-    <h4>Véhicule & Client</h4>
+<div class="vehicle-info clay-card" style="margin-bottom: 2rem; padding: 1.5rem;">
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <h4 style="margin: 0; color: var(--text-color); font-weight: 600;">
+            <i class="fas fa-car me-2"></i>Véhicule & Client
+        </h4>
+        <button type="button" class="clay-button" id="editVehicleBtn" title="Modifier les informations du véhicule">
+            <i class="fas fa-edit me-1"></i>Modifier
+        </button>
+    </div>
     <div class="row">
         <div class="col-md-8">
-            <p><strong>Bon:</strong> {{ work_order.claim_number }} — <strong>Statut:</strong> {{ work_order.status }}</p>
-            <p><strong>Client:</strong> {{ work_order.customer_name or 'N/A' }} {% if work_order.customer_phone %} — {{ work_order.customer_phone }}{% endif %}</p>
-            <p><strong>Adresse:</strong> {{ work_order.customer_address or 'N/A' }}</p>
-            <p><strong>Description:</strong> {{ work_order.description or '—' }}</p>
+            <div class="info-group" style="margin-bottom: 1rem;">
+                <p style="margin-bottom: 0.5rem; color: var(--text-color);">
+                    <strong>Bon:</strong> 
+                    <span class="clay-element" style="display: inline-block; padding: 0.25rem 0.5rem; border-radius: var(--border-radius-sm);">{{ work_order.claim_number }}</span>
+                    —
+                    <strong>Statut:</strong> 
+                    <span class="clay-element" style="display: inline-block; padding: 0.25rem 0.5rem; border-radius: var(--border-radius-sm);">{{ work_order.status }}</span>
+                </p>
+            </div>
+            <div class="info-group" style="margin-bottom: 1rem;">
+                <p style="margin-bottom: 0.5rem; color: var(--text-color);">
+                    <strong><i class="fas fa-user me-1"></i>Client:</strong> {{ work_order.customer_name or 'N/A' }} 
+                    {% if work_order.customer_phone %} 
+                    — <i class="fas fa-phone me-1"></i>{{ work_order.customer_phone }}
+                    {% endif %}
+                </p>
+            </div>
+            <div class="info-group" style="margin-bottom: 1rem;">
+                <p style="margin-bottom: 0.5rem; color: var(--text-color);">
+                    <strong><i class="fas fa-map-marker-alt me-1"></i>Adresse:</strong> {{ work_order.customer_address or 'N/A' }}
+                </p>
+            </div>
+            <div class="info-group">
+                <p style="margin: 0; color: var(--text-color);">
+                    <strong><i class="fas fa-clipboard me-1"></i>Description:</strong> {{ work_order.description or '—' }}
+                </p>
+            </div>
         </div>
         <div class="col-md-4">
-            <p><strong>Véhicule:</strong></p>
-            <p>{{ work_order.vehicle_make or 'N/A' }} {{ work_order.vehicle_model or '' }} — {{ work_order.vehicle_year or '' }}</p>
-            <p><strong>VIN:</strong> {{ work_order.vehicle_vin or 'N/A' }}</p>
-            <p><strong>Kilométrage:</strong> {{ work_order.vehicle_mileage or 'N/A' }}</p>
+            <div class="vehicle-details clay-element" style="padding: 1rem; border-radius: var(--border-radius);">
+                <p style="margin-bottom: 0.75rem; color: var(--text-color); font-weight: 600;">
+                    <i class="fas fa-car me-1"></i>Véhicule:
+                </p>
+                <p style="margin-bottom: 0.5rem; color: var(--text-color);">
+                    {{ work_order.vehicle_make or 'N/A' }} {{ work_order.vehicle_model or '' }} — {{ work_order.vehicle_year or '' }}
+                </p>
+                <p style="margin-bottom: 0.5rem; color: var(--text-color);">
+                    <strong>VIN:</strong> {{ work_order.vehicle_vin or 'N/A' }}
+                </p>
+                <p style="margin: 0; color: var(--text-color);">
+                    <strong>Kilométrage:</strong> {{ work_order.vehicle_mileage or 'N/A' }}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour modifier les informations du véhicule -->
+<div class="modal fade" id="editVehicleModal" tabindex="-1" aria-labelledby="editVehicleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content clay-card" style="border: none; box-shadow: var(--shadow-level-3);">
+            <div class="modal-header" style="background: linear-gradient(135deg, var(--primary-color), #667eea); color: white; border-bottom: none;">
+                <h5 class="modal-title" id="editVehicleModalLabel">
+                    <i class="fas fa-edit me-2"></i>Modifier les informations du véhicule
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="padding: 2rem;">
+                <form id="editVehicleForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="vehicle_make" class="form-label" style="color: var(--text-color); font-weight: 600;">Marque</label>
+                                <input type="text" class="clay-input" id="vehicle_make" name="vehicle_make" 
+                                       value="{{ work_order.vehicle_make or '' }}" placeholder="Ex: Toyota, Ford, BMW">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="vehicle_model" class="form-label" style="color: var(--text-color); font-weight: 600;">Modèle</label>
+                                <input type="text" class="clay-input" id="vehicle_model" name="vehicle_model" 
+                                       value="{{ work_order.vehicle_model or '' }}" placeholder="Ex: Corolla, F-150, X3">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="vehicle_year" class="form-label" style="color: var(--text-color); font-weight: 600;">Année</label>
+                                <input type="number" class="clay-input" id="vehicle_year" name="vehicle_year" 
+                                       value="{{ work_order.vehicle_year or '' }}" placeholder="Ex: 2020" min="1900" max="2030">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="vehicle_mileage" class="form-label" style="color: var(--text-color); font-weight: 600;">Kilométrage</label>
+                                <input type="number" class="clay-input" id="vehicle_mileage" name="vehicle_mileage" 
+                                       value="{{ work_order.vehicle_mileage or '' }}" placeholder="Ex: 75000" min="0">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="vehicle_vin" class="form-label" style="color: var(--text-color); font-weight: 600;">Numéro VIN</label>
+                        <input type="text" class="clay-input" id="vehicle_vin" name="vehicle_vin" 
+                               value="{{ work_order.vehicle_vin or '' }}" placeholder="Ex: 1HGBH41JXMN109186" maxlength="17">
+                        <small class="form-text" style="color: var(--text-color); opacity: 0.7;">Le VIN doit contenir 17 caractères alphanumériques</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="vehicle_license_plate" class="form-label" style="color: var(--text-color); font-weight: 600;">Plaque d'immatriculation</label>
+                        <input type="text" class="clay-input" id="vehicle_license_plate" name="vehicle_license_plate" 
+                               value="{{ work_order.vehicle_license_plate or '' }}" placeholder="Ex: ABC-123">
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="vehicle_color" class="form-label" style="color: var(--text-color); font-weight: 600;">Couleur</label>
+                                <input type="text" class="clay-input" id="vehicle_color" name="vehicle_color" 
+                                       value="{{ work_order.vehicle_color or '' }}" placeholder="Ex: Blanc, Noir, Rouge">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="vehicle_fuel_type" class="form-label" style="color: var(--text-color); font-weight: 600;">Type de carburant</label>
+                                <select class="clay-input" id="vehicle_fuel_type" name="vehicle_fuel_type">
+                                    <option value="">Sélectionner...</option>
+                                    <option value="essence" {{ 'selected' if work_order.vehicle_fuel_type == 'essence' else '' }}>Essence</option>
+                                    <option value="diesel" {{ 'selected' if work_order.vehicle_fuel_type == 'diesel' else '' }}>Diesel</option>
+                                    <option value="hybrid" {{ 'selected' if work_order.vehicle_fuel_type == 'hybrid' else '' }}>Hybride</option>
+                                    <option value="electric" {{ 'selected' if work_order.vehicle_fuel_type == 'electric' else '' }}>Électrique</option>
+                                    <option value="other" {{ 'selected' if work_order.vehicle_fuel_type == 'other' else '' }}>Autre</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="vehicle_notes" class="form-label" style="color: var(--text-color); font-weight: 600;">Notes sur le véhicule</label>
+                        <textarea class="clay-input" id="vehicle_notes" name="vehicle_notes" rows="3" 
+                                  placeholder="Informations supplémentaires sur le véhicule...">{{ work_order.vehicle_notes or '' }}</textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer" style="border-top: none; padding: 1.5rem 2rem;">
+                <button type="button" class="clay-button" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Annuler
+                </button>
+                <button type="button" class="clay-button-primary" id="saveVehicleBtn">
+                    <i class="fas fa-save me-1"></i>Enregistrer
+                </button>
+            </div>
         </div>
     </div>
 </div>

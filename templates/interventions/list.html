@@ -3,46 +3,64 @@
 {% block title %}Interventions - ChronoTech{% endblock %}
 
 {% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/claymorphism.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/interventions-claymorphism.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/interventions.css') }}">
 {% endblock %}
 
 {% block content %}
-<div class="interventions-container">
+<div class="interventions-container" style="background: var(--bg-color); min-height: 100vh; padding: 2rem;">
     <!-- En-tête avec statistiques en temps réel -->
-    <div class="clay-card stats-header">
-        <div class="stats-grid">
-            <div class="stat-item urgent">
-                <span class="stat-number">{{ interventions | selectattr('priority', 'equalto', 'urgent') | list | length }}</span>
-                <span class="stat-label">Urgents</span>
+    <div class="clay-card stats-header" style="margin-bottom: 2rem; padding: 1.5rem;">
+        <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+            <div class="stat-card clay-element urgent" style="text-align: center;">
+                <div class="stat-icon bg-danger" style="margin: 0 auto 0.5rem;">
+                    <i class="fas fa-exclamation-triangle text-white"></i>
+                </div>
+                <span class="stat-number" style="display: block; font-size: 1.5rem; font-weight: bold; color: var(--danger-color);">{{ interventions | selectattr('priority', 'equalto', 'urgent') | list | length }}</span>
+                <span class="stat-label" style="color: var(--text-color); font-weight: 500;">Urgents</span>
             </div>
-            <div class="stat-item progress">
-                <span class="stat-number">{{ interventions | selectattr('status', 'equalto', 'in_progress') | list | length }}</span>
-                <span class="stat-label">En cours</span>
+            <div class="stat-card clay-element progress" style="text-align: center;">
+                <div class="stat-icon bg-warning" style="margin: 0 auto 0.5rem;">
+                    <i class="fas fa-clock text-white"></i>
+                </div>
+                <span class="stat-number" style="display: block; font-size: 1.5rem; font-weight: bold; color: var(--warning-color);">{{ interventions | selectattr('status', 'equalto', 'in_progress') | list | length }}</span>
+                <span class="stat-label" style="color: var(--text-color); font-weight: 500;">En cours</span>
             </div>
-            <div class="stat-item scheduled">
-                <span class="stat-number">{{ interventions | selectattr('status', 'equalto', 'scheduled') | list | length }}</span>
-                <span class="stat-label">Planifiés</span>
+            <div class="stat-card clay-element scheduled" style="text-align: center;">
+                <div class="stat-icon bg-info" style="margin: 0 auto 0.5rem;">
+                    <i class="fas fa-calendar text-white"></i>
+                </div>
+                <span class="stat-number" style="display: block; font-size: 1.5rem; font-weight: bold; color: var(--info-color);">{{ interventions | selectattr('status', 'equalto', 'scheduled') | list | length }}</span>
+                <span class="stat-label" style="color: var(--text-color); font-weight: 500;">Planifiés</span>
             </div>
-            <div class="stat-item media">
-                <span class="stat-number">{{ interventions | sum(attribute='media_count') }}</span>
-                <span class="stat-label">Médias</span>
+            <div class="stat-card clay-element media" style="text-align: center;">
+                <div class="stat-icon bg-success" style="margin: 0 auto 0.5rem;">
+                    <i class="fas fa-camera text-white"></i>
+                </div>
+                <span class="stat-number" style="display: block; font-size: 1.5rem; font-weight: bold; color: var(--success-color);">{{ interventions | sum(attribute='media_count') }}</span>
+                <span class="stat-label" style="color: var(--text-color); font-weight: 500;">Médias</span>
             </div>
         </div>
     </div>
 
     <!-- Filtres intelligents -->
-    <div class="clay-card filters-panel">
-        <div class="filters-header">
-            <h3>🎯 Filtres Intelligents</h3>
-            <div class="ai-toggle">
-                <input type="checkbox" id="ai-filter" checked>
-                <label for="ai-filter">Tri IA Automatique</label>
+    <div class="clay-card filters-panel" style="margin-bottom: 2rem; padding: 1.5rem;">
+        <div class="filters-header" style="margin-bottom: 1rem; display: flex; justify-content: between; align-items: center;">
+            <h3 style="margin: 0; color: var(--text-color); font-weight: 600;">
+                <i class="fas fa-filter me-2"></i>Filtres Intelligents
+            </h3>
+            <div class="ai-toggle clay-element" style="padding: 0.5rem 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" id="ai-filter" checked style="margin: 0;">
+                <label for="ai-filter" style="margin: 0; color: var(--text-color); font-weight: 500;">
+                    <i class="fas fa-robot me-1"></i>Tri IA Automatique
+                </label>
             </div>
         </div>
-        <div class="filters-grid">
+        <div class="filters-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
             <div class="filter-group">
-                <label>Priorité</label>
-                <select id="priority-filter" class="clay-select">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--text-color);">Priorité</label>
+                <select id="priority-filter" class="clay-input">
                     <option value="">Toutes</option>
                     <option value="urgent">🔴 Urgent</option>
                     <option value="high">🟠 Élevée</option>
@@ -51,8 +69,8 @@
                 </select>
             </div>
             <div class="filter-group">
-                <label>Statut</label>
-                <select id="status-filter" class="clay-select">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--text-color);">Statut</label>
+                <select id="status-filter" class="clay-input">
                     <option value="">Tous</option>
                     <option value="pending">⏳ En attente</option>
                     <option value="in_progress">⚡ En cours</option>
@@ -61,8 +79,8 @@
                 </select>
             </div>
             <div class="filter-group">
-                <label>Technicien</label>
-                <select id="technician-filter" class="clay-select">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--text-color);">Technicien</label>
+                <select id="technician-filter" class="clay-input">
                     <option value="">Tous</option>
                     {% for intervention in interventions %}
                         {% if intervention.technician_name %}
@@ -72,26 +90,27 @@
                 </select>
             </div>
             <div class="filter-group">
-                <label>Recherche</label>
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--text-color);">Recherche</label>
                 <input type="text" id="search-filter" class="clay-input" placeholder="Client, description...">
             </div>
         </div>
     </div>
 
     <!-- Liste des interventions avec IA -->
-    <div class="interventions-grid" id="interventions-grid">
+    <div class="interventions-grid" id="interventions-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem;">
         {% for intervention in interventions %}
         <div class="intervention-card clay-card {{ intervention.priority }}-priority {{ intervention.status }}-status"
              data-priority="{{ intervention.priority }}"
              data-status="{{ intervention.status }}"
              data-technician="{{ intervention.technician_name or '' }}"
-             data-search="{{ (intervention.customer_name + ' ' + intervention.description) | lower }}">
+             data-search="{{ (intervention.customer_name + ' ' + intervention.description) | lower }}"
+             style="padding: 1.5rem; position: relative;">
             
             <!-- En-tête de la carte -->
-            <div class="card-header">
+            <div class="card-header" style="display: flex; justify-content: between; align-items: start; margin-bottom: 1rem;">
                 <div class="card-title">
-                    <h4>{{ intervention.claim_number }}</h4>
-                    <div class="priority-badge {{ intervention.priority }}">
+                    <h4 style="margin: 0 0 0.5rem 0; color: var(--text-color); font-weight: 600;">{{ intervention.claim_number }}</h4>
+                    <div class="priority-badge {{ intervention.priority }} clay-element" style="display: inline-block; padding: 0.25rem 0.5rem; font-size: 0.75rem; border-radius: var(--border-radius-sm);">
                         {% if intervention.priority == 'urgent' %}🔴{% endif %}
                         {% if intervention.priority == 'high' %}🟠{% endif %}
                         {% if intervention.priority == 'medium' %}🟡{% endif %}
@@ -100,7 +119,7 @@
                     </div>
                 </div>
                 <div class="card-status">
-                    <span class="status-badge {{ intervention.status }}">
+                    <span class="status-badge {{ intervention.status }} clay-element" style="padding: 0.25rem 0.75rem; font-size: 0.75rem; border-radius: var(--border-radius-sm); font-weight: 500;">
                         {% if intervention.status == 'pending' %}⏳{% endif %}
                         {% if intervention.status == 'in_progress' %}⚡{% endif %}
                         {% if intervention.status == 'completed' %}✅{% endif %}
@@ -111,113 +130,115 @@
             </div>
 
             <!-- Informations client -->
-            <div class="customer-info">
-                <div class="customer-name">
-                    <strong>👤 {{ intervention.customer_name or 'Client non assigné' }}</strong>
+            <div class="customer-info" style="margin-bottom: 1rem;">
+                <div class="customer-name" style="color: var(--text-color); font-weight: 600; margin-bottom: 0.5rem;">
+                    <i class="fas fa-user me-2"></i>{{ intervention.customer_name or 'Client non assigné' }}
                 </div>
                 {% if intervention.customer_phone %}
-                <div class="customer-contact">
-                    📞 {{ intervention.customer_phone }}
+                <div class="customer-contact" style="color: var(--text-color); opacity: 0.8; font-size: 0.9rem;">
+                    <i class="fas fa-phone me-2"></i>{{ intervention.customer_phone }}
                 </div>
                 {% endif %}
             </div>
 
             <!-- Description avec IA -->
-            <div class="description-section">
-                <p class="description-text">{{ intervention.description | truncate(150) }}</p>
+            <div class="description-section" style="margin-bottom: 1rem;">
+                <p class="description-text" style="color: var(--text-color); line-height: 1.5; margin-bottom: 0.5rem;">{{ intervention.description | truncate(150) }}</p>
                 {% if intervention.description | length > 150 %}
-                <button class="expand-btn clay-btn-ghost" onclick="expandDescription(this)">
-                    Voir plus
+                <button class="clay-button" onclick="expandDescription(this)" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">
+                    <i class="fas fa-expand-alt me-1"></i>Voir plus
                 </button>
                 {% endif %}
             </div>
 
             <!-- Indicateurs IA et médias -->
-            <div class="ai-indicators">
+            <div class="ai-indicators" style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
                 {% if intervention.notes_count > 0 %}
-                <div class="indicator notes">
+                <div class="indicator notes clay-element" style="display: flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.5rem; border-radius: var(--border-radius-sm); font-size: 0.8rem;">
                     <span class="icon">📝</span>
-                    <span class="count">{{ intervention.notes_count }}</span>
-                    <span class="label">Notes</span>
+                    <span class="count" style="font-weight: 600; color: var(--text-color);">{{ intervention.notes_count }}</span>
+                    <span class="label" style="color: var(--text-color);">Notes</span>
                 </div>
                 {% endif %}
                 
                 {% if intervention.media_count > 0 %}
-                <div class="indicator media">
+                <div class="indicator media clay-element" style="display: flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.5rem; border-radius: var(--border-radius-sm); font-size: 0.8rem;">
                     <span class="icon">📷</span>
-                    <span class="count">{{ intervention.media_count }}</span>
-                    <span class="label">Médias</span>
+                    <span class="count" style="font-weight: 600; color: var(--text-color);">{{ intervention.media_count }}</span>
+                    <span class="label" style="color: var(--text-color);">Médias</span>
                 </div>
                 {% endif %}
 
                 <!-- Indicateur de dernière activité IA -->
                 {% if intervention.last_note_date %}
-                <div class="indicator activity">
+                <div class="indicator activity clay-element" style="display: flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.5rem; border-radius: var(--border-radius-sm); font-size: 0.8rem;">
                     <span class="icon">🕒</span>
-                    <span class="time">{{ moment(intervention.last_note_date).fromNow() }}</span>
+                    <span class="time" style="color: var(--text-color);">{{ moment(intervention.last_note_date).fromNow() }}</span>
                 </div>
                 {% endif %}
             </div>
 
             <!-- Informations temps et durée -->
-            <div class="time-info">
+            <div class="time-info" style="margin-bottom: 1rem;">
                 {% if intervention.scheduled_date %}
-                <div class="scheduled-time">
-                    📅 Planifié: {{ moment(intervention.scheduled_date).format('DD/MM/YYYY HH:mm') }}
+                <div class="scheduled-time" style="color: var(--text-color); margin-bottom: 0.5rem; font-size: 0.9rem;">
+                    <i class="fas fa-calendar me-2"></i>Planifié: {{ moment(intervention.scheduled_date).format('DD/MM/YYYY HH:mm') }}
                 </div>
                 {% endif %}
                 
                 {% if intervention.estimated_duration %}
-                <div class="duration-info">
-                    ⏱️ Durée estimée: {{ intervention.estimated_duration }}h
+                <div class="duration-info" style="color: var(--text-color); font-size: 0.9rem;">
+                    <i class="fas fa-clock me-2"></i>Durée estimée: {{ intervention.estimated_duration }}h
                     {% if intervention.actual_duration %}
-                    <span class="actual-duration">(Réel: {{ (intervention.actual_duration / 60) | round(1) }}h)</span>
+                    <span class="actual-duration" style="color: var(--success-color); font-weight: 600;">(Réel: {{ (intervention.actual_duration / 60) | round(1) }}h)</span>
                     {% endif %}
                 </div>
                 {% endif %}
             </div>
 
             <!-- Actions rapides -->
-            <div class="card-actions">
-                <a href="{{ url_for('api_interventions.intervention_details', work_order_id=intervention.id) }}" 
-                   class="clay-btn clay-btn-primary">
-                    🔍 Détails
+            <div class="card-actions" style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1rem;">
+                <a href="{{ url_for('interventions.intervention_details', work_order_id=intervention.id) }}" 
+                   class="clay-button-primary" style="text-decoration: none; padding: 0.5rem 1rem; font-size: 0.9rem; flex: 1; text-align: center;">
+                    <i class="fas fa-search me-1"></i>Détails
                 </a>
                 
                 {% if session.user_role == 'technician' and intervention.assigned_technician_id == session.user_id %}
                     {% if intervention.status == 'pending' %}
-                    <button class="clay-btn clay-btn-success quick-action" 
+                    <button class="clay-button quick-action" 
                             data-action="start_work" 
-                            data-work-order="{{ intervention.id }}">
-                        ▶️ Démarrer
+                            data-work-order="{{ intervention.id }}"
+                            style="padding: 0.5rem 1rem; background: var(--success-color); color: white; font-size: 0.9rem;">
+                        <i class="fas fa-play me-1"></i>Démarrer
                     </button>
                     {% elif intervention.status == 'in_progress' %}
-                    <button class="clay-btn clay-btn-warning quick-action" 
+                    <button class="clay-button quick-action" 
                             data-action="complete_work" 
-                            data-work-order="{{ intervention.id }}">
-                        ✅ Terminer
+                            data-work-order="{{ intervention.id }}"
+                            style="padding: 0.5rem 1rem; background: var(--warning-color); color: white; font-size: 0.9rem;">
+                        <i class="fas fa-check me-1"></i>Terminer
                     </button>
                     {% endif %}
                 {% endif %}
                 
                 <!-- Menu contextuel avec IA -->
                 <div class="dropdown">
-                    <button class="clay-btn clay-btn-ghost dropdown-toggle" data-toggle="dropdown">
-                        ⚙️
+                    <button class="clay-button dropdown-toggle" data-bs-toggle="dropdown" style="padding: 0.5rem; font-size: 0.9rem;">
+                        <i class="fas fa-ellipsis-v"></i>
                     </button>
-                    <div class="dropdown-menu">
-                        <a href="#" class="dropdown-item ai-analyze" data-work-order="{{ intervention.id }}">
-                            🤖 Analyse IA
+                    <div class="dropdown-menu clay-card" style="border: none; box-shadow: var(--shadow-level-2);">
+                        <a href="#" class="dropdown-item ai-analyze" data-work-order="{{ intervention.id }}" style="color: var(--text-color);">
+                            <i class="fas fa-robot me-2"></i>Analyse IA
                         </a>
-                        <a href="#" class="dropdown-item voice-note" data-work-order="{{ intervention.id }}">
-                            🎤 Note vocale
+                        <a href="#" class="dropdown-item voice-note" data-work-order="{{ intervention.id }}" style="color: var(--text-color);">
+                            <i class="fas fa-microphone me-2"></i>Note vocale
                         </a>
-                        <a href="#" class="dropdown-item photo-capture" data-work-order="{{ intervention.id }}">
-                            📷 Photo rapide
+                        <a href="#" class="dropdown-item photo-capture" data-work-order="{{ intervention.id }}" style="color: var(--text-color);">
+                            <i class="fas fa-camera me-2"></i>Photo rapide
                         </a>
-                        <div class="dropdown-divider"></div>
-                        <a href="{{ url_for('work_orders.edit_work_order', id=intervention.id) }}" class="dropdown-item">
-                            ✏️ Modifier
+                        <div class="dropdown-divider" style="border-color: var(--shadow-dark);"></div>
+                        <a href="{{ url_for('work_orders.edit_work_order', id=intervention.id) }}" class="dropdown-item" style="color: var(--text-color);">
+                            <i class="fas fa-edit me-2"></i>Modifier
                         </a>
                     </div>
                 </div>
@@ -402,7 +423,7 @@ function showAiAnalysis(workOrderId) {
     content.innerHTML = '<div class="loading-spinner">🤖 Analyse en cours...</div>';
     modal.style.display = 'flex';
     
-    fetch(`/interventions/ai/suggestions/${workOrderId}`)
+    fetch(`/api/v1/interventions/ai/suggestions/${workOrderId}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {

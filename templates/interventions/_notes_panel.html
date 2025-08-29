@@ -1,12 +1,14 @@
 <!-- Notes Section -->
         <div class="notes-section">
-            <h3><i class="fa-solid fa-sticky-note me-2"></i>Notes d'intervention</h3>
+            <h3 style="margin-bottom: 1rem; color: var(--text-color); font-weight: 600;">
+                <i class="fa-solid fa-sticky-note me-2"></i>Notes d'intervention
+            </h3>
             
             <!-- Add Note Form -->
             <div class="mb-4">
-                <textarea id="noteContent" class="form-control" rows="3" placeholder="Ajouter une note..."></textarea>
-                <div class="mt-2">
-                    <button class="btn btn-primary" onclick="addManualNote()">
+                <textarea id="noteContent" class="clay-input" rows="3" placeholder="Ajouter une note..." style="resize: vertical; margin-bottom: 1rem;"></textarea>
+                <div>
+                    <button class="clay-button-primary" onclick="addManualNote()" style="padding: 0.75rem 1rem;">
                         <i class="fa-solid fa-plus me-1"></i>Ajouter la note
                     </button>
                 </div>
@@ -16,18 +18,21 @@
             <div id="notesList">
                 {% if notes %}
                     {% for note in notes %}
-                    <div class="note-item">
-                        <div class="note-header">
+                    <div class="note-item clay-element" style="padding: 1rem; margin-bottom: 1rem; border-radius: var(--border-radius);">
+                        <div class="note-header" style="display: flex; align-items: center; margin-bottom: 0.5rem; color: var(--text-color); opacity: 0.8; font-size: 0.9rem;">
                             <i class="fa-solid fa-user me-1"></i>{{ note.technician_name }}
-                            <span class="note-time">• {{ note.created_at.strftime('%d/%m/%Y %H:%M') if note.created_at.strftime else moment(note.created_at).format('DD/MM/YYYY HH:mm') }}</span>
+                            <span class="note-time" style="margin-left: 0.5rem;">• {{ note.created_at.strftime('%d/%m/%Y %H:%M') if note.created_at.strftime else moment(note.created_at).format('DD/MM/YYYY HH:mm') }}</span>
                         </div>
-                        <div class="note-content">{{ note.content }}</div>
+                        <div class="note-content" style="color: var(--text-color); line-height: 1.5;">{{ note.content }}</div>
                     </div>
                     {% endfor %}
                 {% else %}
-                    <p class="text-muted">
-                        <i class="fa-solid fa-info-circle me-1"></i>Aucune note pour le moment.
-                    </p>
+                    <div class="clay-element" style="padding: 2rem; text-align: center;">
+                        <i class="fa-solid fa-info-circle" style="font-size: 2rem; color: var(--text-color); opacity: 0.5; margin-bottom: 1rem;"></i>
+                        <p style="color: var(--text-color); opacity: 0.8; margin: 0;">
+                            Aucune note pour le moment.
+                        </p>
+                    </div>
                 {% endif %}
             </div>
     </div>

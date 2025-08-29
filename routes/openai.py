@@ -1239,7 +1239,7 @@ def call_openai_for_suggestions(prompt, api_key, specialist_role, language='fr')
         return f"Error parsing {specialist_role} response"
 
 
-async def perform_technical_search(query, vehicle_info, context, api_key, language='fr'):
+def perform_technical_search(query, vehicle_info, context, api_key, language='fr'):
     """Perform targeted technical search with AI analysis"""
     
     # Enhanced query with vehicle context

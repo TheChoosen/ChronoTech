@@ -1,0 +1,502 @@
+/* ================================
+   CLAYMORPHISM INTERVENTIONS STYLES
+   ================================ */
+
+/* Import des variables claymorphism */
+@import url('claymorphism.css');
+
+/* ================================
+   CONTENEUR PRINCIPAL
+   ================================ */
+
+.interventions-container {
+    font-family: var(--font-main);
+    color: var(--text-color);
+}
+
+/* ================================
+   CARTES D'INTERVENTION
+   ================================ */
+
+.intervention-card {
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-level-1);
+    border-radius: var(--border-radius);
+    border: none;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: visible;
+}
+
+.intervention-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-level-3);
+    z-index: 10;
+}
+
+.intervention-card.urgent-priority {
+    border-left: 4px solid var(--danger-color);
+}
+
+.intervention-card.high-priority {
+    border-left: 4px solid var(--warning-color);
+}
+
+.intervention-card.medium-priority {
+    border-left: 4px solid var(--info-color);
+}
+
+.intervention-card.low-priority {
+    border-left: 4px solid var(--success-color);
+}
+
+/* ================================
+   BADGES ET STATUTS
+   ================================ */
+
+.priority-badge {
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-level-1);
+    color: var(--text-color);
+    font-weight: 600;
+    border-radius: var(--border-radius-sm);
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+.priority-badge.urgent {
+    background: linear-gradient(135deg, var(--danger-color), #dc2626);
+    color: white;
+}
+
+.priority-badge.high {
+    background: linear-gradient(135deg, var(--warning-color), #d97706);
+    color: white;
+}
+
+.priority-badge.medium {
+    background: linear-gradient(135deg, var(--info-color), #2563eb);
+    color: white;
+}
+
+.priority-badge.low {
+    background: linear-gradient(135deg, var(--success-color), #059669);
+    color: white;
+}
+
+.status-badge {
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-level-1);
+    color: var(--text-color);
+    font-weight: 500;
+    border-radius: var(--border-radius-sm);
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+}
+
+.status-badge.pending {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+    color: white;
+}
+
+.status-badge.in_progress {
+    background: linear-gradient(135deg, var(--warning-color), #d97706);
+    color: white;
+}
+
+.status-badge.completed {
+    background: linear-gradient(135deg, var(--success-color), #059669);
+    color: white;
+}
+
+.status-badge.scheduled {
+    background: linear-gradient(135deg, var(--info-color), #2563eb);
+    color: white;
+}
+
+/* ================================
+   PANNEAU DE SUGGESTIONS IA
+   ================================ */
+
+.suggestions-section {
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-level-1);
+    border-radius: var(--border-radius);
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+}
+
+.suggestions-actions .input-group .clay-input {
+    border-radius: var(--border-radius) 0 0 var(--border-radius);
+}
+
+.suggestions-actions .input-group .clay-button {
+    border-radius: 0;
+}
+
+.suggestions-actions .input-group .clay-button-primary {
+    border-radius: 0 var(--border-radius) var(--border-radius) 0;
+}
+
+.accordion-item {
+    background: transparent;
+    border: none;
+    margin-bottom: 1rem;
+}
+
+.accordion-button {
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-level-1);
+    border: none;
+    border-radius: var(--border-radius);
+    color: var(--text-color);
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.accordion-button:hover {
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-level-2);
+    transform: translateY(-2px);
+}
+
+.accordion-button:not(.collapsed) {
+    background: linear-gradient(135deg, var(--primary-color), #4c51bf);
+    color: white;
+    box-shadow: var(--shadow-level-2);
+}
+
+.accordion-body {
+    background: var(--secondary-color);
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+    box-shadow: var(--shadow-level-1);
+    border: none;
+    padding: 1.5rem;
+}
+
+/* ================================
+   FORMULAIRES ET INPUTS
+   ================================ */
+
+.form-check.clay-element {
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-pressed);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.form-check.clay-element:hover {
+    box-shadow: var(--shadow-level-1);
+    transform: translateY(-1px);
+}
+
+.form-check-input:checked + .form-check-label {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+/* ================================
+   NAVIGATION TABS
+   ================================ */
+
+.nav-tabs {
+    border-bottom: 1px solid var(--shadow-dark);
+}
+
+.nav-tabs .nav-link {
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-level-1);
+    border: none;
+    color: var(--text-color);
+    font-weight: 500;
+    margin-right: 0.5rem;
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+    transition: all 0.3s ease;
+}
+
+.nav-tabs .nav-link:hover {
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-level-2);
+    transform: translateY(-2px);
+    color: var(--text-color);
+}
+
+.nav-tabs .nav-link.active {
+    background: linear-gradient(135deg, var(--primary-color), #4c51bf);
+    color: white;
+    box-shadow: var(--shadow-level-2);
+    border-bottom: 3px solid var(--primary-color);
+}
+
+/* ================================
+   ÉLÉMENTS AUDIO
+   ================================ */
+
+.audio-section {
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-level-1);
+    border-radius: var(--border-radius);
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+}
+
+.recording-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.recording-status {
+    color: var(--text-color);
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-pressed);
+    border-radius: var(--border-radius-sm);
+}
+
+/* ================================
+   RÉSULTATS ET FEEDBACK
+   ================================ */
+
+.result-section {
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-level-1);
+    border-radius: var(--border-radius);
+    border-left: 4px solid var(--success-color);
+}
+
+#transcriptionResult,
+#translationResult {
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-pressed);
+    border-radius: var(--border-radius-sm);
+    padding: 1rem;
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+/* ================================
+   CHAT IA
+   ================================ */
+
+.ai-section .card-header {
+    background: linear-gradient(135deg, var(--primary-color), #4c51bf);
+    color: white;
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+}
+
+.chat-message {
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-level-1);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    margin-bottom: 1rem;
+    position: relative;
+}
+
+.chat-message.user {
+    background: linear-gradient(135deg, var(--primary-color), #4c51bf);
+    color: white;
+    margin-left: 2rem;
+}
+
+.chat-message.assistant {
+    background: var(--secondary-color);
+    color: var(--text-color);
+    margin-right: 2rem;
+}
+
+/* ================================
+   NOTES ET COMMENTAIRES
+   ================================ */
+
+.note-item,
+.comment-item {
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-level-1);
+    border-radius: var(--border-radius);
+    transition: all 0.3s ease;
+}
+
+.note-item:hover,
+.comment-item:hover {
+    box-shadow: var(--shadow-level-2);
+    transform: translateY(-2px);
+}
+
+.note-header {
+    color: var(--text-color);
+    opacity: 0.8;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.note-content {
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+/* ================================
+   RESPONSIVE DESIGN
+   ================================ */
+
+@media (max-width: 768px) {
+    .interventions-container {
+        padding: 1rem;
+    }
+    
+    .clay-card {
+        margin-bottom: 1rem;
+        padding: 1rem;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+    }
+    
+    .filters-grid {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+    
+    .interventions-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .recording-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .recording-controls button {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+}
+
+/* ================================
+   ANIMATIONS
+   ================================ */
+
+@keyframes clayFloat {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+
+.clay-floating {
+    animation: clayFloat 3s ease-in-out infinite;
+}
+
+@keyframes clayPulse {
+    0% { box-shadow: var(--shadow-level-1); }
+    50% { box-shadow: var(--shadow-level-2); }
+    100% { box-shadow: var(--shadow-level-1); }
+}
+
+.clay-pulse {
+    animation: clayPulse 2s ease-in-out infinite;
+}
+
+/* ================================
+   PLACEHOLDER STATES
+   ================================ */
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-pressed);
+    border-radius: var(--border-radius);
+    text-align: center;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    color: var(--text-color);
+    opacity: 0.5;
+    margin-bottom: 1rem;
+}
+
+.empty-state p {
+    color: var(--text-color);
+    opacity: 0.8;
+    margin: 0;
+    font-weight: 500;
+}
+
+/* ================================
+   LOADING STATES
+   ================================ */
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--secondary-color);
+    border-top: 4px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(224, 229, 236, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--border-radius);
+    z-index: 100;
+}
+
+/* ================================
+   UTILITAIRES
+   ================================ */
+
+.text-clay {
+    color: var(--text-color) !important;
+}
+
+.bg-clay {
+    background: var(--secondary-color) !important;
+}
+
+.shadow-clay {
+    box-shadow: var(--shadow-level-1) !important;
+}
+
+.shadow-clay-hover:hover {
+    box-shadow: var(--shadow-level-2) !important;
+    transform: translateY(-2px);
+}
+
+.border-clay {
+    border: 1px solid var(--shadow-dark) !important;
+}
+
+.rounded-clay {
+    border-radius: var(--border-radius) !important;
+}
+
+.rounded-clay-sm {
+    border-radius: var(--border-radius-sm) !important;
+}
+
+.rounded-clay-lg {
+    border-radius: var(--border-radius-lg) !important;
+}

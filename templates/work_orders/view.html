@@ -223,7 +223,7 @@
                 </div>
                 <div class="card-body">
                     <!-- Server-side fallback form to add a note (non-AJAX) -->
-                    <form method="POST" action="{{ url_for('api_interventions.add_note', work_order_id=work_order.id) }}" class="mb-3">
+                    <form method="POST" action="{{ url_for('interventions.add_note', work_order_id=work_order.id) }}" class="mb-3">
                         <div class="row g-2">
                             <div class="col-12">
                                 <select name="note_type" class="form-select">

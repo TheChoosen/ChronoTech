@@ -1,21 +1,23 @@
  <!-- Audio Recording Section -->
-        <div class="audio-section">
-            <h3>Enregistrement Audio</h3>
+        <div class="audio-section" style="padding: 1.5rem;">
+            <h3 style="margin-bottom: 1rem; color: var(--text-color); font-weight: 600;">
+                <i class="fas fa-microphone me-2 text-primary"></i>Enregistrement Audio
+            </h3>
             
             <!-- Source Selection -->
             <div class="mb-3">
-                <label class="form-label fw-bold">Source audio</label>
-                <div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="source" id="sourceFile" value="file" checked>
-                        <label class="form-check-label" for="sourceFile">
-                            <i class="fa-solid fa-file-audio me-1"></i>Fichier audio
+                <label class="form-label" style="font-weight: 600; color: var(--text-color); margin-bottom: 1rem;">Source audio</label>
+                <div style="display: flex; gap: 1rem;">
+                    <div class="form-check clay-element" style="padding: 0.75rem 1rem; border-radius: var(--border-radius); flex: 1;">
+                        <input class="form-check-input" type="radio" name="source" id="sourceFile" value="file" checked style="margin-right: 0.5rem;">
+                        <label class="form-check-label" for="sourceFile" style="color: var(--text-color); font-weight: 500;">
+                            <i class="fas fa-file-audio me-1"></i>Fichier audio
                         </label>
                     </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="source" id="sourceMic" value="mic">
-                        <label class="form-check-label" for="sourceMic">
-                            <i class="fa-solid fa-microphone me-1"></i>Microphone
+                    <div class="form-check clay-element" style="padding: 0.75rem 1rem; border-radius: var(--border-radius); flex: 1;">
+                        <input class="form-check-input" type="radio" name="source" id="sourceMic" value="mic" style="margin-right: 0.5rem;">
+                        <label class="form-check-label" for="sourceMic" style="color: var(--text-color); font-weight: 500;">
+                            <i class="fas fa-microphone me-1"></i>Microphone
                         </label>
                     </div>
                 </div>
@@ -23,84 +25,90 @@
 
             <!-- File Upload -->
             <div class="mb-3" id="fileRow">
-                <label for="fileInput" class="form-label">
+                <label for="fileInput" class="form-label" style="font-weight: 600; color: var(--text-color);">
                     <i class="fa-solid fa-upload me-1"></i>Fichier audio
                 </label>
-                <input class="form-control" type="file" id="fileInput" accept="audio/*">
-                <div class="form-text">Formats supportés: MP3, WAV, M4A, OGG</div>
+                <input class="clay-input" type="file" id="fileInput" accept="audio/*" style="cursor: pointer;">
+                <div class="form-text" style="color: var(--text-color); opacity: 0.7; margin-top: 0.5rem;">Formats supportés: MP3, WAV, M4A, OGG</div>
             </div>
 
             <!-- Microphone Recording -->
             <div class="mb-3" id="micRow" style="display:none;">
-                <label class="form-label">
+                <label class="form-label" style="font-weight: 600; color: var(--text-color);">
                     <i class="fa-solid fa-microphone me-1"></i>Enregistrement microphone
                 </label>
-                <div class="recording-controls">
-                    <button type="button" id="startRec" class="btn btn-record">
+                <div class="recording-controls" style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem;">
+                    <button type="button" id="startRec" class="clay-button-primary" style="padding: 0.75rem 1rem;">
                         <i class="fa-solid fa-circle me-1"></i>Démarrer
                     </button>
-                    <button type="button" id="stopRec" class="btn btn-outline-danger" disabled>
+                    <button type="button" id="stopRec" class="clay-button" disabled style="padding: 0.75rem 1rem; background: var(--danger-color); color: white;">
                         <i class="fa-solid fa-stop me-1"></i>Arrêter
                     </button>
-                    <button type="button" id="playRec" class="btn btn-outline-secondary" disabled>
+                    <button type="button" id="playRec" class="clay-button" disabled style="padding: 0.75rem 1rem;">
                         <i class="fa-solid fa-play me-1"></i>Écouter
                     </button>
-                    <span id="recStatus" class="recording-status">Prêt à enregistrer</span>
+                    <span id="recStatus" class="recording-status" style="color: var(--text-color); font-weight: 500;">Prêt à enregistrer</span>
                 </div>
                 <div class="mt-3">
-                    <audio id="audioPreview" controls style="width:100%; display:none;"></audio>
+                    <audio id="audioPreview" controls style="width:100%; display:none;" class="clay-element"></audio>
                 </div>
             </div>
 
             <!-- Processing Options -->
-            <div class="row">
+            <div class="row mb-3">
                 <div class="col-md-6">
-                    <label for="mode" class="form-label">
+                    <label for="mode" class="form-label" style="font-weight: 600; color: var(--text-color); margin-bottom: 0.5rem;">
                         <i class="fa-solid fa-cogs me-1"></i>Mode de traitement
                     </label>
-                    <select id="mode" class="form-select">
+                    <select id="mode" class="clay-input">
                         <option value="transcribe">Transcription uniquement</option>
                         <option value="translate">Transcription + Traduction</option>
                     </select>
                 </div>
                 <div class="col-md-6" id="langRow" style="display:none;">
-                    <label for="target_lang" class="form-label">
+                    <label for="target_lang" class="form-label" style="font-weight: 600; color: var(--text-color); margin-bottom: 0.5rem;">
                         <i class="fa-solid fa-language me-1"></i>Langue cible
                     </label>
-                    <input type="text" id="target_lang" class="form-control" placeholder="ex: English, Español, Deutsch">
+                    <input type="text" id="target_lang" class="clay-input" placeholder="ex: English, Español, Deutsch">
                 </div>
             </div>
 
             <!-- Destination Selector -->
             <div class="mt-3">
-                <label class="form-label fw-bold">Destination</label>
-                <div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="destination" id="destNotes" value="notes" checked>
-                        <label class="form-check-label" for="destNotes">Notes</label>
+                <label class="form-label" style="font-weight: 600; color: var(--text-color); margin-bottom: 1rem;">Destination</label>
+                <div style="display: flex; gap: 1rem;">
+                    <div class="form-check clay-element" style="padding: 0.75rem 1rem; border-radius: var(--border-radius); flex: 1;">
+                        <input class="form-check-input" type="radio" name="destination" id="destNotes" value="notes" checked style="margin-right: 0.5rem;">
+                        <label class="form-check-label" for="destNotes" style="color: var(--text-color); font-weight: 500;">
+                            <i class="fas fa-sticky-note me-1"></i>Notes
+                        </label>
                     </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="destination" id="destComments" value="comments">
-                        <label class="form-check-label" for="destComments">Commentaires internes</label>
+                    <div class="form-check clay-element" style="padding: 0.75rem 1rem; border-radius: var(--border-radius); flex: 1;">
+                        <input class="form-check-input" type="radio" name="destination" id="destComments" value="comments" style="margin-right: 0.5rem;">
+                        <label class="form-check-label" for="destComments" style="color: var(--text-color); font-weight: 500;">
+                            <i class="fas fa-comments me-1"></i>Commentaires
+                        </label>
                     </div>
                 </div>
             </div>
 
             <!-- Submit Button -->
             <div class="mt-4">
-                <button class="btn btn-primary btn-lg" id="uploadBtn">
+                <button class="clay-button-primary" id="uploadBtn" style="padding: 0.75rem 1.5rem; font-size: 1.1rem;">
                     <span class="spinner-border spinner-border-sm me-2" id="loadingSpinner" style="display:none;"></span>
                     <i class="fa-solid fa-magic me-1"></i>Traiter l'audio
                 </button>
             </div>
 
             <!-- Results -->
-            <div id="resultSection" class="result-section" style="display:none;">
-                <h4><i class="fa-solid fa-check-circle me-2 text-success"></i>Résultats</h4>
-                <div id="transcriptionResult"></div>
-                <div id="translationResult" style="display:none;"></div>
+            <div id="resultSection" class="result-section clay-element" style="display:none; padding: 1.5rem; margin-top: 1rem; border-radius: var(--border-radius);">
+                <h4 style="color: var(--success-color); margin-bottom: 1rem; font-weight: 600;">
+                    <i class="fa-solid fa-check-circle me-2"></i>Résultats
+                </h4>
+                <div id="transcriptionResult" class="clay-element" style="padding: 1rem; margin-bottom: 1rem; border-radius: var(--border-radius-sm); background: var(--secondary-color);"></div>
+                <div id="translationResult" class="clay-element" style="display:none; padding: 1rem; margin-bottom: 1rem; border-radius: var(--border-radius-sm); background: var(--secondary-color);"></div>
                 <div class="mt-3">
-                    <button class="btn btn-success" id="addToDestinationBtn">
+                    <button class="clay-button" id="addToDestinationBtn" style="background: var(--success-color); color: white; padding: 0.75rem 1rem;">
                         <i class="fa-solid fa-plus me-1"></i>Ajouter à la destination sélectionnée
                     </button>
                 </div>
