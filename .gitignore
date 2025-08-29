@@ -50,6 +50,8 @@ coverage.xml
 .env.bak/
 .env.local
 .env.backup.*
+.env.example/
+.env.example
 .venv
 env/
 venv/

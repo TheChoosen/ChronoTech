@@ -60,10 +60,7 @@ fetch(`/api/v1/interventions/ai/suggestions/${workOrderId}`)
 
 #### Fichier: `.env`
 
-**Ajouté:**
-```env
-OPENAI_API_KEY=your_openai_api_key_here
-```
+
 
 ### 3. **Ajout de la Dépendance OpenAI**
 
