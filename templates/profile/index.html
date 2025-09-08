@@ -222,7 +222,7 @@
                             <i class="fas fa-cog me-2"></i>Paramètres
                         </a>
                         {% if user.role in ['technician', 'supervisor'] %}
-                        <a href="{{ url_for('work_orders.list_work_orders') }}" class="btn btn-outline-success">
+                        <a href="{{ url_for('work_orders.index') }}" class="btn btn-outline-success">
                             <i class="fas fa-clipboard-list me-2"></i>Mes bons de travail
                         </a>
                         {% endif %}

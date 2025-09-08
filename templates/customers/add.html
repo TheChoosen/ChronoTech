@@ -378,9 +378,35 @@ function validateField(fieldName, value) {
             message = isValid ? '✓ SIRET valide' : '✗ SIRET doit contenir 14 chiffres';
             break;
         case 'postal_code':
-            const postalRegex = /^[0-9]{5}$/;
-            isValid = postalRegex.test(value);
-            message = isValid ? '✓ Code postal valide' : '✗ Code postal doit contenir 5 chiffres';
+            // Récupérer le pays sélectionné (s'il y a un champ pays)
+            const countryField = document.getElementById('country');
+            const country = countryField ? countryField.value : 'FR';
+            
+            let postalRegex;
+            let expectedFormat;
+            
+            switch(country.toUpperCase()) {
+                case 'CA':
+                    postalRegex = /^[A-Z][0-9][A-Z] [0-9][A-Z][0-9]$/;
+                    expectedFormat = 'K1A 0A6';
+                    break;
+                case 'US':
+                    postalRegex = /^[0-9]{5}(-[0-9]{4})?$/;
+                    expectedFormat = '12345 ou 12345-6789';
+                    break;
+                case 'GB':
+                    postalRegex = /^[A-Z]{1,2}[0-9R][0-9A-Z]? [0-9][A-Z]{2}$/;
+                    expectedFormat = 'SW1A 1AA';
+                    break;
+                case 'FR':
+                default:
+                    postalRegex = /^[0-9]{5}$/;
+                    expectedFormat = '12345';
+                    break;
+            }
+            
+            isValid = postalRegex.test(value.toUpperCase());
+            message = isValid ? '✓ Code postal valide' : `✗ Format attendu: ${expectedFormat}`;
             break;
     }
     

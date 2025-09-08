@@ -1,0 +1,401 @@
+<!-- Modal Modules Spécialisés ChronoChat -->
+<div class="modal fade" id="modulesModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content">
+            <div class="modal-header bg-gradient-success text-white">
+                <h5 class="modal-title">
+                    <i class="fa-solid fa-layer-group me-2"></i>Modules Spécialisés ChronoTech
+                    <span class="badge bg-light text-success ms-2">PRD</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+                <!-- Onglets spécialisés selon PRD ChronoChat -->
+                <div class="mt-2">
+                    <ul class="nav nav-tabs" id="moduleDashboardTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="module-overview-tab" data-bs-toggle="tab" data-bs-target="#module-overview-pane"
+                                type="button" role="tab">
+                                <i class="fa-solid fa-tachometer-alt me-2"></i>Vue d'ensemble
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="module-planning-tab" data-bs-toggle="tab" data-bs-target="#module-planning-pane"
+                                type="button" role="tab">
+                                <i class="fa-solid fa-calendar me-2"></i>Planning
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="module-routes-tab" data-bs-toggle="tab" data-bs-target="#module-routes-pane"
+                                type="button" role="tab">
+                                <i class="fa-solid fa-route me-2"></i>Routes
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="module-inventory-tab" data-bs-toggle="tab" data-bs-target="#module-inventory-pane"
+                                type="button" role="tab">
+                                <i class="fa-solid fa-boxes me-2"></i>Inventory
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="module-reports-tab" data-bs-toggle="tab" data-bs-target="#module-reports-pane"
+                                type="button" role="tab">
+                                <i class="fa-solid fa-chart-line me-2"></i>Reports
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content mt-3" id="moduleDashboardTabContent">
+                        <!-- Onglet Vue d'ensemble -->
+                        <div class="tab-pane fade show active" id="module-overview-pane" role="tabpanel">
+                            <div class="alert alert-info">
+                                <i class="fa-solid fa-info-circle me-2"></i>
+                                <strong>Vue d'ensemble des modules ChronoTech</strong><br>
+                                Cette interface centralise tous les modules spécialisés. Le tableau Kanban principal reste accessible via le dashboard principal.
+                            </div>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="card text-center h-100">
+                                        <div class="card-body">
+                                            <i class="fa-solid fa-calendar fa-3x text-primary mb-3"></i>
+                                            <h6>Planning Avancé</h6>
+                                            <p class="small text-muted">Gestion complète des rendez-vous et événements</p>
+                                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="tab" data-bs-target="#module-planning-pane">
+                                                Accéder
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card text-center h-100">
+                                        <div class="card-body">
+                                            <i class="fa-solid fa-route fa-3x text-warning mb-3"></i>
+                                            <h6>Optimisation Routes</h6>
+                                            <p class="small text-muted">Calcul automatique des trajets optimaux</p>
+                                            <button class="btn btn-sm btn-outline-warning" data-bs-toggle="tab" data-bs-target="#module-routes-pane">
+                                                Accéder
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card text-center h-100">
+                                        <div class="card-body">
+                                            <i class="fa-solid fa-boxes fa-3x text-info mb-3"></i>
+                                            <h6>Gestion Inventaire</h6>
+                                            <p class="small text-muted">Suivi des stocks et équipements</p>
+                                            <button class="btn btn-sm btn-outline-info" data-bs-toggle="tab" data-bs-target="#module-inventory-pane">
+                                                Accéder
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card text-center h-100">
+                                        <div class="card-body">
+                                            <i class="fa-solid fa-chart-line fa-3x text-success mb-3"></i>
+                                            <h6>Rapports & Analytics</h6>
+                                            <p class="small text-muted">Analyses et exports de données</p>
+                                            <button class="btn btn-sm btn-outline-success" data-bs-toggle="tab" data-bs-target="#module-reports-pane">
+                                                Accéder
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Onglet Planning (FullCalendar) -->
+                        <div class="tab-pane fade" id="module-planning-pane" role="tabpanel">
+                            <div class="clay-card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0"><i class="fa-solid fa-calendar me-2"></i>Planning Complet</h5>
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-sm btn-outline-primary"
+                                            onclick="calendarManager && calendarManager.goToToday()">
+                                            Aujourd'hui
+                                        </button>
+                                        <button class="btn btn-sm btn-primary"
+                                            onclick="calendarManager && calendarManager.showCreateEventModal()">
+                                            <i class="fa-solid fa-plus me-1"></i>Nouvel événement
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div id="module-planning-calendar" style="height: 70vh;">
+                                        <!-- FullCalendar sera initialisé ici -->
+                                        <div class="text-center py-5 text-muted">
+                                            <i class="fa-solid fa-calendar fa-3x mb-3"></i>
+                                            <h5>Planning FullCalendar</h5>
+                                            <p>Le calendrier sera initialisé lors de l'activation de ce module</p>
+                                            <button class="btn btn-primary" onclick="initModuleCalendar()">
+                                                <i class="fa-solid fa-play me-2"></i>Initialiser le calendrier
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Onglet Routes -->
+                        <div class="tab-pane fade" id="module-routes-pane" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="clay-card">
+                                        <div class="card-header">
+                                            <h5 class="mb-0"><i class="fa-solid fa-route me-2"></i>Optimisation des Routes</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row mb-3">
+                                                <div class="col-md-4">
+                                                    <div class="card text-center">
+                                                        <div class="card-body">
+                                                            <div class="h2 text-success" id="module-optimization-score">85%</div>
+                                                            <small class="text-muted">Score d'optimisation</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <div class="card text-center">
+                                                        <div class="card-body">
+                                                            <div class="h2 text-info" id="module-total-distance">245 km</div>
+                                                            <small class="text-muted">Distance totale</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <div class="card text-center">
+                                                        <div class="card-body">
+                                                            <div class="h2 text-warning" id="module-estimated-time">6h 30m</div>
+                                                            <small class="text-muted">Temps estimé</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="alert alert-warning">
+                                                <i class="fa-solid fa-construction me-2"></i>
+                                                <strong>Fonctionnalité en développement</strong><br>
+                                                L'optimisation automatique des routes sera disponible dans la prochaine version.
+                                                <button class="btn btn-sm btn-primary ms-2" onclick="requestRouteOptimization()">
+                                                    Demander l'activation
+                                                </button>
+                                            </div>
+                                            <!-- Carte de routes (placeholder) -->
+                                            <div class="border rounded p-4 text-center bg-light">
+                                                <i class="fa-solid fa-map fa-3x text-muted mb-3"></i>
+                                                <h6>Carte interactive des routes</h6>
+                                                <p class="text-muted">Visualisation des trajets optimisés</p>
+                                                <button class="btn btn-outline-primary">
+                                                    <i class="fa-solid fa-map-marked-alt me-2"></i>Charger la carte
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="clay-card">
+                                        <div class="card-header">
+                                            <h6 class="mb-0">Techniciens disponibles</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div id="module-available-technicians">
+                                                <!-- Liste dynamique des techniciens -->
+                                                <div class="list-group">
+                                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <i class="fa-solid fa-user-check text-success me-2"></i>
+                                                            Jean Dupont
+                                                        </div>
+                                                        <span class="badge bg-success">Disponible</span>
+                                                    </div>
+                                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <i class="fa-solid fa-user-clock text-warning me-2"></i>
+                                                            Marie Martin
+                                                        </div>
+                                                        <span class="badge bg-warning">En route</span>
+                                                    </div>
+                                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <i class="fa-solid fa-user-times text-danger me-2"></i>
+                                                            Pierre Durand
+                                                        </div>
+                                                        <span class="badge bg-danger">Occupé</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Onglet Inventory -->
+                        <div class="tab-pane fade" id="module-inventory-pane" role="tabpanel">
+                            <div class="clay-card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0"><i class="fa-solid fa-boxes me-2"></i>Gestion d'Inventaire</h5>
+                                    <button class="btn btn-sm btn-primary" onclick="addInventoryItem()">
+                                        <i class="fa-solid fa-plus me-1"></i>Ajouter article
+                                    </button>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row mb-3">
+                                        <div class="col-md-3">
+                                            <input type="text" class="form-control" placeholder="Rechercher un article..."
+                                                id="module-inventory-search">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <select class="form-select" id="module-inventory-category">
+                                                <option value="">Toutes catégories</option>
+                                                <option value="pieces">Pièces détachées</option>
+                                                <option value="outils">Outils</option>
+                                                <option value="equipement">Équipement</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <select class="form-select" id="module-inventory-status">
+                                                <option value="">Tous statuts</option>
+                                                <option value="disponible">Disponible</option>
+                                                <option value="stock-bas">Stock bas</option>
+                                                <option value="rupture">Rupture</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <button class="btn btn-outline-primary w-100" onclick="refreshInventory()">
+                                                <i class="fa-solid fa-sync-alt me-2"></i>Actualiser
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>Article</th>
+                                                    <th>Catégorie</th>
+                                                    <th>Stock</th>
+                                                    <th>Seuil min.</th>
+                                                    <th>Statut</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="module-inventory-table-body">
+                                                <tr>
+                                                    <td>Vis M6x20</td>
+                                                    <td><span class="badge bg-info">Pièces</span></td>
+                                                    <td><span class="text-success fw-bold">150</span></td>
+                                                    <td>50</td>
+                                                    <td><span class="badge bg-success">Disponible</span></td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-outline-primary">
+                                                            <i class="fa-solid fa-edit"></i>
+                                                        </button>
+                                                        <button class="btn btn-sm btn-outline-danger">
+                                                            <i class="fa-solid fa-trash"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Tournevis Phillips</td>
+                                                    <td><span class="badge bg-warning">Outils</span></td>
+                                                    <td><span class="text-warning fw-bold">8</span></td>
+                                                    <td>10</td>
+                                                    <td><span class="badge bg-warning">Stock bas</span></td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-outline-primary">
+                                                            <i class="fa-solid fa-edit"></i>
+                                                        </button>
+                                                        <button class="btn btn-sm btn-outline-danger">
+                                                            <i class="fa-solid fa-trash"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Câble Ethernet RJ45</td>
+                                                    <td><span class="badge bg-primary">Équipement</span></td>
+                                                    <td><span class="text-danger fw-bold">0</span></td>
+                                                    <td>20</td>
+                                                    <td><span class="badge bg-danger">Rupture</span></td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-outline-primary">
+                                                            <i class="fa-solid fa-edit"></i>
+                                                        </button>
+                                                        <button class="btn btn-sm btn-outline-danger">
+                                                            <i class="fa-solid fa-trash"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="alert alert-info">
+                                        <i class="fa-solid fa-info-circle me-2"></i>
+                                        <strong>API disponible</strong><br>
+                                        L'inventaire utilise la table `inventory_items` existante. Interface en cours de
+                                        finalisation.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Onglet Reports -->
+                        <div class="tab-pane fade" id="module-reports-pane" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="clay-card">
+                                        <div class="card-header">
+                                            <h6 class="mb-0"><i class="fa-solid fa-chart-bar me-2"></i>Graphiques KPI</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <canvas id="module-kpi-chart" width="400" height="200"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="clay-card">
+                                        <div class="card-header">
+                                            <h6 class="mb-0"><i class="fa-solid fa-chart-line me-2"></i>Tendances</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <canvas id="module-trends-chart" width="400" height="200"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <div class="clay-card">
+                                        <div class="card-header d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0"><i class="fa-solid fa-download me-2"></i>Exports</h6>
+                                            <div class="d-flex gap-2">
+                                                <button class="btn btn-sm btn-outline-primary" onclick="exportToExcel()">Excel</button>
+                                                <button class="btn btn-sm btn-outline-success" onclick="exportToPDF()">PDF</button>
+                                                <button class="btn btn-sm btn-outline-info" onclick="exportToJSON()">JSON</button>
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="alert alert-success">
+                                                <i class="fa-solid fa-check-circle me-2"></i>
+                                                <strong>Analytics disponibles</strong><br>
+                                                Les rapports sont générés via le module `/analytics` existant. Intégration en cours.
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="resetModuleTabs()">
+                    <i class="fa-solid fa-undo me-1"></i>Réinitialiser
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="refreshAllModules()">
+                    <i class="fa-solid fa-sync-alt me-1"></i>Actualiser tout
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,696 @@
+<!-- Modal Gestion des Départements -->
+<div class="modal fade" id="departmentsModal" tabindex="-1" aria-labelledby="departmentsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="departmentsModalLabel">
+                    <i class="fa-solid fa-building me-2"></i>Gestion des Départements
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row">
+                    <!-- Section CRUD Départements -->
+                    <div class="col-12 col-lg-8">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h6 class="mb-0">
+                                <i class="fa-solid fa-list me-2"></i>Liste des Départements
+                            </h6>
+                            <button class="btn btn-primary btn-sm" onclick="showAddDepartmentForm()">
+                                <i class="fa-solid fa-plus me-1"></i>Nouveau Département
+                            </button>
+                        </div>
+
+                        <!-- Formulaire d'ajout/modification -->
+                        <div id="departmentForm" class="card mb-4" style="display: none;">
+                            <div class="card-header">
+                                <h6 class="mb-0" id="formTitle">
+                                    <i class="fa-solid fa-plus me-2"></i>Nouveau Département
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <form id="deptForm">
+                                    <input type="hidden" id="deptId" value="">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="deptName" class="form-label">Nom du département *</label>
+                                            <input type="text" class="form-control" id="deptName" required>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="deptCode" class="form-label">Code département *</label>
+                                            <input type="text" class="form-control" id="deptCode" maxlength="10" required>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="deptManager" class="form-label">Responsable</label>
+                                            <select class="form-select" id="deptManager">
+                                                <option value="">Sélectionner un responsable</option>
+                                                <!-- Options dynamiques -->
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="deptColor" class="form-label">Couleur</label>
+                                            <input type="color" class="form-control form-control-color" id="deptColor" value="#007bff">
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="deptDescription" class="form-label">Description</label>
+                                        <textarea class="form-control" id="deptDescription" rows="3"></textarea>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="deptActive" checked>
+                                                <label class="form-check-label" for="deptActive">
+                                                    Département actif
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="deptChatEnabled" checked>
+                                                <label class="form-check-label" for="deptChatEnabled">
+                                                    Canal de chat activé
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fa-solid fa-save me-1"></i>Enregistrer
+                                        </button>
+                                        <button type="button" class="btn btn-secondary" onclick="cancelDepartmentForm()">
+                                            <i class="fa-solid fa-times me-1"></i>Annuler
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Table des départements -->
+                        <div class="card">
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0" id="departmentsTable">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Département</th>
+                                                <th>Code</th>
+                                                <th>Responsable</th>
+                                                <th>Membres</th>
+                                                <th>Chat</th>
+                                                <th>Statut</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="departmentsTableBody">
+                                            <!-- Contenu dynamique -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sidebar Statistiques et Actions -->
+                    <div class="col-12 col-lg-4">
+                        <!-- Statistiques -->
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fa-solid fa-chart-pie me-2"></i>Statistiques
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between">
+                                        <span>Total départements:</span>
+                                        <strong id="totalDepartments">0</strong>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between">
+                                        <span>Départements actifs:</span>
+                                        <strong id="activeDepartments" class="text-success">0</strong>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between">
+                                        <span>Avec chat activé:</span>
+                                        <strong id="chatEnabledDepartments" class="text-info">0</strong>
+                                    </div>
+                                </div>
+                                <div class="mb-0">
+                                    <div class="d-flex justify-content-between">
+                                        <span>Total membres:</span>
+                                        <strong id="totalMembers">0</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Actions rapides -->
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fa-solid fa-bolt me-2"></i>Actions Rapides
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <button class="btn btn-outline-info btn-sm w-100 mb-2" onclick="syncDepartmentsWithChat()">
+                                    <i class="fa-solid fa-sync me-1"></i>Synchroniser avec Chat
+                                </button>
+                                <button class="btn btn-outline-warning btn-sm w-100 mb-2" onclick="exportDepartments()">
+                                    <i class="fa-solid fa-download me-1"></i>Exporter Départements
+                                </button>
+                                <button class="btn btn-outline-success btn-sm w-100" onclick="importDepartments()">
+                                    <i class="fa-solid fa-upload me-1"></i>Importer Départements
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Aperçu intégration chat -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fa-solid fa-comments me-2"></i>Intégration Chat
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="small text-muted mb-3">
+                                    Les départements avec chat activé apparaissent automatiquement comme canaux dans le chat d'équipe.
+                                </p>
+                                <div id="chatChannelsPreview">
+                                    <!-- Aperçu des canaux -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                <button type="button" class="btn btn-info" onclick="refreshDepartments()">
+                    <i class="fa-solid fa-refresh me-1"></i>Actualiser
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CSS spécifique pour la modal départements -->
+<style>
+.departments-modal .form-control-color {
+    width: 60px;
+    height: 38px;
+}
+
+.department-color-badge {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.chat-channel-preview {
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    border-left: 3px solid #007bff;
+}
+
+.department-member-count {
+    font-size: 0.875em;
+    color: #6c757d;
+}
+
+.table th {
+    font-weight: 600;
+    font-size: 0.875em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.action-btn {
+    padding: 4px 8px;
+    font-size: 0.75em;
+    border-radius: 4px;
+}
+</style>
+
+<!-- JavaScript pour la gestion des départements -->
+<script>
+// Variables globales pour la gestion des départements
+let departmentsData = [];
+let isEditing = false;
+
+// Données d'exemple pour les départements
+const mockDepartments = [
+    {
+        id: 1,
+        name: 'Technique',
+        code: 'TECH',
+        description: 'Équipe technique et maintenance',
+        manager_id: 1,
+        manager_name: 'Jean Dupont',
+        color: '#007bff',
+        active: true,
+        chat_enabled: true,
+        member_count: 8,
+        created_at: '2025-01-15'
+    },
+    {
+        id: 2,
+        name: 'Commercial',
+        code: 'COMM',
+        description: 'Équipe commerciale et ventes',
+        manager_id: 2,
+        manager_name: 'Sophie Martin',
+        color: '#28a745',
+        active: true,
+        chat_enabled: true,
+        member_count: 5,
+        created_at: '2025-01-15'
+    },
+    {
+        id: 3,
+        name: 'Administration',
+        code: 'ADMIN',
+        description: 'Administration et comptabilité',
+        manager_id: 3,
+        manager_name: 'Pierre Durand',
+        color: '#ffc107',
+        active: true,
+        chat_enabled: false,
+        member_count: 3,
+        created_at: '2025-01-15'
+    },
+    {
+        id: 4,
+        name: 'Support Client',
+        code: 'SUPP',
+        description: 'Support et relation client',
+        manager_id: 4,
+        manager_name: 'Marie Dubois',
+        color: '#17a2b8',
+        active: true,
+        chat_enabled: true,
+        member_count: 4,
+        created_at: '2025-01-16'
+    }
+];
+
+// Charger les départements
+function loadDepartments() {
+    try {
+        // Simuler un appel API
+        departmentsData = mockDepartments;
+        renderDepartmentsTable();
+        updateDepartmentStats();
+        updateChatChannelsPreview();
+        loadManagerOptions();
+        
+        console.log('✅ Départements chargés:', departmentsData.length);
+    } catch (error) {
+        console.error('❌ Erreur chargement départements:', error);
+        showNotification('Erreur lors du chargement des départements', 'error');
+    }
+}
+
+// Afficher le formulaire d'ajout
+function showAddDepartmentForm() {
+    document.getElementById('departmentForm').style.display = 'block';
+    document.getElementById('formTitle').innerHTML = '<i class="fa-solid fa-plus me-2"></i>Nouveau Département';
+    document.getElementById('deptForm').reset();
+    document.getElementById('deptId').value = '';
+    document.getElementById('deptColor').value = '#007bff';
+    document.getElementById('deptActive').checked = true;
+    document.getElementById('deptChatEnabled').checked = true;
+    isEditing = false;
+}
+
+// Annuler le formulaire
+function cancelDepartmentForm() {
+    document.getElementById('departmentForm').style.display = 'none';
+    document.getElementById('deptForm').reset();
+    isEditing = false;
+}
+
+// Éditer un département
+function editDepartment(id) {
+    const dept = departmentsData.find(d => d.id === id);
+    if (!dept) return;
+
+    document.getElementById('departmentForm').style.display = 'block';
+    document.getElementById('formTitle').innerHTML = '<i class="fa-solid fa-edit me-2"></i>Modifier Département';
+    
+    document.getElementById('deptId').value = dept.id;
+    document.getElementById('deptName').value = dept.name;
+    document.getElementById('deptCode').value = dept.code;
+    document.getElementById('deptDescription').value = dept.description || '';
+    document.getElementById('deptManager').value = dept.manager_id || '';
+    document.getElementById('deptColor').value = dept.color;
+    document.getElementById('deptActive').checked = dept.active;
+    document.getElementById('deptChatEnabled').checked = dept.chat_enabled;
+    
+    isEditing = true;
+}
+
+// Supprimer un département
+function deleteDepartment(id) {
+    const dept = departmentsData.find(d => d.id === id);
+    if (!dept) return;
+
+    if (confirm(`Êtes-vous sûr de vouloir supprimer le département "${dept.name}" ?`)) {
+        departmentsData = departmentsData.filter(d => d.id !== id);
+        renderDepartmentsTable();
+        updateDepartmentStats();
+        updateChatChannelsPreview();
+        showNotification('Département supprimé avec succès', 'success');
+    }
+}
+
+// Basculer le statut actif
+function toggleDepartmentStatus(id) {
+    const dept = departmentsData.find(d => d.id === id);
+    if (dept) {
+        dept.active = !dept.active;
+        renderDepartmentsTable();
+        updateDepartmentStats();
+        showNotification(`Département ${dept.active ? 'activé' : 'désactivé'}`, 'info');
+    }
+}
+
+// Basculer le chat
+function toggleDepartmentChat(id) {
+    const dept = departmentsData.find(d => d.id === id);
+    if (dept) {
+        dept.chat_enabled = !dept.chat_enabled;
+        renderDepartmentsTable();
+        updateDepartmentStats();
+        updateChatChannelsPreview();
+        showNotification(`Chat ${dept.chat_enabled ? 'activé' : 'désactivé'} pour ${dept.name}`, 'info');
+    }
+}
+
+// Rendre la table des départements
+function renderDepartmentsTable() {
+    const tbody = document.getElementById('departmentsTableBody');
+    tbody.innerHTML = '';
+
+    departmentsData.forEach(dept => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>
+                <div class="d-flex align-items-center">
+                    <span class="department-color-badge" style="background-color: ${dept.color};"></span>
+                    <div>
+                        <strong>${dept.name}</strong>
+                        <br><small class="text-muted">${dept.description || 'Aucune description'}</small>
+                    </div>
+                </div>
+            </td>
+            <td><code>${dept.code}</code></td>
+            <td>${dept.manager_name || '<span class="text-muted">Non assigné</span>'}</td>
+            <td>
+                <span class="badge bg-light text-dark">${dept.member_count} membre${dept.member_count > 1 ? 's' : ''}</span>
+            </td>
+            <td>
+                <button class="btn btn-sm ${dept.chat_enabled ? 'btn-success' : 'btn-outline-secondary'}" 
+                        onclick="toggleDepartmentChat(${dept.id})" title="Basculer le chat">
+                    <i class="fa-solid fa-${dept.chat_enabled ? 'comments' : 'comments-slash'}"></i>
+                </button>
+            </td>
+            <td>
+                <button class="btn btn-sm ${dept.active ? 'btn-success' : 'btn-outline-danger'}" 
+                        onclick="toggleDepartmentStatus(${dept.id})" title="Basculer le statut">
+                    <i class="fa-solid fa-${dept.active ? 'check-circle' : 'times-circle'}"></i>
+                </button>
+            </td>
+            <td>
+                <div class="btn-group" role="group">
+                    <button class="btn btn-outline-primary action-btn" onclick="editDepartment(${dept.id})" title="Modifier">
+                        <i class="fa-solid fa-edit"></i>
+                    </button>
+                    <button class="btn btn-outline-danger action-btn" onclick="deleteDepartment(${dept.id})" title="Supprimer">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Mettre à jour les statistiques
+function updateDepartmentStats() {
+    const total = departmentsData.length;
+    const active = departmentsData.filter(d => d.active).length;
+    const chatEnabled = departmentsData.filter(d => d.chat_enabled).length;
+    const totalMembers = departmentsData.reduce((sum, d) => sum + d.member_count, 0);
+
+    document.getElementById('totalDepartments').textContent = total;
+    document.getElementById('activeDepartments').textContent = active;
+    document.getElementById('chatEnabledDepartments').textContent = chatEnabled;
+    document.getElementById('totalMembers').textContent = totalMembers;
+}
+
+// Mettre à jour l'aperçu des canaux de chat
+function updateChatChannelsPreview() {
+    const preview = document.getElementById('chatChannelsPreview');
+    const chatEnabledDepts = departmentsData.filter(d => d.chat_enabled && d.active);
+
+    if (chatEnabledDepts.length === 0) {
+        preview.innerHTML = '<p class="text-muted small">Aucun canal de chat configuré</p>';
+        return;
+    }
+
+    preview.innerHTML = chatEnabledDepts.map(dept => `
+        <div class="chat-channel-preview" style="border-left-color: ${dept.color};">
+            <div class="d-flex justify-content-between align-items-center">
+                <span><i class="fa-solid fa-hashtag me-1"></i>${dept.name.toLowerCase()}</span>
+                <small class="text-muted">${dept.member_count} membres</small>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Charger les options de responsables
+function loadManagerOptions() {
+    const select = document.getElementById('deptManager');
+    
+    // Simuler des responsables
+    const managers = [
+        { id: 1, name: 'Jean Dupont' },
+        { id: 2, name: 'Sophie Martin' },
+        { id: 3, name: 'Pierre Durand' },
+        { id: 4, name: 'Marie Dubois' },
+        { id: 5, name: 'Luc Moreau' },
+        { id: 6, name: 'Anne Lefevre' }
+    ];
+
+    select.innerHTML = '<option value="">Sélectionner un responsable</option>';
+    managers.forEach(manager => {
+        const option = document.createElement('option');
+        option.value = manager.id;
+        option.textContent = manager.name;
+        select.appendChild(option);
+    });
+}
+
+// Sauvegarder un département
+function saveDepartment(event) {
+    event.preventDefault();
+
+    const formData = {
+        name: document.getElementById('deptName').value.trim(),
+        code: document.getElementById('deptCode').value.trim().toUpperCase(),
+        description: document.getElementById('deptDescription').value.trim(),
+        manager_id: parseInt(document.getElementById('deptManager').value) || null,
+        color: document.getElementById('deptColor').value,
+        active: document.getElementById('deptActive').checked,
+        chat_enabled: document.getElementById('deptChatEnabled').checked
+    };
+
+    // Validation
+    if (!formData.name || !formData.code) {
+        showNotification('Nom et code du département requis', 'error');
+        return;
+    }
+
+    // Vérifier le code unique
+    const existingCode = departmentsData.find(d => 
+        d.code === formData.code && 
+        d.id !== parseInt(document.getElementById('deptId').value || 0)
+    );
+    
+    if (existingCode) {
+        showNotification('Ce code de département existe déjà', 'error');
+        return;
+    }
+
+    if (isEditing) {
+        // Modifier
+        const id = parseInt(document.getElementById('deptId').value);
+        const deptIndex = departmentsData.findIndex(d => d.id === id);
+        if (deptIndex !== -1) {
+            departmentsData[deptIndex] = { 
+                ...departmentsData[deptIndex], 
+                ...formData,
+                manager_name: getManagerName(formData.manager_id)
+            };
+            showNotification('Département modifié avec succès', 'success');
+        }
+    } else {
+        // Ajouter
+        const newDept = {
+            id: Math.max(...departmentsData.map(d => d.id), 0) + 1,
+            ...formData,
+            manager_name: getManagerName(formData.manager_id),
+            member_count: 0,
+            created_at: new Date().toISOString().split('T')[0]
+        };
+        departmentsData.push(newDept);
+        showNotification('Département ajouté avec succès', 'success');
+    }
+
+    // Rafraîchir l'affichage
+    renderDepartmentsTable();
+    updateDepartmentStats();
+    updateChatChannelsPreview();
+    cancelDepartmentForm();
+
+    // Notifier le chat des changements
+    document.dispatchEvent(new CustomEvent('departmentsUpdated', { detail: departmentsData }));
+}
+
+// Obtenir le nom du responsable
+function getManagerName(managerId) {
+    const managers = {
+        1: 'Jean Dupont',
+        2: 'Sophie Martin',
+        3: 'Pierre Durand',
+        4: 'Marie Dubois',
+        5: 'Luc Moreau',
+        6: 'Anne Lefevre'
+    };
+    return managerId ? managers[managerId] : null;
+}
+
+// Synchroniser avec le chat
+function syncDepartmentsWithChat() {
+    const chatEnabledDepts = departmentsData.filter(d => d.chat_enabled && d.active);
+    
+    console.log('🔄 Synchronisation des départements avec le chat...');
+    console.log('Canaux à créer:', chatEnabledDepts.map(d => `#${d.name.toLowerCase()}`));
+    
+    // Ici, on intégrerait avec le système de chat
+    // Pour l'instant, on simule
+    setTimeout(() => {
+        showNotification(`${chatEnabledDepts.length} canaux synchronisés avec le chat`, 'success');
+        updateChatChannelsPreview();
+    }, 1000);
+}
+
+// Exporter les départements
+function exportDepartments() {
+    const exportData = {
+        timestamp: new Date().toISOString(),
+        departments: departmentsData.map(dept => ({
+            name: dept.name,
+            code: dept.code,
+            description: dept.description,
+            manager_name: dept.manager_name,
+            color: dept.color,
+            active: dept.active,
+            chat_enabled: dept.chat_enabled,
+            member_count: dept.member_count
+        }))
+    };
+
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", `departments_${new Date().toISOString().split('T')[0]}.json`);
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+
+    showNotification('Départements exportés avec succès', 'success');
+}
+
+// Importer les départements
+function importDepartments() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = function(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.departments && Array.isArray(data.departments)) {
+                        // Traiter l'import...
+                        showNotification('Import réussi (fonctionnalité en développement)', 'info');
+                    } else {
+                        showNotification('Format de fichier invalide', 'error');
+                    }
+                } catch (error) {
+                    showNotification('Erreur lors de la lecture du fichier', 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+    };
+    input.click();
+}
+
+// Actualiser les départements
+function refreshDepartments() {
+    loadDepartments();
+    showNotification('Départements actualisés', 'info');
+}
+
+// Notification helper
+function showNotification(message, type = 'info') {
+    console.log(`${type.toUpperCase()}: ${message}`);
+    
+    // Créer une notification toast
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    toast.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+        }
+    }, 5000);
+}
+
+// Initialisation au chargement de la modal
+document.addEventListener('DOMContentLoaded', function() {
+    const departmentsModal = document.getElementById('departmentsModal');
+    if (departmentsModal) {
+        departmentsModal.addEventListener('show.bs.modal', function() {
+            loadDepartments();
+        });
+    }
+
+    // Événement de soumission du formulaire
+    const deptForm = document.getElementById('deptForm');
+    if (deptForm) {
+        deptForm.addEventListener('submit', saveDepartment);
+    }
+});
+</script>

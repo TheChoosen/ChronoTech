@@ -19,7 +19,8 @@
     </div>
 
     <form id="customerForm" method="POST" enctype="multipart/form-data">
-        {{ form.hidden_tag() }}
+        <!-- CSRF protection -->
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         
         <div class="row">
             <!-- Contenu principal -->
@@ -33,60 +34,84 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    {{ form.name.label(class="form-label") }}
-                                    {{ form.name(class="form-control clay-input", placeholder="Nom complet ou raison sociale") }}
-                                    {% if form.name.errors %}
-                                    <div class="text-danger small">{{ form.name.errors[0] }}</div>
+                                    <label for="name" class="form-label">Nom *</label>
+                                    <input type="text" id="name" name="name" 
+                                           class="form-control clay-input" 
+                                           placeholder="Nom complet ou raison sociale"
+                                           value="{{ customer.name or '' }}" required>
+                                    {% if errors and 'name' in errors %}
+                                    <div class="text-danger small">{{ errors['name'] }}</div>
                                     {% endif %}
                                 </div>
                                 
                                 <div class="mb-3">
-                                    {{ form.customer_type.label(class="form-label") }}
-                                    {{ form.customer_type(class="form-select clay-input", onchange="updateFormFields()") }}
-                                    {% if form.customer_type.errors %}
-                                    <div class="text-danger small">{{ form.customer_type.errors[0] }}</div>
+                                    <label for="customer_type" class="form-label">Type de client</label>
+                                    <select id="customer_type" name="customer_type" 
+                                            class="form-select clay-input" onchange="updateFormFields()">
+                                        <option value="particulier" {% if customer.customer_type == 'particulier' %}selected{% endif %}>Particulier</option>
+                                        <option value="entreprise" {% if customer.customer_type == 'entreprise' %}selected{% endif %}>Entreprise</option>
+                                        <option value="administration" {% if customer.customer_type == 'administration' %}selected{% endif %}>Administration</option>
+                                    </select>
+                                    {% if errors and 'customer_type' in errors %}
+                                    <div class="text-danger small">{{ errors['customer_type'] }}</div>
                                     {% endif %}
                                 </div>
 
                                 <div class="mb-3" id="companyField">
-                                    {{ form.company.label(class="form-label") }}
-                                    {{ form.company(class="form-control clay-input", placeholder="Nom de l'entreprise") }}
-                                    {% if form.company.errors %}
-                                    <div class="text-danger small">{{ form.company.errors[0] }}</div>
+                                    <label for="company" class="form-label">Raison sociale</label>
+                                    <input type="text" id="company" name="company" 
+                                           class="form-control clay-input" 
+                                           placeholder="Nom de l'entreprise"
+                                           value="{{ customer.company or '' }}">
+                                    {% if errors and 'company' in errors %}
+                                    <div class="text-danger small">{{ errors['company'] }}</div>
                                     {% endif %}
                                 </div>
 
                                 <div class="mb-3" id="siretField">
-                                    {{ form.siret.label(class="form-label") }}
-                                    {{ form.siret(class="form-control clay-input", placeholder="14 chiffres") }}
-                                    {% if form.siret.errors %}
-                                    <div class="text-danger small">{{ form.siret.errors[0] }}</div>
+                                    <label for="siret" class="form-label">SIRET</label>
+                                    <input type="text" id="siret" name="siret" 
+                                           class="form-control clay-input" 
+                                           placeholder="14 chiffres"
+                                           value="{{ customer.siret or '' }}"
+                                           pattern="[0-9]{14}" maxlength="14">
+                                    {% if errors and 'siret' in errors %}
+                                    <div class="text-danger small">{{ errors['siret'] }}</div>
                                     {% endif %}
                                 </div>
                             </div>
                             
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    {{ form.email.label(class="form-label") }}
-                                    {{ form.email(class="form-control clay-input", placeholder="exemple@email.com") }}
-                                    {% if form.email.errors %}
-                                    <div class="text-danger small">{{ form.email.errors[0] }}</div>
+                                    <label for="email" class="form-label">Email</label>
+                                    <input type="email" id="email" name="email" 
+                                           class="form-control clay-input" 
+                                           placeholder="exemple@email.com"
+                                           value="{{ customer.email or '' }}">
+                                    {% if errors and 'email' in errors %}
+                                    <div class="text-danger small">{{ errors['email'] }}</div>
                                     {% endif %}
                                 </div>
                                 
                                 <div class="mb-3">
-                                    {{ form.phone.label(class="form-label") }}
-                                    {{ form.phone(class="form-control clay-input", placeholder="0123456789") }}
-                                    {% if form.phone.errors %}
-                                    <div class="text-danger small">{{ form.phone.errors[0] }}</div>
+                                    <label for="phone" class="form-label">Téléphone</label>
+                                    <input type="tel" id="phone" name="phone" 
+                                           class="form-control clay-input" 
+                                           placeholder="0123456789"
+                                           value="{{ customer.phone or '' }}">
+                                    {% if errors and 'phone' in errors %}
+                                    <div class="text-danger small">{{ errors['phone'] }}</div>
                                     {% endif %}
                                 </div>
 
                                 <div class="mb-3">
-                                    {{ form.status.label(class="form-label") }}
-                                    {{ form.status(class="form-select clay-input") }}
-                                    {% if form.status.errors %}
-                                    <div class="text-danger small">{{ form.status.errors[0] }}</div>
+                                    <label for="is_active" class="form-label">Statut</label>
+                                    <select id="is_active" name="is_active" class="form-select clay-input">
+                                        <option value="1" {% if customer.is_active %}selected{% endif %}>Actif</option>
+                                        <option value="0" {% if not customer.is_active %}selected{% endif %}>Inactif</option>
+                                    </select>
+                                    {% if errors and 'is_active' in errors %}
+                                    <div class="text-danger small">{{ errors['is_active'] }}</div>
                                     {% endif %}
                                 </div>
 
@@ -132,38 +157,53 @@
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
-                            {{ form.address.label(class="form-label") }}
-                            {{ form.address(class="form-control clay-input", rows="2", placeholder="Numéro, rue, avenue...") }}
-                            {% if form.address.errors %}
-                            <div class="text-danger small">{{ form.address.errors[0] }}</div>
+                            <label for="address" class="form-label">Adresse</label>
+                            <textarea id="address" name="address" 
+                                      class="form-control clay-input" rows="2" 
+                                      placeholder="Numéro, rue, avenue...">{{ customer.address or '' }}</textarea>
+                            {% if errors and 'address' in errors %}
+                            <div class="text-danger small">{{ errors['address'] }}</div>
                             {% endif %}
                         </div>
 
                         <div class="row">
                             <div class="col-md-3">
                                 <div class="mb-3">
-                                    {{ form.postal_code.label(class="form-label") }}
-                                    {{ form.postal_code(class="form-control clay-input", placeholder="75000") }}
-                                    {% if form.postal_code.errors %}
-                                    <div class="text-danger small">{{ form.postal_code.errors[0] }}</div>
+                                    <label for="postal_code" class="form-label">Code postal</label>
+                                    <input type="text" id="postal_code" name="postal_code" 
+                                           class="form-control clay-input" 
+                                           placeholder="Code postal"
+                                           value="{{ customer.postal_code or '' }}"
+                                           maxlength="10">
+                                    {% if errors and 'postal_code' in errors %}
+                                    <div class="text-danger small">{{ errors['postal_code'] }}</div>
                                     {% endif %}
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    {{ form.city.label(class="form-label") }}
-                                    {{ form.city(class="form-control clay-input", placeholder="Paris") }}
-                                    {% if form.city.errors %}
-                                    <div class="text-danger small">{{ form.city.errors[0] }}</div>
+                                    <label for="city" class="form-label">Ville</label>
+                                    <input type="text" id="city" name="city" 
+                                           class="form-control clay-input" 
+                                           placeholder="Paris"
+                                           value="{{ customer.city or '' }}">
+                                    {% if errors and 'city' in errors %}
+                                    <div class="text-danger small">{{ errors['city'] }}</div>
                                     {% endif %}
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="mb-3">
-                                    {{ form.country.label(class="form-label") }}
-                                    {{ form.country(class="form-control clay-input") }}
-                                    {% if form.country.errors %}
-                                    <div class="text-danger small">{{ form.country.errors[0] }}</div>
+                                    <label for="country" class="form-label">Pays</label>
+                                    <select id="country" name="country" class="form-control clay-input">
+                                        <option value="FR" {% if customer.country == 'FR' or not customer.country %}selected{% endif %}>France</option>
+                                        <option value="BE" {% if customer.country == 'BE' %}selected{% endif %}>Belgique</option>
+                                        <option value="CH" {% if customer.country == 'CH' %}selected{% endif %}>Suisse</option>
+                                        <option value="LU" {% if customer.country == 'LU' %}selected{% endif %}>Luxembourg</option>
+                                        <option value="CA" {% if customer.country == 'CA' %}selected{% endif %}>Canada</option>
+                                    </select>
+                                    {% if errors and 'country' in errors %}
+                                    <div class="text-danger small">{{ errors['country'] }}</div>
                                     {% endif %}
                                 </div>
                             </div>
@@ -180,59 +220,50 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    {{ form.billing_address.label(class="form-label") }}
-                                    {{ form.billing_address(class="form-control clay-input", rows="3", placeholder="Si différente de l'adresse principale...") }}
-                                    {% if form.billing_address.errors %}
-                                    <div class="text-danger small">{{ form.billing_address.errors[0] }}</div>
-                                    {% endif %}
-                                </div>
-
-                                <div class="mb-3">
-                                    {{ form.payment_terms.label(class="form-label") }}
-                                    {{ form.payment_terms(class="form-select clay-input") }}
-                                    {% if form.payment_terms.errors %}
-                                    <div class="text-danger small">{{ form.payment_terms.errors[0] }}</div>
+                                    <label for="notes" class="form-label">Notes</label>
+                                    <textarea id="notes" name="notes" 
+                                              class="form-control clay-input" rows="3" 
+                                              placeholder="Notes internes sur le client...">{{ customer.notes or '' }}</textarea>
+                                    <div class="form-text">Ces notes sont visibles uniquement par l'équipe</div>
+                                    {% if errors and 'notes' in errors %}
+                                    <div class="text-danger small">{{ errors['notes'] }}</div>
                                     {% endif %}
                                 </div>
                             </div>
                             
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    {{ form.notes.label(class="form-label") }}
-                                    {{ form.notes(class="form-control clay-input", rows="4", placeholder="Notes internes sur le client...") }}
-                                    <div class="form-text">Ces notes sont visibles uniquement par l'équipe</div>
-                                    {% if form.notes.errors %}
-                                    <div class="text-danger small">{{ form.notes.errors[0] }}</div>
+                                    <label for="mobile" class="form-label">Mobile</label>
+                                    <input type="tel" id="mobile" name="mobile" 
+                                           class="form-control clay-input" 
+                                           placeholder="0612345678"
+                                           value="{{ customer.mobile or '' }}">
+                                    {% if errors and 'mobile' in errors %}
+                                    <div class="text-danger small">{{ errors['mobile'] }}</div>
                                     {% endif %}
                                 </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-4">
+                                
                                 <div class="mb-3">
-                                    {{ form.tax_number.label(class="form-label") }}
-                                    {{ form.tax_number(class="form-control clay-input", placeholder="Numéro de TVA") }}
-                                    {% if form.tax_number.errors %}
-                                    <div class="text-danger small">{{ form.tax_number.errors[0] }}</div>
+                                    <label for="tax_number" class="form-label">Numéro de TVA</label>
+                                    <input type="text" id="tax_number" name="tax_number" 
+                                           class="form-control clay-input" 
+                                           placeholder="FR12345678901"
+                                           value="{{ customer.tax_number or '' }}">
+                                    {% if errors and 'tax_number' in errors %}
+                                    <div class="text-danger small">{{ errors['tax_number'] }}</div>
                                     {% endif %}
                                 </div>
-                            </div>
-                            <div class="col-md-4">
+                                
                                 <div class="mb-3">
-                                    {{ form.preferred_contact_method.label(class="form-label") }}
-                                    {{ form.preferred_contact_method(class="form-select clay-input") }}
-                                    {% if form.preferred_contact_method.errors %}
-                                    <div class="text-danger small">{{ form.preferred_contact_method.errors[0] }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    {{ form.zone.label(class="form-label") }}
-                                    {{ form.zone(class="form-control clay-input", placeholder="Zone géographique") }}
-                                    {% if form.zone.errors %}
-                                    <div class="text-danger small">{{ form.zone.errors[0] }}</div>
+                                    <label for="preferred_contact" class="form-label">Contact préféré</label>
+                                    <select id="preferred_contact" name="preferred_contact" class="form-select clay-input">
+                                        <option value="email" {% if customer.preferred_contact == 'email' or not customer.preferred_contact %}selected{% endif %}>Email</option>
+                                        <option value="phone" {% if customer.preferred_contact == 'phone' %}selected{% endif %}>Téléphone</option>
+                                        <option value="mobile" {% if customer.preferred_contact == 'mobile' %}selected{% endif %}>Mobile</option>
+                                        <option value="mail" {% if customer.preferred_contact == 'mail' %}selected{% endif %}>Courrier</option>
+                                    </select>
+                                    {% if errors and 'preferred_contact' in errors %}
+                                    <div class="text-danger small">{{ errors['preferred_contact'] }}</div>
                                     {% endif %}
                                 </div>
                             </div>
@@ -287,7 +318,7 @@
                                     class="btn btn-success clay-button">
                                         <i class="fa-solid fa-plus me-2"></i>Enregistrer et créer un bon de travail
                             </button>
-                            <a href="{{ url_for('customers.view', id=customer.id) }}" 
+                            <a href="{{ url_for('customers.view_customer', customer_id=customer.id) }}" 
                                class="btn btn-outline-secondary clay-button">
                                     <i class="fa-solid fa-times me-2"></i>Annuler
                             </a>
@@ -416,6 +447,63 @@ function updateFormFields() {
     }
 }
 
+// Validation du code postal selon le pays
+function validatePostalCode() {
+    const postalCodeField = document.getElementById('postal_code');
+    const countryField = document.getElementById('country');
+    
+    if (!postalCodeField || !countryField) return;
+    
+    const postalCode = postalCodeField.value.trim();
+    const country = countryField.value || 'FR';
+    
+    if (!postalCode) return; // Optionnel
+    
+    let isValid = false;
+    let expectedFormat = '';
+    
+    switch(country.toUpperCase()) {
+        case 'CA':
+            isValid = /^[A-Z]\d[A-Z] \d[A-Z]\d$/i.test(postalCode);
+            expectedFormat = 'K1A 0A6';
+            break;
+        case 'US':
+            isValid = /^\d{5}(-\d{4})?$/.test(postalCode);
+            expectedFormat = '12345 ou 12345-6789';
+            break;
+        case 'GB':
+            isValid = /^[A-Z]{1,2}\d[R\dA-Z]? \d[A-Z]{2}$/i.test(postalCode);
+            expectedFormat = 'SW1A 1AA';
+            break;
+        case 'FR':
+        default:
+            isValid = /^\d{5}$/.test(postalCode);
+            expectedFormat = '12345';
+            break;
+    }
+    
+    // Supprimer les messages d'erreur précédents
+    const existingError = postalCodeField.parentNode.querySelector('.postal-code-error');
+    if (existingError) {
+        existingError.remove();
+    }
+    
+    // Mettre à jour l'apparence du champ
+    if (isValid) {
+        postalCodeField.classList.remove('is-invalid');
+        postalCodeField.classList.add('is-valid');
+    } else {
+        postalCodeField.classList.remove('is-valid');
+        postalCodeField.classList.add('is-invalid');
+        
+        // Ajouter un message d'erreur
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'text-danger small postal-code-error';
+        errorDiv.textContent = `Format attendu pour ${country}: ${expectedFormat}`;
+        postalCodeField.parentNode.appendChild(errorDiv);
+    }
+}
+
 // Aperçu de l'avatar
 document.getElementById('avatar').addEventListener('change', function() {
     const file = this.files[0];
@@ -454,7 +542,7 @@ function deleteCustomer() {
         return;
     }
 
-    const url = `{{ url_for('customers.delete', id=customer.id) }}`;
+    const url = `{{ url_for('customers.delete_customer', customer_id=customer.id) }}`;
     const formData = new FormData();
     formData.append('customer_id', '{{ customer.id }}');
 
@@ -604,5 +692,25 @@ style.textContent = `
 }
 `;
 document.head.appendChild(style);
+
+// Initialisation des écouteurs d'événements
+document.addEventListener('DOMContentLoaded', function() {
+    // Validation du code postal en temps réel
+    const postalCodeField = document.getElementById('postal_code');
+    const countryField = document.getElementById('country');
+    
+    if (postalCodeField) {
+        postalCodeField.addEventListener('input', validatePostalCode);
+        postalCodeField.addEventListener('blur', validatePostalCode);
+    }
+    
+    if (countryField) {
+        countryField.addEventListener('change', validatePostalCode);
+    }
+    
+    // Validation initiale du formulaire si des données existent
+    updateFormFields();
+    validatePostalCode();
+});
 </script>
 {% endblock %}

@@ -14,7 +14,15 @@ class CustomerForm(FlaskForm):
     address = TextAreaField('Adresse', validators=[Optional(), Length(max=255)])
     postal_code = StringField('Code postal', validators=[Optional(), Length(max=10)])
     city = StringField('Ville', validators=[Optional(), Length(max=100)])
-    country = StringField('Pays', validators=[Optional(), Length(max=100)])
+    country = SelectField('Pays', choices=[
+        ('FR', 'France'),
+        ('BE', 'Belgique'), 
+        ('CH', 'Suisse'),
+        ('LU', 'Luxembourg'),
+        ('CA', 'Canada'),
+        ('US', 'États-Unis'),
+        ('GB', 'Royaume-Uni')
+    ], validators=[Optional()], default='FR')
     billing_address = TextAreaField('Adresse de facturation', validators=[Optional(), Length(max=255)])
     payment_terms = SelectField('Conditions de paiement', choices=[('30j', '30 jours'), ('60j', '60 jours'), ('comptant', 'Comptant')], validators=[Optional()])
     notes = TextAreaField('Notes', validators=[Optional(), Length(max=500)])

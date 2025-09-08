@@ -1,0 +1,208 @@
+<!-- Modal Agenda FullCalendar -->
+<div class="modal fade" id="agendaModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fa-solid fa-calendar-alt me-2"></i>ChronoAgenda - Calendrier d'équipe
+                </h5>
+                <div class="d-flex gap-2">
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-light" id="btn-view-month"
+                            onclick="calendarManager.changeView('dayGridMonth')">Mois</button>
+                        <button class="btn btn-outline-light" id="btn-view-week"
+                            onclick="calendarManager.changeView('timeGridWeek')">Semaine</button>
+                        <button class="btn btn-outline-light" id="btn-view-day"
+                            onclick="calendarManager.changeView('timeGridDay')">Jour</button>
+                        <button class="btn btn-outline-light" id="btn-view-list"
+                            onclick="calendarManager.changeView('listWeek')">Liste</button>
+                    </div>
+                    <button class="btn btn-sm btn-light" onclick="calendarManager.showCreateEventModal()">
+                        <i class="fa-solid fa-plus me-1"></i>Nouveau
+                    </button>
+                    <button class="btn btn-sm btn-light" onclick="calendarManager.goToToday()">
+                        <i class="fa-solid fa-calendar-day me-1"></i>Aujourd'hui
+                    </button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+            </div>
+            <div class="modal-body p-2">
+                <div class="row g-2">
+                    <div class="col-12 col-lg-9">
+                        <div id="chronocalendar" style="height: 80vh;"></div>
+                    </div>
+                    <div class="col-12 col-lg-3">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fa-solid fa-filter me-2"></i>Filtres et options
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <!-- Filtres Techniciens -->
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">
+                                        <i class="fa-solid fa-users me-1"></i>Techniciens
+                                    </label>
+                                    <div id="technician-filters" class="scrollable-filters">
+                                        <!-- Généré dynamiquement -->
+                                    </div>
+                                    <div class="mt-2">
+                                        <button class="btn btn-sm btn-outline-secondary"
+                                            onclick="calendarManager.toggleAllTechnicians(true)">
+                                            Tout sélectionner
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-secondary"
+                                            onclick="calendarManager.toggleAllTechnicians(false)">
+                                            Tout déselectionner
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Filtres Statuts -->
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">
+                                        <i class="fa-solid fa-tasks me-1"></i>Statuts
+                                    </label>
+                                    <div id="status-filters">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="status-pending"
+                                                checked>
+                                            <label class="form-check-label" for="status-pending">
+                                                <span class="badge bg-warning text-dark">En attente</span>
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="status-scheduled"
+                                                checked>
+                                            <label class="form-check-label" for="status-scheduled">
+                                                <span class="badge bg-info">Programmé</span>
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="status-in-progress"
+                                                checked>
+                                            <label class="form-check-label" for="status-in-progress">
+                                                <span class="badge bg-primary">En cours</span>
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="status-completed">
+                                            <label class="form-check-label" for="status-completed">
+                                                <span class="badge bg-success">Terminé</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Filtres Priorités -->
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">
+                                        <i class="fa-solid fa-exclamation-triangle me-1"></i>Priorités
+                                    </label>
+                                    <div id="priority-filters">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="priority-low"
+                                                checked>
+                                            <label class="form-check-label" for="priority-low">Faible</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="priority-normal"
+                                                checked>
+                                            <label class="form-check-label" for="priority-normal">Normale</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="priority-high"
+                                                checked>
+                                            <label class="form-check-label" for="priority-high">Élevée</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="priority-urgent"
+                                                checked>
+                                            <label class="form-check-label" for="priority-urgent">Urgente</label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <hr>
+
+                                <!-- Actions rapides -->
+                                <div class="mb-3">
+                                    <h6 class="fw-bold">
+                                        <i class="fa-solid fa-bolt me-1"></i>Actions rapides
+                                    </h6>
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-sm btn-outline-primary"
+                                            onclick="calendarManager.goToToday()">
+                                            <i class="fa-solid fa-calendar-day me-1"></i>Aujourd'hui
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-info"
+                                            onclick="calendarManager.showThisWeek()">
+                                            <i class="fa-solid fa-calendar-week me-1"></i>Cette semaine
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-secondary"
+                                            onclick="calendarManager.refreshEvents()">
+                                            <i class="fa-solid fa-sync-alt me-1"></i>Actualiser
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-warning"
+                                            onclick="calendarManager.exportCalendar()">
+                                            <i class="fa-solid fa-download me-1"></i>Exporter
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Légende des couleurs -->
+                                <div class="mb-3">
+                                    <h6 class="fw-bold">
+                                        <i class="fa-solid fa-palette me-1"></i>Légende
+                                    </h6>
+                                    <div class="legend-item d-flex align-items-center mb-1">
+                                        <div class="legend-color" style="background-color: #ffc107;"></div>
+                                        <small>En attente</small>
+                                    </div>
+                                    <div class="legend-item d-flex align-items-center mb-1">
+                                        <div class="legend-color" style="background-color: #17a2b8;"></div>
+                                        <small>Programmé</small>
+                                    </div>
+                                    <div class="legend-item d-flex align-items-center mb-1">
+                                        <div class="legend-color" style="background-color: #007bff;"></div>
+                                        <small>RDV fixé</small>
+                                    </div>
+                                    <div class="legend-item d-flex align-items-center mb-1">
+                                        <div class="legend-color" style="background-color: #fd7e14;"></div>
+                                        <small>En cours</small>
+                                    </div>
+                                    <div class="legend-item d-flex align-items-center mb-1">
+                                        <div class="legend-color" style="background-color: #28a745;"></div>
+                                        <small>Terminé</small>
+                                    </div>
+                                </div>
+
+                                <!-- Statistiques rapides -->
+                                <div class="mb-3">
+                                    <h6 class="fw-bold">
+                                        <i class="fa-solid fa-chart-bar me-1"></i>Statistiques
+                                    </h6>
+                                    <div id="calendar-stats">
+                                        <div class="d-flex justify-content-between">
+                                            <small>Total événements:</small>
+                                            <small><span id="stats-total">0</span></small>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <small>Cette semaine:</small>
+                                            <small><span id="stats-week">0</span></small>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <small>Aujourd'hui:</small>
+                                            <small><span id="stats-today">0</span></small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

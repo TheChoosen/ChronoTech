@@ -118,4 +118,144 @@
       }).catch(err => { console.error(err); alert('Erreur réseau'); });
   };
 
+  let contacts = [];
+  let currentIndex = 0;
+
+  function openContactForm(mode, index = null) {
+      const modal = new bootstrap.Modal(document.getElementById('contactModal'));
+      const form = document.getElementById('contactForm');
+      const title = document.getElementById('contactModalTitle');
+      const deleteBtn = document.getElementById('deleteContactBtn');
+      form.reset();
+      deleteBtn.style.display = 'none';
+
+      if (mode === 'new') {
+          title.textContent = 'Nouveau contact';
+          document.getElementById('contactClient').value = window.CustomerName || '';
+          document.getElementById('contactId').value = '';
+      } else if (mode === 'edit' && index !== null) {
+          title.textContent = 'Modifier contact';
+          const c = contacts[index];
+          Object.keys(c).forEach(k => {
+              if (document.getElementById('contact' + capitalize(k))) {
+                  document.getElementById('contact' + capitalize(k)).value = c[k];
+              }
+          });
+          document.getElementById('contactId').value = c.id;
+          deleteBtn.style.display = 'inline-block';
+      }
+      modal.show();
+  }
+
+  function capitalize(str) {
+      return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+
+  function renderContactsGrid() {
+      const tbody = document.querySelector('#contactsGrid tbody');
+      tbody.innerHTML = contacts.map((c, i) => `
+          <tr${i === currentIndex ? ' class="table-primary"' : ''}>
+              <td>${c.name}</td>
+              <td>${c.category}</td>
+              <td>${c.phone_office}</td>
+              <td>${c.phone_home}</td>
+              <td>${c.cell}</td>
+              <td>${c.email}</td>
+              <td>${c.entry_date || ''}</td>
+              <td><input type="checkbox" disabled ${c.order ? 'checked' : ''}></td>
+              <td><input type="checkbox" disabled ${c.invoice ? 'checked' : ''}></td>
+              <td>
+                  <button class="btn btn-sm btn-outline-primary" onclick="openContactForm('edit',${i})"><i class="fa-solid fa-edit"></i></button>
+              </td>
+          </tr>
+      `).join('');
+      document.getElementById('contactsCount').textContent = contacts.length;
+      document.getElementById('contactIndex').textContent = contacts.length ? currentIndex + 1 : 0;
+      document.getElementById('contactTotal').textContent = contacts.length;
+  }
+
+  function navigateContact(action) {
+      if (!contacts.length) return;
+      switch(action) {
+          case 'first': currentIndex = 0; break;
+          case 'prev': currentIndex = Math.max(0, currentIndex - 1); break;
+          case 'next': currentIndex = Math.min(contacts.length - 1, currentIndex + 1); break;
+          case 'last': currentIndex = contacts.length - 1; break;
+      }
+      renderContactsGrid();
+  }
+
+  function searchContact() {
+      const term = prompt('Recherche par nom ou email:');
+      if (!term) return;
+      const idx = contacts.findIndex(c => c.name.includes(term) || c.email.includes(term));
+      if (idx >= 0) {
+          currentIndex = idx;
+          renderContactsGrid();
+      } else {
+          alert('Aucun contact trouvé');
+      }
+  }
+
+  function printContacts() {
+      const html = document.getElementById('contactsGrid').outerHTML;
+      const frame = document.getElementById('printFrame');
+      frame.contentDocument.write('<html><head><title>Contacts</title></head><body>' + html + '</body></html>');
+      frame.contentDocument.close();
+      frame.contentWindow.print();
+  }
+
+  // CRUD
+
+  document.getElementById('contactForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      // Validation
+      const name = document.getElementById('contactName').value.trim();
+      if (!name) {
+          alert('Le nom du contact est obligatoire');
+          return;
+      }
+      const contact = {};
+      Array.from(this.elements).forEach(el => {
+          if (el.name) {
+              if (el.type === 'checkbox') {
+                  contact[el.name] = el.checked;
+              } else {
+                  contact[el.name] = el.value;
+              }
+          }
+      });
+      if (!contact.contact_id) {
+          // Nouveau
+          contact.id = Date.now();
+          contacts.push(contact);
+          currentIndex = contacts.length - 1;
+      } else {
+          // Edition
+          const idx = contacts.findIndex(c => c.id == contact.contact_id);
+          if (idx >= 0) contacts[idx] = contact;
+      }
+      renderContactsGrid();
+      bootstrap.Modal.getInstance(document.getElementById('contactModal')).hide();
+  });
+
+  function deleteContact() {
+      const id = document.getElementById('contactId').value;
+      if (!id) return;
+      if (!confirm('Supprimer ce contact ?')) return;
+      const idx = contacts.findIndex(c => c.id == id);
+      if (idx >= 0) {
+          contacts.splice(idx, 1);
+          currentIndex = Math.max(0, currentIndex - 1);
+          renderContactsGrid();
+          bootstrap.Modal.getInstance(document.getElementById('contactModal')).hide();
+      }
+  }
+
+  // Initialisation
+  window.addEventListener('DOMContentLoaded', function() {
+      // TODO: Charger les contacts depuis l'API si disponible
+      renderContactsGrid();
+  });
+
 })();

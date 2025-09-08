@@ -68,6 +68,8 @@
             </div>
             <div class="modal-body" style="padding: 2rem;">
                 <form id="editVehicleForm">
+                    <!-- CSRF Token pour la sécurité -->
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">

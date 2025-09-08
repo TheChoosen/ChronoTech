@@ -1,0 +1,223 @@
+/*
+ * ChronoTech - Base Claymorphism Styles
+ * Extrait de base.html pour améliorer les performances
+ * Généré automatiquement le 4 septembre 2025
+ */
+
+:root {
+            /* Couleurs de base */
+            --bg-color: #e0e5ec;
+            --text-color: #3d3d3d;
+            --primary-color: #2563eb;
+            --secondary-color: #e0e5ec;
+            --accent-color: #4f46e5;
+            
+            /* Variables d'ombre pour l'effet 3D */
+            --shadow-light: #ffffff;
+            --shadow-dark: #a3b1c6;
+            
+            /* Niveaux d'élévation */
+            --shadow-level-1: 6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light); /* Base */
+            --shadow-level-2: 10px 10px 20px var(--shadow-dark), -10px -10px 20px var(--shadow-light); /* Survol */
+            --shadow-level-3: 15px 15px 30px var(--shadow-dark), -15px -15px 30px var(--shadow-light); /* Modal */
+            --shadow-pressed: inset 5px 5px 10px var(--shadow-dark), inset -5px -5px 10px var(--shadow-light);
+            
+            /* Autres variables */
+            --font-main: 'Poppins', sans-serif;
+            --border-radius: 16px;
+            --transition-speed: 0.3s;
+        }
+
+        .clay-theme {
+            font-family: var(--font-main);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            position: relative;
+            transition: background-color 0.3s ease;
+        }
+
+        .clay-theme::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+            filter: url(#noise-filter);
+            opacity: 0.04;
+        }
+
+        /* Navbar claymorphique */
+        .clay-nav {
+            background: var(--secondary-color) !important;
+            border-radius: 0 0 var(--border-radius) var(--border-radius);
+            box-shadow: var(--shadow-level-1);
+        }
+
+        .clay-nav-link {
+            border-radius: var(--border-radius);
+            transition: all var(--transition-speed) ease;
+            padding: 0.5rem 0.8rem !important;
+            margin: 0 0.2rem;
+            color: var(--primary-color) !important;
+        }
+
+        .clay-nav-link:hover, .clay-nav-link:focus {
+            background-color: var(--secondary-color) !important;
+            box-shadow: var(--shadow-pressed);
+            color: var(--primary-color) !important;
+        }
+
+        .clay-nav-link.active {
+            background-color: var(--secondary-color) !important;
+            box-shadow: var(--shadow-pressed);
+            color: var(--primary-color) !important;
+            font-weight: 500;
+        }
+
+        .clay-brand {
+            padding: 0.4rem 1rem !important;
+            border-radius: var(--border-radius);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .clay-brand:hover {
+            box-shadow: var(--shadow-pressed);
+        }
+
+        /* Dropdown claymorphique */
+        .clay-dropdown {
+            background-color: var(--secondary-color);
+            border: none;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-level-2);
+            padding: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .clay-dropdown .dropdown-item {
+            border-radius: calc(var(--border-radius) - 4px);
+            padding: 0.6rem 1rem;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .clay-dropdown .dropdown-item:hover, 
+        .clay-dropdown .dropdown-item:focus, 
+        .clay-dropdown .dropdown-item.active {
+            background-color: var(--secondary-color);
+            box-shadow: var(--shadow-pressed);
+            color: var(--primary-color);
+        }
+
+        /* Boutons claymorphiques */
+        .clay-btn, .btn {
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-level-1);
+            border: none !important;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .clay-btn:hover, .btn:hover {
+            box-shadow: var(--shadow-level-2);
+            transform: translateY(-2px);
+        }
+
+        .clay-btn:active, .btn:active, 
+        .clay-btn.active, .btn.active {
+            box-shadow: var(--shadow-pressed);
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        /* Alertes claymorphiques */
+        .clay-alert {
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-level-1);
+            border: none;
+        }
+
+        /* Cartes claymorphiques */
+        .card {
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-level-1);
+            border: none;
+            transition: all var(--transition-speed) ease;
+            background-color: var(--secondary-color);
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-level-2);
+            transform: translateY(-3px);
+        }
+
+        /* Inputs claymorphiques */
+        .form-control, .form-select {
+            background: var(--secondary-color);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-pressed);
+            border: none;
+            padding: 0.7rem 1rem;
+            color: var(--text-color);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            box-shadow: var(--shadow-level-1);
+            background-color: var(--secondary-color);
+        }
+
+        /* Footer claymorphique */
+        .clay-footer {
+            background-color: var(--secondary-color);
+            box-shadow: var(--shadow-level-1);
+            border: none;
+            padding: 2rem 0;
+            margin-top: 2rem;
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 991.98px) {
+            :root {
+                --border-radius: 12px;
+            }
+            
+            .navbar .nav-link .nav-label {
+                display: none;
+            }
+            
+            .navbar .nav-link i {
+                font-size: 1.05rem;
+            }
+            
+            .navbar .navbar-brand small {
+                display: none;
+            }
+            
+            .clay-nav-link {
+                margin: 0.3rem 0;
+            }
+        }
+
+        @media (min-width: 992px) {
+            .navbar .nav-link .nav-label {
+                display: inline;
+            }
+            
+            .navbar .navbar-brand small {
+                display: inline;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container-fluid {
+                padding-left: 15px;
+                padding-right: 15px;
+            }
+        }

@@ -1,0 +1,54 @@
+<!-- Modal d'Ajout de Temps -->
+<div class="modal fade" id="addTimeModal" tabindex="-1" aria-labelledby="addTimeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addTimeModalLabel">
+                    <i class="fa-solid fa-clock me-2 text-success"></i>Ajouter Temps de Travail
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Technicien</label>
+                    <select class="form-select" id="time-technician-select">
+                        <option value="">Sélectionner technicien...</option>
+                    </select>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Heure de début</label>
+                        <input type="datetime-local" class="form-control" id="time-start">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Heure de fin</label>
+                        <input type="datetime-local" class="form-control" id="time-end">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Durée (minutes)</label>
+                    <input type="number" class="form-control" id="time-duration" readonly>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Description du travail</label>
+                    <textarea class="form-control" id="time-description" rows="3"
+                        placeholder="Décrire le travail effectué..."></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Taux horaire ($)</label>
+                    <input type="number" class="form-control" id="time-hourly-rate" step="0.01">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Coût total ($)</label>
+                    <input type="number" class="form-control" id="time-total-cost" readonly>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-success" onclick="confirmAddTime()">
+                    <i class="fa-solid fa-check me-1"></i>Ajouter
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

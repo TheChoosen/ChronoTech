@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Erreur - ChronoTech{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Erreur
+                    </h4>
+                </div>
+                <div class="card-body text-center">
+                    <i class="fas fa-bug fa-3x text-danger mb-3"></i>
+                    <h5>Une erreur s'est produite</h5>
+                    {% if message %}
+                    <p class="text-muted">{{ message }}</p>
+                    {% else %}
+                    <p class="text-muted">Nous nous excusons pour la gêne occasionnée.</p>
+                    {% endif %}
+                    
+                    <div class="mt-4">
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
+                            <i class="fas fa-home me-2"></i>Retour à l'accueil
+                        </a>
+                        <button onclick="history.back()" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Retour
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

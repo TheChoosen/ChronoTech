@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChronoChat - Test WebSocket & Kanban</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Socket.IO Client -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    
+    <!-- Custom CSS -->
+    <link href="/static/css/kanban-chat.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .main-container {
+            background: white;
+            border-radius: 15px;
+            margin: 20px;
+            padding: 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        
+        .nav-tabs .nav-link {
+            font-weight: 600;
+            color: #495057;
+            border: none;
+            border-radius: 0;
+        }
+        
+        .nav-tabs .nav-link.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+        }
+        
+        .tab-content {
+            padding: 0;
+        }
+        
+        .tab-pane {
+            min-height: 80vh;
+        }
+        
+        .header-info {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-online { background: #28a745; }
+        .status-offline { background: #dc3545; }
+        .status-connecting { background: #ffc107; animation: pulse 1s infinite; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="main-container">
+            <!-- Header -->
+            <div class="header-info">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h2 class="mb-0">
+                            🚀 ChronoChat WebSocket & Kanban Test
+                        </h2>
+                        <small class="text-muted">Interface de test pour les fonctionnalités temps réel</small>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <div class="connection-info">
+                            <span class="status-indicator status-connecting" id="main-status"></span>
+                            <span id="connection-text">Connexion en cours...</span>
+                        </div>
+                        <div class="mt-1">
+                            <small class="text-muted">Utilisateur: <strong id="current-user">Admin System</strong></small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Navigation Tabs -->
+            <ul class="nav nav-tabs" id="mainTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="kanban-tab" data-bs-toggle="tab" data-bs-target="#kanban-panel" type="button" role="tab">
+                        📋 Kanban Board
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="chat-tab" data-bs-toggle="tab" data-bs-target="#chat-panel" type="button" role="tab">
+                        💬 Chat WebSocket
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="test-tab" data-bs-toggle="tab" data-bs-target="#test-panel" type="button" role="tab">
+                        🧪 Tests & Debug
+                    </button>
+                </li>
+            </ul>
+            
+            <!-- Tab Content -->
+            <div class="tab-content" id="mainTabContent">
+                <!-- Kanban Panel -->
+                <div class="tab-pane fade show active" id="kanban-panel" role="tabpanel">
+                    <div id="kanban-container" class="p-3">
+                        <div class="text-center p-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Chargement...</span>
+                            </div>
+                            <p class="mt-3">Initialisation du Kanban...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Chat Panel -->
+                <div class="tab-pane fade" id="chat-panel" role="tabpanel">
+                    <div id="chat-container" class="h-100">
+                        <div class="text-center p-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Chargement...</span>
+                            </div>
+                            <p class="mt-3">Initialisation du chat WebSocket...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Test Panel -->
+                <div class="tab-pane fade" id="test-panel" role="tabpanel">
+                    <div class="p-4">
+                        <h4>🧪 Tests & Debugging</h4>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5>🔌 WebSocket Tests</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label>Message de test:</label>
+                                            <input type="text" id="test-message" class="form-control" placeholder="Hello WebSocket!" value="Test message from dashboard">
+                                        </div>
+                                        <button class="btn btn-primary" onclick="sendTestMessage()">
+                                            📤 Envoyer Test
+                                        </button>
+                                        <button class="btn btn-info ms-2" onclick="testWebSocketConnection()">
+                                            🔍 Test Connexion
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="card mt-3">
+                                    <div class="card-header">
+                                        <h5>📊 API Tests</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <button class="btn btn-success" onclick="testKanbanAPI()">
+                                            📋 Test Kanban API
+                                        </button>
+                                        <button class="btn btn-warning ms-2" onclick="testChatAPI()">
+                                            💬 Test Chat API
+                                        </button>
+                                        <button class="btn btn-info ms-2" onclick="testHealthAPI()">
+                                            ❤️ Test Health API
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5>📝 Debug Log</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="debug-log" class="bg-dark text-light p-3 rounded" style="height: 300px; overflow-y: auto; font-family: monospace; font-size: 0.85rem;">
+                                            <div class="text-success">[INFO] Interface de test initialisée</div>
+                                            <div class="text-info">[DEBUG] Prêt pour les tests WebSocket et API</div>
+                                        </div>
+                                        <button class="btn btn-secondary btn-sm mt-2" onclick="clearDebugLog()">
+                                            🗑️ Vider Log
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>📈 Status en Temps Réel</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row text-center">
+                                        <div class="col-md-3">
+                                            <div class="border rounded p-3">
+                                                <h6>WebSocket</h6>
+                                                <span id="ws-status" class="badge bg-warning">Déconnecté</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="border rounded p-3">
+                                                <h6>Kanban</h6>
+                                                <span id="kanban-status" class="badge bg-secondary">Initialisation</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="border rounded p-3">
+                                                <h6>Chat</h6>
+                                                <span id="chat-status" class="badge bg-secondary">Initialisation</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="border rounded p-3">
+                                                <h6>API Health</h6>
+                                                <span id="api-status" class="badge bg-secondary">Non testé</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- ChronoChat Scripts -->
+    <script src="/static/js/kanban-manager.js"></script>
+    <script src="/static/js/chronochat-client.js"></script>
+    
+    <script>
+        // Variables globales pour les tests
+        let testSocket = null;
+        let debugLogElement = null;
+        
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            debugLogElement = document.getElementById('debug-log');
+            logDebug('[INIT] Page de test chargée', 'success');
+            
+            // Test initial de l'API de santé
+            setTimeout(testHealthAPI, 2000);
+            
+            // Vérifier les statuts périodiquement
+            setInterval(updateStatuses, 5000);
+        });
+        
+        // Fonctions de test WebSocket
+        function sendTestMessage() {
+            const message = document.getElementById('test-message').value;
+            if (chatClient && chatClient.socket && chatClient.socket.connected) {
+                chatClient.socket.emit('send_message', {
+                    message: message,
+                    recipient_type: 'general'
+                });
+                logDebug(`[WS] Message envoyé: ${message}`, 'info');
+            } else {
+                logDebug('[ERROR] WebSocket non connecté', 'danger');
+            }
+        }
+        
+        function testWebSocketConnection() {
+            logDebug('[TEST] Test de connexion WebSocket...', 'info');
+            
+            if (typeof io !== 'undefined') {
+                logDebug('[OK] Socket.IO client chargé', 'success');
+                
+                testSocket = io('http://localhost:5001', {
+                    query: { user_id: 1, username: 'Test User' },
+                    timeout: 5000
+                });
+                
+                testSocket.on('connect', () => {
+                    logDebug('[OK] Connexion WebSocket test réussie', 'success');
+                    updateStatus('ws-status', 'Connecté', 'success');
+                    testSocket.disconnect();
+                });
+                
+                testSocket.on('connect_error', (error) => {
+                    logDebug(`[ERROR] Erreur connexion WebSocket: ${error}`, 'danger');
+                    updateStatus('ws-status', 'Erreur', 'danger');
+                });
+                
+                testSocket.on('disconnect', () => {
+                    logDebug('[INFO] WebSocket test déconnecté', 'warning');
+                });
+                
+            } else {
+                logDebug('[ERROR] Socket.IO client non chargé', 'danger');
+            }
+        }
+        
+        // Fonctions de test API
+        async function testKanbanAPI() {
+            logDebug('[TEST] Test de l\'API Kanban...', 'info');
+            
+            try {
+                const response = await fetch('http://localhost:5002/api/work-orders');
+                if (response.ok) {
+                    const data = await response.json();
+                    logDebug(`[OK] API Kanban: ${data.work_orders?.length || 0} bons de travail`, 'success');
+                    updateStatus('kanban-status', 'Fonctionnel', 'success');
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                logDebug(`[ERROR] API Kanban: ${error.message}`, 'danger');
+                updateStatus('kanban-status', 'Erreur', 'danger');
+            }
+        }
+        
+        async function testChatAPI() {
+            logDebug('[TEST] Test de l\'API Chat...', 'info');
+            
+            try {
+                const response = await fetch('http://localhost:5002/api/current-user');
+                if (response.ok) {
+                    const user = await response.json();
+                    logDebug(`[OK] API Chat: Utilisateur ${user.name}`, 'success');
+                    updateStatus('chat-status', 'Fonctionnel', 'success');
+                    document.getElementById('current-user').textContent = user.name;
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                logDebug(`[ERROR] API Chat: ${error.message}`, 'danger');
+                updateStatus('chat-status', 'Erreur', 'danger');
+            }
+        }
+        
+        async function testHealthAPI() {
+            logDebug('[TEST] Test de l\'API Health...', 'info');
+            
+            try {
+                const response = await fetch('http://localhost:5002/api/health');
+                if (response.ok) {
+                    const health = await response.json();
+                    logDebug(`[OK] API Health: ${health.status}`, 'success');
+                    updateStatus('api-status', health.status, health.status === 'healthy' ? 'success' : 'warning');
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                logDebug(`[ERROR] API Health: ${error.message}`, 'danger');
+                updateStatus('api-status', 'Erreur', 'danger');
+            }
+        }
+        
+        // Utilitaires
+        function logDebug(message, type = 'info') {
+            if (!debugLogElement) return;
+            
+            const timestamp = new Date().toLocaleTimeString('fr-FR');
+            const colorClass = {
+                'success': 'text-success',
+                'info': 'text-info',
+                'warning': 'text-warning',
+                'danger': 'text-danger'
+            }[type] || 'text-light';
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = colorClass;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            
+            debugLogElement.appendChild(logEntry);
+            debugLogElement.scrollTop = debugLogElement.scrollHeight;
+        }
+        
+        function updateStatus(elementId, text, type) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = text;
+                element.className = `badge bg-${type === 'success' ? 'success' : type === 'danger' ? 'danger' : type === 'warning' ? 'warning' : 'secondary'}`;
+            }
+        }
+        
+        function clearDebugLog() {
+            if (debugLogElement) {
+                debugLogElement.innerHTML = '<div class="text-success">[INFO] Log vidé</div>';
+            }
+        }
+        
+        function updateStatuses() {
+            // Vérifier les statuts des composants
+            if (window.kanbanManager) {
+                updateStatus('kanban-status', 'Actif', 'success');
+            }
+            
+            if (window.chatClient && window.chatClient.isConnected) {
+                updateStatus('ws-status', 'Connecté', 'success');
+                updateStatus('chat-status', 'Actif', 'success');
+            } else if (window.chatClient) {
+                updateStatus('ws-status', 'Déconnecté', 'warning');
+                updateStatus('chat-status', 'Inactif', 'warning');
+            }
+        }
+        
+        // Gestionnaire d'événements pour les onglets
+        document.getElementById('kanban-tab').addEventListener('shown.bs.tab', function() {
+            logDebug('[NAV] Onglet Kanban activé', 'info');
+        });
+        
+        document.getElementById('chat-tab').addEventListener('shown.bs.tab', function() {
+            logDebug('[NAV] Onglet Chat activé', 'info');
+        });
+        
+        document.getElementById('test-tab').addEventListener('shown.bs.tab', function() {
+            logDebug('[NAV] Onglet Test activé', 'info');
+        });
+    </script>
+</body>
+</html>

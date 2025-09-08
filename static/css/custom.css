@@ -33,4 +33,88 @@
   box-shadow: 0 6px 18px rgba(30, 41, 59, 0.12);
 }
 
+/* Time Tracking Panel Optimizations */
+.time-management-panel {
+  min-height: 400px;
+}
+
+.time-action-btn {
+  transition: all 0.3s ease;
+  border-radius: 20px;
+  font-weight: 600;
+  min-width: 120px;
+}
+
+.time-action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.time-status-badge {
+  font-size: 0.8rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-weight: 600;
+}
+
+.time-entry-row {
+  border-left: 3px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.time-entry-row:hover {
+  background-color: rgba(255, 255, 255, 0.5);
+  border-left-color: var(--primary-color, #007bff);
+}
+
+.time-details-toggle {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.time-details-toggle[aria-expanded="true"] i {
+  transform: rotate(180deg);
+}
+
+.total-time-display {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--primary-color, #007bff);
+}
+
+.time-entry-actions .btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+/* Responsive optimizations */
+@media (max-width: 768px) {
+  .time-action-btn {
+    min-width: 100px;
+    font-size: 0.85rem;
+  }
+  
+  .time-management-panel {
+    min-height: 300px;
+  }
+}
+
+/* Compact table for time entries */
+.time-entries-table {
+  font-size: 0.9rem;
+}
+
+.time-entries-table th {
+  background-color: rgba(255, 255, 255, 0.1);
+  border: none;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.time-entries-table td {
+  border: none;
+  padding: 0.5rem;
+  vertical-align: middle;
+}
+
 /* End of custom.css */

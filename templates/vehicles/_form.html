@@ -1,0 +1,95 @@
+<!-- Template formulaire générique pour vehicles -->
+<!-- Inclusion partielle pour factoriser add.html et edit.html -->
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card clay-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fa-solid fa-{{ icon }} me-2"></i>
+                    {{ title }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
+                    {% if csrf_token %}
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    {% endif %}
+                    
+                    <!-- Champs du formulaire à personnaliser selon le module -->
+                    {{ form_fields|safe }}
+                    
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <button type="submit" class="btn btn-primary clay-button">
+                                <i class="fa-solid fa-save me-1"></i>{{ submit_text }}
+                            </button>
+                            <a href="{{ cancel_url }}" class="btn btn-outline-secondary clay-button ms-2">
+                                <i class="fa-solid fa-times me-1"></i>Annuler
+                            </a>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            {% if show_delete and item_id %}
+                            <button type="button" class="btn btn-outline-danger" onclick="confirmDelete({{ item_id }})">
+                                <i class="fa-solid fa-trash me-1"></i>Supprimer
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card clay-card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fa-solid fa-info-circle me-2"></i>Aide
+                </h6>
+            </div>
+            <div class="card-body">
+                {{ help_content|safe }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Validation côté client
+(function() {
+    'use strict';
+    window.addEventListener('load', function() {
+        var forms = document.getElementsByClassName('needs-validation');
+        var validation = Array.prototype.filter.call(forms, function(form) {
+            form.addEventListener('submit', function(event) {
+                if (form.checkValidity() === false) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    }, false);
+})();
+
+// Fonction de confirmation de suppression
+function confirmDelete(id) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cet élément ?')) {
+        // Soumettre le formulaire de suppression
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = window.location.pathname + '/delete';
+        
+        var csrf = document.createElement('input');
+        csrf.type = 'hidden';
+        csrf.name = 'csrf_token';
+        csrf.value = '{{ csrf_token() }}';
+        form.appendChild(csrf);
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>

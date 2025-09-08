@@ -23,11 +23,13 @@ Boutons pour générer et télécharger les PDFs
 </div>
 
 <!-- Bouton PDF Intervention (pour mobile) -->
+{% if intervention %}
 <div class="pdf-intervention-action">
     <button type="button" class="btn btn-success btn-sm" onclick="generateInterventionPDF({{ intervention.id }})">
         <i class="fas fa-file-alt"></i> Rapport PDF
     </button>
 </div>
+{% endif %}
 
 <!-- Modal PDF Status -->
 <div class="modal fade" id="pdfModal" tabindex="-1">

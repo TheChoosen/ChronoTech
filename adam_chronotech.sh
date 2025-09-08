@@ -10,7 +10,7 @@ set -e  # Arrêt en cas d'erreur
 PROJECT_NAME="ChronoTech"
 PYTHON_VERSION="3.8"
 VENV_NAME="venv"
-DEFAULT_PORT=5011
+DEFAULT_PORT=5020
 DB_NAME="bdm"
 DB_USER="gsicloud"
 DB_PASSWORD="TCOChoosenOne204$"
@@ -688,6 +688,13 @@ start_application() {
     export FLASK_APP=app.py
     export FLASK_ENV=development
     export FLASK_DEBUG=True
+    
+    # Variables de base de données
+    export MYSQL_HOST=$DB_HOST
+    export MYSQL_USER=$DB_USER
+    export MYSQL_PASSWORD=$DB_PASSWORD
+    export MYSQL_DB=$DB_NAME
+    export PORT=$DEFAULT_PORT
     
     # Gestion du port d'écoute
     local RUNNING_PORT=$DEFAULT_PORT

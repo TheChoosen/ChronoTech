@@ -1,0 +1,27 @@
+<!-- Modal Détails d'événement -->
+<div class="modal fade" id="eventDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fa-solid fa-info-circle me-2"></i>Détails de l'événement
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="event-details-content">
+                <!-- Contenu généré dynamiquement -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                <button type="button" class="btn btn-primary" id="edit-event-btn"
+                    onclick="calendarManager.editEvent()">
+                    <i class="fa-solid fa-edit me-1"></i>Modifier
+                </button>
+                <button type="button" class="btn btn-danger" id="delete-event-btn"
+                    onclick="calendarManager.deleteEvent()">
+                    <i class="fa-solid fa-trash me-1"></i>Supprimer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

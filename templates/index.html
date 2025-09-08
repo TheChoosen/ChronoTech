@@ -20,7 +20,7 @@
                 </p>
                 <div class="d-flex gap-3 justify-content-center flex-wrap">
                     {% if session.user_id %}
-                                        <a href="{{ url_for('work_orders.list_work_orders') }}" class="btn btn-primary btn-lg">
+                                        <a href="{{ url_for('work_orders.index') }}" class="btn btn-primary btn-lg">
                         <i class="fa-solid fa-clipboard-list me-2"></i>Bons de Travail
                     </a>
                     <a href="{{ url_for('analytics.dashboard') }}" class="btn btn-outline-primary btn-lg">
@@ -148,7 +148,7 @@
                     <h3 class="text-center mb-4">Accès Rapide</h3>
                     <div class="row text-center">
                         <div class="col-md-3 mb-3">
-                            <a href="{{ url_for('work_orders.list_work_orders') }}" class="text-decoration-none">
+                            <a href="{{ url_for('work_orders.index') }}" class="text-decoration-none">
                                 <div class="quick-access-item">
                                     <i class="fa-solid fa-clipboard-list fa-2x mb-2 text-primary"></i>
                                     <p class="mb-0">Bons de Travail</p>

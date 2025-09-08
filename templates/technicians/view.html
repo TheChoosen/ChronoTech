@@ -30,7 +30,7 @@
                     <li><a class="dropdown-item" href="{{ url_for('technicians.technician_workload', technician_id=technician.id) }}">
                         <i class="fa-solid fa-chart-line me-2"></i>Charge de travail
                     </a></li>
-                    <li><a class="dropdown-item" href="{{ url_for('work_orders.list_work_orders') }}?technician={{ technician.id }}">
+                    <li><a class="dropdown-item" href="{{ url_for('work_orders.index') }}?technician={{ technician.id }}">
                         <i class="fa-solid fa-tasks me-2"></i>Interventions
                     </a></li>
                     <li><hr class="dropdown-divider"></li>
@@ -352,7 +352,7 @@
             <div class="clay-card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fa-solid fa-history me-2"></i>Interventions Récentes</h5>
-                    <a href="{{ url_for('work_orders.list_work_orders') }}?technician={{ technician.id }}" 
+                    <a href="{{ url_for('work_orders.index') }}?technician={{ technician.id }}" 
                        class="btn btn-sm btn-outline-primary clay-button">
                         <i class="fa-solid fa-up-right-from-square me-1"></i>Voir toutes
                     </a>

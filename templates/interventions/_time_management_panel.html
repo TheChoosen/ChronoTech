@@ -1,0 +1,621 @@
+<!-- Panneau de gestion des temps - Optimisé pour l'espace -->
+<div class="time-management-panel clay-card" style="padding: 1rem; margin-bottom: 1rem;">
+    <!-- En-tête avec actions principales -->
+    <div class="time-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--secondary-color); padding-bottom: 0.75rem;">
+        <h6 style="margin: 0; color: var(--primary-color); font-weight: 600;">
+            <i class="fas fa-stopwatch me-2"></i>Gestion des Temps
+        </h6>
+        
+        <!-- Statut temps actuel -->
+        <div class="time-status-badge" id="timeStatusBadge" style="padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">
+            <!-- Sera mis à jour par JavaScript -->
+        </div>
+    </div>
+    
+    <!-- Actions temporelles compactes -->
+    <div class="time-actions" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem;">
+        <button id="startBtn" class="time-action-btn" onclick="timeAction('start')" 
+                style="padding: 0.5rem; border: none; border-radius: var(--border-radius); background: linear-gradient(45deg, #28a745, #20c997); color: white; font-size: 0.85rem; font-weight: 600; transition: all 0.3s;">
+            <i class="fas fa-play me-1"></i>Démarrer
+        </button>
+        
+        <button id="pauseBtn" class="time-action-btn" onclick="timeAction('pause')" 
+                style="padding: 0.5rem; border: none; border-radius: var(--border-radius); background: linear-gradient(45deg, #ffc107, #fd7e14); color: white; font-size: 0.85rem; font-weight: 600; transition: all 0.3s;" disabled>
+            <i class="fas fa-pause me-1"></i>Pause
+        </button>
+        
+        <button id="resumeBtn" class="time-action-btn" onclick="timeAction('resume')" 
+                style="padding: 0.5rem; border: none; border-radius: var(--border-radius); background: linear-gradient(45deg, #17a2b8, #6f42c1); color: white; font-size: 0.85rem; font-weight: 600; transition: all 0.3s;" disabled>
+            <i class="fas fa-play me-1"></i>Reprendre
+        </button>
+        
+        <button id="completeBtn" class="time-action-btn" onclick="timeAction('complete')" 
+                style="padding: 0.5rem; border: none; border-radius: var(--border-radius); background: linear-gradient(45deg, #dc3545, #e83e8c); color: white; font-size: 0.85rem; font-weight: 600; transition: all 0.3s;" disabled>
+            <i class="fas fa-check me-1"></i>Terminer
+        </button>
+    </div>
+    
+    <!-- Temps total affiché en évidence -->
+    <div class="total-time-display" style="text-align: center; padding: 0.75rem; background: var(--secondary-color); border-radius: var(--border-radius); margin-bottom: 1rem;">
+        <div style="font-size: 0.8rem; color: var(--text-color); opacity: 0.7; margin-bottom: 0.25rem;">Temps Total</div>
+        <div id="totalTimeDisplay" style="font-size: 1.25rem; font-weight: 700; color: var(--primary-color);">
+            0h 0min
+        </div>
+    </div>
+    
+    <!-- Actions d'historique -->
+    <div class="time-toggle" style="display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+        <button onclick="toggleTimeDetails()" class="clay-button-sm" style="padding: 0.4rem 0.8rem; font-size: 0.75rem; background: var(--secondary-color); border: 1px solid var(--primary-color); color: var(--primary-color);">
+            <i class="fas fa-list me-1"></i>
+            <span id="toggleText">Voir Résumé</span>
+        </button>
+        
+        <button onclick="openTimeHistoryModal()" class="clay-button-sm" style="padding: 0.4rem 0.8rem; font-size: 0.75rem; background: var(--primary-color); border: 1px solid var(--primary-color); color: white;">
+            <i class="fas fa-history me-1"></i>
+            Archives Temps
+        </button>
+    </div>
+    
+    <!-- Tableau des entrées temporelles (masqué par défaut) -->
+    <div id="timeDetailsPanel" class="time-details" style="display: none;">
+        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+            <table class="table table-sm" style="margin: 0; font-size: 0.8rem;">
+                <thead style="background: var(--primary-color); color: white; position: sticky; top: 0;">
+                    <tr>
+                        <th style="padding: 0.5rem 0.25rem; border: none;">Action</th>
+                        <th style="padding: 0.5rem 0.25rem; border: none;">Temps</th>
+                        <th style="padding: 0.5rem 0.25rem; border: none;">Durée</th>
+                        <th style="padding: 0.5rem 0.25rem; border: none; width: 60px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="timeEntriesTable">
+                    <!-- Sera rempli par JavaScript -->
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Mini formulaire d'ajout manuel (pour admins) -->
+        <div class="manual-entry" style="margin-top: 0.75rem; padding: 0.75rem; background: var(--secondary-color); border-radius: var(--border-radius); display: none;" id="manualEntryForm">
+            <div style="font-size: 0.8rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-color);">
+                <i class="fas fa-plus me-1"></i>Ajout Manuel (Admin)
+            </div>
+            <div class="row g-2">
+                <div class="col-4">
+                    <select class="form-select form-select-sm" id="manualAction">
+                        <option value="start">Démarrage</option>
+                        <option value="pause">Pause</option>
+                        <option value="resume">Reprise</option>
+                        <option value="complete">Fin</option>
+                    </select>
+                </div>
+                <div class="col-4">
+                    <input type="number" class="form-control form-control-sm" id="manualDuration" placeholder="Minutes" min="1">
+                </div>
+                <div class="col-4">
+                    <button onclick="addManualEntry()" class="btn btn-primary btn-sm w-100">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript pour la gestion des temps -->
+<script>
+let currentTimeStatus = 'not_started';
+let timeDetailsPanelOpen = false;
+
+// Initialiser au chargement
+document.addEventListener('DOMContentLoaded', function() {
+    refreshTimeData();
+    updateTimeStatusBadge();
+    
+    // Vérifier si admin pour afficher formulaire manuel
+    if (userRole === 'admin') {
+        document.getElementById('manualEntryForm').style.display = 'block';
+    }
+});
+
+// Action temporelle principale
+function timeAction(action) {
+    const data = {
+        action: action,
+        notes: ''
+    };
+    
+    fetch(`/time_tracking/interventions/${workOrderId}/time_action`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            showNotification(result.message, 'success');
+            currentTimeStatus = result.new_time_status;
+            updateActionButtons();
+            updateTimeStatusBadge();
+            refreshTimeData();
+        } else {
+            showNotification(result.message, 'error');
+        }
+    })
+    .catch(error => {
+        showNotification('Erreur de connexion: ' + error.message, 'error');
+    });
+}
+
+// Mettre à jour l'état des boutons selon le statut
+function updateActionButtons() {
+    const buttons = {
+        startBtn: document.getElementById('startBtn'),
+        pauseBtn: document.getElementById('pauseBtn'),
+        resumeBtn: document.getElementById('resumeBtn'),
+        completeBtn: document.getElementById('completeBtn')
+    };
+    
+    // Désactiver tous d'abord
+    Object.values(buttons).forEach(btn => {
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+    });
+    
+    // Activer selon l'état
+    switch(currentTimeStatus) {
+        case 'not_started':
+            buttons.startBtn.disabled = false;
+            buttons.startBtn.style.opacity = '1';
+            break;
+        case 'in_progress':
+            buttons.pauseBtn.disabled = false;
+            buttons.pauseBtn.style.opacity = '1';
+            buttons.completeBtn.disabled = false;
+            buttons.completeBtn.style.opacity = '1';
+            break;
+        case 'paused':
+            buttons.resumeBtn.disabled = false;
+            buttons.resumeBtn.style.opacity = '1';
+            buttons.completeBtn.disabled = false;
+            buttons.completeBtn.style.opacity = '1';
+            break;
+        case 'completed':
+            // Tous restent désactivés
+            break;
+    }
+}
+
+// Mettre à jour le badge de statut
+function updateTimeStatusBadge() {
+    const badge = document.getElementById('timeStatusBadge');
+    const statusConfig = {
+        'not_started': { text: 'Non démarré', color: '#6c757d' },
+        'in_progress': { text: 'En cours', color: '#28a745' },
+        'paused': { text: 'En pause', color: '#ffc107' },
+        'completed': { text: 'Terminé', color: '#dc3545' }
+    };
+    
+    const config = statusConfig[currentTimeStatus] || statusConfig['not_started'];
+    badge.textContent = config.text;
+    badge.style.backgroundColor = config.color;
+    badge.style.color = 'white';
+}
+
+// Basculer l'affichage des détails
+function toggleTimeDetails() {
+    const panel = document.getElementById('timeDetailsPanel');
+    const toggleText = document.getElementById('toggleText');
+    
+    timeDetailsPanelOpen = !timeDetailsPanelOpen;
+    
+    if (timeDetailsPanelOpen) {
+        panel.style.display = 'block';
+        toggleText.textContent = 'Masquer Détails';
+        refreshTimeEntries();
+    } else {
+        panel.style.display = 'none';
+        toggleText.textContent = 'Voir Détails';
+    }
+}
+
+// Rafraîchir les données temporelles
+function refreshTimeData() {
+    fetch(`/time_tracking/interventions/${workOrderId}/time_entries`)
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            document.getElementById('totalTimeDisplay').textContent = result.total_formatted;
+            
+            if (timeDetailsPanelOpen) {
+                displayTimeEntries(result.entries);
+            }
+        }
+    })
+    .catch(error => console.error('Erreur lors du rafraîchissement:', error));
+}
+
+// Afficher les entrées dans le tableau
+function displayTimeEntries(entries) {
+    const tbody = document.getElementById('timeEntriesTable');
+    tbody.innerHTML = '';
+    
+    entries.forEach(entry => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td style="padding: 0.4rem 0.25rem;">
+                <span class="badge" style="background: ${getActionColor(entry.action_type)}; font-size: 0.7rem;">
+                    ${getActionText(entry.action_type)}
+                </span>
+            </td>
+            <td style="padding: 0.4rem 0.25rem; font-size: 0.75rem;">${entry.formatted_timestamp}</td>
+            <td style="padding: 0.4rem 0.25rem; font-size: 0.75rem;">${entry.duration_minutes ? entry.duration_minutes + 'min' : '-'}</td>
+            <td style="padding: 0.4rem 0.25rem;">
+                <div class="btn-group" role="group">
+                    <button onclick="editTimeEntry(${entry.id})" class="btn btn-outline-primary btn-sm" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    ${userRole === 'admin' ? `
+                    <button onclick="deleteTimeEntry(${entry.id})" class="btn btn-outline-danger btn-sm" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    ` : ''}
+                </div>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Fonctions utilitaires
+function getActionColor(action) {
+    const colors = {
+        'start': '#28a745',
+        'pause': '#ffc107',
+        'resume': '#17a2b8',
+        'complete': '#dc3545'
+    };
+    return colors[action] || '#6c757d';
+}
+
+function getActionText(action) {
+    const texts = {
+        'start': 'Début',
+        'pause': 'Pause',
+        'resume': 'Reprise',
+        'complete': 'Fin'
+    };
+    return texts[action] || action;
+}
+
+// Ouvrir la modale d'historique des temps
+function openTimeHistoryModal() {
+    // Définir l'ID de l'intervention dans la modale
+    document.getElementById('timeHistoryWorkOrderId').textContent = workOrderId;
+    
+    // Ouvrir la modale
+    const modal = new bootstrap.Modal(document.getElementById('timeHistoryModal'));
+    modal.show();
+    
+    // Charger l'historique complet
+    loadTimeHistory();
+}
+
+// Charger l'historique complet des temps
+function loadTimeHistory() {
+    const content = document.getElementById('timeHistoryContent');
+    content.innerHTML = `
+        <div class="text-center" style="padding: 2rem; color: #6c757d;">
+            <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
+            <div>Chargement de l'historique...</div>
+        </div>
+    `;
+    
+    fetch(`/time_tracking/entries/${workOrderId}`)
+    .then(response => response.json())
+    .then(entries => {
+        if (entries && entries.length > 0) {
+            displayTimeHistoryTimeline(entries);
+            calculateTimeStats(entries);
+        } else {
+            content.innerHTML = `
+                <div class="text-center" style="padding: 2rem; color: #6c757d;">
+                    <i class="fas fa-clock fa-2x mb-3"></i>
+                    <div>Aucun historique de temps disponible</div>
+                    <small>Démarrez l'intervention pour commencer le suivi</small>
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        console.error('Erreur lors du chargement:', error);
+        content.innerHTML = `
+            <div class="text-center" style="padding: 2rem; color: #dc3545;">
+                <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                <div>Erreur lors du chargement</div>
+                <small>${error.message}</small>
+            </div>
+        `;
+    });
+}
+
+// Afficher la timeline des événements
+function displayTimeHistoryTimeline(entries) {
+    const content = document.getElementById('timeHistoryContent');
+    let timelineHTML = '';
+    
+    // Trier par date décroissante
+    entries.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    
+    entries.forEach((entry, index) => {
+        const date = new Date(entry.timestamp);
+        const formattedTime = date.toLocaleString('fr-FR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        timelineHTML += `
+            <div class="time-timeline-item ${entry.action_type}" data-action="${entry.action_type}" data-date="${entry.timestamp.split('T')[0]}">
+                <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="time-entry-badge badge-${entry.action_type}">
+                            ${getActionText(entry.action_type)}
+                        </span>
+                        <small class="text-muted">${formattedTime}</small>
+                    </div>
+                    
+                    ${entry.duration_minutes ? `
+                        <div class="text-muted" style="font-size: 0.85rem;">
+                            <i class="fas fa-clock me-1"></i>
+                            Durée: <strong>${entry.duration_minutes} minutes</strong>
+                        </div>
+                    ` : ''}
+                    
+                    ${entry.notes ? `
+                        <div class="text-muted" style="font-size: 0.85rem; margin-top: 0.25rem;">
+                            <i class="fas fa-comment me-1"></i>
+                            ${entry.notes}
+                        </div>
+                    ` : ''}
+                    
+                    <div class="text-muted" style="font-size: 0.75rem; margin-top: 0.5rem;">
+                        Technicien: ${entry.technician_name || 'Non spécifié'}
+                    </div>
+                </div>
+                
+                <div class="timeline-actions" style="margin-left: 1rem;">
+                    <div class="btn-group-vertical">
+                        <button class="btn btn-outline-primary btn-sm" onclick="editTimeEntry(${entry.id})" title="Modifier">
+                            <i class="fas fa-edit" style="font-size: 0.7rem;"></i>
+                        </button>
+                        ${userRole === 'admin' ? `
+                        <button class="btn btn-outline-danger btn-sm" onclick="deleteTimeEntry(${entry.id})" title="Supprimer">
+                            <i class="fas fa-trash" style="font-size: 0.7rem;"></i>
+                        </button>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    content.innerHTML = timelineHTML || `
+        <div class="text-center" style="padding: 2rem; color: #6c757d;">
+            <i class="fas fa-clock fa-2x mb-3"></i>
+            <div>Aucun événement à afficher</div>
+        </div>
+    `;
+}
+
+// Calculer les statistiques
+function calculateTimeStats(entries) {
+    let totalMinutes = 0;
+    let sessions = 0;
+    let pauses = 0;
+    let sessionDurations = [];
+    
+    entries.forEach(entry => {
+        if (entry.duration_minutes) {
+            totalMinutes += entry.duration_minutes;
+            
+            if (entry.action_type === 'start' || entry.action_type === 'resume') {
+                sessions++;
+                sessionDurations.push(entry.duration_minutes);
+            } else if (entry.action_type === 'pause') {
+                pauses++;
+            }
+        }
+    });
+    
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    const averageSession = sessionDurations.length > 0 ? 
+        Math.round(sessionDurations.reduce((a, b) => a + b, 0) / sessionDurations.length) : 0;
+    
+    // Mettre à jour les statistiques
+    document.getElementById('totalWorkTime').textContent = `${hours}h ${minutes}min`;
+    document.getElementById('totalSessions').textContent = sessions;
+    document.getElementById('totalPauses').textContent = pauses;
+    document.getElementById('averageSession').textContent = `${averageSession}min`;
+}
+
+// Filtrer l'historique
+function filterTimeHistory() {
+    const actionFilter = document.getElementById('actionFilter').value;
+    const dateFromFilter = document.getElementById('dateFromFilter').value;
+    const dateToFilter = document.getElementById('dateToFilter').value;
+    
+    const items = document.querySelectorAll('.time-timeline-item');
+    
+    items.forEach(item => {
+        let show = true;
+        
+        // Filtre par action
+        if (actionFilter && item.dataset.action !== actionFilter) {
+            show = false;
+        }
+        
+        // Filtre par date
+        const itemDate = item.dataset.date;
+        if (dateFromFilter && itemDate < dateFromFilter) {
+            show = false;
+        }
+        if (dateToFilter && itemDate > dateToFilter) {
+            show = false;
+        }
+        
+        item.style.display = show ? 'flex' : 'none';
+    });
+}
+
+// Rafraîchir l'historique
+function refreshTimeHistory() {
+    loadTimeHistory();
+    showNotification('Historique actualisé', 'success');
+}
+
+// Exporter en CSV
+function exportTimeHistory() {
+    fetch(`/time_tracking/entries/${workOrderId}`)
+    .then(response => response.json())
+    .then(entries => {
+        const csv = generateCSV(entries);
+        downloadCSV(csv, `intervention_${workOrderId}_temps.csv`);
+        showNotification('Export CSV téléchargé', 'success');
+    })
+    .catch(error => {
+        showNotification('Erreur lors de l\'export: ' + error.message, 'error');
+    });
+}
+
+// Générer le CSV
+function generateCSV(entries) {
+    const headers = ['Date', 'Heure', 'Action', 'Durée (min)', 'Technicien', 'Notes'];
+    const rows = [headers.join(',')];
+    
+    entries.forEach(entry => {
+        const date = new Date(entry.timestamp);
+        const row = [
+            date.toLocaleDateString('fr-FR'),
+            date.toLocaleTimeString('fr-FR'),
+            getActionText(entry.action_type),
+            entry.duration_minutes || '',
+            entry.technician_name || '',
+            (entry.notes || '').replace(/,/g, ';')
+        ];
+        rows.push(row.join(','));
+    });
+    
+    return rows.join('\n');
+}
+
+// Télécharger le CSV
+function downloadCSV(csvContent, filename) {
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// Effacer l'historique (admin seulement)
+function clearTimeHistory() {
+    if (userRole !== 'admin') {
+        showNotification('Action réservée aux administrateurs', 'error');
+        return;
+    }
+    
+    if (confirm('Êtes-vous sûr de vouloir effacer tout l\'historique des temps ? Cette action est irréversible.')) {
+        fetch(`/time_tracking/entries/${workOrderId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                showNotification('Historique effacé', 'success');
+                loadTimeHistory();
+                refreshTimeData();
+            } else {
+                showNotification('Erreur lors de la suppression', 'error');
+            }
+        })
+        .catch(error => {
+            showNotification('Erreur: ' + error.message, 'error');
+        });
+    }
+}
+
+// Générer un rapport PDF
+function generateTimeReport() {
+    window.open(`/time_tracking/report/${workOrderId}`, '_blank');
+    showNotification('Génération du rapport PDF...', 'info');
+}
+
+// Fonctions d'édition et suppression d'entrées
+function editTimeEntry(entryId) {
+    // À implémenter : ouvrir une modale d'édition
+    showNotification('Fonction d\'édition en développement', 'info');
+}
+
+function deleteTimeEntry(entryId) {
+    if (userRole !== 'admin') {
+        showNotification('Action réservée aux administrateurs', 'error');
+        return;
+    }
+    
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette entrée ?')) {
+        fetch(`/time_tracking/entry/${entryId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                showNotification('Entrée supprimée', 'success');
+                loadTimeHistory();
+                refreshTimeData();
+            } else {
+                showNotification('Erreur lors de la suppression', 'error');
+            }
+        })
+        .catch(error => {
+            showNotification('Erreur: ' + error.message, 'error');
+        });
+    }
+}
+
+// Notification système
+function showNotification(message, type = 'info') {
+    // Créer une notification toast simple
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible`;
+    toast.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 1050; min-width: 300px;';
+    toast.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Auto-suppression après 3 secondes
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.remove();
+        }
+    }, 3000);
+}
+
+// Rafraîchir automatiquement le temps total quand en cours
+setInterval(() => {
+    if (currentTimeStatus === 'in_progress') {
+        refreshTimeData();
+    }
+}, 30000); // Toutes les 30 secondes
+</script>

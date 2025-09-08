@@ -1,0 +1,158 @@
+/* Améliorations CSS pour la page des véhicules */
+
+/* Pagination améliorée */
+.pagination-sm .page-link {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    font-weight: 600;
+}
+
+.pagination .page-link:hover {
+    background-color: #e9ecef;
+    border-color: #dee2e6;
+}
+
+/* Contrôles de pagination */
+.vehicles-controls {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+/* Informations sur les résultats */
+#vehicles-info {
+    font-weight: 500;
+    color: #6c757d;
+}
+
+/* Amélioration du tableau */
+#vehicles-table th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    color: #495057;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+#vehicles-table th.sortable {
+    user-select: none;
+    transition: all 0.2s ease;
+}
+
+#vehicles-table th.sortable:hover {
+    background-color: #e9ecef;
+    color: #0d6efd;
+}
+
+#vehicles-table th.sort-active {
+    background-color: #e7f3ff;
+    color: #0d6efd;
+}
+
+#vehicles-table th.sort-active .fa-sort {
+    display: none;
+}
+
+#vehicles-table th.sort-asc .fa-sort-up,
+#vehicles-table th.sort-desc .fa-sort-down {
+    display: inline;
+    color: #0d6efd;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+#vehicles-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* Responsive design pour les contrôles */
+@media (max-width: 768px) {
+    .vehicles-pagination-controls {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .pagination-sm {
+        justify-content: center;
+    }
+    
+    .vehicles-controls .row > div {
+        margin-bottom: 0.5rem;
+    }
+}
+
+/* Amélioration des boutons d'action */
+.btn-group-sm > .btn, .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+/* Loading spinner pour la pagination */
+.pagination-loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.pagination-loading::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Amélioration des filtres */
+.filters-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.filters-section .form-control {
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.filters-section .btn {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Badge pour le nombre total */
+.total-badge {
+    background: linear-gradient(45deg, #28a745, #20c997);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 2rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.total-badge::before {
+    content: "📊";
+    font-size: 1.1em;
+}

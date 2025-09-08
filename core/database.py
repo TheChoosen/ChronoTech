@@ -31,9 +31,9 @@ class DatabaseManager:
                 charset='utf8mb4',
                 cursorclass=pymysql.cursors.DictCursor,
                 autocommit=False,
-                connect_timeout=3,   # Timeout de connexion très court
-                read_timeout=5,      # Timeout de lecture court
-                write_timeout=5,     # Timeout d'écriture court
+                connect_timeout=10,   # Timeout plus long pour stabilité
+                read_timeout=30,      # Timeout plus long
+                write_timeout=30,     # Timeout plus long
                 sql_mode="TRADITIONAL",
                 init_command="SET SESSION sql_mode='TRADITIONAL'"
             )
@@ -41,8 +41,8 @@ class DatabaseManager:
             return connection
         except Exception as e:
             logger.error(f"Erreur de connexion à la base de données: {e}")
-            # Retourner None plutôt que de lever une exception
-            return None
+            # Lever l'exception plutôt que retourner None
+            raise e
     
     def close_connection(self):
         """Fermer la connexion à la base de données"""

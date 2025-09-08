@@ -6,6 +6,20 @@ import pymysql
 from datetime import datetime
 import os
 from werkzeug.utils import secure_filename
+from functools import wraps
+
+def require_auth(f):
+    """Décorateur pour vérifier l'authentification pour les API"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('user_id'):
+            # Pour les requêtes AJAX/API, retourner JSON au lieu de rediriger
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.headers.get('Content-Type') == 'application/json':
+                return jsonify({'success': False, 'message': 'Authentication required', 'redirect': '/login'}), 401
+            # Pour les requêtes normales, rediriger vers login
+            return redirect(url_for('auth_login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 bp = Blueprint('interventions', __name__)
 
@@ -108,14 +122,14 @@ def intervention_details(work_order_id):
             work_order = cursor.fetchone()
             if not work_order:
                 flash('Intervention non trouvée', 'error')
-                return redirect(url_for('interventions.list_interventions'))
+                return redirect(url_for('api_interventions.list_interventions'))
             
             # Vérification des permissions
             user_role = session.get('user_role')
             if (user_role == 'technician' and 
                 work_order['assigned_technician_id'] != session.get('user_id')):
                 flash('Accès non autorisé', 'error')
-                return redirect(url_for('interventions.list_interventions'))
+                return redirect(url_for('api_interventions.list_interventions'))
             
             # Notes d'intervention
             cursor.execute("""
@@ -169,6 +183,7 @@ def intervention_details(work_order_id):
         conn.close()
 
 @bp.route('/<int:work_order_id>/add_note', methods=['POST'])
+@require_auth
 def add_note(work_order_id):
     """Ajouter une note d'intervention"""
     content = request.form.get('content', '').strip()
@@ -242,6 +257,7 @@ def add_note(work_order_id):
 
 
 @bp.route('/<int:work_order_id>/add_comment', methods=['POST'])
+@require_auth
 def add_comment(work_order_id):
     """Add an internal comment (not visible to customer)"""
     content = request.form.get('content', '').strip()
@@ -366,19 +382,18 @@ def quick_actions(work_order_id):
             if action == 'start_work':
                 cursor.execute("""
                     UPDATE work_orders 
-                    SET status = 'in_progress', start_time = NOW()
-                    WHERE id = %s AND assigned_technician_id = %s
-                """, (work_order_id, session.get('user_id')))
+                    SET status = 'in_progress', updated_at = NOW()
+                    WHERE id = %s AND (assigned_technician_id = %s OR %s IN (SELECT id FROM users WHERE role = 'admin'))
+                """, (work_order_id, session.get('user_id'), session.get('user_id')))
                 
                 message = 'Travail démarré'
                 
             elif action == 'complete_work':
                 cursor.execute("""
                     UPDATE work_orders 
-                    SET status = 'completed', completion_date = NOW(),
-                        actual_duration = TIMESTAMPDIFF(MINUTE, start_time, NOW())
-                    WHERE id = %s AND assigned_technician_id = %s
-                """, (work_order_id, session.get('user_id')))
+                    SET status = 'completed', completion_date = NOW(), updated_at = NOW()
+                    WHERE id = %s AND (assigned_technician_id = %s OR %s IN (SELECT id FROM users WHERE role = 'admin'))
+                """, (work_order_id, session.get('user_id'), session.get('user_id')))
                 
                 message = 'Travail terminé'
                 
@@ -415,7 +430,7 @@ def mobile_interface():
     """Interface mobile optimisée pour techniciens (mode rapide)"""
     user_role = session.get('user_role')
     if user_role != 'technician':
-        return redirect(url_for('interventions.list_interventions'))
+        return redirect(url_for('api_interventions.list_interventions'))
     
     conn = get_db_connection()
     try:
@@ -559,7 +574,7 @@ def update_vehicle_info(work_order_id):
                 # Log de l'action
                 cursor.execute("""
                     INSERT INTO intervention_notes (work_order_id, content, note_type, technician_id)
-                    VALUES (%s, %s, 'system', %s)
+                    VALUES (%s, %s, 'internal', %s)
                 """, (
                     work_order_id,
                     f"Informations du véhicule mises à jour par {session.get('username', 'Utilisateur')}",

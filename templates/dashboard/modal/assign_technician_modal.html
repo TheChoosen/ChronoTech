@@ -1,0 +1,41 @@
+<!-- Modal d'Assignation de Technicien -->
+<div class="modal fade" id="assignTechnicianModal" tabindex="-1" aria-labelledby="assignTechnicianModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="assignTechnicianModalLabel">
+                    <i class="fa-solid fa-user-plus me-2 text-primary"></i>Assigner un Technicien
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Sélectionner un technicien</label>
+                    <select class="form-select" id="assign-technician-select">
+                        <option value="">Choisir un technicien...</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Type d'assignation</label>
+                    <select class="form-select" id="assign-type-select">
+                        <option value="primary">Principal</option>
+                        <option value="secondary">Secondaire</option>
+                        <option value="observer">Observateur</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Notes d'assignation</label>
+                    <textarea class="form-control" id="assign-notes" rows="3"
+                        placeholder="Notes optionnelles..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" onclick="confirmAssignTechnician()">
+                    <i class="fa-solid fa-check me-1"></i>Assigner
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

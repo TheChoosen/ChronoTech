@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 
-{% block title %}Modifier Bon de Travail {{ work_order.claim_number }} - ChronoTech{% endblock %}
+{% block title %}Modifier Bon de Travail {{ work_order.claim_number if work_order else 'N/A' }} - ChronoTech{% endblock %}
 
 {% block content %}
+{% if work_order %}
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0">
@@ -27,4 +28,15 @@
         </div>
     </div>
 </div>
+{% else %}
+<div class="container-fluid">
+    <div class="alert alert-danger">
+        <i class="fa-solid fa-exclamation-triangle me-2"></i>
+        Bon de travail non trouvé ou données manquantes.
+    </div>
+    <a href="{{ url_for('work_orders.index') }}" class="btn btn-primary">
+        <i class="fa-solid fa-arrow-left me-2"></i>Retour à la liste
+    </a>
+</div>
+{% endif %}
 {% endblock %}

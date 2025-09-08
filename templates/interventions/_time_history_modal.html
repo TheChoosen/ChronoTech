@@ -1,0 +1,182 @@
+<!-- Modale d'historique des temps -->
+<div class="modal fade" id="timeHistoryModal" tabindex="-1" aria-labelledby="timeHistoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content clay-card" style="border: none; border-radius: var(--border-radius); box-shadow: var(--box-shadow);">
+            
+            <!-- En-tête de la modale -->
+            <div class="modal-header" style="background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: white; border-bottom: none; border-radius: var(--border-radius) var(--border-radius) 0 0;">
+                <h5 class="modal-title" id="timeHistoryModalLabel" style="font-weight: 600;">
+                    <i class="fas fa-history me-2"></i>
+                    Historique des Temps - Intervention #<span id="timeHistoryWorkOrderId"></span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <!-- Statistiques rapides -->
+            <div class="modal-body" style="padding: 0;">
+                <!-- Résumé des statistiques -->
+                <div class="time-stats" style="background: var(--secondary-color); padding: 1rem; border-bottom: 1px solid rgba(0,0,0,0.1);">
+                    <div class="row g-3">
+                        <div class="col-md-3 text-center">
+                            <div class="stat-card" style="background: white; padding: 0.75rem; border-radius: var(--border-radius); box-shadow: var(--box-shadow-sm);">
+                                <div style="font-size: 1.5rem; font-weight: 700; color: #28a745;" id="totalWorkTime">0h 0min</div>
+                                <div style="font-size: 0.8rem; color: #6c757d;">Temps Total</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="stat-card" style="background: white; padding: 0.75rem; border-radius: var(--border-radius); box-shadow: var(--box-shadow-sm);">
+                                <div style="font-size: 1.5rem; font-weight: 700; color: #17a2b8;" id="totalSessions">0</div>
+                                <div style="font-size: 0.8rem; color: #6c757d;">Sessions</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="stat-card" style="background: white; padding: 0.75rem; border-radius: var(--border-radius); box-shadow: var(--box-shadow-sm);">
+                                <div style="font-size: 1.5rem; font-weight: 700; color: #ffc107;" id="totalPauses">0</div>
+                                <div style="font-size: 0.8rem; color: #6c757d;">Pauses</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="stat-card" style="background: white; padding: 0.75rem; border-radius: var(--border-radius); box-shadow: var(--box-shadow-sm);">
+                                <div style="font-size: 1.5rem; font-weight: 700; color: #dc3545;" id="averageSession">0min</div>
+                                <div style="font-size: 0.8rem; color: #6c757d;">Moy. Session</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Filtres et actions -->
+                <div class="history-filters" style="padding: 1rem; background: white; border-bottom: 1px solid rgba(0,0,0,0.1);">
+                    <div class="row g-2 align-items-center">
+                        <div class="col-md-3">
+                            <label class="form-label mb-1" style="font-size: 0.8rem; font-weight: 600;">Filtrer par action</label>
+                            <select class="form-select form-select-sm" id="actionFilter" onchange="filterTimeHistory()">
+                                <option value="">Toutes les actions</option>
+                                <option value="start">Démarrages</option>
+                                <option value="pause">Pauses</option>
+                                <option value="resume">Reprises</option>
+                                <option value="complete">Fins</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label mb-1" style="font-size: 0.8rem; font-weight: 600;">Date début</label>
+                            <input type="date" class="form-control form-control-sm" id="dateFromFilter" onchange="filterTimeHistory()">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label mb-1" style="font-size: 0.8rem; font-weight: 600;">Date fin</label>
+                            <input type="date" class="form-control form-control-sm" id="dateToFilter" onchange="filterTimeHistory()">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label mb-1" style="font-size: 0.8rem; font-weight: 600;">Actions</label>
+                            <div class="d-flex gap-1">
+                                <button class="btn btn-sm btn-outline-primary" onclick="exportTimeHistory()" title="Exporter CSV">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-success" onclick="refreshTimeHistory()" title="Actualiser">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Timeline des événements -->
+                <div class="time-timeline" style="padding: 1rem; max-height: 400px; overflow-y: auto;">
+                    <div id="timeHistoryContent">
+                        <!-- Sera rempli par JavaScript -->
+                        <div class="text-center" style="padding: 2rem; color: #6c757d;">
+                            <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
+                            <div>Chargement de l'historique...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Footer avec actions -->
+            <div class="modal-footer" style="background: var(--secondary-color); border-top: none; border-radius: 0 0 var(--border-radius) var(--border-radius);">
+                <div class="d-flex justify-content-between w-100">
+                    <div class="left-actions">
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="clearTimeHistory()" title="Effacer l'historique">
+                            <i class="fas fa-trash me-1"></i>Effacer Historique
+                        </button>
+                    </div>
+                    <div class="right-actions">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                        <button type="button" class="btn btn-primary" onclick="generateTimeReport()">
+                            <i class="fas fa-file-pdf me-1"></i>Rapport PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Styles spécifiques pour la timeline -->
+<style>
+.time-timeline-item {
+    display: flex;
+    padding: 0.75rem;
+    border-left: 3px solid #dee2e6;
+    margin-left: 1rem;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.time-timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -8px;
+    top: 1rem;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #dee2e6;
+    border: 2px solid white;
+}
+
+.time-timeline-item.start {
+    border-left-color: #28a745;
+}
+.time-timeline-item.start::before {
+    background: #28a745;
+}
+
+.time-timeline-item.pause {
+    border-left-color: #ffc107;
+}
+.time-timeline-item.pause::before {
+    background: #ffc107;
+}
+
+.time-timeline-item.resume {
+    border-left-color: #17a2b8;
+}
+.time-timeline-item.resume::before {
+    background: #17a2b8;
+}
+
+.time-timeline-item.complete {
+    border-left-color: #dc3545;
+}
+.time-timeline-item.complete::before {
+    background: #dc3545;
+}
+
+.time-timeline-item:hover {
+    background: rgba(0,0,0,0.02);
+    transform: translateX(5px);
+}
+
+.time-entry-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.badge-start { background: #d4edda; color: #155724; }
+.badge-pause { background: #fff3cd; color: #856404; }
+.badge-resume { background: #d1ecf1; color: #0c5460; }
+.badge-complete { background: #f8d7da; color: #721c24; }
+</style>

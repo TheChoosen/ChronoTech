@@ -1,0 +1,121 @@
+<!-- Modal Statistiques et Équipe en ligne -->
+<div class="modal fade" id="statsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fa-solid fa-chart-bar me-2"></i>Statistiques et Équipe ChronoTech
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <!-- Statistiques condensées -->
+                    <div class="col-md-6">
+                        <div class="clay-card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="fa-solid fa-chart-bar me-2"></i>Statistiques du jour</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row text-center">
+                                    <div class="col-6 border-end">
+                                        <div class="h4 text-primary mb-1" id="modal-pending-work-orders">--</div>
+                                        <small class="text-muted">En attente</small>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="h4 text-success mb-1" id="modal-today-appointments">--</div>
+                                        <small class="text-muted">RDV aujourd'hui</small>
+                                    </div>
+                                </div>
+                                <hr class="my-2">
+                                <div class="row text-center">
+                                    <div class="col-6 border-end">
+                                        <div class="h5 text-info mb-1" id="modal-online-techs">--</div>
+                                        <small class="text-muted">Tech. en ligne</small>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="h5 text-warning mb-1" id="modal-monthly-revenue">--</div>
+                                        <small class="text-muted">Revenus mois</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Équipe en ligne -->
+                    <div class="col-md-6">
+                        <div class="clay-card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0"><i class="fa-solid fa-users me-2"></i>Équipe en ligne</h6>
+                                <span class="badge bg-success" id="modal-online-count">0</span>
+                            </div>
+                            <div class="card-body p-2" style="max-height: 400px; overflow-y: auto;">
+                                <div id="modal-online-team-list">
+                                    <!-- Liste des membres de l'équipe en ligne -->
+                                    <div class="text-center text-muted py-4">
+                                        <i class="fa-solid fa-users fa-2x mb-2"></i>
+                                        <p>Aucun membre en ligne</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistiques détaillées supplémentaires -->
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="clay-card">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="fa-solid fa-chart-line me-2"></i>Statistiques détaillées</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row text-center">
+                                    <div class="col-md-3">
+                                        <div class="h5 text-primary mb-1" id="modal-total-work-orders">--</div>
+                                        <small class="text-muted">Total bons travail</small>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="h5 text-success mb-1" id="modal-completed-today">--</div>
+                                        <small class="text-muted">Terminés aujourd'hui</small>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="h5 text-warning mb-1" id="modal-in-progress">--</div>
+                                        <small class="text-muted">En cours</small>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="h5 text-info mb-1" id="modal-avg-response-time">--</div>
+                                        <small class="text-muted">Temps réponse moy.</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Graphique de performance -->
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="clay-card">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="fa-solid fa-chart-area me-2"></i>Performance de l'équipe</h6>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="modal-performance-chart" width="400" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="refreshStatsModal()">
+                    <i class="fa-solid fa-sync-alt me-1"></i>Actualiser
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-success" onclick="exportStats()">
+                    <i class="fa-solid fa-download me-1"></i>Exporter
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>

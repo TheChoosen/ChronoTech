@@ -60,12 +60,14 @@ def verify_password(password, hashed_password):
         return False
 
 def validate_email_address(email):
-    """Valider une adresse email"""
+    """Valider une adresse email avec regex simple"""
     try:
-        # Normaliser l'email
-        validation = validate_email(email)
-        return validation.email
-    except EmailNotValidError:
+        # Regex simple pour validation email
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_pattern, email):
+            raise ValidationError("Adresse email invalide")
+        return email.lower().strip()
+    except Exception:
         raise ValidationError("Adresse email invalide")
 
 def validate_phone_number(phone, country_code='FR'):
@@ -130,6 +132,150 @@ def validate_work_order_data(data):
                 errors.append("La date programmée ne peut pas être dans le passé")
         except ValueError:
             errors.append("Format de date programmée invalide")
+    
+    if errors:
+        raise ValidationError("; ".join(errors))
+    
+    return True
+
+def validate_postal_code_by_country(postal_code, country='FR'):
+    """Valide un code postal selon le pays"""
+    if not postal_code:
+        return True  # Optionnel
+    
+    postal_patterns = {
+        'FR': r'^\d{5}$',
+        'CA': r'^[A-Z]\d[A-Z] \d[A-Z]\d$',  # Format canadien K1A 0A6
+        'US': r'^\d{5}(-\d{4})?$',
+        'GB': r'^[A-Z]{1,2}\d[R\dA-Z]? \d[A-Z]{2}$',
+        'BE': r'^\d{4}$',
+        'CH': r'^\d{4}$',
+        'DE': r'^\d{5}$',
+        'ES': r'^\d{5}$',
+        'IT': r'^\d{5}$'
+    }
+    
+    pattern = postal_patterns.get(country.upper(), r'^\d{5}$')  # Défaut français
+    return re.match(pattern, postal_code.upper()) is not None
+
+def validate_customer_data(data, is_update=False):
+    """Valider les données client avec validation métier complète"""
+    errors = []
+    
+    # Validation du nom (requis pour particuliers et entreprises)
+    if not is_update or 'name' in data:
+        if not data.get('name') or len(data['name'].strip()) < 2:
+            errors.append("Le nom est requis (minimum 2 caractères)")
+        elif len(data['name']) > 100:
+            errors.append("Le nom ne peut pas dépasser 100 caractères")
+    
+    # Validation de l'email
+    if not is_update or 'email' in data:
+        if data.get('email'):
+            try:
+                validate_email_address(data['email'])
+            except ValidationError as e:
+                errors.append(f"Email invalide: {e}")
+    
+    # Validation du téléphone
+    if data.get('phone'):
+        try:
+            validate_phone_number(data['phone'])
+        except ValidationError as e:
+            errors.append(f"Téléphone invalide: {e}")
+    
+    # Validation du type de client (support français et anglais)
+    valid_customer_types = ['individual', 'company', 'government', 'particulier', 'entreprise', 'administration']
+    if data.get('customer_type') and data['customer_type'] not in valid_customer_types:
+        errors.append(f"Type de client invalide. Valeurs autorisées: {', '.join(valid_customer_types)}")
+    
+    # Validation conditionnelle selon le type de client
+    customer_type = data.get('customer_type', 'individual')
+    
+    # Normaliser les types en français vers les équivalents
+    if customer_type in ['company', 'entreprise']:
+        # Pour les entreprises, la raison sociale est requise
+        if not data.get('company') or len(data['company'].strip()) < 2:
+            errors.append("La raison sociale est requise pour les entreprises")
+        
+        # Validation SIRET si fourni (optionnel mais format vérifié)
+        if data.get('siret'):
+            siret = data['siret'].replace(' ', '').replace('-', '')
+            if not re.match(r'^\d{14}$', siret):
+                errors.append("Le SIRET doit contenir exactement 14 chiffres")
+    
+    # Validation de l'adresse
+    if data.get('address') and len(data['address']) > 255:
+        errors.append("L'adresse ne peut pas dépasser 255 caractères")
+    
+    # Validation du code postal
+    if data.get('postal_code'):
+        country = data.get('country', 'FR')
+        if not validate_postal_code_by_country(data['postal_code'], country):
+            country_formats = {
+                'FR': '5 chiffres (ex: 75001)',
+                'CA': 'K1A 0A6',
+                'US': '12345 ou 12345-6789',
+                'GB': 'SW1A 1AA'
+            }
+            expected_format = country_formats.get(country.upper(), '5 chiffres')
+            errors.append(f"Code postal invalide pour {country}. Format attendu: {expected_format}")
+    
+    # Validation de la ville
+    if data.get('city') and len(data['city']) > 100:
+        errors.append("La ville ne peut pas dépasser 100 caractères")
+    
+    # Validation du statut
+    valid_statuses = ['active', 'inactive', 'pending', 'suspended']
+    if data.get('status') and data['status'] not in valid_statuses:
+        errors.append(f"Statut invalide. Valeurs autorisées: {', '.join(valid_statuses)}")
+    
+    # Validation des dates
+    if data.get('birth_date'):
+        try:
+            birth_date = datetime.fromisoformat(data['birth_date'].replace('Z', '+00:00'))
+            if birth_date > datetime.now():
+                errors.append("La date de naissance ne peut pas être dans le futur")
+            # Vérifier un âge raisonnable (plus de 120 ans)
+            if (datetime.now() - birth_date).days > 120 * 365:
+                errors.append("Date de naissance non valide (âge supérieur à 120 ans)")
+        except ValueError:
+            errors.append("Format de date de naissance invalide")
+    
+    # Validation des coordonnées GPS si fournies
+    if data.get('latitude'):
+        try:
+            lat = float(data['latitude'])
+            if not (-90 <= lat <= 90):
+                errors.append("La latitude doit être comprise entre -90 et 90")
+        except (ValueError, TypeError):
+            errors.append("La latitude doit être un nombre valide")
+    
+    if data.get('longitude'):
+        try:
+            lng = float(data['longitude'])
+            if not (-180 <= lng <= 180):
+                errors.append("La longitude doit être comprise entre -180 et 180")
+        except (ValueError, TypeError):
+            errors.append("La longitude doit être un nombre valide")
+    
+    # Validation des informations de facturation si différentes
+    if data.get('billing_address_different') == 'true':
+        if not data.get('billing_address'):
+            errors.append("L'adresse de facturation est requise si elle diffère de l'adresse principale")
+        if not data.get('billing_city'):
+            errors.append("La ville de facturation est requise si l'adresse diffère")
+        if data.get('billing_postal_code'):
+            country = data.get('billing_country', data.get('country', 'FR'))
+            if not validate_postal_code_by_country(data['billing_postal_code'], country):
+                country_formats = {
+                    'FR': '5 chiffres (ex: 75001)',
+                    'CA': 'K1A 0A6', 
+                    'US': '12345 ou 12345-6789',
+                    'GB': 'SW1A 1AA'
+                }
+                expected_format = country_formats.get(country.upper(), '5 chiffres')
+                errors.append(f"Code postal de facturation invalide pour {country}. Format attendu: {expected_format}")
     
     if errors:
         raise ValidationError("; ".join(errors))

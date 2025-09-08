@@ -82,6 +82,12 @@
 {% endblock %}
 
 {% block content %}
+<!-- Script pour définir les variables globales -->
+<script>
+    const workOrderId = {% if work_order and work_order.id %}{{ work_order.id | tojson }}{% else %}null{% endif %};
+    const userRole = {{ session.get('role', 'user') | tojson }};
+</script>
+
 <div class="container-fluid" style="background: var(--bg-color); min-height: 100vh; padding: 2rem;">
     <div class="row">
         <div class="col-md-8">
@@ -410,6 +416,9 @@
         </div>
     </div>
 </div>
+
+<!-- Modale d'historique des temps -->
+{% include 'interventions/_time_history_modal.html' %}
 
 {% endblock %}
 

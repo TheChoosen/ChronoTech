@@ -1,0 +1,1208 @@
+/* =================================================================
+   ChronoChat Dashboard CSS - Conforme au système claymorphism
+   Base: Variables de base.html pour cohérence maximale
+================================================================= */
+
+/* ================================
+   Variables étendues pour ChronoChat
+================================ */
+:root {
+    /* Reprend les variables de base.html */
+    --success-color: #16a34a;
+    --warning-color: #f59e0b;
+    --danger-color: #ef4444;
+    --info-color: #0ea5e9;
+    
+    /* Variables spécifiques ChronoChat */
+    --chronochat-spacing: 1rem;
+    --chronochat-radius: var(--border-radius);
+    --chronochat-transition: 0.5s; /* Transition plus lente pour effet plus subtil */
+    
+    /* Gradients subtils pour mise en valeur */
+    --gradient-primary: linear-gradient(135deg, var(--primary-color)10, var(--accent-color)05);
+    --gradient-success: linear-gradient(135deg, var(--success-color)10, var(--success-color)05);
+    
+    /* Z-index système */
+    --z-kanban: 10;
+    --z-modal: 1050;
+    --z-dropdown: 1000;
+    
+    /* Variables Calendar */
+    --calendar-event-radius: 4px;
+    --calendar-hover-opacity: 0.8;
+    --legend-color-size: 12px;
+}
+
+/* ================================
+   Base Dashboard ChronoChat
+================================ */
+.chronochat-dashboard {
+    background: var(--bg-color);
+    min-height: 100vh;
+    padding: var(--chronochat-spacing);
+    margin: calc(-1 * var(--chronochat-spacing));
+    position: relative;
+}
+
+.chronochat-dashboard::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--gradient-primary);
+    z-index: -1;
+    border-radius: var(--chronochat-radius);
+    opacity: 0.1;
+}
+
+.chronochat-header {
+    background: var(--secondary-color);
+    border-radius: var(--chronochat-radius);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-level-2);
+    transition: all var(--chronochat-transition) ease;
+    margin-bottom: var(--chronochat-spacing);
+}
+
+.chronochat-header:hover {
+    box-shadow: var(--shadow-level-3);
+}
+
+/* ================================
+   Système Kanban Board
+================================ */
+.kanban-board {
+    display: flex;
+    gap: var(--chronochat-spacing);
+    overflow-x: auto;
+    padding: 0.75rem 0;
+    min-height: 500px;
+    scroll-behavior: smooth;
+}
+
+.kanban-board::-webkit-scrollbar {
+    height: 8px;
+}
+
+.kanban-board::-webkit-scrollbar-track {
+    background: var(--secondary-color);
+    border-radius: var(--chronochat-radius);
+}
+
+.kanban-board::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: var(--chronochat-radius);
+}
+
+.kanban-column {
+    min-width: 280px;
+    background: var(--secondary-color);
+    border-radius: var(--chronochat-radius);
+    box-shadow: var(--shadow-level-1);
+    transition: all var(--chronochat-transition) ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.kanban-column:hover {
+    box-shadow: var(--shadow-level-2);
+    /* Suppression de l'effet de translation */
+}
+
+.kanban-column::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--primary-color);
+    z-index: var(--z-kanban);
+}
+
+.kanban-column.status-nouveau::before { background: var(--info-color); }
+.kanban-column.status-assigne::before { background: var(--warning-color); }
+.kanban-column.status-en-cours::before { background: var(--primary-color); }
+.kanban-column.status-en-attente::before { background: var(--warning-color); }
+.kanban-column.status-termine::before { background: var(--success-color); }
+.kanban-column.status-facture::before { background: var(--success-color); }
+
+.kanban-header {
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    border-radius: var(--chronochat-radius) var(--chronochat-radius) 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-pressed);
+    position: relative;
+    z-index: var(--z-kanban);
+}
+
+.kanban-content {
+    padding: 0.75rem;
+    min-height: 400px;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.kanban-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.kanban-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.kanban-content::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: var(--chronochat-radius);
+}
+
+.kanban-card {
+    background: var(--secondary-color);
+    border-radius: calc(var(--chronochat-radius) - 4px);
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    box-shadow: var(--shadow-level-1);
+    cursor: grab;
+    transition: all var(--chronochat-transition) ease;
+    border-left: 4px solid var(--primary-color);
+    position: relative;
+    overflow: hidden;
+}
+
+.kanban-card:hover {
+    box-shadow: var(--shadow-level-2);
+    /* Suppression de l'effet de translation pour moins d'animation */
+}
+
+.kanban-card:active {
+    cursor: grabbing;
+}
+
+.kanban-card.dragging {
+    opacity: 0.9;
+    transform: scale(1.01);
+    box-shadow: var(--shadow-level-3);
+    z-index: 1000;
+}
+
+.kanban-card.high-priority {
+    border-left-color: var(--warning-color);
+}
+
+.kanban-card.urgent-priority {
+    border-left-color: var(--danger-color);
+    background: linear-gradient(90deg, var(--secondary-color) 0%, var(--secondary-color) 100%);
+    box-shadow: var(--shadow-level-2);
+}
+
+.kanban-card.urgent-priority::before {
+    content: '🔥';
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    font-size: 1.2rem;
+    /* Animation supprimée pour réduire les effets */
+}
+
+.kanban-card .card-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+}
+
+.kanban-card .card-meta {
+    font-size: 0.75rem;
+    color: var(--text-color);
+    opacity: 0.8;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* ================================
+   Clay Cards Étendues
+================================ */
+.clay-card {
+    background: var(--secondary-color);
+    border: none;
+    border-radius: var(--chronochat-radius);
+    box-shadow: var(--shadow-level-1);
+    transition: all var(--chronochat-transition) ease;
+    overflow: hidden;
+}
+
+.clay-card:hover {
+    box-shadow: var(--shadow-level-2);
+    /* Suppression de l'effet de translation */
+}
+
+.clay-card .card-header {
+    background: transparent;
+    border-bottom: none;
+    border-radius: var(--chronochat-radius) var(--chronochat-radius) 0 0;
+    box-shadow: var(--shadow-pressed);
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.clay-card .card-body {
+    color: var(--text-color);
+}
+
+/* Variations de cartes */
+.clay-card.accent-primary {
+    border-top: 4px solid var(--primary-color);
+}
+
+.clay-card.accent-success {
+    border-top: 4px solid var(--success-color);
+}
+
+.clay-card.accent-warning {
+    border-top: 4px solid var(--warning-color);
+}
+
+.clay-card.accent-danger {
+    border-top: 4px solid var(--danger-color);
+}
+
+/* ================================
+   Interface Chat Optimisée
+================================ */
+.chat-message {
+    margin-bottom: 1rem;
+    /* Animation supprimée pour simplicité */
+}
+
+.chat-message.own {
+    text-align: right;
+}
+
+.chat-message .message-bubble {
+    max-width: 75%;
+    padding: 0.75rem 1rem;
+    border-radius: var(--chronochat-radius);
+    word-wrap: break-word;
+    box-shadow: var(--shadow-level-1);
+    transition: all var(--chronochat-transition) ease;
+    position: relative;
+}
+
+.chat-message.own .message-bubble {
+    background: var(--primary-color);
+    color: white;
+    margin-left: auto;
+}
+
+.chat-message.other .message-bubble {
+    background: var(--secondary-color);
+    color: var(--text-color);
+}
+
+.chat-message .message-bubble:hover {
+    box-shadow: var(--shadow-level-2);
+}
+
+.chat-message .message-bubble::before {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    width: 0;
+    height: 0;
+    border-style: solid;
+}
+
+.chat-message.own .message-bubble::before {
+    right: 15px;
+    border-width: 8px 0 0 8px;
+    border-color: var(--primary-color) transparent transparent transparent;
+}
+
+.chat-message.other .message-bubble::before {
+    left: 15px;
+    border-width: 8px 8px 0 0;
+    border-color: var(--secondary-color) transparent transparent transparent;
+}
+
+/* ================================
+   Online Users List Améliorée
+================================ */
+.online-user {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    border-radius: calc(var(--chronochat-radius) - 4px);
+    margin-bottom: 0.375rem;
+    transition: all var(--chronochat-transition) ease;
+    background: var(--secondary-color);
+    position: relative;
+}
+
+.online-user:hover {
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-pressed);
+    transform: translateX(4px);
+}
+
+.online-user .user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 0.8rem;
+    margin-right: 0.75rem;
+    box-shadow: var(--shadow-level-1);
+}
+
+.online-status {
+    width: 10px;
+    height: 10px;
+    background: var(--success-color);
+    border-radius: 50%;
+    margin-right: 0.75rem;
+    position: relative;
+    box-shadow: var(--shadow-level-1);
+}
+
+.online-status::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: var(--success-color);
+    animation: pulse 2s infinite;
+}
+
+.online-status.away {
+    background: var(--warning-color);
+}
+
+.online-status.away::after {
+    background: var(--warning-color);
+}
+
+.online-status.busy {
+    background: var(--danger-color);
+}
+
+.online-status.busy::after {
+    background: var(--danger-color);
+}
+
+/* ================================
+   FullCalendar Thème Personnalisé
+================================ */
+.fc-event {
+    border-radius: calc(var(--chronochat-radius) - 6px);
+    border: none;
+    font-size: 0.85rem;
+    box-shadow: var(--shadow-level-1);
+    transition: all var(--chronochat-transition) ease;
+    font-weight: 500;
+}
+
+.fc-event:hover {
+    box-shadow: var(--shadow-level-2);
+    transform: translateY(-1px);
+}
+
+.fc-event-appointment {
+    background: var(--success-color);
+}
+
+.fc-event-work-order {
+    background: var(--primary-color);
+}
+
+.fc-event-meeting {
+    background: var(--accent-color);
+}
+
+.fc-event-maintenance {
+    background: var(--warning-color);
+}
+
+.fc-toolbar {
+    background: var(--secondary-color);
+    border-radius: var(--chronochat-radius);
+    padding: 1rem;
+    box-shadow: var(--shadow-level-1);
+    margin-bottom: 1rem;
+}
+
+.fc-button-primary {
+    background: var(--primary-color) !important;
+    border: none !important;
+    border-radius: calc(var(--chronochat-radius) - 4px) !important;
+    box-shadow: var(--shadow-level-1) !important;
+    transition: all var(--chronochat-transition) ease !important;
+}
+
+.fc-button-primary:hover {
+    box-shadow: var(--shadow-level-2) !important;
+    transform: translateY(-1px) !important;
+}
+
+.fc-button-primary:active {
+    box-shadow: var(--shadow-pressed) !important;
+    transform: translateY(0) !important;
+}
+
+.fc-button-primary:disabled {
+    opacity: 0.6;
+    transform: none !important;
+    box-shadow: var(--shadow-pressed) !important;
+}
+
+/* ================================
+   AURA Assistant Styling
+================================ */
+.aura-message.system .bg-light {
+    background: var(--primary-color) !important;
+    color: white;
+    border-radius: var(--chronochat-radius);
+    box-shadow: var(--shadow-level-1);
+}
+
+.aura-chat {
+    background: var(--secondary-color);
+    border-radius: var(--chronochat-radius);
+    box-shadow: var(--shadow-pressed);
+    padding: 1rem;
+}
+
+.aura-input-group {
+    background: var(--secondary-color);
+    border-radius: var(--chronochat-radius);
+    box-shadow: var(--shadow-pressed);
+    padding: 0.5rem;
+}
+
+.aura-input-group .form-control {
+    border: none;
+    background: transparent;
+    box-shadow: none;
+}
+
+.aura-suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.aura-suggestion-btn {
+    background: var(--secondary-color);
+    border: none;
+    border-radius: calc(var(--chronochat-radius) - 4px);
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    box-shadow: var(--shadow-level-1);
+    transition: all var(--chronochat-transition) ease;
+    color: var(--text-color);
+}
+
+.aura-suggestion-btn:hover {
+    box-shadow: var(--shadow-level-2);
+    transform: translateY(-1px);
+    color: var(--primary-color);
+}
+
+/* ================================
+   Modales Améliorées
+================================ */
+.modal-content {
+    background: var(--secondary-color) !important;
+    border: none !important;
+    border-radius: var(--chronochat-radius) !important;
+    box-shadow: var(--shadow-level-3) !important;
+    overflow: hidden;
+}
+
+.modal-header {
+    border-bottom: none !important;
+    border-radius: var(--chronochat-radius) var(--chronochat-radius) 0 0 !important;
+    background: var(--secondary-color);
+    box-shadow: var(--shadow-pressed);
+}
+
+.modal-footer {
+    border-top: none !important;
+    border-radius: 0 0 var(--chronochat-radius) var(--chronochat-radius) !important;
+    background: var(--secondary-color);
+}
+
+.modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+}
+
+/* ================================
+   Notifications System
+================================ */
+.list-group-item {
+    background: var(--secondary-color) !important;
+    border: none !important;
+    border-radius: calc(var(--chronochat-radius) - 4px) !important;
+    margin-bottom: 0.5rem !important;
+    box-shadow: var(--shadow-level-1) !important;
+    transition: all var(--chronochat-transition) ease !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.list-group-item:hover {
+    box-shadow: var(--shadow-level-2) !important;
+    transform: translateX(4px) !important;
+}
+
+.list-group-item.unread {
+    border-left: 4px solid var(--primary-color) !important;
+}
+
+.list-group-item.priority-high {
+    border-left: 4px solid var(--danger-color) !important;
+}
+
+.list-group-item.priority-high::before {
+    content: '⚠️';
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+}
+
+/* ================================
+   Animations Optimisées
+================================ */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(1.25rem);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.3);
+        opacity: 0.6;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -1000px 0;
+    }
+    100% {
+        background-position: 1000px 0;
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes bounceIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.3);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+    70% {
+        transform: scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* ================================
+   Loading States
+================================ */
+.loading-shimmer {
+    background: linear-gradient(
+        90deg,
+        var(--secondary-color) 25%,
+        var(--shadow-light) 50%,
+        var(--secondary-color) 75%
+    );
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite;
+}
+
+.loading-spinner {
+    width: 2rem;
+    height: 2rem;
+    border: 3px solid var(--secondary-color);
+    border-top: 3px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ================================
+   Responsive Design Optimisé
+================================ */
+@media (max-width: 1200px) {
+    .kanban-column {
+        min-width: 240px;
+    }
+    
+    .chronochat-header {
+        padding: 1.25rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .chronochat-dashboard {
+        padding: 1rem;
+        margin: -1rem;
+    }
+    
+    .kanban-board {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .kanban-column {
+        min-width: 100%;
+    }
+    
+    .chronochat-header {
+        padding: 1rem;
+        text-align: center;
+    }
+    
+    .chronochat-header .d-flex {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .chat-message .message-bubble {
+        max-width: 85%;
+    }
+    
+    .online-user {
+        padding: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .chronochat-dashboard {
+        padding: 0.5rem;
+        margin: -0.5rem;
+    }
+    
+    .clay-card {
+        margin-bottom: 1rem;
+    }
+    
+    .kanban-card {
+        padding: 0.75rem;
+    }
+    
+    .chat-message .message-bubble {
+        max-width: 95%;
+        padding: 0.5rem 0.75rem;
+    }
+}
+
+/* ================================
+   Accessibilité Améliorée
+================================ */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+@media (prefers-contrast: high) {
+    .kanban-card,
+    .clay-card,
+    .chat-message .message-bubble {
+        border: 2px solid var(--text-color);
+    }
+}
+
+/* Focus States pour navigation clavier */
+.clay-card:focus-within,
+.kanban-card:focus-within,
+.online-user:focus-within,
+.chat-message:focus-within {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* ================================
+   Utilitaires ChronoChat
+================================ */
+.chronochat-badge {
+    background: var(--primary-color);
+    color: white;
+    border-radius: calc(var(--chronochat-radius) / 2);
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    box-shadow: var(--shadow-level-1);
+}
+
+.chronochat-badge.success {
+    background: var(--success-color);
+}
+
+.chronochat-badge.warning {
+    background: var(--warning-color);
+}
+
+.chronochat-badge.danger {
+    background: var(--danger-color);
+}
+
+.chronochat-divider {
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        var(--text-color) 50%,
+        transparent 100%
+    );
+    opacity: 0.2;
+    margin: 1rem 0;
+}
+
+.chronochat-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--primary-color);
+    color: white;
+    font-size: 0.8rem;
+    box-shadow: var(--shadow-level-1);
+}
+
+/* ================================
+   Calendar Advanced Styles
+================================ */
+
+/* Calendar Container */
+#chronocalendar {
+    background: var(--surface-color);
+    border-radius: var(--chronochat-radius);
+    box-shadow: var(--soft-shadow);
+    overflow: hidden;
+}
+
+/* FullCalendar Customizations */
+.fc {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.fc-toolbar {
+    background: var(--surface-color);
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.fc-toolbar-title {
+    color: var(--text-color);
+    font-weight: 600;
+    font-size: 1.25rem;
+}
+
+.fc-button {
+    background: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    color: white !important;
+    border-radius: var(--chronochat-radius) !important;
+    font-weight: 500;
+    padding: 0.375rem 0.75rem;
+    transition: all var(--chronochat-transition);
+}
+
+.fc-button:hover {
+    background: var(--accent-color) !important;
+    border-color: var(--accent-color) !important;
+    transform: translateY(-1px);
+}
+
+.fc-button:focus {
+    box-shadow: 0 0 0 0.2rem rgba(var(--primary-rgb), 0.25) !important;
+}
+
+.fc-button-active {
+    background: var(--accent-color) !important;
+    border-color: var(--accent-color) !important;
+}
+
+/* Calendar Grid */
+.fc-daygrid {
+    background: var(--bg-color);
+}
+
+.fc-day {
+    background: var(--surface-color);
+    border-color: var(--border-color);
+    transition: background-color var(--chronochat-transition);
+}
+
+.fc-day:hover {
+    background: var(--hover-bg);
+}
+
+.fc-day-today {
+    background: rgba(var(--primary-rgb), 0.1) !important;
+    border-color: var(--primary-color) !important;
+}
+
+.fc-col-header-cell {
+    background: var(--surface-color);
+    color: var(--text-color);
+    font-weight: 600;
+    border-color: var(--border-color);
+}
+
+/* Events Styling */
+.fc-event {
+    border-radius: var(--calendar-event-radius) !important;
+    border: none !important;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all var(--chronochat-transition);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.fc-event:hover {
+    opacity: var(--calendar-hover-opacity);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.fc-event-title {
+    font-weight: 500;
+    padding: 2px 4px;
+}
+
+.fc-event-time {
+    font-weight: 400;
+    font-size: 0.85em;
+}
+
+/* Different Event Types */
+.fc-event.event-pending {
+    background: #ffc107 !important;
+    color: #212529 !important;
+}
+
+.fc-event.event-scheduled {
+    background: #17a2b8 !important;
+    color: white !important;
+}
+
+.fc-event.event-in-progress {
+    background: #fd7e14 !important;
+    color: white !important;
+}
+
+.fc-event.event-completed {
+    background: #28a745 !important;
+    color: white !important;
+}
+
+.fc-event.event-cancelled {
+    background: #dc3545 !important;
+    color: white !important;
+    opacity: 0.7;
+    text-decoration: line-through;
+}
+
+/* High Priority Events */
+.fc-event.priority-high,
+.fc-event.priority-urgent {
+    position: relative;
+}
+
+.fc-event.priority-high::before,
+.fc-event.priority-urgent::before {
+    content: '!';
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background: #dc3545;
+    color: white;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    font-size: 12px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.fc-event.priority-urgent::before {
+    animation: pulse 1.5s infinite;
+}
+
+/* Recurring Events */
+.fc-event.recurring {
+    position: relative;
+}
+
+.fc-event.recurring::after {
+    content: '↻';
+    position: absolute;
+    bottom: 2px;
+    right: 4px;
+    font-size: 10px;
+    opacity: 0.8;
+}
+
+/* All Day Events */
+.fc-event.all-day {
+    border-left: 3px solid rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Time Grid Styles */
+.fc-timegrid {
+    background: var(--bg-color);
+}
+
+.fc-timegrid-slot {
+    border-color: var(--border-color);
+    height: 3rem !important;
+}
+
+.fc-timegrid-slot-label {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.fc-timegrid-now-indicator-line {
+    border-color: var(--danger-color) !important;
+    border-width: 2px !important;
+}
+
+/* List View */
+.fc-list {
+    background: var(--surface-color);
+}
+
+.fc-list-day {
+    background: var(--surface-color) !important;
+    border-color: var(--border-color) !important;
+}
+
+.fc-list-day-text {
+    color: var(--text-color) !important;
+    font-weight: 600;
+}
+
+.fc-list-event {
+    background: var(--surface-color) !important;
+    border-color: var(--border-color) !important;
+}
+
+.fc-list-event:hover {
+    background: var(--hover-bg) !important;
+}
+
+/* Calendar Sidebar Filters */
+.scrollable-filters {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: var(--chronochat-radius);
+    padding: 0.5rem;
+    background: var(--bg-color);
+}
+
+.scrollable-filters::-webkit-scrollbar {
+    width: 4px;
+}
+
+.scrollable-filters::-webkit-scrollbar-track {
+    background: var(--bg-color);
+}
+
+.scrollable-filters::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 2px;
+}
+
+/* Technician Filters */
+.technician-filter-item {
+    padding: 0.25rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.technician-filter-item:last-child {
+    border-bottom: none;
+}
+
+.technician-color-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 0.5rem;
+}
+
+/* Legend Styles */
+.legend-item {
+    margin-bottom: 0.25rem;
+}
+
+.legend-color {
+    width: var(--legend-color-size);
+    height: var(--legend-color-size);
+    border-radius: 2px;
+    margin-right: 0.5rem;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+/* Calendar Statistics */
+#calendar-stats {
+    background: var(--bg-color);
+    border-radius: var(--chronochat-radius);
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+}
+
+#calendar-stats small {
+    color: var(--text-muted);
+}
+
+/* Event Modal Styles */
+#eventModal .modal-content {
+    background: var(--surface-color);
+    border: none;
+    box-shadow: var(--soft-shadow);
+}
+
+#eventModal .modal-header {
+    background: var(--primary-color);
+    color: white;
+    border-bottom: none;
+}
+
+#eventModal .form-control,
+#eventModal .form-select {
+    background: var(--bg-color);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+#eventModal .form-control:focus,
+#eventModal .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(var(--primary-rgb), 0.25);
+}
+
+/* Conflict Warning */
+#conflict-warning {
+    border-color: var(--warning-color);
+    background: rgba(var(--warning-rgb), 0.1);
+    color: var(--warning-color);
+}
+
+#conflict-warning .btn {
+    color: var(--warning-color);
+    border-color: var(--warning-color);
+}
+
+/* Recurrence Options */
+#recurrence-options .card {
+    background: var(--bg-color);
+    border-color: var(--border-color);
+}
+
+/* Calendar Responsive */
+@media (max-width: 768px) {
+    .fc-toolbar {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .fc-toolbar-chunk {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+    
+    .fc-button {
+        font-size: 0.875rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .fc-event-title {
+        font-size: 0.75rem;
+    }
+    
+    #chronocalendar {
+        font-size: 0.875rem;
+    }
+}
+
+/* Animation pour events urgents */
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.7;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}

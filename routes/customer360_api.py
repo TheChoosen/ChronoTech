@@ -579,7 +579,14 @@ def get_section_data(customer_id, section_name):
     data = {}
     
     try:
-        if section_name == 'activity':
+        if section_name == 'profile':
+            # Charger les données pour la section profile
+            data['vehicles'] = get_customer_vehicles(customer_id)
+            data['addresses'] = get_customer_addresses_data(customer_id)
+            data['contacts'] = get_customer_contacts(customer_id)
+            data['customer_stats'] = get_customer_basic_stats(customer_id)
+        
+        elif section_name == 'activity':
             data['activities'] = get_customer_activities(customer_id, limit=5)
             data['activity_stats'] = get_activity_stats(customer_id)
         
@@ -708,3 +715,125 @@ def get_recommended_actions(customer_id): return []
 def get_customer_consents_data(customer_id): return []
 def calculate_gdpr_status(customer_id, consents=None): return {'compliant': True, 'issues': []}
 def get_gdpr_requests(customer_id): return []
+
+# Fonctions pour la section profile
+def get_customer_vehicles(customer_id):
+    """Récupérer les véhicules d'un client"""
+    try:
+        connection = db_manager.get_connection()
+        cursor = connection.cursor()
+        
+        cursor.execute("""
+            SELECT id, customer_id, make, model, year, license_plate, vin, color, notes, created_at, updated_at
+            FROM vehicles 
+            WHERE customer_id = %s 
+            ORDER BY created_at DESC
+        """, [customer_id])
+        
+        vehicles = cursor.fetchall()
+        
+        cursor.close()
+        connection.close()
+        
+        return vehicles or []
+    except Exception as e:
+        logger.error(f"Erreur lors de la récupération des véhicules pour le client {customer_id}: {str(e)}")
+        return []
+
+def get_customer_addresses_data(customer_id):
+    """Récupérer les adresses d'un client"""
+    try:
+        connection = db_manager.get_connection()
+        cursor = connection.cursor()
+        
+        cursor.execute("""
+            SELECT id, customer_id, address_type, label, address_line_1, address_line_2,
+                   city, state_province, postal_code, country, latitude, longitude,
+                   is_primary, is_verified, delivery_instructions, access_code,
+                   contact_name, contact_phone, created_at, updated_at
+            FROM customer_addresses 
+            WHERE customer_id = %s 
+            ORDER BY is_primary DESC, created_at DESC
+        """, [customer_id])
+        
+        addresses = cursor.fetchall()
+        
+        cursor.close()
+        connection.close()
+        
+        return addresses or []
+    except Exception as e:
+        logger.error(f"Erreur lors de la récupération des adresses pour le client {customer_id}: {str(e)}")
+        return []
+
+def get_customer_contacts(customer_id):
+    """Récupérer les contacts d'un client"""
+    try:
+        connection = db_manager.get_connection()
+        cursor = connection.cursor()
+        
+        cursor.execute("""
+            SELECT id, customer_id, first_name, last_name, phone, email, role, is_primary, notes, created_at, updated_at
+            FROM customer_contacts 
+            WHERE customer_id = %s 
+            ORDER BY is_primary DESC, created_at DESC
+        """, [customer_id])
+        
+        contacts = cursor.fetchall()
+        
+        cursor.close()
+        connection.close()
+        
+        return contacts or []
+    except Exception as e:
+        logger.error(f"Erreur lors de la récupération des contacts pour le client {customer_id}: {str(e)}")
+        return []
+
+def get_customer_basic_stats(customer_id):
+    """Récupérer les statistiques de base d'un client"""
+    try:
+        connection = db_manager.get_connection()
+        cursor = connection.cursor()
+        
+        # Statistiques de base
+        stats = {
+            'total_orders': 0,
+            'total_revenue': 0,
+            'total_interventions': 0,
+            'avg_rating': 0
+        }
+        
+        # Nombre de commandes/bons de travail
+        cursor.execute("""
+            SELECT COUNT(*) as total_orders, 
+                   COALESCE(SUM(total_amount), 0) as total_revenue
+            FROM work_orders 
+            WHERE customer_id = %s
+        """, [customer_id])
+        
+        result = cursor.fetchone()
+        if result:
+            stats['total_orders'] = result['total_orders'] or 0
+            stats['total_revenue'] = float(result['total_revenue'] or 0)
+        
+        # Nombre d'interventions
+        cursor.execute("""
+            SELECT COUNT(*) as total_interventions
+            FROM interventions 
+            WHERE customer_id = %s
+        """, [customer_id])
+        
+        result = cursor.fetchone()
+        if result:
+            stats['total_interventions'] = result['total_interventions'] or 0
+        
+        # Note moyenne (si vous avez un système de notation)
+        # cursor.execute pour récupérer les évaluations si disponibles
+        
+        cursor.close()
+        connection.close()
+        
+        return stats
+    except Exception as e:
+        logger.error(f"Erreur lors de la récupération des statistiques pour le client {customer_id}: {str(e)}")
+        return {'total_orders': 0, 'total_revenue': 0, 'total_interventions': 0, 'avg_rating': 0}

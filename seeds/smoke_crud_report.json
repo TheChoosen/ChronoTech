@@ -1,0 +1,156 @@
+{
+  "customers": {
+    "create": {
+      "status": "pass",
+      "latency": 0.0016033649444580078,
+      "error": null
+    },
+    "read": {
+      "status": "pass",
+      "latency": 0.00426936149597168,
+      "error": null
+    },
+    "update": {
+      "status": "pass",
+      "latency": 0.0034029483795166016,
+      "error": null
+    },
+    "delete": {
+      "status": "pass",
+      "latency": 0.0022287368774414062,
+      "error": null
+    }
+  },
+  "users": {
+    "create": {
+      "status": "pass",
+      "latency": 0.0012943744659423828,
+      "error": null
+    },
+    "read": {
+      "status": "pass",
+      "latency": 0.004227876663208008,
+      "error": null
+    },
+    "update": {
+      "status": "pass",
+      "latency": 0.0032243728637695312,
+      "error": null
+    },
+    "delete": {
+      "status": "pass",
+      "latency": 0.00200653076171875,
+      "error": null
+    }
+  },
+  "vehicles": {
+    "create": {
+      "status": "pass",
+      "latency": 0.0010251998901367188,
+      "error": null
+    },
+    "read": {
+      "status": "pass",
+      "latency": 0.002132415771484375,
+      "error": null
+    },
+    "update": {
+      "status": "pass",
+      "latency": 0.002643108367919922,
+      "error": null
+    },
+    "delete": {
+      "status": "skip",
+      "latency": 0,
+      "error": "Hard delete avoided for safety"
+    }
+  },
+  "work_orders": {
+    "create": {
+      "status": "pass",
+      "latency": 0.001611948013305664,
+      "error": null
+    },
+    "read": {
+      "status": "pass",
+      "latency": 0.006864786148071289,
+      "error": null
+    },
+    "update": {
+      "status": "pass",
+      "latency": 0.0047495365142822266,
+      "error": null
+    },
+    "delete": {
+      "status": "skip",
+      "latency": 0,
+      "error": "Hard delete avoided for safety"
+    }
+  },
+  "interventions": {
+    "create": {
+      "status": "fail",
+      "latency": 0.0017344951629638672,
+      "error": "(1644, 'SPRINT 1 GUARD: Task already has an intervention (1-1 relationship)')"
+    },
+    "read": {
+      "status": "pass",
+      "latency": 0.0028760433197021484,
+      "error": null
+    },
+    "update": {
+      "status": "pass",
+      "latency": 0.003977775573730469,
+      "error": null
+    },
+    "delete": {
+      "status": "skip",
+      "latency": 0,
+      "error": "Hard delete avoided for safety"
+    }
+  },
+  "appointments": {
+    "create": {
+      "status": "pass",
+      "latency": 0.0012102127075195312,
+      "error": null
+    },
+    "read": {
+      "status": "pass",
+      "latency": 0.003053903579711914,
+      "error": null
+    },
+    "update": {
+      "status": "pass",
+      "latency": 0.002773284912109375,
+      "error": null
+    },
+    "delete": {
+      "status": "skip",
+      "latency": 0,
+      "error": "Hard delete avoided for safety"
+    }
+  },
+  "inventory_items": {
+    "create": {
+      "status": "pass",
+      "latency": 0.0009703636169433594,
+      "error": null
+    },
+    "read": {
+      "status": "pass",
+      "latency": 0.0056705474853515625,
+      "error": null
+    },
+    "update": {
+      "status": "pass",
+      "latency": 0.003092527389526367,
+      "error": null
+    },
+    "delete": {
+      "status": "pass",
+      "latency": 0.002077341079711914,
+      "error": null
+    }
+  }
+}

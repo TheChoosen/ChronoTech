@@ -51,7 +51,7 @@ def mobile_today():
             cursor.execute("""
                 SELECT 
                     wot.*,
-                    wo.title as wo_title,
+                    wo.description as wo_title,
                     wo.claim_number,
                     wo.customer_id,
                     c.name as customer_name,
@@ -318,7 +318,7 @@ def intervention_mobile_details(intervention_id):
                     wot.priority,
                     wot.status as task_status,
                     wo.claim_number,
-                    wo.title as wo_title,
+                    wo.description as wo_title,
                     c.name as customer_name,
                     c.phone as customer_phone,
                     v.make, v.model, v.license_plate,

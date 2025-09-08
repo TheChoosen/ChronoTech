@@ -1,0 +1,266 @@
+/* ==========================================
+   STYLES CHRONOCHAT - Équipe en ligne & Statuts
+   ========================================== */
+
+/* Statuts d'équipe en ligne */
+.online-status {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    position: relative;
+}
+
+.online-status.status-online,
+.status-indicator.status-online {
+    background-color: #28a745;
+    box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.3);
+}
+
+.online-status.status-away,
+.status-indicator.status-away {
+    background-color: #ffc107;
+    box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.3);
+}
+
+.online-status.status-busy,
+.status-indicator.status-busy {
+    background-color: #dc3545;
+    box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.3);
+}
+
+.online-status.status-offline,
+.status-indicator.status-offline {
+    background-color: #6c757d;
+    box-shadow: 0 0 0 2px rgba(108, 117, 125, 0.3);
+}
+
+/* Animation pulsation pour en ligne */
+.online-status.status-online::after,
+.status-indicator.status-online::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border-radius: 50%;
+    border: 2px solid #28a745;
+    animation: pulse-online 2s infinite;
+}
+
+@keyframes pulse-online {
+    0% {
+        transform: scale(0.8);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.7;
+    }
+    100% {
+        transform: scale(0.8);
+        opacity: 1;
+    }
+}
+
+/* Chips utilisateurs améliorés */
+.user-chip {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(0, 123, 255, 0.1);
+    color: #0d6efd;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    margin: 2px;
+    border: 1px solid rgba(0, 123, 255, 0.2);
+    transition: all 0.2s ease;
+}
+
+.user-chip.status-online {
+    background: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+    border-color: rgba(40, 167, 69, 0.3);
+}
+
+.user-chip.status-away {
+    background: rgba(255, 193, 7, 0.1);
+    color: #ffc107;
+    border-color: rgba(255, 193, 7, 0.3);
+}
+
+.user-chip.status-busy {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    border-color: rgba(220, 53, 69, 0.3);
+}
+
+.user-chip .status-indicator {
+    width: 6px;
+    height: 6px;
+    margin-right: 6px;
+}
+
+/* Utilisateurs en ligne - Liste détaillée */
+.online-user {
+    transition: all 0.2s ease;
+    border-left: 3px solid transparent;
+}
+
+.online-user.status-online {
+    border-left-color: #28a745;
+    background-color: rgba(40, 167, 69, 0.05);
+}
+
+.online-user.status-away {
+    border-left-color: #ffc107;
+    background-color: rgba(255, 193, 7, 0.05);
+}
+
+.online-user.status-busy {
+    border-left-color: #dc3545;
+    background-color: rgba(220, 53, 69, 0.05);
+}
+
+.online-user.status-offline {
+    border-left-color: #6c757d;
+    background-color: rgba(108, 117, 125, 0.05);
+    opacity: 0.7;
+}
+
+.online-user:hover {
+    background-color: rgba(0, 123, 255, 0.1);
+    transform: translateX(2px);
+}
+
+/* Statistiques de présence */
+#presence-stats {
+    padding: 8px 12px;
+    background: rgba(0, 123, 255, 0.05);
+    border-radius: 6px;
+    border: 1px solid rgba(0, 123, 255, 0.1);
+    margin-bottom: 10px;
+}
+
+#presence-stats .fa-circle {
+    font-size: 0.6rem;
+}
+
+/* Améliorations Kanban */
+.kanban-column {
+    min-height: 400px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    transition: all 0.2s ease;
+}
+
+.kanban-column.status-pending {
+    border-left: 4px solid #6c757d;
+}
+
+.kanban-column.status-assigned {
+    border-left: 4px solid #17a2b8;
+}
+
+.kanban-column.status-in_progress {
+    border-left: 4px solid #0d6efd;
+}
+
+.kanban-column.status-completed {
+    border-left: 4px solid #28a745;
+}
+
+.kanban-column.status-cancelled {
+    border-left: 4px solid #dc3545;
+}
+
+/* Améliorations Chat */
+.chat-row {
+    animation: slideInFromBottom 0.3s ease;
+}
+
+@keyframes slideInFromBottom {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#chat-messages {
+    scroll-behavior: smooth;
+}
+
+/* Onglets spécialisés */
+.nav-tabs .nav-link {
+    border-radius: 8px 8px 0 0;
+    border: none;
+    background: rgba(0, 123, 255, 0.05);
+    color: #6c757d;
+    transition: all 0.2s ease;
+    margin-right: 4px;
+}
+
+.nav-tabs .nav-link:hover {
+    background: rgba(0, 123, 255, 0.1);
+    color: #0d6efd;
+    transform: translateY(-1px);
+}
+
+.nav-tabs .nav-link.active {
+    background: #0d6efd;
+    color: white;
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
+}
+
+/* Responsive pour mobile */
+@media (max-width: 768px) {
+    .user-chip {
+        font-size: 0.7rem;
+        padding: 2px 6px;
+    }
+    
+    .online-user {
+        padding: 8px 10px;
+    }
+    
+    .online-status {
+        width: 6px;
+        height: 6px;
+    }
+    
+    #presence-stats {
+        font-size: 0.8rem;
+    }
+}
+
+/* Claymorphism pour sections principales */
+.clay-card {
+    background: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    transition: all 0.3s ease;
+}
+
+.clay-card:hover {
+    box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.5);
+    transform: translateY(-2px);
+}
+
+/* États de chargement */
+.loading-pulse {
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}

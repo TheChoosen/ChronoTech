@@ -6,7 +6,7 @@ import pymysql
 from flask import render_template, request, redirect, url_for, flash, jsonify, session
 from werkzeug.utils import secure_filename
 from core.forms import CustomerForm
-from core.utils import log_info, log_error
+from core.utils import log_info, log_error, validate_customer_data, ValidationError
 from .utils import get_db_connection, require_role, get_current_user, MiniPagination, _debug
 
 
@@ -14,6 +14,7 @@ def setup_main_routes(bp):
     """Configure les routes principales du module clients"""
     
     @bp.route('/')
+    @require_role('admin', 'manager', 'staff', 'readonly')
     def index():
         """Liste des clients avec pagination et recherche"""
         try:
@@ -54,9 +55,10 @@ def setup_main_routes(bp):
             # Créer la pagination
             pagination = MiniPagination(page=page, per_page=per_page, total=total_customers)
             
-            # Récupérer les clients
+            # Récupérer les clients avec pagination
             query = f"""
-                SELECT id, name, email, phone, company, city, status, created_at, last_activity_date
+                SELECT id, name, email, phone, company, city, status, created_at, last_activity_date,
+                       CASE WHEN is_active IS NOT NULL THEN is_active ELSE 1 END as is_active
                 FROM customers 
                 {where_clause}
                 ORDER BY {sort_by} {sort_dir.upper()}
@@ -118,12 +120,37 @@ def setup_main_routes(bp):
                                  stats=stats)
 
     @bp.route('/add', methods=['GET', 'POST'])
+    @require_role('admin', 'manager', 'staff')
     def add_customer():
-        """Ajouter un nouveau client"""
+        """Ajouter un nouveau client avec validation complète"""
         form = CustomerForm()
         
-        if form.validate_on_submit():
+        if request.method == 'POST':
             try:
+                # Validation des données avec la nouvelle fonction
+                customer_data = {
+                    'name': request.form.get('name', '').strip(),
+                    'email': request.form.get('email', '').strip(),
+                    'phone': request.form.get('phone', '').strip(),
+                    'mobile': request.form.get('mobile', '').strip(),
+                    'company': request.form.get('company', '').strip(),
+                    'customer_type': request.form.get('customer_type', 'individual'),
+                    'siret': request.form.get('siret', '').strip(),
+                    'address': request.form.get('address', '').strip(),
+                    'city': request.form.get('city', '').strip(),
+                    'postal_code': request.form.get('postal_code', '').strip(),
+                    'status': request.form.get('status', 'active'),
+                    'birth_date': request.form.get('birth_date', ''),
+                    'billing_address_different': request.form.get('billing_address_different', 'false'),
+                    'billing_address': request.form.get('billing_address', '').strip(),
+                    'billing_city': request.form.get('billing_city', '').strip(),
+                    'billing_postal_code': request.form.get('billing_postal_code', '').strip(),
+                    'notes': request.form.get('notes', '').strip()
+                }
+                
+                # Validation métier
+                validate_customer_data(customer_data, is_update=False)
+                
                 conn = get_db_connection()
                 if not conn:
                     flash('Erreur de connexion à la base de données', 'error')
@@ -131,20 +158,36 @@ def setup_main_routes(bp):
                 
                 cursor = conn.cursor()
                 
+                # Vérifier l'unicité de l'email si fourni
+                if customer_data['email']:
+                    cursor.execute("SELECT id FROM customers WHERE email = %s", (customer_data['email'],))
+                    if cursor.fetchone():
+                        flash('Un client avec cet email existe déjà', 'error')
+                        cursor.close()
+                        conn.close()
+                        return render_template('customers/add.html', form=form)
+                
                 # Insérer le nouveau client
                 cursor.execute("""
-                    INSERT INTO customers (name, email, phone, mobile, company, address, city, postal_code, notes, created_at, updated_at)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+                    INSERT INTO customers (
+                        name, email, phone, mobile, company, customer_type, siret,
+                        address, city, postal_code, status,
+                        billing_address, notes, created_at, updated_at, is_active
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW(), 1)
                 """, (
-                    form.name.data,
-                    form.email.data,
-                    form.phone.data,
-                    form.mobile.data if hasattr(form, 'mobile') else None,
-                    form.company.data,
-                    form.address.data,
-                    form.city.data,
-                    form.postal_code.data,
-                    form.notes.data
+                    customer_data['name'],
+                    customer_data['email'] or None,
+                    customer_data['phone'] or None,
+                    customer_data['mobile'] or None,
+                    customer_data['company'] or None,
+                    customer_data['customer_type'],
+                    customer_data['siret'] or None,
+                    customer_data['address'] or None,
+                    customer_data['city'] or None,
+                    customer_data['postal_code'] or None,
+                    customer_data['status'],
+                    customer_data['billing_address'] or None,
+                    customer_data['notes'] or None
                 ))
                 
                 customer_id = cursor.lastrowid
@@ -152,13 +195,16 @@ def setup_main_routes(bp):
                 cursor.close()
                 conn.close()
                 
-                log_info(f"Nouveau client créé: {form.name.data} (ID: {customer_id})")
+                log_info(f"Nouveau client créé: {customer_data['name']} (ID: {customer_id})")
                 flash('Client ajouté avec succès', 'success')
                 return redirect(url_for('customers.view_customer', customer_id=customer_id))
                 
+            except ValidationError as e:
+                flash(f'Erreur de validation: {str(e)}', 'error')
+                log_error(f"Erreur de validation client: {e}")
             except pymysql.IntegrityError as e:
                 log_error(f"Erreur d'intégrité lors de l'ajout du client: {e}")
-                flash('Un client avec cet email existe déjà', 'error')
+                flash('Erreur d\'intégrité des données (doublon détecté)', 'error')
             except Exception as e:
                 log_error(f"Erreur lors de l'ajout du client: {e}")
                 flash('Erreur lors de l\'ajout du client', 'error')
@@ -166,6 +212,7 @@ def setup_main_routes(bp):
         return render_template('customers/add.html', form=form)
 
     @bp.route('/<int:customer_id>')
+    @require_role('admin', 'manager', 'staff', 'readonly')
     def view_customer(customer_id):
         """Voir les détails d'un client"""
         try:
@@ -333,41 +380,95 @@ def setup_main_routes(bp):
                 flash('Client non trouvé', 'error')
                 return redirect(url_for('customers.index'))
             
-            form = CustomerForm(obj=customer)
-            
-            if form.validate_on_submit():
-                # Mettre à jour les informations
-                cursor.execute("""
-                    UPDATE customers SET 
-                    name = %s, email = %s, phone = %s, mobile = %s,
-                    company = %s, address = %s, city = %s, postal_code = %s,
-                    notes = %s, updated_at = NOW()
-                    WHERE id = %s
-                """, (
-                    form.name.data,
-                    form.email.data,
-                    form.phone.data,
-                    form.mobile.data if hasattr(form, 'mobile') else None,
-                    form.company.data,
-                    form.address.data,
-                    form.city.data,
-                    form.postal_code.data,
-                    form.notes.data,
-                    customer_id
-                ))
+            if request.method == 'POST':
+                # Extraire et préparer les données du formulaire
+                customer_data = {
+                    'name': request.form.get('name', '').strip(),
+                    'email': request.form.get('email', '').strip(),
+                    'phone': request.form.get('phone', '').strip(),
+                    'mobile': request.form.get('mobile', '').strip(),
+                    'company': request.form.get('company', '').strip(),
+                    'address': request.form.get('address', '').strip(),
+                    'city': request.form.get('city', '').strip(),
+                    'postal_code': request.form.get('postal_code', '').strip(),
+                    'country': request.form.get('country', 'FR').strip(),
+                    'customer_type': request.form.get('customer_type', 'particulier').strip(),
+                    'siret': request.form.get('siret', '').strip(),
+                    'tax_number': request.form.get('tax_number', '').strip(),
+                    'notes': request.form.get('notes', '').strip(),
+                    'is_active': request.form.get('is_active') == '1',
+                    'preferred_contact': request.form.get('preferred_contact', 'email')
+                }
                 
-                conn.commit()
-                cursor.close()
-                conn.close()
-                
-                log_info(f"Client modifié: {form.name.data} (ID: {customer_id})")
-                flash('Client modifié avec succès', 'success')
-                return redirect(url_for('customers.view_customer', customer_id=customer_id))
+                # Validation des données avec la nouvelle fonction
+                try:
+                    # Valider les données avec les règles métier
+                    validate_customer_data(customer_data)
+                    
+                    # Vérifier l'unicité de l'email (sauf pour ce client)
+                    if customer_data['email']:
+                        cursor.execute(
+                            "SELECT id FROM customers WHERE email = %s AND id != %s", 
+                            (customer_data['email'], customer_id)
+                        )
+                        if cursor.fetchone():
+                            raise ValidationError("Cette adresse email est déjà utilisée par un autre client")
+                    
+                    
+                    # Mettre à jour les informations avec gestion complète des champs
+                    cursor.execute("""
+                        UPDATE customers SET 
+                        name = %s, email = %s, phone = %s, mobile = %s,
+                        company = %s, address = %s, city = %s, postal_code = %s,
+                        country = %s, customer_type = %s, siret = %s, tax_number = %s,
+                        notes = %s, is_active = %s,
+                        preferred_contact_method = %s, updated_at = NOW()
+                        WHERE id = %s
+                    """, (
+                        customer_data['name'],
+                        customer_data['email'] or None,
+                        customer_data['phone'] or None,
+                        customer_data['mobile'] or None,
+                        customer_data['company'] or None,
+                        customer_data['address'] or None,
+                        customer_data['city'] or None,
+                        customer_data['postal_code'] or None,
+                        customer_data['country'],
+                        customer_data['customer_type'],
+                        customer_data['siret'] or None,
+                        customer_data['tax_number'] or None,
+                        customer_data['notes'] or None,
+                        customer_data['is_active'],
+                        customer_data['preferred_contact'],
+                        customer_id
+                    ))
+                    
+                    conn.commit()
+                    cursor.close()
+                    conn.close()
+                    
+                    log_info(f"Client modifié: {customer_data['name']} (ID: {customer_id})")
+                    flash('Client modifié avec succès', 'success')
+                    return redirect(url_for('customers.view_customer', customer_id=customer_id))
+                    
+                except ValidationError as e:
+                    cursor.close()
+                    conn.close()
+                    flash(f'Erreur de validation: {str(e)}', 'error')
+                    return render_template('customers/edit.html', customer=customer, errors=[str(e)])
+                    
+                except Exception as e:
+                    cursor.close()
+                    conn.close()
+                    log_error(f"Erreur modification client: {e}")
+                    flash('Erreur lors de la modification du client', 'error')
+                    return render_template('customers/edit.html', customer=customer, errors=[str(e)])
             
+            # GET request - afficher le formulaire
             cursor.close()
             conn.close()
             
-            return render_template('customers/edit.html', form=form, customer=customer)
+            return render_template('customers/edit.html', customer=customer)
             
         except Exception as e:
             log_error(f"Erreur modification client {customer_id}: {e}")
@@ -419,6 +520,7 @@ def setup_main_routes(bp):
             return jsonify({'success': False, 'message': 'Erreur lors de la suppression'}), 500
 
     @bp.route('/api/search')
+    @require_role('admin', 'manager', 'staff', 'readonly')
     def search_customers_api():
         """API de recherche de clients"""
         try:
@@ -455,6 +557,7 @@ def setup_main_routes(bp):
 
     # Routes de compatibilité pour les anciens templates
     @bp.route('/<int:id>/view')
+    @require_role('admin', 'manager', 'staff', 'readonly')
     def view_customer_legacy(id):
         """Route de compatibilité pour l'ancien système"""
         return redirect(url_for('customers.view_customer', customer_id=id))
@@ -466,11 +569,13 @@ def setup_main_routes(bp):
         return delete_customer(id)
 
     @bp.route('/<int:id>/export', methods=['GET'])
+    @require_role('admin', 'manager', 'staff')
     def export_customer_legacy(id):
         """Route de compatibilité pour l'export"""
         return redirect(url_for('customers.view_customer', customer_id=id))
 
     @bp.route('/alt')
+    @require_role('admin', 'manager', 'staff', 'readonly')
     def alt_index():
         """Vue alternative de la liste des clients"""
         return index()

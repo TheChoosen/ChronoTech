@@ -7,7 +7,6 @@
         });
     });
 
-    const workOrderId = {{ work_order.id | tojson }};
     let mediaRecorder = null;
     let audioChunks = [];
     let recordedBlob = null;
@@ -242,8 +241,8 @@
 
         const formData = new FormData();
         formData.append('mode', mode);
-        formData.append('company', '{{ work_order.company or "BDM" }}');
-        formData.append('bon_id', '{{ work_order.claim_number }}');
+        formData.append('company', {{ (work_order.company or "BDM") | tojson }});
+        formData.append('bon_id', {{ work_order.claim_number | tojson }});
         if (target_lang) formData.append('target_lang', target_lang);
 
     try {
@@ -264,7 +263,7 @@
             const destination = document.querySelector('input[name="destination"]:checked')?.value || 'notes';
             formData.append('destination', destination);
 
-            const response = await fetch(`/openai/api/openai/audio`, {
+            const response = await fetch(`/openai/api/audio`, {
                 method: 'POST',
                 body: formData
             });
@@ -655,9 +654,31 @@
         if (destination === 'comments') {
             const form = new FormData();
             form.append('content', content);
-            fetch(`/interventions/${workOrderId}/add_comment`, { method: 'POST', body: form })
-            .then(response => response.json())
+            fetch(`/interventions/${workOrderId}/add_comment`, { 
+                method: 'POST', 
+                body: form,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                // Vérifier si la réponse est du JSON
+                if (response.status === 302) {
+                    alert('Session expirée. Veuillez vous reconnecter.');
+                    window.location.href = '/login';
+                    return;
+                }
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    throw new Error('Réponse non-JSON reçue du serveur');
+                }
+                return response.json();
+            })
             .then(result => {
+                if (!result) return; // Gérer le cas de redirection
                 if (result.success) {
                     document.getElementById('commentContent').value = '';
                     const commentsList = document.getElementById('commentsList');
@@ -668,10 +689,17 @@
                         commentsList.insertBefore(div, commentsList.firstChild);
                     }
                 } else {
-                    alert('Erreur: ' + result.message);
+                    if (result.redirect) {
+                        window.location.href = result.redirect;
+                    } else {
+                        alert('Erreur: ' + result.message);
+                    }
                 }
             })
-            .catch(error => { alert('Erreur de connexion: ' + error.message); });
+            .catch(error => { 
+                console.error('Erreur commentaire:', error);
+                alert('Erreur de connexion: ' + error.message); 
+            });
             return;
         }
 
@@ -681,10 +709,29 @@
 
         fetch(`/interventions/${workOrderId}/add_note`, {
             method: 'POST',
-            body: formData
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
         })
-        .then(response => response.json())
+        .then(response => {
+            // Vérifier si la réponse est du JSON
+            if (response.status === 302) {
+                alert('Session expirée. Veuillez vous reconnecter.');
+                window.location.href = '/login';
+                return;
+            }
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error('Réponse non-JSON reçue du serveur');
+            }
+            return response.json();
+        })
         .then(result => {
+            if (!result) return; // Gérer le cas de redirection
             if (result.success) {
                 document.getElementById('noteContent').value = '';
 
@@ -706,10 +753,15 @@
                     noNotesMsg.remove();
                 }
             } else {
-                alert('Erreur: ' + result.message);
+                if (result.redirect) {
+                    window.location.href = result.redirect;
+                } else {
+                    alert('Erreur: ' + result.message);
+                }
             }
         })
         .catch(error => {
+            console.error('Erreur note:', error);
             alert('Erreur de connexion: ' + error.message);
         });
     }
@@ -723,9 +775,31 @@
 
         const form = new FormData();
         form.append('content', content);
-        fetch(`/interventions/${workOrderId}/add_comment`, { method: 'POST', body: form })
-        .then(response => response.json())
+        fetch(`/interventions/${workOrderId}/add_comment`, { 
+            method: 'POST', 
+            body: form,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            // Vérifier si la réponse est du JSON
+            if (response.status === 302) {
+                alert('Session expirée. Veuillez vous reconnecter.');
+                window.location.href = '/login';
+                return;
+            }
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error('Réponse non-JSON reçue du serveur');
+            }
+            return response.json();
+        })
         .then(result => {
+            if (!result) return; // Gérer le cas de redirection
             if (result.success) {
                 document.getElementById('commentContent').value = '';
                 const commentsList = document.getElementById('commentsList');
@@ -736,10 +810,17 @@
                     commentsList.insertBefore(div, commentsList.firstChild);
                 }
             } else {
-                alert('Erreur: ' + result.message);
+                if (result.redirect) {
+                    window.location.href = result.redirect;
+                } else {
+                    alert('Erreur: ' + result.message);
+                }
             }
         })
-        .catch(error => { alert('Erreur de connexion: ' + error.message); });
+        .catch(error => { 
+            console.error('Erreur commentaire manuel:', error);
+            alert('Erreur de connexion: ' + error.message); 
+        });
     }
 
     function updateStatus(status) {
@@ -1055,10 +1136,10 @@
         try {
             // Get vehicle info from the page
             const vehicleInfo = {
-                make: '{{ work_order.vehicle_make or "" }}',
-                model: '{{ work_order.vehicle_model or "" }}',
-                year: '{{ work_order.vehicle_year or "" }}',
-                mileage: '{{ work_order.vehicle_mileage or "" }}'
+                make: {{ (work_order.vehicle_make or "") | tojson }},
+                model: {{ (work_order.vehicle_model or "") | tojson }},
+                year: {{ (work_order.vehicle_year or "") | tojson }},
+                mileage: {{ (work_order.vehicle_mileage or "") | tojson }}
             };
             
         const lang = document.getElementById('suggestionsLanguage')?.value || 'fr';
@@ -1070,7 +1151,7 @@
                 body: JSON.stringify({
                     query: query,
                     vehicle_info: vehicleInfo,
-            context: '{{ work_order.description or "" }}',
+            context: {{ (work_order.description or "") | tojson }},
             language: lang
                 })
             });
@@ -1218,8 +1299,8 @@
             return;
         }
         
-        const workOrderNumber = '{{ work_order.claim_number }}';
-        const vehicleInfo = '{{ work_order.vehicle_make }} {{ work_order.vehicle_model }} {{ work_order.vehicle_year }}';
+        const workOrderNumber = {{ work_order.claim_number | tojson }};
+        const vehicleInfo = {{ ((work_order.vehicle_make or '') + " " + (work_order.vehicle_model or '') + " " + (work_order.vehicle_year|string if work_order.vehicle_year else '')) | tojson }};
         const timestamp = new Date().toLocaleString('fr-FR');
         
         let reportContent = `
@@ -1244,7 +1325,7 @@
                     <strong>Intervention:</strong> ${workOrderNumber}<br>
                     <strong>Véhicule:</strong> ${vehicleInfo}<br>
                     <strong>Généré le:</strong> ${timestamp}<br>
-                    <strong>Technicien:</strong> {{ session.get('nom_complet', 'N/A') }}
+                    <strong>Technicien:</strong> {{ session.get('nom_complet', 'N/A') | e }}
                 </div>
         `;
         

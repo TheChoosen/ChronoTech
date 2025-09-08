@@ -1,0 +1,477 @@
+<!-- Modal Actions Rapides -->
+<div class="modal fade" id="quickActionsModal" tabindex="-1" aria-labelledby="quickActionsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="quickActionsModalLabel">
+                    <i class="fa-solid fa-bolt me-2"></i>Actions Rapides ChronoTech
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted mb-4">
+                    <i class="fa-solid fa-info-circle me-2"></i>
+                    Sélectionnez une action pour ouvrir l'interface correspondante
+                </p>
+                
+                <!-- Grille d'actions responsive -->
+                <div class="row g-3">
+                    <!-- AURA Assistant -->
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="action-tile card h-100 border-0 shadow-sm" 
+                             data-bs-dismiss="modal" 
+                             data-bs-toggle="modal" 
+                             data-bs-target="#auraModal"
+                             role="button">
+                            <div class="card-body text-center p-4">
+                                <div class="action-icon mb-3">
+                                    <i class="fa-solid fa-robot fa-3x text-primary"></i>
+                                </div>
+                                <h6 class="card-title">AURA Assistant</h6>
+                                <p class="card-text text-muted small">Intelligence artificielle pour assistance et automatisation</p>
+                                <div class="action-badge">
+                                    <span class="badge bg-primary">
+                                        <i class="fa-solid fa-external-link-alt me-1"></i>Ouvre une modal
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chat d'équipe -->
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="action-tile card h-100 border-0 shadow-sm" 
+                             data-bs-dismiss="modal" 
+                             data-bs-toggle="modal" 
+                             data-bs-target="#teamChatModal"
+                             role="button">
+                            <div class="card-body text-center p-4">
+                                <div class="action-icon mb-3">
+                                    <i class="fa-solid fa-comments fa-3x text-success"></i>
+                                </div>
+                                <h6 class="card-title">Chat d'équipe</h6>
+                                <p class="card-text text-muted small">Messagerie temps réel avec canaux et fichiers</p>
+                                <div class="action-badge">
+                                    <span class="badge bg-success">
+                                        <i class="fa-solid fa-external-link-alt me-1"></i>Ouvre une modal
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Agenda/Planning -->
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="action-tile card h-100 border-0 shadow-sm" 
+                             data-bs-dismiss="modal" 
+                             data-bs-toggle="modal" 
+                             data-bs-target="#agendaModal"
+                             role="button">
+                            <div class="card-body text-center p-4">
+                                <div class="action-icon mb-3">
+                                    <i class="fa-solid fa-calendar fa-3x text-info"></i>
+                                </div>
+                                <h6 class="card-title">Planning équipe</h6>
+                                <p class="card-text text-muted small">Calendrier avancé avec filtres et gestion RDV</p>
+                                <div class="action-badge">
+                                    <span class="badge bg-info">
+                                        <i class="fa-solid fa-external-link-alt me-1"></i>Ouvre une modal
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notifications -->
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="action-tile card h-100 border-0 shadow-sm" 
+                             data-bs-dismiss="modal" 
+                             data-bs-toggle="modal" 
+                             data-bs-target="#notificationsModal"
+                             role="button">
+                            <div class="card-body text-center p-4">
+                                <div class="action-icon mb-3 position-relative">
+                                    <i class="fa-solid fa-bell fa-3x text-warning"></i>
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="quick-notif-badge">
+                                        0
+                                    </span>
+                                </div>
+                                <h6 class="card-title">Notifications</h6>
+                                <p class="card-text text-muted small">Centre de notifications système et équipe</p>
+                                <div class="action-badge">
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="fa-solid fa-external-link-alt me-1"></i>Ouvre une modal
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Statistiques -->
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="action-tile card h-100 border-0 shadow-sm" 
+                             data-bs-dismiss="modal" 
+                             data-bs-toggle="modal" 
+                             data-bs-target="#statsModal"
+                             role="button">
+                            <div class="card-body text-center p-4">
+                                <div class="action-icon mb-3">
+                                    <i class="fa-solid fa-chart-bar fa-3x text-primary"></i>
+                                </div>
+                                <h6 class="card-title">Statistiques complètes</h6>
+                                <p class="card-text text-muted small">Analytics détaillées et monitoring équipe</p>
+                                <div class="action-badge">
+                                    <span class="badge bg-primary">
+                                        <i class="fa-solid fa-external-link-alt me-1"></i>Ouvre une modal
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modules spécialisés -->
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="action-tile card h-100 border-0 shadow-sm" 
+                             data-bs-dismiss="modal" 
+                             data-bs-toggle="modal" 
+                             data-bs-target="#modulesModal"
+                             role="button">
+                            <div class="card-body text-center p-4">
+                                <div class="action-icon mb-3">
+                                    <i class="fa-solid fa-layer-group fa-3x text-success"></i>
+                                </div>
+                                <h6 class="card-title">Modules spécialisés</h6>
+                                <p class="card-text text-muted small">Planning, Routes, Inventory et Reports</p>
+                                <div class="action-badge">
+                                    <span class="badge bg-success">
+                                        <i class="fa-solid fa-external-link-alt me-1"></i>Ouvre une modal
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Nouveau bon de travail -->
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="action-tile card h-100 border-0 shadow-sm" 
+                             data-bs-dismiss="modal"
+                             onclick="createWorkOrder()"
+                             role="button">
+                            <div class="card-body text-center p-4">
+                                <div class="action-icon mb-3">
+                                    <i class="fa-solid fa-plus-circle fa-3x text-warning"></i>
+                                </div>
+                                <h6 class="card-title">Nouveau bon travail</h6>
+                                <p class="card-text text-muted small">Créer un nouveau bon de travail rapidement</p>
+                                <div class="action-badge">
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="fa-solid fa-plus me-1"></i>Action directe
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action rapide supplémentaire - Export données -->
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="action-tile card h-100 border-0 shadow-sm" 
+                             data-bs-dismiss="modal"
+                             onclick="exportDashboardData()"
+                             role="button">
+                            <div class="card-body text-center p-4">
+                                <div class="action-icon mb-3">
+                                    <i class="fa-solid fa-download fa-3x text-secondary"></i>
+                                </div>
+                                <h6 class="card-title">Export données</h6>
+                                <p class="card-text text-muted small">Exporter les données du tableau de bord</p>
+                                <div class="action-badge">
+                                    <span class="badge bg-secondary">
+                                        <i class="fa-solid fa-download me-1"></i>Action directe
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action rapide supplémentaire - Aide -->
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="action-tile card h-100 border-0 shadow-sm" 
+                             data-bs-dismiss="modal"
+                             onclick="showHelp()"
+                             role="button">
+                            <div class="card-body text-center p-4">
+                                <div class="action-icon mb-3">
+                                    <i class="fa-solid fa-question-circle fa-3x text-info"></i>
+                                </div>
+                                <h6 class="card-title">Aide & Support</h6>
+                                <p class="card-text text-muted small">Documentation et assistance technique</p>
+                                <div class="action-badge">
+                                    <span class="badge bg-info">
+                                        <i class="fa-solid fa-book me-1"></i>Action directe
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gestion Départements -->
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="action-tile card h-100 border-0 shadow-sm" 
+                             data-bs-dismiss="modal" 
+                             data-bs-toggle="modal" 
+                             data-bs-target="#departmentsModal"
+                             role="button">
+                            <div class="card-body text-center p-4">
+                                <div class="action-icon mb-3">
+                                    <i class="fa-solid fa-building fa-3x text-info"></i>
+                                </div>
+                                <h6 class="card-title">Gestion Départements</h6>
+                                <p class="card-text text-muted small">CRUD départements et intégration chat</p>
+                                <div class="action-badge">
+                                    <span class="badge bg-info">
+                                        <i class="fa-solid fa-external-link-alt me-1"></i>Ouvre une modal
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <div class="w-100 text-center">
+                    <small class="text-muted">
+                        <i class="fa-solid fa-stack me-1"></i>
+                        Les actions avec <span class="badge bg-primary text-white">Ouvre une modal</span> 
+                        permettent d'empiler plusieurs interfaces
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Styles CSS pour les tuiles d'actions -->
+<style>
+.action-tile {
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: 2px solid transparent !important;
+}
+
+.action-tile:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+    border-color: var(--bs-primary) !important;
+}
+
+.action-tile:active {
+    transform: translateY(-2px);
+}
+
+.action-icon {
+    transition: transform 0.3s ease;
+}
+
+.action-tile:hover .action-icon {
+    transform: scale(1.1);
+}
+
+.action-badge {
+    margin-top: auto;
+}
+
+.action-tile .card-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.action-tile .card-title {
+    font-weight: 600;
+    color: var(--bs-dark);
+}
+
+/* Animation de pulsation pour les notifications */
+#quick-notif-badge {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, -50%) scale(1.1); }
+    100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Responsive ajustments */
+@media (max-width: 768px) {
+    .action-tile .action-icon i {
+        font-size: 2rem !important;
+    }
+    
+    .action-tile .card-body {
+        padding: 1.5rem !important;
+    }
+}
+
+/* Stack modal indicator */
+.modal.show ~ .modal {
+    z-index: 1056;
+}
+
+.modal-backdrop.show ~ .modal-backdrop {
+    z-index: 1055;
+}
+</style>
+
+<!-- JavaScript pour les actions rapides -->
+<script>
+// Synchroniser le badge de notifications
+function syncQuickActionsBadge() {
+    const mainBadge = document.getElementById('notif-badge');
+    const quickBadge = document.getElementById('quick-notif-badge');
+    
+    if (mainBadge && quickBadge) {
+        quickBadge.textContent = mainBadge.textContent;
+        
+        // Cacher le badge s'il est à 0
+        if (mainBadge.textContent === '0') {
+            quickBadge.style.display = 'none';
+        } else {
+            quickBadge.style.display = 'block';
+        }
+    }
+}
+
+// Fonction d'export des données
+function exportDashboardData() {
+    console.log('📊 Export des données du tableau de bord...');
+    
+    // Collecter les données du dashboard
+    const dashboardData = {
+        timestamp: new Date().toISOString(),
+        stats: {
+            pending_work_orders: document.getElementById('pending-work-orders')?.textContent || '0',
+            today_appointments: document.getElementById('today-appointments')?.textContent || '0',
+            online_techs: document.getElementById('online-techs')?.textContent || '0',
+            monthly_revenue: document.getElementById('monthly-revenue')?.textContent || '0'
+        },
+        kanban_counts: {}
+    };
+    
+    // Collecter les compteurs Kanban
+    ['draft', 'pending', 'assigned', 'in_progress', 'completed', 'cancelled'].forEach(status => {
+        const countElement = document.getElementById(`count-${status}`);
+        if (countElement) {
+            dashboardData.kanban_counts[status] = countElement.textContent;
+        }
+    });
+    
+    // Créer et télécharger le fichier
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dashboardData, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", `chronotech_dashboard_${new Date().toISOString().split('T')[0]}.json`);
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+    
+    // Notification de succès
+    if (typeof showNotification === 'function') {
+        showNotification('Données exportées avec succès!', 'success');
+    }
+}
+
+// Fonction d'aide
+function showHelp() {
+    console.log('❓ Ouverture de l\'aide...');
+    
+    const helpContent = `
+    <div class="help-content">
+        <h5>Guide d'utilisation ChronoTech Dashboard</h5>
+        <div class="accordion" id="helpAccordion">
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#helpGeneral">
+                        <i class="fa-solid fa-home me-2"></i>Vue d'ensemble
+                    </button>
+                </h2>
+                <div id="helpGeneral" class="accordion-collapse collapse show">
+                    <div class="accordion-body">
+                        Le tableau de bord ChronoTech vous permet de gérer vos équipes, bons de travail et communications en temps réel.
+                        Utilisez les actions rapides pour accéder rapidement aux différentes fonctionnalités.
+                    </div>
+                </div>
+            </div>
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#helpKanban">
+                        <i class="fa-solid fa-tasks me-2"></i>Kanban
+                    </button>
+                </h2>
+                <div id="helpKanban" class="accordion-collapse collapse">
+                    <div class="accordion-body">
+                        Glissez-déposez les cartes entre les colonnes pour changer le statut des bons de travail.
+                        Utilisez les filtres pour affiner votre vue.
+                    </div>
+                </div>
+            </div>
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#helpModals">
+                        <i class="fa-solid fa-window-restore me-2"></i>Modales empilées
+                    </button>
+                </h2>
+                <div id="helpModals" class="accordion-collapse collapse">
+                    <div class="accordion-body">
+                        Vous pouvez ouvrir plusieurs modales en même temps. Elles s'empilent automatiquement.
+                        Fermez les modales avec Echap ou en cliquant à l'extérieur.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    `;
+    
+    // Créer une modal d'aide temporaire
+    const helpModal = document.createElement('div');
+    helpModal.className = 'modal fade';
+    helpModal.innerHTML = `
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title">
+                        <i class="fa-solid fa-question-circle me-2"></i>Aide ChronoTech
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    ${helpContent}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                    <a href="mailto:support@chronotech.com" class="btn btn-info">
+                        <i class="fa-solid fa-envelope me-1"></i>Contacter le support
+                    </a>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(helpModal);
+    const modal = new bootstrap.Modal(helpModal);
+    modal.show();
+    
+    // Nettoyer après fermeture
+    helpModal.addEventListener('hidden.bs.modal', () => {
+        document.body.removeChild(helpModal);
+    });
+}
+
+// Initialiser la synchronisation au chargement de la modal
+document.addEventListener('DOMContentLoaded', function() {
+    const quickActionsModal = document.getElementById('quickActionsModal');
+    if (quickActionsModal) {
+        quickActionsModal.addEventListener('show.bs.modal', syncQuickActionsBadge);
+    }
+});
+</script>

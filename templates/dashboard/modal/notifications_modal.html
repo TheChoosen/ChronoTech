@@ -1,0 +1,29 @@
+<!-- Modal Notifications -->
+<div class="modal fade" id="notificationsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fa-solid fa-bell me-2"></i>Notifications ChronoTech
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="list-group list-group-flush" id="notifications-list">
+                    <div class="text-center py-4 text-muted">
+                        <i class="fa-solid fa-bell-slash fa-2x mb-2"></i>
+                        <p>Aucune notification</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="markAllAsRead()">
+                    <i class="fa-solid fa-check-double me-1"></i>Tout marquer lu
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearAllNotifications()">
+                    <i class="fa-solid fa-trash me-1"></i>Tout supprimer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

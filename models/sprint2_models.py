@@ -81,7 +81,7 @@ class WorkOrderTask:
                     SELECT 
                         wot.*,
                         u.name as technician_name,
-                        wo.title as work_order_title,
+                        wo.description as work_order_title,
                         c.name as customer_name,
                         i.id as intervention_id
                     FROM work_order_tasks wot
@@ -116,7 +116,7 @@ class WorkOrderTask:
                     SELECT 
                         wot.*,
                         u.name as technician_name,
-                        wo.title as work_order_title,
+                        wo.description as work_order_title,
                         c.name as customer_name,
                         i.id as intervention_id
                     FROM work_order_tasks wot
@@ -260,7 +260,7 @@ class Intervention:
                     SELECT 
                         i.*,
                         wot.title as task_title,
-                        wo.title as work_order_title,
+                        wo.description as work_order_title,
                         c.name as customer_name,
                         u.name as technician_name,
                         COUNT(DISTINCT in_.id) as notes_count,
@@ -300,7 +300,7 @@ class Intervention:
                     SELECT 
                         i.*,
                         wot.title as task_title,
-                        wo.title as work_order_title,
+                        wo.description as work_order_title,
                         c.name as customer_name,
                         u.name as technician_name,
                         COUNT(DISTINCT in_.id) as notes_count,

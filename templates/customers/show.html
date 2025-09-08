@@ -1,0 +1,77 @@
+<!-- Template d'affichage détaillé pour customers -->
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - ChronoTech{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-0">{{ title }}</h2>
+        <p class="text-muted">{{ subtitle }}</p>
+    </div>
+    <div>
+        {% if can_edit %}
+        <a href="{{ edit_url }}" class="btn btn-outline-primary clay-button">
+            <i class="fa-solid fa-edit me-1"></i>Modifier
+        </a>
+        {% endif %}
+        <a href="{{ back_url }}" class="btn btn-outline-secondary clay-button">
+            <i class="fa-solid fa-arrow-left me-1"></i>Retour
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card clay-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fa-solid fa-{{ icon }} me-2"></i>Informations détaillées
+                </h5>
+            </div>
+            <div class="card-body">
+                {{ detail_content|safe }}
+            </div>
+        </div>
+        
+        {% if has_history %}
+        <div class="card clay-card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fa-solid fa-history me-2"></i>Historique
+                </h6>
+            </div>
+            <div class="card-body">
+                {{ history_content|safe }}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-md-4">
+        {% if has_sidebar %}
+        <div class="card clay-card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fa-solid fa-list me-2"></i>Actions rapides
+                </h6>
+            </div>
+            <div class="card-body">
+                {{ sidebar_content|safe }}
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="card clay-card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fa-solid fa-chart-bar me-2"></i>Statistiques
+                </h6>
+            </div>
+            <div class="card-body">
+                {{ stats_content|safe }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -106,7 +106,7 @@ def new():
         customers = Customer.get_all()
     except Exception:
         customers = []
-    return render_template('vehicules/new.html', customer_id=customer_id, customers=customers)
+    return render_template('vehicles/new.html', customer_id=customer_id, customers=customers)
 
 
 @bp.route('/')
@@ -116,7 +116,7 @@ def index():
     Cette page charge un tableau vide côté client et appelle l'API JSON
     pour récupérer les lignes filtrées/paginées.
     """
-    return render_template('vehicules/index.html')
+    return render_template('vehicles/index.html')
 
 
 @bp.route('/api')
@@ -124,12 +124,15 @@ def api_vehicles():
     """API JSON pour récupérer les véhicules avec filtres et pagination.
 
     Accessible sous /vehicles/api (blueprint monté sur /vehicles)
-    Query params : q, make, model, year, page, per_page
+    Query params : q, make, model, year, page, per_page, sort_by, sort_dir
     """
     q = (request.args.get('q') or '').strip()
     make = (request.args.get('make') or '').strip()
     model = (request.args.get('model') or '').strip()
     year = (request.args.get('year') or '').strip()
+    sort_by = request.args.get('sort_by', 'id')
+    sort_dir = request.args.get('sort_dir', 'desc').lower()
+    
     try:
         page = max(1, int(request.args.get('page', 1)))
     except Exception:
@@ -138,6 +141,13 @@ def api_vehicles():
         per_page = min(100, max(1, int(request.args.get('per_page', 20))))
     except Exception:
         per_page = 20
+
+    # Validation du tri
+    allowed_sort_fields = ['id', 'make', 'model', 'year', 'created_at', 'updated_at']
+    if sort_by not in allowed_sort_fields:
+        sort_by = 'id'
+    if sort_dir not in ['asc', 'desc']:
+        sort_dir = 'desc'
 
     # Build dynamic WHERE clause
     where = ["1=1"]
@@ -161,6 +171,7 @@ def api_vehicles():
             pass
 
     where_clause = " AND ".join(where)
+    order_clause = f"ORDER BY {sort_by} {sort_dir.upper()}"
 
     # total count
     try:
@@ -174,7 +185,7 @@ def api_vehicles():
     # pagination
     offset = (page - 1) * per_page
     try:
-        data_query = f"SELECT * FROM vehicles WHERE {where_clause} ORDER BY id DESC LIMIT %s OFFSET %s"
+        data_query = f"SELECT * FROM vehicles WHERE {where_clause} {order_clause} LIMIT %s OFFSET %s"
         data_params = params + [per_page, offset]
         items = db_manager.execute_query(data_query, data_params)
     except Exception as e:
@@ -193,7 +204,9 @@ def api_vehicles():
         'page': page,
         'pages': pages,
         'total': total,
-        'items': items
+        'items': items,
+        'sort_by': sort_by,
+        'sort_dir': sort_dir
     })
 
 
@@ -241,7 +254,61 @@ def list_for_customer(customer_id):
             except Exception:
                 pass
 
-    return render_template('vehicules/list.html', vehicles=vehicles, customer_id=customer_id)
+    return render_template('vehicles/list.html', vehicles=vehicles, customer_id=customer_id)
+
+
+@bp.route('/<int:id>')
+def view(id):
+    """Afficher les détails d'un véhicule"""
+    conn = get_db_connection()
+    if not conn:
+        flash('Erreur de connexion DB', 'error')
+        return redirect(request.referrer or url_for('vehicles.index'))
+
+    try:
+        with conn.cursor() as cursor:
+            # Récupérer le véhicule avec les informations du client
+            cursor.execute("""
+                SELECT v.*, c.name as customer_name, c.email as customer_email, 
+                       c.phone as customer_phone, c.address as customer_address
+                FROM vehicles v
+                LEFT JOIN customers c ON v.customer_id = c.id
+                WHERE v.id = %s
+            """, (id,))
+            
+            vehicle = cursor.fetchone()
+            
+            if not vehicle:
+                flash('Véhicule non trouvé', 'error')
+                return redirect(url_for('vehicles.index'))
+            
+            # Récupérer l'historique des interventions pour ce véhicule
+            try:
+                cursor.execute("""
+                    SELECT wo.id, wo.claim_number, wo.description, wo.status, 
+                           wo.created_at, wo.completed_at, u.name as technician_name
+                    FROM work_orders wo
+                    LEFT JOIN users u ON wo.assigned_technician_id = u.id
+                    WHERE wo.vehicle_id = %s
+                    ORDER BY wo.created_at DESC
+                    LIMIT 10
+                """, (id,))
+                work_orders = cursor.fetchall()
+            except Exception as e:
+                log_error(f"Erreur récupération work_orders pour véhicule {id}: {e}")
+                work_orders = []
+            
+            return render_template('vehicles/view.html', vehicle=vehicle, work_orders=work_orders)
+            
+    except Exception as e:
+        log_error(f"Erreur affichage véhicule {id}: {e}")
+        flash('Erreur lors de l\'affichage du véhicule', 'error')
+        return redirect(url_for('vehicles.index'))
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
 
 
 @bp.route('/<int:id>/edit', methods=['GET', 'POST'])
@@ -296,7 +363,7 @@ def edit(id):
             flash('Véhicule non trouvé', 'error')
             return redirect(request.referrer or url_for('customers.index'))
 
-        return render_template('vehicules/edit.html', vehicle=vehicle)
+        return render_template('vehicles/edit.html', vehicle=vehicle)
     finally:
         try:
             conn.close()

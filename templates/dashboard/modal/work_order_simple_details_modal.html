@@ -1,0 +1,265 @@
+<!-- Modal Détails Bon de Travail (Version Simplifiée - Reconstruction) -->
+<div class="modal fade" id="workOrderSimpleDetailsModal" tabindex="-1"
+    aria-labelledby="workOrderSimpleDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="workOrderSimpleDetailsModalLabel">
+                    <i class="fa-solid fa-clipboard-check me-2 text-primary"></i>Détails du Bon de Travail
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Informations principales du bon de travail -->
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-sm-4">
+                                <strong>Numéro :</strong>
+                            </div>
+                            <div class="col-sm-8">
+                                <span id="detail-claim-number">#WO-000</span>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-4">
+                                <strong>Client :</strong>
+                            </div>
+                            <div class="col-sm-8">
+                                <span id="detail-customer-name">-</span>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-4">
+                                <strong>Statut :</strong>
+                            </div>
+                            <div class="col-sm-8">
+                                <span id="detail-status-badge" class="badge">-</span>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-4">
+                                <strong>Priorité :</strong>
+                            </div>
+                            <div class="col-sm-8">
+                                <span id="detail-priority-badge" class="badge">-</span>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-4">
+                                <strong>Technicien :</strong>
+                            </div>
+                            <div class="col-sm-8">
+                                <span id="detail-technician">Non assigné</span>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-4">
+                                <strong>Créé le :</strong>
+                            </div>
+                            <div class="col-sm-8">
+                                <span id="detail-created-date">-</span>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-4">
+                                <strong>Dernière MAJ :</strong>
+                            </div>
+                            <div class="col-sm-8">
+                                <span id="detail-updated-date">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Conteneur principal pour les sections -->
+                <div class="row">
+                    <!-- Description et Notes -->
+                    <div class="col-lg-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fa-solid fa-file-text me-2 text-info"></i>Description et Notes
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <strong>Description :</strong>
+                                    <div class="border rounded p-2 mt-1" style="min-height: 80px; background: #f8f9fa;">
+                                        <span id="detail-description">Aucune description</span>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Notes internes :</strong>
+                                    <div class="border rounded p-2 mt-1" style="min-height: 60px; background: #f8f9fa;">
+                                        <span id="detail-notes">Aucune note</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <strong>Instructions spéciales :</strong>
+                                    <div class="border rounded p-2 mt-1" style="min-height: 50px; background: #fff3cd;">
+                                        <span id="detail-instructions">Aucune instruction</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Planning et Temps -->
+                    <div class="col-lg-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fa-solid fa-clock me-2 text-warning"></i>Planning et Temps
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-sm-5">
+                                        <strong>Date prévue :</strong>
+                                    </div>
+                                    <div class="col-sm-7">
+                                        <span id="detail-scheduled-date">Non planifié</span>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-sm-5">
+                                        <strong>Durée estimée :</strong>
+                                    </div>
+                                    <div class="col-sm-7">
+                                        <span id="detail-estimated-duration">-</span>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-sm-5">
+                                        <strong>Temps passé :</strong>
+                                    </div>
+                                    <div class="col-sm-7">
+                                        <span id="detail-time-spent">0h 0m</span>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-sm-5">
+                                        <strong>Progression :</strong>
+                                    </div>
+                                    <div class="col-sm-7">
+                                        <div class="progress" style="height: 20px;">
+                                            <div id="detail-progress-bar" class="progress-bar" role="progressbar"
+                                                aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"
+                                                style="width: 0%">
+                                                <span id="detail-progress-text">0%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-5">
+                                        <strong>Date limite :</strong>
+                                    </div>
+                                    <div class="col-sm-7">
+                                        <span id="detail-deadline" class="text-danger">Non définie</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Informations Financières -->
+                    <div class="col-lg-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fa-solid fa-euro-sign me-2 text-success"></i>Informations Financières
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-sm-5">
+                                        <strong>Devis :</strong>
+                                    </div>
+                                    <div class="col-sm-7">
+                                        <span id="detail-quote-amount">0,00 €</span>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-sm-5">
+                                        <strong>Coût matériaux :</strong>
+                                    </div>
+                                    <div class="col-sm-7">
+                                        <span id="detail-materials-cost">0,00 €</span>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-sm-5">
+                                        <strong>Coût main d'œuvre :</strong>
+                                    </div>
+                                    <div class="col-sm-7">
+                                        <span id="detail-labor-cost">0,00 €</span>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-sm-5">
+                                        <strong>Total facturé :</strong>
+                                    </div>
+                                    <div class="col-sm-7">
+                                        <strong><span id="detail-total-amount">0,00 €</span></strong>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-5">
+                                        <strong>Statut facture :</strong>
+                                    </div>
+                                    <div class="col-sm-7">
+                                        <span id="detail-invoice-status" class="badge bg-secondary">Non facturé</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section vide pour équilibrage (optionnel) -->
+                    <div class="col-lg-6 mb-4">
+                        <!-- Espace pour ajouter d'autres informations si nécessaire -->
+                    </div>
+
+                    <!-- Historique et Activités (pleine largeur) -->
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fa-solid fa-history me-2 text-dark"></i>Historique des Activités
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="timeline" id="detail-activity-timeline">
+                                    <!-- Timeline sera générée dynamiquement -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="d-flex justify-content-between w-100">
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-primary" onclick="assignTechnician()">
+                            <i class="fa-solid fa-user-plus me-1"></i>Assigner Technicien
+                        </button>
+                        <button class="btn btn-outline-success" onclick="addTimeEntry()">
+                            <i class="fa-solid fa-clock me-1"></i>Ajouter Temps
+                        </button>
+                        <button class="btn btn-outline-info" onclick="addNote()">
+                            <i class="fa-solid fa-comment me-1"></i>Ajouter Note
+                        </button>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fermer</button>
+                        <button type="button" class="btn btn-primary" onclick="updateWorkOrderStatus()">
+                            <i class="fa-solid fa-save me-1"></i>Mettre à jour
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

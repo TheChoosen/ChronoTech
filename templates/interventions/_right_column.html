@@ -34,7 +34,7 @@
         </div>
 
         <!-- Customer Information -->
-        <div class="clay-card" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+        <div class="clay-card d-none" style="padding: 1.5rem; margin-bottom: 1.5rem;">
             <div class="card-header" style="background: transparent; border: none; padding: 0 0 1rem 0;">
                 <h5 style="margin: 0; color: var(--text-color); font-weight: 600;">
                     <i class="fa-solid fa-user me-2 text-primary"></i>Client
@@ -62,25 +62,6 @@
             </div>
         </div>
 
-        <!-- Quick Actions -->
-        <div class="clay-card mt-3" style="padding: 1.5rem;">
-            <div class="card-header" style="background: transparent; border: none; padding: 0 0 1rem 0;">
-                <h5 style="margin: 0; color: var(--text-color); font-weight: 600;">
-                    <i class="fa-solid fa-bolt me-2 text-primary"></i>Actions rapides
-                </h5>
-            </div>
-            <div class="card-body" style="padding: 0;">
-                <div class="d-grid gap-2">
-                    <button class="clay-button-primary" onclick="updateStatus('in_progress')" style="width: 100%; padding: 0.75rem;">
-                        <i class="fa-solid fa-play me-1"></i>Démarrer
-                    </button>
-                    <button class="clay-button" onclick="updateStatus('completed')" style="width: 100%; padding: 0.75rem; background: var(--success-color); color: white;">
-                        <i class="fa-solid fa-check me-1"></i>Terminer
-                    </button>
-                    <button class="clay-button" onclick="requestParts()" style="width: 100%; padding: 0.75rem; background: var(--info-color); color: white;">
-                        <i class="fa-solid fa-cogs me-1"></i>Demander pièces
-                    </button>
-                </div>
-            </div>
-        </div>
+        <!-- Gestion avancée des temps d'intervention -->
+        {% include 'interventions/_time_management_panel.html' %}
         

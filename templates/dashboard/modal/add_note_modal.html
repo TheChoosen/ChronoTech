@@ -1,0 +1,41 @@
+<!-- Modal d'Ajout de Note -->
+<div class="modal fade" id="addNoteModal" tabindex="-1" aria-labelledby="addNoteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addNoteModalLabel">
+                    <i class="fa-solid fa-comment-medical me-2 text-info"></i>Ajouter une Note
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Type de note</label>
+                    <select class="form-select" id="note-type-select">
+                        <option value="general">Générale</option>
+                        <option value="technical">Technique</option>
+                        <option value="customer">Client</option>
+                        <option value="internal">Interne</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Contenu de la note</label>
+                    <textarea class="form-control" id="note-content" rows="5"
+                        placeholder="Écrire la note..."></textarea>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="note-private">
+                    <label class="form-check-label" for="note-private">
+                        Note privée (visible seulement par l'équipe interne)
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-info" onclick="confirmAddNote()">
+                    <i class="fa-solid fa-check me-1"></i>Ajouter Note
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

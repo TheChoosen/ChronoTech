@@ -1,0 +1,109 @@
+<!-- Modal Kanban Techniciens -->
+<div class="modal fade" id="techniciansKanbanModal" tabindex="-1" aria-labelledby="techniciansKanbanModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="techniciansKanbanModalLabel">
+                    <i class="fa-solid fa-users-gear me-2 text-success"></i>Kanban Techniciens - Gestion des Statuts
+                </h5>
+                <div class="d-flex gap-2 me-3">
+                    <button class="btn btn-sm btn-success" onclick="refreshTechnicians()">
+                        <i class="fa-solid fa-refresh me-1"></i>Actualiser
+                    </button>
+                    <button class="btn btn-sm btn-outline-success" onclick="addTechnician()">
+                        <i class="fa-solid fa-user-plus me-1"></i>Ajouter
+                    </button>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body p-3">
+                <div class="technician-kanban-board" id="technician-kanban-board">
+                    <!-- Colonnes horizontales pour les statuts des techniciens -->
+                    <div class="row">
+                        <!-- Colonne Disponible -->
+                        <div class="col-md-3 mb-3">
+                            <div class="tech-kanban-column" data-status="available">
+                                <div class="tech-kanban-header bg-success text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fa-solid fa-user-check me-2"></i>Disponible
+                                    </h6>
+                                    <span class="badge bg-light text-dark" id="modal-count-available">0</span>
+                                </div>
+                                <div class="tech-kanban-content" id="modal-tech-available"
+                                    ondrop="handleTechDrop(event)" ondragover="allowDrop(event)">
+                                    <!-- Cartes techniciens disponibles -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Colonne Occupé -->
+                        <div class="col-md-3 mb-3">
+                            <div class="tech-kanban-column" data-status="busy">
+                                <div class="tech-kanban-header bg-warning text-dark">
+                                    <h6 class="mb-0">
+                                        <i class="fa-solid fa-user-clock me-2"></i>Occupé
+                                    </h6>
+                                    <span class="badge bg-light text-dark" id="modal-count-busy">0</span>
+                                </div>
+                                <div class="tech-kanban-content" id="modal-tech-busy" ondrop="handleTechDrop(event)"
+                                    ondragover="allowDrop(event)">
+                                    <!-- Cartes techniciens occupés -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Colonne En pause -->
+                        <div class="col-md-3 mb-3">
+                            <div class="tech-kanban-column" data-status="break">
+                                <div class="tech-kanban-header bg-info text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fa-solid fa-user-minus me-2"></i>En pause
+                                    </h6>
+                                    <span class="badge bg-light text-dark" id="modal-count-break">0</span>
+                                </div>
+                                <div class="tech-kanban-content" id="modal-tech-break" ondrop="handleTechDrop(event)"
+                                    ondragover="allowDrop(event)">
+                                    <!-- Cartes techniciens en pause -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Colonne Hors ligne -->
+                        <div class="col-md-3 mb-3">
+                            <div class="tech-kanban-column" data-status="offline">
+                                <div class="tech-kanban-header bg-secondary text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fa-solid fa-user-slash me-2"></i>Hors ligne
+                                    </h6>
+                                    <span class="badge bg-light text-dark" id="modal-count-offline">0</span>
+                                </div>
+                                <div class="tech-kanban-content" id="modal-tech-offline" ondrop="handleTechDrop(event)"
+                                    ondragover="allowDrop(event)">
+                                    <!-- Cartes techniciens hors ligne -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="d-flex justify-content-between w-100">
+                    <div class="tech-stats-summary">
+                        <small class="text-muted">
+                            Total: <span id="total-technicians">0</span> techniciens
+                            | Actifs: <span id="active-technicians">0</span>
+                            | Efficacité: <span id="team-efficiency">0%</span>
+                        </small>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fermer</button>
+                        <button type="button" class="btn btn-success" onclick="saveTechniciansStatus()">
+                            <i class="fa-solid fa-save me-1"></i>Sauvegarder
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

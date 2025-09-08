@@ -96,7 +96,7 @@ def openai_audio_page():
     return render_template('openai/audio_upload.html')
 
 
-@openai_bp.route('/api/openai/audio', methods=['POST'])
+@openai_bp.route('/api/audio', methods=['POST'])
 def handle_audio_upload():
     """Accept audio upload, send to OpenAI for transcription then optionally translate."""
     api_key = os.environ.get('OPENAI_API_KEY')

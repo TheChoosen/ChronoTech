@@ -256,7 +256,7 @@ class PDFGeneratorService:
                         wot.description as task_description,
                         wot.priority,
                         wo.claim_number,
-                        wo.title as wo_title,
+                        wo.description as wo_title,
                         c.name as customer_name,
                         c.email as customer_email,
                         c.phone as customer_phone,

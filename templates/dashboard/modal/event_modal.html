@@ -1,0 +1,176 @@
+<!-- Modal Création/Édition d'événement -->
+<div class="modal fade" id="eventModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="eventModalTitle">
+                    <i class="fa-solid fa-calendar-plus me-2"></i>Nouvel événement
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="eventForm">
+                <div class="modal-body">
+                    <input type="hidden" id="event-id" name="id">
+
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="event-title" class="form-label">Titre de l'événement *</label>
+                                <input type="text" class="form-control" id="event-title" name="title" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="event-color" class="form-label">Couleur</label>
+                                <input type="color" class="form-control form-control-color" id="event-color"
+                                    name="color" value="#007bff">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="event-customer" class="form-label">Client *</label>
+                                <input type="text" class="form-control" id="event-customer" name="customer_name"
+                                    required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="event-technician" class="form-label">Technicien assigné</label>
+                                <select class="form-select" id="event-technician" name="technician_id">
+                                    <option value="">Sélectionner un technicien...</option>
+                                    <!-- Options générées dynamiquement -->
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="event-address" class="form-label">Adresse du client</label>
+                        <input type="text" class="form-control" id="event-address" name="customer_address">
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="event-start" class="form-label">Date/Heure de début *</label>
+                                <input type="datetime-local" class="form-control" id="event-start" name="start"
+                                    required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="event-duration" class="form-label">Durée (minutes)</label>
+                                <input type="number" class="form-control" id="event-duration" name="duration"
+                                    value="60" min="15" max="480">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="event-priority" class="form-label">Priorité</label>
+                                <select class="form-select" id="event-priority" name="priority">
+                                    <option value="low">Faible</option>
+                                    <option value="normal" selected>Normale</option>
+                                    <option value="high">Élevée</option>
+                                    <option value="urgent">Urgente</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="event-status" class="form-label">Statut</label>
+                                <select class="form-select" id="event-status" name="status">
+                                    <option value="pending">En attente</option>
+                                    <option value="scheduled" selected>Programmé</option>
+                                    <option value="in_progress">En cours</option>
+                                    <option value="completed">Terminé</option>
+                                    <option value="cancelled">Annulé</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="event-all-day" name="allDay">
+                            <label class="form-check-label" for="event-all-day">
+                                Événement toute la journée
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Section Récurrence -->
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="event-recurring">
+                            <label class="form-check-label" for="event-recurring">
+                                Événement récurrent
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="recurrence-options" style="display: none;">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="recurrence-type" class="form-label">Type de
+                                                récurrence</label>
+                                            <select class="form-select" id="recurrence-type" name="recurrence_type">
+                                                <option value="daily">Quotidien</option>
+                                                <option value="weekly">Hebdomadaire</option>
+                                                <option value="monthly">Mensuel</option>
+                                                <option value="yearly">Annuel</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="recurrence-interval" class="form-label">Intervalle</label>
+                                            <input type="number" class="form-control" id="recurrence-interval"
+                                                name="recurrence_interval" value="1" min="1" max="52">
+                                            <div class="form-text">Ex: Tous les 2 jours, toutes les 3 semaines</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="recurrence-end" class="form-label">Fin de la récurrence</label>
+                                    <input type="date" class="form-control" id="recurrence-end"
+                                        name="recurrence_end_date">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="event-notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="event-notes" name="notes" rows="3"></textarea>
+                    </div>
+
+                    <!-- Détection de conflits -->
+                    <div id="conflict-warning" class="alert alert-warning" style="display: none;">
+                        <i class="fa-solid fa-exclamation-triangle me-2"></i>
+                        <strong>Conflit détecté!</strong>
+                        <div id="conflict-details"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-warning" id="check-conflicts"
+                        onclick="calendarManager.checkConflicts()">
+                        <i class="fa-solid fa-search me-1"></i>Vérifier conflits
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="save-event">
+                        <i class="fa-solid fa-save me-1"></i>Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

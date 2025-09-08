@@ -41,14 +41,14 @@
 .clay-element {
     background: var(--secondary-color);
     box-shadow: var(--shadow-level-1);
-    transition: all 0.3s ease;
+    transition: all 0.5s ease; /* Transition plus lente */
     border-radius: var(--border-radius);
     border: none;
     position: relative;
 }
 
 .clay-element:hover {
-    transform: translateY(-3px);
+    /* Effet de translation supprimé pour moins d'animation */
     box-shadow: var(--shadow-level-2);
 }
 
@@ -57,8 +57,7 @@
     box-shadow: var(--shadow-level-1);
     border-radius: var(--border-radius);
     border: none;
-    transition: all 0.3s ease;
-    overflow: visible;
+    transition: all 0.5s ease; /* Transition plus lente */
 }
 
 .clay-card:hover {
@@ -99,6 +98,7 @@
     border: none;
     border-radius: var(--border-radius);
     font-weight: 600;
+    padding: 0.5rem 1rem;
 }
 
 .clay-button-primary:hover {

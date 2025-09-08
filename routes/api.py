@@ -42,6 +42,925 @@ def require_auth(f):
     decorated_function.__name__ = f.__name__
     return decorated_function
 
+# ====================
+# DASHBOARD API ENDPOINTS
+# ====================
+
+@bp.route('/notifications', methods=['GET'])
+def get_notifications():
+    """Récupérer les notifications pour le dashboard"""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'success': False, 'notifications': []}), 500
+        
+        with conn.cursor() as cursor:
+            # Récupérer les notifications (pour l'instant, on simule)
+            notifications = [
+                {
+                    'id': 1,
+                    'title': 'Nouveau bon de travail',
+                    'message': 'Un nouveau bon de travail a été créé',
+                    'type': 'info',
+                    'timestamp': datetime.now().isoformat(),
+                    'read': False
+                },
+                {
+                    'id': 2,
+                    'title': 'Intervention terminée',
+                    'message': 'L\'intervention #123 a été marquée comme terminée',
+                    'type': 'success',
+                    'timestamp': datetime.now().isoformat(),
+                    'read': False
+                }
+            ]
+            
+        conn.close()
+        return jsonify({'success': True, 'notifications': notifications})
+        
+    except Exception as e:
+        log_error(f"Erreur récupération notifications: {e}")
+        return jsonify({'success': False, 'notifications': []}), 500
+
+@bp.route('/calendar-events', methods=['GET'])
+def get_calendar_events():
+    """Récupérer les événements du calendrier pour FullCalendar"""
+    try:
+        start = request.args.get('start')
+        end = request.args.get('end')
+        
+        conn = get_db_connection()
+        if not conn:
+            return jsonify([]), 500
+        
+        with conn.cursor() as cursor:
+            # Récupérer les rendez-vous et work orders comme événements
+            events = []
+            
+            # Rendez-vous
+            try:
+                cursor.execute("""
+                    SELECT a.id, a.scheduled_date, a.duration_minutes, a.description,
+                           c.name as customer_name, a.customer_id
+                    FROM appointments a
+                    LEFT JOIN customers c ON a.customer_id = c.id
+                    WHERE a.scheduled_date BETWEEN %s AND %s
+                    ORDER BY a.scheduled_date
+                """, (start, end))
+                
+                appointments = cursor.fetchall()
+                for apt in appointments:
+                    events.append({
+                        'id': f'apt_{apt["id"]}',
+                        'title': f'RDV: {apt["customer_name"] or "Client inconnu"}',
+                        'start': apt['scheduled_date'].isoformat() if apt['scheduled_date'] else None,
+                        'end': (apt['scheduled_date'] + datetime.timedelta(minutes=apt['duration_minutes'] or 60)).isoformat() if apt['scheduled_date'] else None,
+                        'backgroundColor': '#007bff',
+                        'borderColor': '#007bff',
+                        'textColor': '#ffffff',
+                        'extendedProps': {
+                            'type': 'appointment',
+                            'customer_id': apt['customer_id'],
+                            'description': apt['description']
+                        }
+                    })
+            except Exception as e:
+                log_error(f"Erreur récupération rendez-vous: {e}")
+            
+            # Work Orders avec dates
+            try:
+                cursor.execute("""
+                    SELECT wo.id, wo.created_at, wo.status, wo.priority, wo.description,
+                           c.name as customer_name, wo.customer_id
+                    FROM work_orders wo
+                    LEFT JOIN customers c ON wo.customer_id = c.id
+                    WHERE wo.created_at BETWEEN %s AND %s
+                    ORDER BY wo.created_at
+                """, (start, end))
+                
+                work_orders = cursor.fetchall()
+                for wo in work_orders:
+                    color = '#28a745' if wo['status'] == 'completed' else '#ffc107' if wo['status'] == 'in_progress' else '#6c757d'
+                    # Utiliser la description ou claim_number comme titre
+                    title = wo['description'][:50] if wo['description'] else f"Bon de travail #{wo['id']}"
+                    events.append({
+                        'id': f'wo_{wo["id"]}',
+                        'title': f'BT: {title}',
+                        'start': wo['created_at'].isoformat() if wo['created_at'] else None,
+                        'backgroundColor': color,
+                        'borderColor': color,
+                        'textColor': '#ffffff',
+                        'extendedProps': {
+                            'type': 'work_order',
+                            'customer_id': wo['customer_id'],
+                            'status': wo['status'],
+                            'priority': wo['priority']
+                        }
+                    })
+            except Exception as e:
+                log_error(f"Erreur récupération work orders: {e}")
+                
+        conn.close()
+        return jsonify(events)
+        
+    except Exception as e:
+        log_error(f"Erreur récupération événements calendrier: {e}")
+        return jsonify([]), 500
+
+# ====================
+# CHAT API ENDPOINTS
+# ====================
+
+@bp.route('/current-user', methods=['GET'])
+def get_current_user():
+    """Récupérer les informations de l'utilisateur actuel"""
+    try:
+        # Récupérer depuis la session ou utiliser l'admin par défaut
+        user_id = session.get('user_id', 1)
+        
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'error': 'Database connection failed'}), 500
+        
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, name, email, role, department
+            FROM users 
+            WHERE id = %s
+        """, (user_id,))
+        
+        user = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        
+        if not user:
+            # Utilisateur par défaut
+            return jsonify({
+                'id': 1,
+                'name': 'Admin System',
+                'email': 'admin@chronotech.com',
+                'role': 'admin',
+                'department': 'Administration'
+            })
+        
+        return jsonify(user)
+        
+    except Exception as e:
+        log_error(f"Erreur récupération utilisateur actuel: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@bp.route('/chat-history', methods=['GET'])
+def get_chat_history():
+    """Récupérer l'historique des messages d'un salon"""
+    try:
+        room_name = request.args.get('room', 'general')
+        limit = int(request.args.get('limit', 50))
+        
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'error': 'Database connection failed'}), 500
+        
+        cursor = conn.cursor()
+        
+        # Construire la requête selon le type de room
+        if room_name == 'general':
+            query = """
+                SELECT cm.*, u.name as sender_name
+                FROM chat_messages cm
+                LEFT JOIN users u ON cm.user_id = u.id
+                WHERE cm.room_name = 'general' OR cm.room_name IS NULL
+                ORDER BY cm.created_at DESC
+                LIMIT %s
+            """
+            params = (limit,)
+        else:
+            query = """
+                SELECT cm.*, u.name as sender_name
+                FROM chat_messages cm
+                LEFT JOIN users u ON cm.user_id = u.id
+                WHERE cm.room_name = %s
+                ORDER BY cm.created_at DESC
+                LIMIT %s
+            """
+            params = (room_name, limit)
+        
+        cursor.execute(query, params)
+        messages = cursor.fetchall()
+        
+        # Inverser l'ordre pour avoir les plus anciens en premier
+        messages.reverse()
+        
+        # Formater les dates
+        for msg in messages:
+            if msg['created_at']:
+                msg['created_at'] = msg['created_at'].isoformat()
+                msg['timestamp'] = msg['created_at']  # Alias pour compatibilité
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({'messages': messages})
+        
+    except Exception as e:
+        log_error(f"Erreur récupération historique chat: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+# ====================
+# KANBAN API ENDPOINTS - FONCTIONNALITÉ COMPLÈTE
+# ====================
+
+@bp.route('/work-orders', methods=['GET'])
+def get_work_orders():
+    """Récupérer tous les bons de travail pour le Kanban"""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'error': 'Database connection failed'}), 500
+        
+        cursor = conn.cursor()
+        
+        # Construire la requête avec filtres
+        base_query = """
+            SELECT wo.*, 
+                   u1.name as assigned_technician_name,
+                   u2.name as created_by_name,
+                   v.make as vehicle_make,
+                   v.model as vehicle_model,
+                   v.license_plate as vehicle_license_plate,
+                   v.department as vehicle_department,
+                   CASE 
+                       WHEN wo.priority = 'urgent' THEN 4
+                       WHEN wo.priority = 'high' THEN 3
+                       WHEN wo.priority = 'medium' THEN 2
+                       ELSE 1
+                   END as priority_order
+            FROM work_orders wo
+            LEFT JOIN users u1 ON wo.assigned_technician_id = u1.id
+            LEFT JOIN users u2 ON wo.created_by_user_id = u2.id
+            LEFT JOIN vehicles v ON wo.vehicle_id = v.id
+            WHERE 1=1
+        """
+        
+        params = []
+        
+        # Filtres
+        status_filter = request.args.get('status')
+        priority_filter = request.args.get('priority')
+        technician_filter = request.args.get('technician')
+        date_from = request.args.get('date_from')
+        date_to = request.args.get('date_to')
+        search = request.args.get('search')
+        
+        if status_filter:
+            base_query += " AND wo.status = %s"
+            params.append(status_filter)
+        
+        if priority_filter:
+            base_query += " AND wo.priority = %s"
+            params.append(priority_filter)
+        
+        if technician_filter:
+            base_query += " AND wo.assigned_technician_id = %s"
+            params.append(int(technician_filter))
+        
+        if date_from:
+            base_query += " AND DATE(wo.scheduled_date) >= %s"
+            params.append(date_from)
+        
+        if date_to:
+            base_query += " AND DATE(wo.scheduled_date) <= %s"
+            params.append(date_to)
+        
+        if search:
+            base_query += " AND (wo.customer_name LIKE %s OR wo.description LIKE %s OR wo.claim_number LIKE %s)"
+            search_term = f"%{search}%"
+            params.extend([search_term, search_term, search_term])
+        
+        # Ordre par priorité et date
+        base_query += " ORDER BY priority_order DESC, wo.scheduled_date ASC"
+        
+        cursor.execute(base_query, params)
+        work_orders = cursor.fetchall()
+        
+        # Formater les dates pour JSON
+        for wo in work_orders:
+            if wo['scheduled_date']:
+                wo['scheduled_date'] = wo['scheduled_date'].isoformat()
+            if wo['completion_date']:
+                wo['completion_date'] = wo['completion_date'].isoformat()
+            if wo['created_at']:
+                wo['created_at'] = wo['created_at'].isoformat()
+            if wo['updated_at']:
+                wo['updated_at'] = wo['updated_at'].isoformat()
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({'work_orders': work_orders})
+        
+    except Exception as e:
+        log_error(f"Erreur récupération work orders: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@bp.route('/work-orders/<int:work_order_id>/status', methods=['PUT'])
+def update_work_order_status(work_order_id):
+    """Mettre à jour le statut d'un bon de travail"""
+    try:
+        data = request.get_json()
+        new_status = data.get('status')
+        
+        if not new_status:
+            return jsonify({'error': 'Status is required'}), 400
+        
+        valid_statuses = ['draft', 'pending', 'assigned', 'in_progress', 'completed', 'cancelled']
+        if new_status not in valid_statuses:
+            return jsonify({'error': 'Invalid status'}), 400
+        
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'error': 'Database connection failed'}), 500
+        
+        cursor = conn.cursor()
+        
+        # Récupérer l'état actuel
+        cursor.execute("SELECT status, claim_number FROM work_orders WHERE id = %s", (work_order_id,))
+        current = cursor.fetchone()
+        
+        if not current:
+            cursor.close()
+            conn.close()
+            return jsonify({'error': 'Work order not found'}), 404
+        
+        old_status = current['status']
+        claim_number = current['claim_number']
+        
+        # Mettre à jour le statut
+        update_query = "UPDATE work_orders SET status = %s, updated_at = %s"
+        params = [new_status, datetime.now()]
+        
+        # Si complété, ajouter la date de completion
+        if new_status == 'completed':
+            update_query += ", completion_date = %s"
+            params.append(datetime.now())
+        
+        update_query += " WHERE id = %s"
+        params.append(work_order_id)
+        
+        cursor.execute(update_query, params)
+        
+        # Enregistrer dans l'historique Kanban
+        history_query = """
+            INSERT INTO kanban_history (task_id, old_status, new_status, 
+                                      moved_by, move_reason)
+            VALUES (%s, %s, %s, %s, %s)
+        """
+        
+        # Récupérer l'utilisateur actuel (à adapter selon votre système d'auth)
+        user_id = session.get('user_id', 1)  # Par défaut admin
+        
+        cursor.execute(history_query, (
+            work_order_id, old_status, new_status, 
+            user_id, f"Statut changé de {old_status} à {new_status}"
+        ))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        log_info(f"Work order {claim_number} (ID: {work_order_id}) status updated: {old_status} -> {new_status}")
+        
+        return jsonify({
+            'success': True,
+            'work_order_id': work_order_id,
+            'old_status': old_status,
+            'new_status': new_status,
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        log_error(f"Erreur mise à jour statut work order {work_order_id}: {e}")
+        
+        # Plus de détails sur l'erreur pour le debugging
+        import traceback
+        log_error(f"Traceback: {traceback.format_exc()}")
+        
+        # Retourner un message d'erreur plus spécifique si possible
+        error_msg = str(e)
+        if "kanban_history" in error_msg:
+            error_msg = "Erreur lors de l'enregistrement dans l'historique"
+        elif "work_orders" in error_msg:
+            error_msg = "Erreur lors de la mise à jour du bon de travail"
+        else:
+            error_msg = "Erreur interne du serveur"
+            
+        return jsonify({
+            'error': error_msg,
+            'debug_info': str(e)  # Toujours inclure pour le debugging
+        }), 500
+
+@bp.route('/work-orders/<int:work_order_id>/assign', methods=['PUT'])
+def assign_work_order(work_order_id):
+    """Assigner un bon de travail à un technicien"""
+    try:
+        data = request.get_json()
+        technician_id = data.get('technician_id')
+        
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'error': 'Database connection failed'}), 500
+        
+        cursor = conn.cursor()
+        
+        # Vérifier que le technicien existe
+        if technician_id:
+            cursor.execute("SELECT name FROM users WHERE id = %s", (technician_id,))
+            technician = cursor.fetchone()
+            if not technician:
+                cursor.close()
+                conn.close()
+                return jsonify({'error': 'Technician not found'}), 404
+        
+        # Mettre à jour l'assignment
+        cursor.execute("""
+            UPDATE work_orders 
+            SET assigned_technician_id = %s, 
+                status = CASE 
+                    WHEN %s IS NOT NULL AND status = 'pending' THEN 'assigned'
+                    WHEN %s IS NULL THEN 'pending'
+                    ELSE status 
+                END,
+                updated_at = %s
+            WHERE id = %s
+        """, (technician_id, technician_id, technician_id, datetime.now(), work_order_id))
+        
+        # Enregistrer dans l'historique
+        user_id = session.get('user_id', 1)
+        notes = f"Assigné à {technician['name']}" if technician_id else "Assignment retiré"
+        
+        cursor.execute("""
+            INSERT INTO kanban_history (task_id, old_status, new_status, 
+                                      moved_by, move_reason)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (work_order_id, 'assignment_change', 'assignment_change', 
+              user_id, notes))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'work_order_id': work_order_id,
+            'technician_id': technician_id,
+            'technician_name': technician['name'] if technician_id else None
+        })
+        
+    except Exception as e:
+        log_error(f"Erreur assignment work order: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@bp.route('/technicians', methods=['GET'])
+def get_technicians():
+    """Récupérer la liste des techniciens"""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'error': 'Database connection failed'}), 500
+        
+        cursor = conn.cursor()
+        
+        # Try technicians table first, fallback to users table
+        try:
+            cursor.execute("""
+                SELECT id, CONCAT(first_name, ' ', last_name) as name, email, phone
+                FROM technicians 
+                WHERE status = 'active'
+                ORDER BY first_name, last_name
+            """)
+            technicians = cursor.fetchall()
+        except:
+            # Fallback to users table if technicians table doesn't exist
+            cursor.execute("""
+                SELECT id, name, email, department as phone, role
+                FROM users 
+                WHERE role IN ('technician', 'admin', 'supervisor')
+                ORDER BY name
+            """)
+            technicians = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify(technicians)
+        
+    except Exception as e:
+        log_error(f"Erreur récupération techniciens: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@bp.route('/technicians/<int:id>/stats', methods=['GET'])
+def technician_stats(id):
+    """Récupérer les statistiques d'un technicien spécifique"""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'error': 'Database connection failed'}), 500
+        
+        cursor = conn.cursor()
+        
+        # Statistiques des bons de travail assignés à ce technicien
+        cursor.execute("""
+            SELECT 
+                COUNT(*) as total_interventions,
+                COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_interventions,
+                COUNT(CASE WHEN status = 'in_progress' THEN 1 END) as in_progress_interventions,
+                COUNT(CASE WHEN status = 'assigned' THEN 1 END) as assigned_interventions,
+                AVG(CASE WHEN status = 'completed' AND estimated_duration > 0 THEN estimated_duration END) as avg_duration
+            FROM work_orders 
+            WHERE technician_id = %s OR technician_name = (
+                SELECT CONCAT(first_name, ' ', last_name) FROM technicians WHERE id = %s
+                UNION 
+                SELECT name FROM users WHERE id = %s
+                LIMIT 1
+            )
+        """, (id, id, id))
+        
+        stats = cursor.fetchone()
+        
+        # Calcul du taux de completion
+        total = stats['total_interventions'] if stats['total_interventions'] else 0
+        completed = stats['completed_interventions'] if stats['completed_interventions'] else 0
+        completion_rate = round((completed / total * 100), 1) if total > 0 else 0
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'total_interventions': total,
+            'completed_interventions': completed,
+            'in_progress_interventions': stats['in_progress_interventions'] or 0,
+            'assigned_interventions': stats['assigned_interventions'] or 0,
+            'completion_rate': completion_rate,
+            'avg_duration': round(stats['avg_duration'], 1) if stats['avg_duration'] else 0
+        })
+        
+    except Exception as e:
+        log_error(f"Erreur lors de la récupération du technicien {id}: {e}")
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
+
+@bp.route('/technicians/<int:technician_id>/schedule-events', methods=['GET'])
+def technician_schedule_events(technician_id):
+    """Récupérer les événements du planning pour un technicien spécifique"""
+    try:
+        start_date = request.args.get('start')
+        end_date = request.args.get('end')
+        
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'error': 'Database connection failed'}), 500
+        
+        cursor = conn.cursor()
+        
+        # Requête pour récupérer les bons de travail assignés au technicien dans la période
+        # Utiliser les vrais noms de colonnes de la table work_orders
+        query = """
+            SELECT 
+                id,
+                claim_number,
+                customer_name,
+                description,
+                status,
+                priority,
+                created_at,
+                scheduled_date,
+                estimated_duration,
+                assigned_technician_name as technician_name,
+                assigned_technician_id
+            FROM work_orders 
+            WHERE assigned_technician_id = %s
+        """
+        
+        params = [technician_id]
+        
+        # Ajouter les filtres de date si fournis
+        if start_date:
+            query += " AND (scheduled_date >= %s OR (scheduled_date IS NULL AND created_at >= %s))"
+            params.extend([start_date, start_date])
+        
+        if end_date:
+            query += " AND (scheduled_date <= %s OR (scheduled_date IS NULL AND created_at <= %s))"
+            params.extend([end_date, end_date])
+        
+        query += " ORDER BY COALESCE(scheduled_date, created_at)"
+        
+        cursor.execute(query, params)
+        work_orders = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify(work_orders)
+        
+    except Exception as e:
+        log_error(f"Erreur lors de la récupération des événements du technicien {technician_id}: {e}")
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
+
+@bp.route('/work-orders/<int:work_order_id>', methods=['GET'])
+def get_work_order(work_order_id):
+    """Récupérer les détails d'un bon de travail spécifique"""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'error': 'Database connection failed'}), 500
+        
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT 
+                id,
+                claim_number,
+                customer_name,
+                description,
+                status,
+                priority,
+                created_at,
+                scheduled_date,
+                estimated_duration,
+                technician_name,
+                technician_id
+            FROM work_orders 
+            WHERE id = %s
+        """, (work_order_id,))
+        
+        work_order = cursor.fetchone()
+        
+        cursor.close()
+        conn.close()
+        
+        if not work_order:
+            return jsonify({'error': 'Work order not found', 'success': False}), 404
+        
+        return jsonify({'success': True, 'work_order': work_order})
+        
+    except Exception as e:
+        log_error(f"Erreur lors de la récupération du bon de travail {work_order_id}: {e}")
+        return jsonify({'error': f'Database error: {str(e)}', 'success': False}), 500
+
+@bp.route('/kanban/stats', methods=['GET'])
+def get_kanban_stats():
+    """Statistiques pour le tableau Kanban"""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'error': 'Database connection failed'}), 500
+        
+        cursor = conn.cursor()
+        
+        # Statistiques par statut
+        cursor.execute("""
+            SELECT status, COUNT(*) as count
+            FROM work_orders
+            GROUP BY status
+        """)
+        status_stats = {row['status']: row['count'] for row in cursor.fetchall()}
+        
+        # Statistiques par priorité
+        cursor.execute("""
+            SELECT priority, COUNT(*) as count
+            FROM work_orders
+            GROUP BY priority
+        """)
+        priority_stats = {row['priority']: row['count'] for row in cursor.fetchall()}
+        
+        # Statistiques par technicien
+        cursor.execute("""
+            SELECT u.name, COUNT(wo.id) as count
+            FROM users u
+            LEFT JOIN work_orders wo ON u.id = wo.assigned_technician_id
+            WHERE u.role IN ('technician', 'admin', 'supervisor')
+            GROUP BY u.id, u.name
+            ORDER BY count DESC
+        """)
+        technician_stats = {row['name']: row['count'] for row in cursor.fetchall()}
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'status_stats': status_stats,
+            'priority_stats': priority_stats,
+            'technician_stats': technician_stats
+        })
+        
+    except Exception as e:
+        log_error(f"Erreur récupération stats Kanban: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@bp.route('/kanban-data', methods=['GET'])
+def get_kanban_data():
+    """Récupérer les données formatées pour le Kanban"""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'error': 'Database connection failed'}), 500
+        
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        
+        # Requête pour récupérer tous les bons de travail avec les infos complètes
+        query = """
+            SELECT wo.*, 
+                   c.name as customer_name,
+                   t.name as technician_name,
+                   DATE_FORMAT(wo.created_at, '%Y-%m-%d %H:%i') as formatted_created_at,
+                   DATE_FORMAT(wo.scheduled_date, '%Y-%m-%d') as formatted_scheduled_date
+            FROM work_orders wo
+            LEFT JOIN customers c ON wo.customer_id = c.id
+            LEFT JOIN users t ON wo.assigned_technician_id = t.id
+            ORDER BY 
+                CASE 
+                    WHEN wo.priority = 'urgent' THEN 4
+                    WHEN wo.priority = 'high' THEN 3
+                    WHEN wo.priority = 'medium' THEN 2
+                    ELSE 1
+                END DESC, wo.created_at DESC
+        """
+        
+        cursor.execute(query)
+        work_orders = cursor.fetchall()
+        
+        # Organiser par statut pour le Kanban
+        kanban_data = {
+            'draft': [],
+            'pending': [],
+            'assigned': [],
+            'in_progress': [],
+            'completed': [],
+            'cancelled': []
+        }
+        
+        for wo in work_orders:
+            # Assurer que le statut existe dans notre structure
+            status = wo.get('status', 'pending')
+            if status not in kanban_data:
+                status = 'pending'
+            
+            kanban_data[status].append({
+                'id': wo['id'],
+                'claim_number': wo.get('claim_number', f"WO-{wo['id']}"),
+                'customer_name': wo.get('customer_name', 'Client inconnu'),
+                'technician_name': wo.get('technician_name', None),
+                'description': wo.get('description', ''),
+                'priority': wo.get('priority', 'medium'),
+                'status': status,
+                'created_at': wo.get('formatted_created_at', ''),
+                'scheduled_date': wo.get('formatted_scheduled_date', ''),
+                'estimated_duration': wo.get('estimated_duration', 0)
+            })
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'kanban_data': kanban_data,
+            'total_count': len(work_orders),
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        log_error(f"Erreur récupération données Kanban: {e}")
+        return jsonify({
+            'success': False,
+            'error': 'Internal server error',
+            'message': str(e)
+        }), 500
+
+@bp.route('/dashboard-stats', methods=['GET'])
+def dashboard_stats():
+    """Récupérer les statistiques du dashboard"""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            log_error("Database connection failed in dashboard_stats")
+            return jsonify({'error': 'Database connection failed'}), 500
+        
+        cursor = conn.cursor()
+        
+        # Statistiques des bons de travail avec gestion d'erreur
+        try:
+            cursor.execute("""
+                SELECT status, COUNT(*) as count 
+                FROM work_orders 
+                GROUP BY status
+            """)
+            work_orders_result = cursor.fetchall()
+            work_orders_stats = {row['status']: row['count'] for row in work_orders_result}
+        except Exception as e:
+            log_error(f"Error fetching work_orders stats: {e}")
+            work_orders_stats = {}
+        
+        # Statistiques des techniciens avec gestion d'erreur
+        try:
+            cursor.execute("""
+                SELECT 
+                    CASE 
+                        WHEN status IS NULL OR status = '' THEN 'available'
+                        ELSE status 
+                    END as status, 
+                    COUNT(*) as count 
+                FROM users 
+                WHERE role = 'technician' AND is_active = 1
+                GROUP BY status
+            """)
+            technicians_result = cursor.fetchall()
+            technicians_stats = {row['status']: row['count'] for row in technicians_result}
+        except Exception as e:
+            log_error(f"Error fetching technicians stats: {e}")
+            technicians_stats = {}
+        
+        # Total des bons de travail
+        try:
+            cursor.execute("SELECT COUNT(*) as total FROM work_orders")
+            total_work_orders = cursor.fetchone()['total']
+        except Exception as e:
+            log_error(f"Error fetching total work_orders: {e}")
+            total_work_orders = 0
+        
+        # Total des techniciens actifs
+        try:
+            cursor.execute("SELECT COUNT(*) as total FROM users WHERE role = 'technician' AND is_active = 1")
+            total_technicians = cursor.fetchone()['total']
+        except Exception as e:
+            log_error(f"Error fetching total technicians: {e}")
+            total_technicians = 0
+        
+        # Total des clients
+        try:
+            cursor.execute("SELECT COUNT(*) as total FROM customers")
+            total_customers = cursor.fetchone()['total']
+        except Exception as e:
+            log_error(f"Error fetching total customers: {e}")
+            total_customers = 0
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'work_orders': {
+                'draft': work_orders_stats.get('draft', 0),
+                'pending': work_orders_stats.get('pending', 0),
+                'assigned': work_orders_stats.get('assigned', 0),
+                'in_progress': work_orders_stats.get('in_progress', 0),
+                'completed': work_orders_stats.get('completed', 0),
+                'cancelled': work_orders_stats.get('cancelled', 0),
+                'total': total_work_orders
+            },
+            'technicians': {
+                'available': technicians_stats.get('available', 0),
+                'busy': technicians_stats.get('busy', 0),
+                'break': technicians_stats.get('break', 0),
+                'offline': technicians_stats.get('offline', 0),
+                'total': total_technicians
+            },
+            'customers': {
+                'total': total_customers
+            }
+        })
+        
+    except Exception as e:
+        log_error(f"Error in dashboard_stats endpoint: {e}")
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
+
+@bp.route('/online-users', methods=['GET'])
+def online_users():
+    """Récupérer la liste des utilisateurs en ligne"""
+    try:
+        # Pour l'instant, retourner une liste simulée
+        # À implémenter avec un vrai système de présence plus tard
+        return jsonify({
+            'users': [],
+            'count': 0,
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        log_error(f"Error fetching online users: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@bp.route('/presence-heartbeat', methods=['POST'])
+def presence_heartbeat():
+    """Recevoir un signal de présence d'un utilisateur"""
+    try:
+        # Pour l'instant, juste confirmer la réception
+        # À implémenter avec un vrai système de présence plus tard
+        return jsonify({
+            'status': 'received',
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        log_error(f"Error processing presence heartbeat: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
 @bp.route('/health')
 def health_check():
     """Vérification de l'état de l'API"""
@@ -50,1231 +969,23 @@ def health_check():
         if conn:
             cursor = conn.cursor()
             cursor.execute("SELECT 1")
-            cursor.fetchone()
             cursor.close()
             conn.close()
-            db_status = 'connected'
+            return jsonify({
+                'status': 'healthy',
+                'database': 'connected',
+                'timestamp': datetime.now().isoformat()
+            })
         else:
-            db_status = 'disconnected'
-        
+            return jsonify({
+                'status': 'unhealthy',
+                'database': 'disconnected',
+                'timestamp': datetime.now().isoformat()
+            }), 503
+    except Exception as e:
+        log_error(f"Health check error: {e}")
         return jsonify({
-            'status': 'healthy',
-            'timestamp': datetime.now().isoformat(),
-            'database': db_status,
-            'version': '1.0.0'
-        })
-    except Exception as e:
-        log_error(f"Erreur lors de la vérification de santé: {e}")
-        return jsonify({
-            'status': 'unhealthy',
-            'timestamp': datetime.now().isoformat(),
-            'error': str(e)
-        }), 503
-
-@bp.route('/work_orders', methods=['GET'])
-@require_auth
-def get_work_orders():
-    """Récupérer la liste des bons de travail"""
-    try:
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({'error': 'Database connection failed'}), 500
-
-        cursor = conn.cursor()
-
-        # Paramètres de filtrage
-        status = request.args.get('status')
-        priority = request.args.get('priority')
-        technician_id = request.args.get('technician_id')
-        limit = min(int(request.args.get('limit', 50)), 100)  # Max 100
-        offset = int(request.args.get('offset', 0))
-
-        # Construction de la requête
-        query = """
-            SELECT 
-                w.id,
-                w.claim_number,
-                w.customer_name,
-                w.customer_address,
-                w.customer_phone,
-                w.description,
-                w.priority,
-                w.status,
-                w.estimated_duration,
-                w.scheduled_date,
-                w.created_at,
-                w.updated_at,
-                u.name as technician_name,
-                u.email as technician_email
-            FROM work_orders w
-            LEFT JOIN users u ON w.assigned_technician_id = u.id
-            WHERE 1=1
-        """
-
-        params = []
-
-        if status:
-            query += " AND w.status = %s"
-            params.append(status)
-
-        if priority:
-            query += " AND w.priority = %s"
-            params.append(priority)
-
-        if technician_id:
-            query += " AND w.assigned_technician_id = %s"
-            params.append(technician_id)
-
-        query += " ORDER BY w.created_at DESC LIMIT %s OFFSET %s"
-        params.extend([limit, offset])
-
-        cursor.execute(query, params)
-        work_orders = cursor.fetchall()
-
-        # Conversion des dates en ISO format
-        for order in work_orders:
-            for key, value in order.items():
-                if isinstance(value, datetime):
-                    order[key] = value.isoformat()
-
-        # Compter le total pour la pagination
-        count_query = "SELECT COUNT(*) as total FROM work_orders w WHERE 1=1"
-        count_params = []
-
-        if status:
-            count_query += " AND w.status = %s"
-            count_params.append(status)
-
-        if priority:
-            count_query += " AND w.priority = %s"
-            count_params.append(priority)
-
-        if technician_id:
-            count_query += " AND w.assigned_technician_id = %s"
-            count_params.append(technician_id)
-
-        cursor.execute(count_query, count_params)
-        total = cursor.fetchone()['total']
-
-        cursor.close()
-        conn.close()
-
-        return jsonify({
-            'work_orders': work_orders,
-            'pagination': {
-                'total': total,
-                'limit': limit,
-                'offset': offset,
-                'has_next': offset + limit < total
-            }
-        })
-
-    except Exception as e:
-        log_error(f"Erreur API lors de la récupération des bons de travail: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-
-@bp.route('/dashboard', methods=['GET'])
-@require_auth
-def get_dashboard_stats():
-    """Renvoie les statistiques principales pour le tableau de bord en JSON"""
-    try:
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({'error': 'Database connection failed'}), 500
-
-        cursor = conn.cursor()
-
-        # active_orders
-        cursor.execute("SELECT COUNT(*) AS active_orders FROM work_orders WHERE status = 'in_progress'")
-        active_row = cursor.fetchone() or {}
-
-        # completed_today (prefer completion_date, fallback to updated_at)
-        cursor.execute(
-            """
-            SELECT COUNT(*) AS completed_today
-            FROM work_orders
-            WHERE status = 'completed'
-            AND (
-                (completion_date IS NOT NULL AND DATE(completion_date) = CURDATE())
-                OR DATE(updated_at) = CURDATE()
-            )
-            """
-        )
-        completed_row = cursor.fetchone() or {}
-
-        # urgent_orders
-        cursor.execute("SELECT COUNT(*) AS urgent_orders FROM work_orders WHERE priority = 'urgent' AND status NOT IN ('completed','cancelled')")
-        urgent_row = cursor.fetchone() or {}
-
-        # active_technicians (case-insensitive role match, fallback to status if is_active missing)
-        cursor.execute("""
-            SELECT COUNT(*) AS active_technicians
-            FROM users
-            WHERE LOWER(COALESCE(role, '')) = 'technician'
-                AND (is_active = 1 OR LOWER(COALESCE(status, '')) = 'active')
-        """)
-        tech_row = cursor.fetchone() or {}
-        cursor.close()
-        conn.close()
-
-        return jsonify({
-            'active_orders': int(active_row.get('active_orders') or 0),
-            'completed_today': int(completed_row.get('completed_today') or 0),
-            'urgent_orders': int(urgent_row.get('urgent_orders') or 0),
-            'active_technicians': int(tech_row.get('active_technicians') or 0)
-        })
-
-    except Exception as e:
-        log_error(f"Erreur API lors de la récupération des stats dashboard: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-
-@bp.route('/dashboard_session', methods=['GET'])
-def get_dashboard_stats_session():
-    """Version session (sans API key) pour le tableau de bord interne."""
-    try:
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({'error': 'Database connection failed'}), 500
-
-        cursor = conn.cursor()
-
-        cursor.execute("SELECT COUNT(*) AS active_orders FROM work_orders WHERE status = 'in_progress'")
-        active_row = cursor.fetchone() or {}
-
-        cursor.execute(
-            """
-            SELECT COUNT(*) AS completed_today
-            FROM work_orders
-            WHERE status = 'completed'
-            AND (
-                (completion_date IS NOT NULL AND DATE(completion_date) = CURDATE())
-                OR DATE(updated_at) = CURDATE()
-            )
-            """
-        )
-        completed_row = cursor.fetchone() or {}
-
-        cursor.execute("SELECT COUNT(*) AS urgent_orders FROM work_orders WHERE priority = 'urgent' AND status NOT IN ('completed','cancelled')")
-        urgent_row = cursor.fetchone() or {}
-
-        # Online technicians via presence table (fallback to users table if presence empty)
-        try:
-            cursor.execute("""
-                SELECT COUNT(*) AS online_count
-                FROM user_presence up JOIN users u ON u.id=up.user_id
-                WHERE u.role='technician' AND up.last_seen >= DATE_SUB(NOW(), INTERVAL 60 SECOND)
-            """)
-            online_row = cursor.fetchone() or {}
-            active_technicians = int(online_row.get('online_count') or 0)
-        except Exception:
-            cursor.execute("""
-                SELECT COUNT(*) AS active_technicians
-                FROM users
-                WHERE LOWER(COALESCE(role, '')) = 'technician'
-                    AND (is_active = 1 OR LOWER(COALESCE(status, '')) = 'active')
-            """)
-            r = cursor.fetchone() or {}
-            active_technicians = int(r.get('active_technicians') or 0)
-
-        cursor.close()
-        conn.close()
-
-        return jsonify({
-            'active_orders': int(active_row.get('active_orders') or 0),
-            'completed_today': int(completed_row.get('completed_today') or 0),
-            'urgent_orders': int(urgent_row.get('urgent_orders') or 0),
-            'active_technicians': active_technicians
-        })
-    except Exception as e:
-        log_error(f"Erreur API dashboard_session: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-@bp.route('/work_orders/<int:work_order_id>', methods=['GET'])
-@require_auth
-def get_work_order(work_order_id):
-    """Récupérer un bon de travail spécifique"""
-    try:
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({'error': 'Database connection failed'}), 500
-
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT 
-                w.*,
-                u.name as technician_name,
-                u.email as technician_email,
-                u.phone as technician_phone,
-                c.name as customer_name,
-                c.company as customer_company,
-                c.email as customer_email
-            FROM work_orders w
-            LEFT JOIN users u ON w.assigned_technician_id = u.id
-            LEFT JOIN customers c ON w.customer_id = c.id
-            WHERE w.id = %s
-        """, (work_order_id,))
-
-        work_order = cursor.fetchone()
-
-        if not work_order:
-            cursor.close()
-            conn.close()
-            return jsonify({'error': 'Work order not found'}), 404
-
-        # Conversion des dates
-        for key, value in work_order.items():
-            if isinstance(value, datetime):
-                work_order[key] = value.isoformat()
-
-        cursor.close()
-        conn.close()
-
-        return jsonify({'work_order': work_order})
-
-    except Exception as e:
-        log_error(f"Erreur API lors de la récupération du bon de travail {work_order_id}: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-@bp.route('/work_orders/<int:work_order_id>/status', methods=['PUT'])
-@require_auth
-def update_work_order_status(work_order_id):
-    """Mettre à jour le statut d'un bon de travail"""
-    try:
-        data = request.get_json()
-        if not data or 'status' not in data:
-            return jsonify({'error': 'Status is required'}), 400
-        
-        new_status = data['status']
-        valid_statuses = ['pending', 'assigned', 'in_progress', 'completed', 'cancelled', 'on_hold']
-        
-        if new_status not in valid_statuses:
-            return jsonify({'error': 'Invalid status', 'valid_statuses': valid_statuses}), 400
-        
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({'error': 'Database connection failed'}), 500
-        
-        cursor = conn.cursor()
-        cursor.execute("""
-            UPDATE work_orders 
-            SET status = %s, updated_at = NOW()
-            WHERE id = %s
-        """, (new_status, work_order_id))
-        
-        if cursor.rowcount == 0:
-            cursor.close()
-            conn.close()
-            return jsonify({'error': 'Work order not found'}), 404
-        
-        conn.commit()
-        cursor.close()
-        conn.close()
-        
-        log_info(f"API: Statut du bon de travail {work_order_id} mis à jour vers {new_status}")
-        
-        return jsonify({
-            'success': True,
-            'work_order_id': work_order_id,
-            'new_status': new_status,
-            'updated_at': datetime.now().isoformat()
-        })
-        
-    except Exception as e:
-        log_error(f"Erreur API lors de la mise à jour du statut du bon de travail {work_order_id}: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-@bp.route('/work_orders', methods=['POST'])
-@require_auth
-def create_work_order():
-    """Créer un nouveau bon de travail"""
-    try:
-        data = request.get_json()
-        if not data:
-            return jsonify({'error': 'JSON data required'}), 400
-        
-        # Validation des champs requis
-        required_fields = ['customer_name', 'description']
-        for field in required_fields:
-            if not data.get(field):
-                return jsonify({'error': f'{field} is required'}), 400
-        
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({'error': 'Database connection failed'}), 500
-        
-        cursor = conn.cursor()
-        
-        # Générer un numéro de réclamation unique
-        cursor.execute("SELECT COUNT(*) as count FROM work_orders WHERE DATE(created_at) = CURDATE()")
-        daily_count = cursor.fetchone()[0] + 1
-        claim_number = f"WO-{datetime.now().strftime('%Y%m%d')}-{daily_count:03d}"
-        
-        cursor.execute("""
-            INSERT INTO work_orders (
-                claim_number, customer_name, customer_address, customer_phone,
-                description, priority, status, estimated_duration, scheduled_date
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """, (
-            claim_number,
-            data.get('customer_name'),
-            data.get('customer_address', ''),
-            data.get('customer_phone', ''),
-            data.get('description'),
-            data.get('priority', 'medium'),
-            data.get('status', 'pending'),
-            data.get('estimated_duration'),
-            data.get('scheduled_date')
-        ))
-        
-        work_order_id = cursor.lastrowid
-        conn.commit()
-        cursor.close()
-        conn.close()
-        
-        log_info(f"API: Nouveau bon de travail créé: {claim_number} (ID: {work_order_id})")
-        
-        return jsonify({
-            'success': True,
-            'work_order_id': work_order_id,
-            'claim_number': claim_number,
-            'created_at': datetime.now().isoformat()
-        }), 201
-        
-    except Exception as e:
-        log_error(f"Erreur API lors de la création du bon de travail: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-@bp.route('/technicians', methods=['GET'])
-@require_auth
-def get_technicians():
-    """Récupérer la liste des techniciens"""
-    try:
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({'error': 'Database connection failed'}), 500
-
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT 
-                u.id,
-                u.name,
-                u.email,
-                u.role,
-                u.is_active,
-                COUNT(w.id) as active_orders,
-                COALESCE(SUM(w.estimated_duration), 0) as total_workload_minutes
-            FROM users u
-            LEFT JOIN work_orders w ON u.id = w.assigned_technician_id 
-                AND w.status IN ('assigned', 'in_progress')
-            WHERE u.role IN ('technician', 'supervisor', 'manager') 
-            AND u.is_active = TRUE
-            GROUP BY u.id, u.name, u.email, u.role, u.is_active
-            ORDER BY u.name ASC
-        """)
-
-        technicians = cursor.fetchall()
-
-        # Ajouter des informations calculées
-        for tech in technicians:
-            tech['workload_hours'] = round(tech['total_workload_minutes'] / 60, 1)
-            tech['availability_status'] = 'available' if tech['active_orders'] < 3 else 'busy'
-
-        cursor.close()
-        conn.close()
-
-        return jsonify({'technicians': technicians})
-
-    except Exception as e:
-        log_error(f"Erreur API lors de la récupération des techniciens: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-
-@bp.route('/technicians/<int:id>/stats', methods=['GET'])
-def technician_stats(id):
-    """Récupérer des statistiques ciblées pour un technicien (utilisé par l'UI interne)."""
-    try:
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({'error': 'Database connection failed'}), 500
-
-        cursor = conn.cursor(pymysql.cursors.DictCursor)
-
-        # Nombre total d'interventions et complétées
-        cursor.execute(
-            """
-            SELECT
-                COUNT(*) as total,
-                SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed
-            FROM work_orders
-            WHERE assigned_technician_id = %s
-            """,
-            (id,),
-        )
-        row = cursor.fetchone() or {}
-        total = int(row.get('total') or 0)
-        completed = int(row.get('completed') or 0)
-        completion_rate = round((completed / total) * 100) if total > 0 else 0
-
-        # Charge actuelle (minutes) pour assigned/in_progress
-        cursor.execute(
-            "SELECT COALESCE(SUM(estimated_duration),0) as total_minutes FROM work_orders WHERE assigned_technician_id = %s AND status IN ('assigned','in_progress')",
-            (id,),
-        )
-        mm = cursor.fetchone() or {}
-        total_minutes = int(mm.get('total_minutes') or 0)
-
-        # Récupérer le plafond d'heures hebdomadaire si présent
-        cursor.execute("SELECT COALESCE(max_weekly_hours, max_hours, 40) as max_hours FROM users WHERE id = %s", (id,))
-        mh = cursor.fetchone() or {}
-        max_hours = float(mh.get('max_hours') or 40)
-
-        current_workload = 0
-        if max_hours and total_minutes:
-            current_workload = round((total_minutes / 60.0) / max_hours * 100)
-
-        # Pour l'instant, utiliser le taux de complétion comme proxy d'efficacité
-        efficiency_score = completion_rate
-
-        cursor.close()
-        conn.close()
-
-        return jsonify({
-            'total_interventions': total,
-            'completed_interventions': completed,
-            'completion_rate': completion_rate,
-            'current_workload': current_workload,
-            'efficiency_score': efficiency_score,
-        })
-
-    except Exception as e:
-        log_error(f"Erreur API technician_stats pour {id}: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-@bp.route('/customers', methods=['GET'])
-@require_auth
-def get_customers():
-    """Récupérer la liste des clients"""
-    try:
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({'error': 'Database connection failed'}), 500
-
-        cursor = conn.cursor()
-
-        # Paramètres de recherche
-        search = request.args.get('search', '').strip()
-        limit = min(int(request.args.get('limit', 50)), 100)
-        offset = int(request.args.get('offset', 0))
-
-        if search:
-            cursor.execute("""
-                SELECT id, name, company, email, phone, address, created_at
-                FROM customers 
-                WHERE is_active = TRUE 
-                AND (name LIKE %s OR company LIKE %s OR email LIKE %s)
-                ORDER BY name ASC
-                LIMIT %s OFFSET %s
-            """, (f"%{search}%", f"%{search}%", f"%{search}%", limit, offset))
-        else:
-            cursor.execute("""
-                SELECT id, name, company, email, phone, address, created_at
-                FROM customers 
-                WHERE is_active = TRUE
-                ORDER BY name ASC
-                LIMIT %s OFFSET %s
-            """, (limit, offset))
-
-        customers = cursor.fetchall()
-
-        # Conversion des dates
-        for customer in customers:
-            for key, value in customer.items():
-                if isinstance(value, datetime):
-                    customer[key] = value.isoformat()
-
-        cursor.close()
-        conn.close()
-
-        return jsonify({'customers': customers})
-
-    except Exception as e:
-        log_error(f"Erreur API lors de la récupération des clients: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-@bp.route('/stats', methods=['GET'])
-@require_auth
-def get_stats():
-    """Récupérer les statistiques générales"""
-    try:
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({'error': 'Database connection failed'}), 500
-
-        cursor = conn.cursor()
-
-        stats = {}
-
-        # Statistiques des bons de travail
-        cursor.execute("""
-            SELECT 
-                COUNT(*) as total,
-                SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
-                SUM(CASE WHEN status = 'assigned' THEN 1 ELSE 0 END) as assigned,
-                SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as in_progress,
-                SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
-                SUM(CASE WHEN priority = 'urgent' THEN 1 ELSE 0 END) as urgent
-            FROM work_orders
-        """)
-
-        work_order_stats = cursor.fetchone()
-        stats['work_orders'] = work_order_stats
-
-        # Statistiques des techniciens
-        cursor.execute("""
-            SELECT 
-                COUNT(*) as total_technicians,
-                SUM(CASE WHEN role = 'technician' THEN 1 ELSE 0 END) as technicians,
-                SUM(CASE WHEN role = 'supervisor' THEN 1 ELSE 0 END) as supervisors,
-                SUM(CASE WHEN role = 'manager' THEN 1 ELSE 0 END) as managers
-            FROM users 
-            WHERE role IN ('technician', 'supervisor', 'manager') AND is_active = TRUE
-        """)
-
-        technician_stats = cursor.fetchone()
-        stats['technicians'] = technician_stats
-
-        # Statistiques des clients
-        cursor.execute("SELECT COUNT(*) as total_customers FROM customers WHERE is_active = TRUE")
-        customer_stats = cursor.fetchone()
-        stats['customers'] = customer_stats
-
-        cursor.close()
-        conn.close()
-
-        return jsonify({
-            'stats': stats,
+            'status': 'error',
+            'message': str(e),
             'timestamp': datetime.now().isoformat()
-        })
-
-    except Exception as e:
-        log_error(f"Erreur API lors de la récupération des statistiques: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-@bp.route('/trend_data', methods=['GET'])
-@require_auth
-def get_trend_data():
-    """Récupérer les données de tendance pour les graphiques"""
-    try:
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({'error': 'Database connection failed'}), 500
-
-        cursor = conn.cursor()
-
-        # Type de données demandé (par défaut: monthly)
-        data_type = request.args.get('type', 'monthly')
-
-        if data_type == 'monthly':
-            # Données mensuelles des 12 derniers mois
-            cursor.execute("""
-                SELECT 
-                    DATE_FORMAT(created_at, '%Y-%m') as period,
-                    COUNT(*) as count,
-                    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
-                    SUM(CASE WHEN priority = 'urgent' THEN 1 ELSE 0 END) as urgent
-                FROM work_orders 
-                WHERE created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
-                GROUP BY DATE_FORMAT(created_at, '%Y-%m')
-                ORDER BY period
-            """)
-        elif data_type == 'weekly':
-            # Données hebdomadaires des 8 dernières semaines
-            cursor.execute("""
-                SELECT 
-                    CONCAT(YEAR(created_at), '-W', LPAD(WEEK(created_at), 2, '0')) as period,
-                    COUNT(*) as count,
-                    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
-                    SUM(CASE WHEN priority = 'urgent' THEN 1 ELSE 0 END) as urgent
-                FROM work_orders 
-                WHERE created_at >= DATE_SUB(NOW(), INTERVAL 8 WEEK)
-                GROUP BY YEAR(created_at), WEEK(created_at)
-                ORDER BY period
-            """)
-        elif data_type == 'daily':
-            # Données quotidiennes des 30 derniers jours
-            cursor.execute("""
-                SELECT 
-                    DATE(created_at) as period,
-                    COUNT(*) as count,
-                    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
-                    SUM(CASE WHEN priority = 'urgent' THEN 1 ELSE 0 END) as urgent
-                FROM work_orders 
-                WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-                GROUP BY DATE(created_at)
-                ORDER BY period
-            """)
-        else:
-            return jsonify({'error': 'Invalid type parameter'}), 400
-
-        trend_data = cursor.fetchall()
-
-        # Formatage des données pour Chart.js
-        labels = []
-        total_data = []
-        completed_data = []
-        urgent_data = []
-
-        for row in trend_data:
-            labels.append(str(row['period']))
-            total_data.append(row['count'])
-            completed_data.append(row['completed'])
-            urgent_data.append(row['urgent'])
-
-        cursor.close()
-        conn.close()
-
-        return jsonify({
-            'labels': labels,
-            'datasets': [
-                {
-                    'label': 'Total',
-                    'data': total_data,
-                    'borderColor': 'rgb(75, 192, 192)',
-                    'backgroundColor': 'rgba(75, 192, 192, 0.2)',
-                    'tension': 0.1
-                },
-                {
-                    'label': 'Complétés',
-                    'data': completed_data,
-                    'borderColor': 'rgb(54, 162, 235)',
-                    'backgroundColor': 'rgba(54, 162, 235, 0.2)',
-                    'tension': 0.1
-                },
-                {
-                    'label': 'Urgents',
-                    'data': urgent_data,
-                    'borderColor': 'rgb(255, 99, 132)',
-                    'backgroundColor': 'rgba(255, 99, 132, 0.2)',
-                    'tension': 0.1
-                }
-            ],
-            'type': data_type,
-            'timestamp': datetime.now().isoformat()
-        })
-
-    except Exception as e:
-        log_error(f"Erreur API lors de la récupération des données de tendance: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-@bp.errorhandler(404)
-def api_not_found(error):
-    """Gestionnaire d'erreur 404 pour l'API"""
-    return jsonify({'error': 'Endpoint not found'}), 404
-
-@bp.errorhandler(405)
-def api_method_not_allowed(error):
-    """Gestionnaire d'erreur 405 pour l'API"""
-    return jsonify({'error': 'Method not allowed'}), 405
-
-@bp.errorhandler(500)
-def api_internal_error(error):
-    """Gestionnaire d'erreur 500 pour l'API"""
-    log_error(f"Erreur interne de l'API: {error}")
-    return jsonify({'error': 'Internal server error'}), 500
-
-# -------- Dashboard Enhancements: Presence, Kanban, and Chat (session-auth) --------
-
-@bp.route('/presence/heartbeat', methods=['POST'])
-def presence_heartbeat():
-    """Update the current user's presence (session-based)."""
-    try:
-        user_id = session.get('user_id')
-        if not user_id:
-            return jsonify({'error': 'Not authenticated'}), 401
-
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({'error': 'Database connection failed'}), 500
-        cursor = conn.cursor()
-
-        # Ensure table exists
-        cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS user_presence (
-                user_id INT PRIMARY KEY,
-                status VARCHAR(32) DEFAULT 'online',
-                last_seen DATETIME NOT NULL,
-                last_ip VARCHAR(45) NULL,
-                user_agent VARCHAR(255) NULL,
-                INDEX (last_seen)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-            """
-        )
-
-        cursor.execute(
-            """
-            INSERT INTO user_presence (user_id, status, last_seen, last_ip, user_agent)
-            VALUES (%s, 'online', NOW(), %s, %s)
-            ON DUPLICATE KEY UPDATE status = VALUES(status), last_seen = VALUES(last_seen), last_ip = VALUES(last_ip), user_agent = VALUES(user_agent)
-            """,
-            (user_id, request.remote_addr, (request.headers.get('User-Agent') or '')[:255])
-        )
-        conn.commit()
-
-        # Return quick summary
-        cursor.execute("""
-            SELECT COUNT(*) AS online_count
-            FROM user_presence
-            WHERE last_seen >= DATE_SUB(NOW(), INTERVAL 60 SECOND)
-        """)
-        online_count = int((cursor.fetchone() or {}).get('online_count') or 0)
-
-        cursor.close()
-        conn.close()
-        return jsonify({'ok': True, 'online_count': online_count})
-    except Exception as e:
-        log_error(f"Erreur heartbeat presence: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-
-@bp.route('/presence/online', methods=['GET'])
-def presence_online():
-    """Return currently online users based on recent heartbeat."""
-    try:
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({'error': 'Database connection failed'}), 500
-        cursor = conn.cursor()
-
-        # Join with users table for names/roles
-        cursor.execute(
-            """
-            SELECT u.id, u.name, u.email, u.role, up.last_seen
-            FROM user_presence up
-            JOIN users u ON u.id = up.user_id
-            WHERE up.last_seen >= DATE_SUB(NOW(), INTERVAL 60 SECOND)
-            ORDER BY u.name ASC
-            """
-        )
-        users = cursor.fetchall() or []
-        cursor.close()
-        conn.close()
-        # Normalize datetimes
-        from datetime import datetime as _dt
-        for u in users:
-            if isinstance(u.get('last_seen'), _dt):
-                u['last_seen'] = u['last_seen'].isoformat()
-        return jsonify({'users': users})
-    except Exception as e:
-        log_error(f"Erreur presence_online: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-
-@bp.route('/kanban', methods=['GET'])
-def kanban_data():
-    """Return work orders grouped by status for Kanban board."""
-    try:
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({'error': 'Database connection failed'}), 500
-        cursor = conn.cursor()
-
-        # Fetch recent items per status
-        cursor.execute(
-            """
-            SELECT w.id, w.claim_number, w.customer_name, w.priority, w.status, w.updated_at,
-                   u.name AS technician_name
-            FROM work_orders w
-            LEFT JOIN users u ON w.assigned_technician_id = u.id
-            ORDER BY FIELD(w.status,'pending','assigned','in_progress','on_hold','completed','cancelled'),
-                     FIELD(w.priority,'urgent','high','medium','low'), w.updated_at DESC
-            LIMIT 400
-            """
-        )
-        rows = cursor.fetchall() or []
-        cursor.close()
-        conn.close()
-
-        columns = {
-            'pending': [],
-            'assigned': [],
-            'in_progress': [],
-            'on_hold': [],
-            'completed': [],
-            'cancelled': []
-        }
-        from datetime import datetime as _dt
-        for r in rows:
-            # normalize dates
-            if isinstance(r.get('updated_at'), _dt):
-                r['updated_at'] = r['updated_at'].isoformat()
-            if r.get('status') in columns:
-                columns[r['status']].append(r)
-        return jsonify({'columns': columns})
-    except Exception as e:
-        log_error(f"Erreur kanban_data: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-
-@bp.route('/chat/history', methods=['GET'])
-def chat_history():
-    """Return last N chat messages for the global team room."""
-    try:
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({'error': 'Database connection failed'}), 500
-        cursor = conn.cursor()
-
-        # Ensure table exists
-        cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS chat_messages (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                user_id INT NULL,
-                message TEXT NOT NULL,
-                is_bot TINYINT(1) DEFAULT 0,
-                channel_type VARCHAR(64) DEFAULT 'global',
-                channel_id INT NULL,
-                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                INDEX(created_at),
-                INDEX(is_bot),
-                INDEX(channel_type),
-                INDEX(channel_id)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-            """
-        )
-
-        # support optional channel filtering
-        channel_type = request.args.get('channel_type') or 'global'
-        channel_id = request.args.get('channel_id', type=int)
-        since_id = request.args.get('since_id', type=int)
-        log_info(f"chat_history request: channel_type={channel_type} channel_id={channel_id} since_id={since_id}")
-        params = []
-        where = "WHERE 1=1"
-        if channel_type:
-            where += " AND m.channel_type = %s"
-            params.append(channel_type)
-        if channel_id:
-            where += " AND m.channel_id = %s"
-            params.append(channel_id)
-        if since_id:
-            params = [since_id] + params
-            cursor.execute("SELECT m.*, u.name as user_name FROM chat_messages m LEFT JOIN users u ON m.user_id=u.id WHERE m.id > %s " + (" AND m.channel_type = %s" if channel_type else "") + (" AND m.channel_id = %s" if channel_id else "") + " ORDER BY m.id ASC LIMIT 200", params)
-        else:
-            # latest N messages filtered by channel
-            q = "SELECT m.*, u.name as user_name FROM chat_messages m LEFT JOIN users u ON m.user_id=u.id " + where + " ORDER BY m.id DESC LIMIT 50"
-            cursor.execute(q, params)
-        rows = cursor.fetchall() or []
-        rows = list(reversed(rows)) if not since_id else rows
-
-        # normalize
-        from datetime import datetime as _dt
-        for r in rows:
-            if isinstance(r.get('created_at'), _dt):
-                r['created_at'] = r['created_at'].isoformat()
-
-        cursor.close()
-        conn.close()
-        return jsonify({'messages': rows})
-    except Exception as e:
-        log_error(f"Erreur chat_history: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-
-@bp.route('/chat/send', methods=['POST'])
-def chat_send():
-    """Send a message to the global team room; optional echo to bot."""
-    try:
-        user_id = session.get('user_id')
-        if not user_id:
-            return jsonify({'error': 'Not authenticated'}), 401
-        data = request.get_json(silent=True) or {}
-        message = (data.get('message') or '').strip()
-        if not message:
-            return jsonify({'error': 'Message required'}), 400
-        channel_type = (data.get('channel_type') or 'global')
-        channel_id = data.get('channel_id')
-
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({'error': 'Database connection failed'}), 500
-        cursor = conn.cursor()
-
-        cursor.execute("INSERT INTO chat_messages (user_id, message, is_bot, channel_type, channel_id) VALUES (%s, %s, 0, %s, %s)", (user_id, message, channel_type, channel_id))
-        conn.commit()
-        msg_id = cursor.lastrowid
-
-        log_info(f"chat_send: user_id={user_id} id={msg_id} channel_type={channel_type} channel_id={channel_id} message_len={len(message)}")
-
-        cursor.close()
-        conn.close()
-        return jsonify({'ok': True, 'id': msg_id})
-    except Exception as e:
-        log_error(f"Erreur chat_send: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-
-@bp.route('/chat/assistant', methods=['POST'])
-def chat_assistant():
-    """Simple assistant using OpenAI if configured; stores bot reply."""
-    try:
-        import os, requests as _requests
-        api_key = os.environ.get('OPENAI_API_KEY')
-        user_id = session.get('user_id')
-        if not user_id:
-            return jsonify({'error': 'Not authenticated'}), 401
-        data = request.get_json(silent=True) or {}
-        message = (data.get('message') or '').strip()
-        if not message:
-            return jsonify({'error': 'Message required'}), 400
-        channel_type = (data.get('channel_type') or 'global')
-        channel_id = data.get('channel_id')
-
-        reply = None
-        if api_key:
-            try:
-                base = os.environ.get('OPENAI_API_BASE', 'https://api.openai.com')
-                payload = {
-                    'model': os.environ.get('OPENAI_CHAT_MODEL', 'gpt-4o-mini'),
-                    'messages': [
-                        {'role': 'system', 'content': 'Tu es un assistant ChronoTech qui aide les équipes à mieux communiquer et accélérer la gestion des bons. Réponds en français, bref et utile.'},
-                        {'role': 'user', 'content': message}
-                    ],
-                    'temperature': 0.2,
-                    'max_tokens': 600
-                }
-                headers = {'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'}
-                resp = _requests.post(f"{base}/v1/chat/completions", headers=headers, json=payload, timeout=60)
-                if resp.status_code == 200:
-                    jr = resp.json()
-                    choices = jr.get('choices') or []
-                    reply = (choices[0].get('message', {}) or {}).get('content') if choices else None
-            except Exception as ee:
-                log_warning(f"Assistant OpenAI erreur: {ee}")
-
-        if not reply:
-            reply = "Je ne peux pas contacter l'assistant pour le moment. Voici un rappel: utilisez le Kanban pour glisser-déposer vos bons et le chat pour coordonner."
-
-    # Store user prompt (dedup if identical last message by same user in the last 10s) and bot reply
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({'error': 'Database connection failed'}), 500
-        cursor = conn.cursor()
-        # Ensure table exists
-        cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS chat_messages (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                user_id INT NULL,
-                message TEXT NOT NULL,
-                is_bot TINYINT(1) DEFAULT 0,
-                channel_type VARCHAR(64) DEFAULT 'global',
-                channel_id INT NULL,
-                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-            """
-        )
-        try:
-            cursor.execute(
-                """
-                SELECT id, message, created_at FROM chat_messages
-                WHERE user_id = %s AND is_bot = 0
-                ORDER BY id DESC LIMIT 1
-                """,
-                (user_id,)
-            )
-            last = cursor.fetchone() or {}
-            should_insert_user = True
-            if last and (last.get('message') or '').strip() == message.strip():
-                # If last message is identical and within the last 10s, skip inserting duplicate
-                try:
-                    from datetime import datetime as _dt
-                    if isinstance(last.get('created_at'), _dt):
-                        delta = datetime.now() - last['created_at']
-                        if delta.total_seconds() <= 10:
-                            should_insert_user = False
-                except Exception:
-                    pass
-            if should_insert_user:
-                cursor.execute("INSERT INTO chat_messages (user_id, message, is_bot, channel_type, channel_id) VALUES (%s, %s, 0, %s, %s)", (user_id, message, channel_type, channel_id))
-        except Exception:
-            # On any failure of dedup logic, fallback to inserting
-            try:
-                cursor.execute("INSERT INTO chat_messages (user_id, message, is_bot) VALUES (%s, %s, 0)", (user_id, message))
-            except Exception:
-                pass
-            cursor.execute("INSERT INTO chat_messages (user_id, message, is_bot, channel_type, channel_id) VALUES (NULL, %s, 1, %s, %s)", (reply, channel_type, channel_id))
-        conn.commit()
-        cursor.close()
-        conn.close()
-
-        return jsonify({'ok': True, 'reply': reply})
-    except Exception as e:
-        log_error(f"Erreur chat_assistant: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-
-@bp.route('/chat/clear', methods=['POST'])
-def chat_clear():
-    """Effacer l'historique du chat (réservé admin)."""
-    try:
-        role = session.get('user_role')
-        if role != 'admin':
-            return jsonify({'error': 'Forbidden'}), 403
-
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({'error': 'Database connection failed'}), 500
-        cursor = conn.cursor()
-
-        # Ensure table exists
-        cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS chat_messages (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                user_id INT NULL,
-                message TEXT NOT NULL,
-                is_bot TINYINT(1) DEFAULT 0,
-                channel_type VARCHAR(64) DEFAULT 'global',
-                channel_id INT NULL,
-                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-            """
-        )
-
-        # Optionally accept channel filter to clear only a specific channel
-        channel_type = request.args.get('channel_type') or None
-        channel_id = request.args.get('channel_id', type=int)
-        if channel_type:
-            # count and delete for that channel
-            qcount = "SELECT COUNT(*) AS c FROM chat_messages WHERE channel_type=%s" + (" AND channel_id=%s" if channel_id else "")
-            params = [channel_type] + ([channel_id] if channel_id else [])
-            cursor.execute(qcount, params)
-            before = (cursor.fetchone() or {}).get('c') or 0
-            qdel = "DELETE FROM chat_messages WHERE channel_type=%s" + (" AND channel_id=%s" if channel_id else "")
-            cursor.execute(qdel, params)
-        else:
-            cursor.execute("SELECT COUNT(*) AS c FROM chat_messages")
-            before = (cursor.fetchone() or {}).get('c') or 0
-            cursor.execute("DELETE FROM chat_messages")
-        conn.commit()
-        cursor.close()
-        conn.close()
-        return jsonify({'ok': True, 'deleted': int(before)})
-    except Exception as e:
-        log_error(f"Erreur chat_clear: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-
-@bp.route('/departments', methods=['GET'])
-def departments_list():
-    """List departments (id, name, description)"""
-    try:
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({'error': 'Database connection failed'}), 500
-        cursor = conn.cursor()
-        cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS departments (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                name VARCHAR(255) NOT NULL,
-                description TEXT,
-                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-            """
-        )
-        cursor.execute("SELECT id, name, description FROM departments ORDER BY name ASC")
-        rows = cursor.fetchall() or []
-        cursor.close()
-        conn.close()
-        return jsonify({'departments': rows})
-    except Exception as e:
-        log_error(f"Erreur departments_list: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-
-@bp.route('/departments', methods=['POST'])
-def departments_create():
-    """Create a department (admin only)"""
-    try:
-        role = session.get('user_role')
-        if role != 'admin':
-            return jsonify({'error': 'Forbidden'}), 403
-        data = request.get_json(silent=True) or {}
-        name = (data.get('name') or '').strip()
-        description = data.get('description')
-        if not name:
-            return jsonify({'error': 'Name required'}), 400
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({'error': 'Database connection failed'}), 500
-        cursor = conn.cursor()
-        cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS departments (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                name VARCHAR(255) NOT NULL,
-                description TEXT,
-                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-            """
-        )
-        cursor.execute("INSERT INTO departments (name, description) VALUES (%s, %s)", (name, description))
-        conn.commit()
-        new_id = cursor.lastrowid
-        cursor.close()
-        conn.close()
-        return jsonify({'ok': True, 'id': new_id})
-    except Exception as e:
-        log_error(f"Erreur departments_create: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-
-@bp.route('/departments/<int:dept_id>', methods=['PUT'])
-def departments_update(dept_id):
-    """Update department (admin only)"""
-    try:
-        role = session.get('user_role')
-        if role != 'admin':
-            return jsonify({'error': 'Forbidden'}), 403
-        data = request.get_json(silent=True) or {}
-        name = (data.get('name') or '').strip()
-        description = data.get('description')
-        if not name:
-            return jsonify({'error': 'Name required'}), 400
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({'error': 'Database connection failed'}), 500
-        cursor = conn.cursor()
-        cursor.execute("UPDATE departments SET name=%s, description=%s WHERE id=%s", (name, description, dept_id))
-        conn.commit()
-        cursor.close()
-        conn.close()
-        return jsonify({'ok': True})
-    except Exception as e:
-        log_error(f"Erreur departments_update: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-
-@bp.route('/departments/<int:dept_id>', methods=['DELETE'])
-def departments_delete(dept_id):
-    """Delete department (admin only)"""
-    try:
-        role = session.get('user_role')
-        if role != 'admin':
-            return jsonify({'error': 'Forbidden'}), 403
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({'error': 'Database connection failed'}), 500
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM departments WHERE id=%s", (dept_id,))
-        conn.commit()
-        cursor.close()
-        conn.close()
-        return jsonify({'ok': True})
-    except Exception as e:
-        log_error(f"Erreur departments_delete: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
+        }), 500

@@ -2,41 +2,375 @@
 
 {% block title %}Planning du technicien{% endblock %}
 
-{% block content %}
-<div class="container mt-4">
-    <h2>Planning: {{ technician.name }}</h2>
+{% block extra_css %}
+<link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css' rel='stylesheet' />
+<style>
+    .fc-event {
+        cursor: pointer;
+    }
+    .fc-event-main {
+        padding: 2px;
+    }
+    .priority-urgent {
+        background-color: #dc3545 !important;
+        border-color: #dc3545 !important;
+    }
+    .priority-high {
+        background-color: #fd7e14 !important;
+        border-color: #fd7e14 !important;
+    }
+    .priority-medium {
+        background-color: #ffc107 !important;
+        border-color: #ffc107 !important;
+        color: #000 !important;
+    }
+    .priority-low {
+        background-color: #28a745 !important;
+        border-color: #28a745 !important;
+    }
+    .schedule-summary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .stats-card {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 10px;
+        padding: 15px;
+        text-align: center;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .calendar-container {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+</style>
+{% endblock %}
 
-    {% if not technician.schedule_json %}
-        <div class="alert alert-info">Aucun planning défini pour ce technicien.</div>
-    {% else %}
-        <div class="card">
-            <div class="card-body">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Jour</th>
-                            <th>Actif</th>
-                            <th>Début</th>
-                            <th>Fin</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for day, s in technician.schedule_json.items() %}
-                        <tr>
-                            <td>{{ day }}</td>
-                            <td>{{ 'Oui' if s.get('enabled', False) else 'Non' }}</td>
-                            <td>{{ s.get('start', '08:00') }}</td>
-                            <td>{{ s.get('end', '17:00') }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- En-tête du planning -->
+            <div class="schedule-summary">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h2><i class="fas fa-calendar-alt me-2"></i>Planning: {{ technician.name }}</h2>
+                        <p class="mb-0">Planification et suivi des interventions</p>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="stats-card">
+                                    <div class="h4 mb-1" id="total-workorders">-</div>
+                                    <small>Interventions</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="stats-card">
+                                    <div class="h4 mb-1" id="completion-rate">-</div>
+                                    <small>Taux de réussite</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Boutons de contrôle -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-primary" id="btn-month">Mois</button>
+                                <button type="button" class="btn btn-primary" id="btn-week">Semaine</button>
+                                <button type="button" class="btn btn-outline-primary" id="btn-day">Jour</button>
+                            </div>
+                            <button type="button" class="btn btn-outline-secondary ms-3" id="btn-today">Aujourd'hui</button>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-outline-danger"><i class="fas fa-circle me-1"></i>Urgent</button>
+                                <button class="btn btn-sm btn-outline-warning"><i class="fas fa-circle me-1"></i>Élevé</button>
+                                <button class="btn btn-sm btn-outline-success"><i class="fas fa-circle me-1"></i>Normal</button>
+                                <button class="btn btn-sm btn-outline-info"><i class="fas fa-circle me-1"></i>Faible</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calendrier principal -->
+            <div class="calendar-container">
+                <div id="calendar"></div>
+            </div>
+
+            <!-- Boutons d'action -->
+            <div class="mt-3">
+                <a href="{{ url_for('technicians.view_technician', technician_id=technician.id) }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Retour au profil
+                </a>
+                <a href="{{ url_for('technicians.index') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-users me-2"></i>Tous les techniciens
+                </a>
             </div>
         </div>
-    {% endif %}
-
-    <div class="mt-3">
-        <a href="{{ url_for('technicians.view_technician', technician_id=technician.id) }}" class="btn btn-secondary">Retour</a>
     </div>
 </div>
+
+<!-- Modal pour les détails d'intervention -->
+<div class="modal fade" id="workOrderModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Détails de l'intervention</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="workOrderDetails">Chargement...</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                <button type="button" class="btn btn-primary" id="editWorkOrder">Modifier</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.js'></script>
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/locales/fr.min.js'></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const calendarEl = document.getElementById('calendar');
+    const technicianId = {{ technician.id }};
+    
+    // Initialisation du calendrier
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'timeGridWeek',
+        locale: 'fr',
+        headerToolbar: {
+            left: 'prev,next',
+            center: 'title',
+            right: ''
+        },
+        height: 650,
+        slotMinTime: '07:00:00',
+        slotMaxTime: '19:00:00',
+        weekends: true,
+        businessHours: {
+            daysOfWeek: [1, 2, 3, 4, 5],
+            startTime: '08:00',
+            endTime: '17:00'
+        },
+        events: function(fetchInfo, successCallback, failureCallback) {
+            loadWorkOrders(fetchInfo.start, fetchInfo.end, successCallback, failureCallback);
+        },
+        eventClick: function(info) {
+            showWorkOrderDetails(info.event.extendedProps.workOrderId);
+        },
+        eventContent: function(arg) {
+            let priority = arg.event.extendedProps.priority || 'medium';
+            let status = arg.event.extendedProps.status || '';
+            let icon = getStatusIcon(status);
+            
+            return {
+                html: `
+                    <div class="fc-event-main-frame">
+                        <div class="fc-event-title-container">
+                            <div class="fc-event-title fc-sticky">
+                                <i class="${icon} me-1"></i>
+                                ${arg.event.title}
+                            </div>
+                        </div>
+                    </div>
+                `
+            };
+        }
+    });
+
+    calendar.render();
+
+    // Contrôles de vue
+    document.getElementById('btn-month').addEventListener('click', () => {
+        calendar.changeView('dayGridMonth');
+        updateActiveButton('btn-month');
+    });
+
+    document.getElementById('btn-week').addEventListener('click', () => {
+        calendar.changeView('timeGridWeek');
+        updateActiveButton('btn-week');
+    });
+
+    document.getElementById('btn-day').addEventListener('click', () => {
+        calendar.changeView('timeGridDay');
+        updateActiveButton('btn-day');
+    });
+
+    document.getElementById('btn-today').addEventListener('click', () => {
+        calendar.today();
+    });
+
+    function updateActiveButton(activeId) {
+        document.querySelectorAll('.btn-group .btn').forEach(btn => {
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-outline-primary');
+        });
+        document.getElementById(activeId).classList.remove('btn-outline-primary');
+        document.getElementById(activeId).classList.add('btn-primary');
+    }
+
+    function loadWorkOrders(start, end, successCallback, failureCallback) {
+        const startStr = start.toISOString().split('T')[0];
+        const endStr = end.toISOString().split('T')[0];
+        
+        fetch(`/api/technicians/${technicianId}/schedule-events?start=${startStr}&end=${endStr}`)
+            .then(response => response.json())
+            .then(data => {
+                const events = data.map(workOrder => ({
+                    id: workOrder.id,
+                    title: `${workOrder.claim_number} - ${workOrder.customer_name}`,
+                    start: workOrder.scheduled_date || workOrder.created_at,
+                    allDay: !workOrder.scheduled_time,
+                    className: `priority-${workOrder.priority || 'medium'}`,
+                    extendedProps: {
+                        workOrderId: workOrder.id,
+                        priority: workOrder.priority,
+                        status: workOrder.status,
+                        description: workOrder.description,
+                        customerName: workOrder.customer_name,
+                        claimNumber: workOrder.claim_number
+                    }
+                }));
+                
+                updateStats(data);
+                successCallback(events);
+            })
+            .catch(error => {
+                console.error('Erreur lors du chargement des interventions:', error);
+                failureCallback(error);
+            });
+    }
+
+    function updateStats(workOrders) {
+        const total = workOrders.length;
+        const completed = workOrders.filter(wo => wo.status === 'completed').length;
+        const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+        
+        document.getElementById('total-workorders').textContent = total;
+        document.getElementById('completion-rate').textContent = completionRate + '%';
+    }
+
+    function getStatusIcon(status) {
+        const icons = {
+            'draft': 'fas fa-file-alt',
+            'pending': 'fas fa-clock',
+            'assigned': 'fas fa-user-check',
+            'in_progress': 'fas fa-cogs',
+            'completed': 'fas fa-check-circle',
+            'cancelled': 'fas fa-times-circle'
+        };
+        return icons[status] || 'fas fa-file';
+    }
+
+    function showWorkOrderDetails(workOrderId) {
+        fetch(`/api/work-orders/${workOrderId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const wo = data.work_order;
+                    const html = `
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Informations générales</h6>
+                                <p><strong>Numéro:</strong> ${wo.claim_number}</p>
+                                <p><strong>Client:</strong> ${wo.customer_name}</p>
+                                <p><strong>Statut:</strong> 
+                                    <span class="badge bg-${getStatusColor(wo.status)}">${getStatusLabel(wo.status)}</span>
+                                </p>
+                                <p><strong>Priorité:</strong> 
+                                    <span class="badge bg-${getPriorityColor(wo.priority)}">${wo.priority}</span>
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Planification</h6>
+                                <p><strong>Créé le:</strong> ${formatDate(wo.created_at)}</p>
+                                <p><strong>Programmé:</strong> ${wo.scheduled_date ? formatDate(wo.scheduled_date) : 'Non programmé'}</p>
+                                <p><strong>Durée estimée:</strong> ${wo.estimated_duration || 'Non définie'} min</p>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <h6>Description</h6>
+                            <p>${wo.description || 'Aucune description'}</p>
+                        </div>
+                    `;
+                    document.getElementById('workOrderDetails').innerHTML = html;
+                    
+                    document.getElementById('editWorkOrder').onclick = () => {
+                        window.location.href = `/work_orders/${workOrderId}/edit`;
+                    };
+                    
+                    new bootstrap.Modal(document.getElementById('workOrderModal')).show();
+                }
+            })
+            .catch(error => {
+                console.error('Erreur lors du chargement des détails:', error);
+                document.getElementById('workOrderDetails').innerHTML = 'Erreur lors du chargement';
+            });
+    }
+
+    function getStatusColor(status) {
+        const colors = {
+            'draft': 'secondary',
+            'pending': 'warning',
+            'assigned': 'info',
+            'in_progress': 'primary',
+            'completed': 'success',
+            'cancelled': 'danger'
+        };
+        return colors[status] || 'secondary';
+    }
+
+    function getStatusLabel(status) {
+        const labels = {
+            'draft': 'Brouillon',
+            'pending': 'En attente',
+            'assigned': 'Assigné',
+            'in_progress': 'En cours',
+            'completed': 'Terminé',
+            'cancelled': 'Annulé'
+        };
+        return labels[status] || status;
+    }
+
+    function getPriorityColor(priority) {
+        const colors = {
+            'urgent': 'danger',
+            'high': 'warning',
+            'medium': 'info',
+            'low': 'success'
+        };
+        return colors[priority] || 'info';
+    }
+
+    function formatDate(dateStr) {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('fr-FR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+});
+</script>
 {% endblock %}

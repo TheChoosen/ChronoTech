@@ -1,0 +1,154 @@
+<!-- Modal Kanban Bons de Travail -->
+<div class="modal fade" id="workOrdersKanbanModal" tabindex="-1" aria-labelledby="workOrdersKanbanModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="workOrdersKanbanModalLabel">
+                    <i class="fa-solid fa-tasks me-2 text-primary"></i>Kanban Bons de Travail - Gestion Complète
+                </h5>
+                <div class="d-flex flex-wrap gap-2 me-3 align-items-center">
+                    <select class="form-select form-select-sm" id="modal-kanban-filter-client" style="width: auto;">
+                        <option value="">Tous les clients</option>
+                    </select>
+                    <select class="form-select form-select-sm" id="modal-kanban-filter-tech" style="width: auto;">
+                        <option value="">Tous les techniciens</option>
+                    </select>
+                    <select class="form-select form-select-sm" id="modal-kanban-filter-department" style="width: auto;">
+                        <option value="">Tous les départements</option>
+                    </select>
+                    <button class="btn btn-sm btn-outline-secondary" id="modal-kanban-clear-filters"
+                        title="Réinitialiser les filtres">
+                        <i class="fa-solid fa-filter-circle-xmark"></i>
+                    </button>
+                    <button class="btn btn-sm btn-success" onclick="refreshWorkOrders()">
+                        <i class="fa-solid fa-rotate me-1"></i>Actualiser
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary" onclick="createWorkOrder()">
+                        <i class="fa-solid fa-plus me-1"></i>Nouveau
+                    </button>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body p-3">
+                <div class="work-orders-kanban-board" id="work-orders-kanban-board">
+                    <!-- Colonnes horizontales pour les statuts des bons de travail -->
+                    <div class="row">
+                        <!-- Colonne Brouillon -->
+                        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                            <div class="wo-kanban-column" data-status="draft">
+                                <div class="wo-kanban-header bg-secondary text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fa-solid fa-file-lines me-2"></i>Brouillon
+                                    </h6>
+                                    <span class="badge bg-light text-dark" id="modal-count-draft">0</span>
+                                </div>
+                                <div class="wo-kanban-content" id="modal-column-draft"
+                                    ondrop="handleWorkOrderDrop(event)" ondragover="allowDrop(event)">
+                                    <!-- Cartes bons de travail brouillon -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Colonne En attente -->
+                        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                            <div class="wo-kanban-column" data-status="pending">
+                                <div class="wo-kanban-header bg-warning text-dark">
+                                    <h6 class="mb-0">
+                                        <i class="fa-solid fa-clock me-2"></i>En attente
+                                    </h6>
+                                    <span class="badge bg-light text-dark" id="modal-count-pending">0</span>
+                                </div>
+                                <div class="wo-kanban-content" id="modal-column-pending"
+                                    ondrop="handleWorkOrderDrop(event)" ondragover="allowDrop(event)">
+                                    <!-- Cartes bons de travail en attente -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Colonne Assigné -->
+                        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                            <div class="wo-kanban-column" data-status="assigned">
+                                <div class="wo-kanban-header bg-info text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fa-solid fa-user-tag me-2"></i>Assigné
+                                    </h6>
+                                    <span class="badge bg-light text-dark" id="modal-count-assigned">0</span>
+                                </div>
+                                <div class="wo-kanban-content" id="modal-column-assigned"
+                                    ondrop="handleWorkOrderDrop(event)" ondragover="allowDrop(event)">
+                                    <!-- Cartes bons de travail assignés -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Colonne En cours -->
+                        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                            <div class="wo-kanban-column" data-status="in_progress">
+                                <div class="wo-kanban-header bg-primary text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fa-solid fa-gear me-2"></i>En cours
+                                    </h6>
+                                    <span class="badge bg-light text-dark" id="modal-count-in_progress">0</span>
+                                </div>
+                                <div class="wo-kanban-content" id="modal-column-in_progress"
+                                    ondrop="handleWorkOrderDrop(event)" ondragover="allowDrop(event)">
+                                    <!-- Cartes bons de travail en cours -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Colonne Terminé -->
+                        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                            <div class="wo-kanban-column" data-status="completed">
+                                <div class="wo-kanban-header bg-success text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fa-solid fa-check-circle me-2"></i>Terminé
+                                    </h6>
+                                    <span class="badge bg-light text-dark" id="modal-count-completed">0</span>
+                                </div>
+                                <div class="wo-kanban-content" id="modal-column-completed"
+                                    ondrop="handleWorkOrderDrop(event)" ondragover="allowDrop(event)">
+                                    <!-- Cartes bons de travail terminés -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Colonne Annulé -->
+                        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                            <div class="wo-kanban-column" data-status="cancelled">
+                                <div class="wo-kanban-header bg-danger text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fa-solid fa-times-circle me-2"></i>Annulé
+                                    </h6>
+                                    <span class="badge bg-light text-dark" id="modal-count-cancelled">0</span>
+                                </div>
+                                <div class="wo-kanban-content" id="modal-column-cancelled"
+                                    ondrop="handleWorkOrderDrop(event)" ondragover="allowDrop(event)">
+                                    <!-- Cartes bons de travail annulés -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="d-flex justify-content-between w-100">
+                    <div class="wo-stats-summary">
+                        <small class="text-muted">
+                            Total: <span id="total-work-orders">0</span> bons de travail
+                            | Actifs: <span id="active-work-orders">0</span>
+                            | Taux de completion: <span id="completion-rate">0%</span>
+                        </small>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fermer</button>
+                        <button type="button" class="btn btn-primary" onclick="saveWorkOrdersStatus()">
+                            <i class="fa-solid fa-save me-1"></i>Sauvegarder
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

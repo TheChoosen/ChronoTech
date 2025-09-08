@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Kanban ChronoTech</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .kanban-test { display: flex; gap: 20px; }
+        .kanban-column { 
+            border: 2px solid #ddd; 
+            border-radius: 8px; 
+            min-width: 200px; 
+            min-height: 300px; 
+            padding: 10px;
+            background: #f9f9f9;
+        }
+        .kanban-card { 
+            background: white; 
+            padding: 10px; 
+            margin: 10px 0; 
+            border-radius: 5px; 
+            border: 1px solid #ccc;
+            cursor: grab;
+        }
+        .kanban-card:hover {
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .status { font-weight: bold; color: #333; }
+        .error { color: red; }
+        .success { color: green; }
+        .debug { background: #f0f0f0; padding: 10px; margin: 20px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Kanban ChronoTech</h1>
+    
+    <div class="debug">
+        <h3>📋 Diagnostic</h3>
+        <div id="debug-info">Chargement...</div>
+    </div>
+    
+    <div class="debug">
+        <h3>🔧 Actions</h3>
+        <button onclick="testDirectDB()">Test Direct DB</button>
+        <button onclick="loadKanbanTest()">Charger Kanban</button>
+        <button onclick="debugKanban()">Debug Console</button>
+    </div>
+    
+    <div class="kanban-test" id="kanban-container">
+        <div class="kanban-column" data-status="draft">
+            <h3>📝 Brouillon</h3>
+            <div id="column-draft"></div>
+        </div>
+        <div class="kanban-column" data-status="pending">
+            <h3>⏳ En attente</h3>
+            <div id="column-pending"></div>
+        </div>
+        <div class="kanban-column" data-status="assigned">
+            <h3>👤 Assigné</h3>
+            <div id="column-assigned"></div>
+        </div>
+        <div class="kanban-column" data-status="in_progress">
+            <h3>⚙️ En cours</h3>
+            <div id="column-in_progress"></div>
+        </div>
+        <div class="kanban-column" data-status="completed">
+            <h3>✅ Terminé</h3>
+            <div id="column-completed"></div>
+        </div>
+        <div class="kanban-column" data-status="cancelled">
+            <h3>❌ Annulé</h3>
+            <div id="column-cancelled"></div>
+        </div>
+    </div>
+
+    <script>
+        // Debug info
+        function updateDebugInfo(message) {
+            document.getElementById('debug-info').innerHTML += '<br>' + message;
+        }
+
+        // Test direct avec la base de données
+        async function testDirectDB() {
+            updateDebugInfo('🔍 Test connexion directe...');
+            
+            try {
+                // Test avec différents ports
+                const ports = [5013, 5014, 5020, 5000];
+                
+                for (const port of ports) {
+                    try {
+                        updateDebugInfo(`Testing port ${port}...`);
+                        
+                        const response = await fetch(`http://127.0.0.1:${port}/api/health`, {
+                            timeout: 2000
+                        });
+                        
+                        if (response.ok) {
+                            updateDebugInfo(`✅ Port ${port} répond`);
+                            
+                            // Test kanban-data
+                            const kanbanResponse = await fetch(`http://127.0.0.1:${port}/api/kanban-data`);
+                            if (kanbanResponse.ok) {
+                                const data = await kanbanResponse.json();
+                                updateDebugInfo(`✅ Port ${port} a les données Kanban`);
+                                return { port, data };
+                            }
+                        }
+                    } catch (e) {
+                        updateDebugInfo(`❌ Port ${port} non disponible`);
+                    }
+                }
+                
+                updateDebugInfo('❌ Aucun serveur trouvé');
+                
+            } catch (error) {
+                updateDebugInfo(`❌ Erreur: ${error.message}`);
+            }
+        }
+
+        // Charger les données Kanban
+        async function loadKanbanTest() {
+            updateDebugInfo('📊 Chargement des données Kanban...');
+            
+            // Données de test si l'API ne répond pas
+            const testData = {
+                success: true,
+                kanban_data: {
+                    draft: [
+                        { id: 1, claim_number: 'WO-001', customer_name: 'Client Test 1', description: 'Test brouillon', priority: 'medium' }
+                    ],
+                    pending: [
+                        { id: 2, claim_number: 'WO-002', customer_name: 'Client Test 2', description: 'Test en attente', priority: 'high' },
+                        { id: 3, claim_number: 'WO-003', customer_name: 'Client Test 3', description: 'Test urgent', priority: 'urgent' }
+                    ],
+                    assigned: [
+                        { id: 4, claim_number: 'WO-004', customer_name: 'Client Test 4', description: 'Test assigné', priority: 'medium' }
+                    ],
+                    in_progress: [
+                        { id: 5, claim_number: 'WO-005', customer_name: 'Client Test 5', description: 'Test en cours', priority: 'high' }
+                    ],
+                    completed: [
+                        { id: 6, claim_number: 'WO-006', customer_name: 'Client Test 6', description: 'Test terminé', priority: 'low' }
+                    ],
+                    cancelled: []
+                }
+            };
+            
+            try {
+                // Essayer l'API d'abord
+                const response = await fetch('/api/kanban-data');
+                let data;
+                
+                if (response.ok) {
+                    data = await response.json();
+                    updateDebugInfo('✅ Données API récupérées');
+                } else {
+                    data = testData;
+                    updateDebugInfo('⚠️ Utilisation des données de test');
+                }
+                
+                displayKanbanData(data.kanban_data);
+                
+            } catch (error) {
+                updateDebugInfo(`⚠️ API non disponible, utilisation données test: ${error.message}`);
+                displayKanbanData(testData.kanban_data);
+            }
+        }
+
+        // Afficher les données dans le Kanban
+        function displayKanbanData(kanbanData) {
+            updateDebugInfo('🎨 Affichage des données...');
+            
+            Object.entries(kanbanData).forEach(([status, orders]) => {
+                const column = document.getElementById(`column-${status}`);
+                if (column) {
+                    column.innerHTML = '';
+                    
+                    orders.forEach(order => {
+                        const card = createKanbanCard(order);
+                        column.appendChild(card);
+                    });
+                    
+                    updateDebugInfo(`✅ ${status}: ${orders.length} éléments`);
+                }
+            });
+        }
+
+        // Créer une carte Kanban
+        function createKanbanCard(order) {
+            const card = document.createElement('div');
+            card.className = 'kanban-card';
+            card.draggable = true;
+            card.dataset.cardId = order.id;
+            
+            const priorityEmoji = {
+                urgent: '🔴',
+                high: '🟠', 
+                medium: '🟡',
+                low: '🟢'
+            };
+            
+            card.innerHTML = `
+                <div class="status">#${order.claim_number}</div>
+                <div>${order.customer_name}</div>
+                <div style="font-size: 0.9em; color: #666;">${order.description}</div>
+                <div style="margin-top: 5px;">${priorityEmoji[order.priority] || '⚪'} ${order.priority}</div>
+            `;
+            
+            return card;
+        }
+
+        // Debug console
+        function debugKanban() {
+            console.log('🔍 Debug Kanban');
+            console.log('window.chronochat:', typeof window.chronochat);
+            console.log('window.ChronoChatDashboard:', typeof window.ChronoChatDashboard);
+            console.log('allowDrop:', typeof window.allowDrop);
+            console.log('handleDrop:', typeof window.handleDrop);
+            console.log('createWorkOrder:', typeof window.createWorkOrder);
+            
+            // Test des éléments DOM
+            const columns = document.querySelectorAll('.kanban-column');
+            console.log(`Colonnes trouvées: ${columns.length}`);
+            
+            const cards = document.querySelectorAll('.kanban-card');
+            console.log(`Cartes trouvées: ${cards.length}`);
+            
+            updateDebugInfo('🔍 Debug info dans la console');
+        }
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDebugInfo('🚀 Page chargée');
+            updateDebugInfo('🔧 Tests disponibles ci-dessus');
+        });
+    </script>
+</body>
+</html>

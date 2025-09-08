@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Dashboard ChronoTech</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>🧪 Test Dashboard ChronoTech</h1>
+        
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <h3>📋 Test Bons de Travail</h3>
+                <div class="row text-center">
+                    <div class="col-2">
+                        <div class="card bg-secondary text-white">
+                            <div class="card-body">
+                                <h4 id="summary-draft">0</h4>
+                                <small>Brouillons</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-2">
+                        <div class="card bg-warning text-dark">
+                            <div class="card-body">
+                                <h4 id="summary-pending">0</h4>
+                                <small>En attente</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-2">
+                        <div class="card bg-info text-white">
+                            <div class="card-body">
+                                <h4 id="summary-assigned">0</h4>
+                                <small>Assignés</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-2">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body">
+                                <h4 id="summary-in_progress">0</h4>
+                                <small>En cours</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-2">
+                        <div class="card bg-success text-white">
+                            <div class="card-body">
+                                <h4 id="summary-completed">0</h4>
+                                <small>Terminés</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-2">
+                        <div class="card bg-danger text-white">
+                            <div class="card-body">
+                                <h4 id="summary-cancelled">0</h4>
+                                <small>Annulés</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <h3>👷 Test Techniciens</h3>
+                <div class="row text-center">
+                    <div class="col-3">
+                        <div class="card bg-success text-white">
+                            <div class="card-body">
+                                <h4 id="summary-available">0</h4>
+                                <small>Disponibles</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="card bg-warning text-dark">
+                            <div class="card-body">
+                                <h4 id="summary-busy">0</h4>
+                                <small>Occupés</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="card bg-info text-white">
+                            <div class="card-body">
+                                <h4 id="summary-break">0</h4>
+                                <small>En pause</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="card bg-secondary text-white">
+                            <div class="card-body">
+                                <h4 id="summary-offline">0</h4>
+                                <small>Hors ligne</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-12">
+                <h3>🔧 Contrôles de Test</h3>
+                <button class="btn btn-primary me-2" onclick="testLoadData()">🔄 Charger Données Test</button>
+                <button class="btn btn-info me-2" onclick="debugElements()">🔍 Debug Éléments</button>
+                <button class="btn btn-success me-2" onclick="testWorkOrders()">📋 Test Bons de Travail</button>
+                <button class="btn btn-warning" onclick="testTechnicians()">👷 Test Techniciens</button>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <h4>📊 Console de Debug</h4>
+            <div id="debug-output" class="border p-3" style="height: 200px; overflow-y: auto; background: #f8f9fa; font-family: monospace; font-size: 0.9em;"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Fonction de log dans l'interface
+        function log(message) {
+            const output = document.getElementById('debug-output');
+            const timestamp = new Date().toLocaleTimeString();
+            output.innerHTML += `[${timestamp}] ${message}\n`;
+            output.scrollTop = output.scrollHeight;
+            console.log(message);
+        }
+        
+        // Test de chargement des données
+        function testLoadData() {
+            log('🚀 Test de chargement des données...');
+            
+            // Simuler des données de bons de travail
+            const workOrdersData = {
+                draft: [{ id: 1 }, { id: 2 }],
+                pending: [{ id: 3 }, { id: 4 }, { id: 5 }],
+                assigned: [{ id: 6 }, { id: 7 }],
+                in_progress: [{ id: 8 }, { id: 9 }],
+                completed: [{ id: 10 }, { id: 11 }, { id: 12 }],
+                cancelled: [{ id: 13 }]
+            };
+            
+            // Simuler des données de techniciens
+            const techniciansData = {
+                available: [{ id: 1 }, { id: 2 }, { id: 3 }],
+                busy: [{ id: 4 }, { id: 5 }],
+                break: [{ id: 6 }],
+                offline: [{ id: 7 }, { id: 8 }]
+            };
+            
+            updateWorkOrdersSummary(workOrdersData);
+            updateTechniciansSummary(techniciansData);
+            
+            log('✅ Données test chargées');
+        }
+        
+        // Debug des éléments
+        function debugElements() {
+            log('🔍 Vérification des éléments...');
+            
+            const woElements = ['summary-draft', 'summary-pending', 'summary-assigned', 'summary-in_progress', 'summary-completed', 'summary-cancelled'];
+            woElements.forEach(id => {
+                const element = document.getElementById(id);
+                log(`📋 ${id}: ${element ? '✅ Trouvé' : '❌ Manquant'}`);
+            });
+            
+            const techElements = ['summary-available', 'summary-busy', 'summary-break', 'summary-offline'];
+            techElements.forEach(id => {
+                const element = document.getElementById(id);
+                log(`👷 ${id}: ${element ? '✅ Trouvé' : '❌ Manquant'}`);
+            });
+        }
+        
+        // Test spécifique bons de travail
+        function testWorkOrders() {
+            log('📋 Test bons de travail...');
+            
+            const data = {
+                draft: [1, 2],
+                pending: [1, 2, 3],
+                assigned: [1, 2],
+                in_progress: [1, 2],
+                completed: [1, 2, 3],
+                cancelled: [1]
+            };
+            
+            Object.entries(data).forEach(([status, items]) => {
+                const element = document.getElementById(`summary-${status}`);
+                if (element) {
+                    element.textContent = items.length;
+                    log(`✅ ${status}: ${items.length}`);
+                } else {
+                    log(`❌ Élément summary-${status} non trouvé`);
+                }
+            });
+        }
+        
+        // Test spécifique techniciens
+        function testTechnicians() {
+            log('👷 Test techniciens...');
+            
+            const data = {
+                available: [1, 2, 3],
+                busy: [1, 2],
+                break: [1],
+                offline: [1, 2]
+            };
+            
+            Object.entries(data).forEach(([status, items]) => {
+                const element = document.getElementById(`summary-${status}`);
+                if (element) {
+                    element.textContent = items.length;
+                    log(`✅ ${status}: ${items.length}`);
+                } else {
+                    log(`❌ Élément summary-${status} non trouvé`);
+                }
+            });
+        }
+        
+        // Fonctions de mise à jour (copiées du dashboard principal)
+        function updateWorkOrdersSummary(data) {
+            log('📋 Mise à jour résumé bons de travail');
+            
+            const summaryElements = {
+                'summary-draft': data.draft?.length || 0,
+                'summary-pending': data.pending?.length || 0,
+                'summary-assigned': data.assigned?.length || 0,
+                'summary-in_progress': data.in_progress?.length || 0,
+                'summary-completed': data.completed?.length || 0,
+                'summary-cancelled': data.cancelled?.length || 0
+            };
+
+            Object.entries(summaryElements).forEach(([id, count]) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.textContent = count;
+                    log(`✅ Mis à jour ${id}: ${count}`);
+                } else {
+                    log(`⚠️ Élément ${id} non trouvé`);
+                }
+            });
+        }
+        
+        function updateTechniciansSummary(data) {
+            log('👷 Mise à jour résumé techniciens');
+            
+            const summaryElements = {
+                'summary-available': data.available?.length || 0,
+                'summary-busy': data.busy?.length || 0,
+                'summary-break': data.break?.length || 0,
+                'summary-offline': data.offline?.length || 0
+            };
+
+            Object.entries(summaryElements).forEach(([id, count]) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.textContent = count;
+                    log(`✅ Mis à jour ${id}: ${count}`);
+                } else {
+                    log(`⚠️ Élément ${id} non trouvé`);
+                }
+            });
+        }
+        
+        // Auto-test au chargement
+        document.addEventListener('DOMContentLoaded', function() {
+            log('🚀 Page de test chargée');
+            setTimeout(() => {
+                debugElements();
+                testLoadData();
+            }, 500);
+        });
+    </script>
+</body>
+</html>

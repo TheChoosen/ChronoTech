@@ -149,6 +149,18 @@ class MiniPagination:
     @property
     def offset(self):
         return (self.page - 1) * self.per_page
+        
+    def iter_pages(self, left_edge=2, left_current=2, right_current=2, right_edge=2):
+        """Génère les numéros de pages pour la pagination avec ellipses intelligentes"""
+        last = 0
+        for num in range(1, self.pages + 1):
+            if num <= left_edge or \
+               (self.page - left_current - 1 < num < self.page + right_current) or \
+               num > self.pages - right_edge:
+                if last + 1 != num:
+                    yield None
+                yield num
+                last = num
 
 
 def _debug(msg):

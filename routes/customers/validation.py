@@ -151,7 +151,8 @@ def validate_postal_code_format(postal_code, country='FR'):
             'ES': r'^[0-9]{5}$',
             'IT': r'^[0-9]{5}$',
             'GB': r'^[A-Z]{1,2}[0-9R][0-9A-Z]? [0-9][A-Z]{2}$',
-            'US': r'^[0-9]{5}(-[0-9]{4})?$'
+            'US': r'^[0-9]{5}(-[0-9]{4})?$',
+            'CA': r'^[A-Z][0-9][A-Z] [0-9][A-Z][0-9]$'  # Format canadien K1A 0A6
         }
         
         pattern = postal_patterns.get(country.upper(), r'^.+$')  # Pattern générique par défaut

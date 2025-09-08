@@ -1,0 +1,742 @@
+{
+  "customers": {
+    "total_rows": 1506,
+    "columns": {
+      "id": {
+        "filled_count": 1506,
+        "total_rows": 1506,
+        "coverage_percent": 100.0
+      },
+      "name": {
+        "filled_count": 1506,
+        "total_rows": 1506,
+        "coverage_percent": 100.0
+      },
+      "company": {
+        "filled_count": 455,
+        "total_rows": 1506,
+        "coverage_percent": 30.21
+      },
+      "email": {
+        "filled_count": 1505,
+        "total_rows": 1506,
+        "coverage_percent": 99.93
+      },
+      "phone": {
+        "filled_count": 1505,
+        "total_rows": 1506,
+        "coverage_percent": 99.93
+      },
+      "mobile": {
+        "filled_count": 1031,
+        "total_rows": 1506,
+        "coverage_percent": 68.46
+      },
+      "address": {
+        "filled_count": 1505,
+        "total_rows": 1506,
+        "coverage_percent": 99.93
+      },
+      "postal_code": {
+        "filled_count": 1505,
+        "total_rows": 1506,
+        "coverage_percent": 99.93
+      },
+      "city": {
+        "filled_count": 1505,
+        "total_rows": 1506,
+        "coverage_percent": 99.93
+      },
+      "country": {
+        "filled_count": 1506,
+        "total_rows": 1506,
+        "coverage_percent": 100.0
+      },
+      "vehicle_info": {
+        "filled_count": 3,
+        "total_rows": 1506,
+        "coverage_percent": 0.2
+      },
+      "maintenance_history": {
+        "filled_count": 0,
+        "total_rows": 1506,
+        "coverage_percent": 0.0
+      },
+      "notes": {
+        "filled_count": 782,
+        "total_rows": 1506,
+        "coverage_percent": 51.93
+      },
+      "created_at": {
+        "filled_count": 1506,
+        "total_rows": 1506,
+        "coverage_percent": 100.0
+      },
+      "updated_at": {
+        "filled_count": 1506,
+        "total_rows": 1506,
+        "coverage_percent": 100.0
+      },
+      "is_active": {
+        "filled_count": 1506,
+        "total_rows": 1506,
+        "coverage_percent": 100.0
+      },
+      "siret": {
+        "filled_count": 376,
+        "total_rows": 1506,
+        "coverage_percent": 24.97
+      },
+      "status": {
+        "filled_count": 1505,
+        "total_rows": 1506,
+        "coverage_percent": 99.93
+      },
+      "billing_address": {
+        "filled_count": 2,
+        "total_rows": 1506,
+        "coverage_percent": 0.13
+      },
+      "payment_terms": {
+        "filled_count": 1503,
+        "total_rows": 1506,
+        "coverage_percent": 99.8
+      },
+      "tax_number": {
+        "filled_count": 2,
+        "total_rows": 1506,
+        "coverage_percent": 0.13
+      },
+      "preferred_contact_method": {
+        "filled_count": 1503,
+        "total_rows": 1506,
+        "coverage_percent": 99.8
+      },
+      "zone": {
+        "filled_count": 1502,
+        "total_rows": 1506,
+        "coverage_percent": 99.73
+      },
+      "customer_type": {
+        "filled_count": 1501,
+        "total_rows": 1506,
+        "coverage_percent": 99.67
+      },
+      "language_code": {
+        "filled_count": 1506,
+        "total_rows": 1506,
+        "coverage_percent": 100.0
+      },
+      "timezone": {
+        "filled_count": 1506,
+        "total_rows": 1506,
+        "coverage_percent": 100.0
+      },
+      "privacy_level": {
+        "filled_count": 1506,
+        "total_rows": 1506,
+        "coverage_percent": 100.0
+      },
+      "tax_exempt": {
+        "filled_count": 1506,
+        "total_rows": 1506,
+        "coverage_percent": 100.0
+      },
+      "merged_into": {
+        "filled_count": 0,
+        "total_rows": 1506,
+        "coverage_percent": 0.0
+      },
+      "duplicate_confidence": {
+        "filled_count": 1506,
+        "total_rows": 1506,
+        "coverage_percent": 100.0
+      },
+      "last_activity_date": {
+        "filled_count": 0,
+        "total_rows": 1506,
+        "coverage_percent": 0.0
+      },
+      "source_channel": {
+        "filled_count": 0,
+        "total_rows": 1506,
+        "coverage_percent": 0.0
+      },
+      "acquisition_cost": {
+        "filled_count": 1506,
+        "total_rows": 1506,
+        "coverage_percent": 100.0
+      }
+    }
+  },
+  "users": {
+    "total_rows": 101,
+    "columns": {
+      "id": {
+        "filled_count": 101,
+        "total_rows": 101,
+        "coverage_percent": 100.0
+      },
+      "clientsweb_index": {
+        "filled_count": 6,
+        "total_rows": 101,
+        "coverage_percent": 5.94
+      },
+      "name": {
+        "filled_count": 101,
+        "total_rows": 101,
+        "coverage_percent": 100.0
+      },
+      "email": {
+        "filled_count": 101,
+        "total_rows": 101,
+        "coverage_percent": 100.0
+      },
+      "password": {
+        "filled_count": 101,
+        "total_rows": 101,
+        "coverage_percent": 100.0
+      },
+      "role": {
+        "filled_count": 101,
+        "total_rows": 101,
+        "coverage_percent": 100.0
+      },
+      "is_active": {
+        "filled_count": 101,
+        "total_rows": 101,
+        "coverage_percent": 100.0
+      },
+      "phone": {
+        "filled_count": 93,
+        "total_rows": 101,
+        "coverage_percent": 92.08
+      },
+      "specialty": {
+        "filled_count": 37,
+        "total_rows": 101,
+        "coverage_percent": 36.63
+      },
+      "status": {
+        "filled_count": 92,
+        "total_rows": 101,
+        "coverage_percent": 91.09
+      },
+      "notes": {
+        "filled_count": 4,
+        "total_rows": 101,
+        "coverage_percent": 3.96
+      },
+      "created_at": {
+        "filled_count": 101,
+        "total_rows": 101,
+        "coverage_percent": 100.0
+      },
+      "updated_at": {
+        "filled_count": 101,
+        "total_rows": 101,
+        "coverage_percent": 100.0
+      },
+      "certification_level": {
+        "filled_count": 1,
+        "total_rows": 101,
+        "coverage_percent": 0.99
+      },
+      "experience_years": {
+        "filled_count": 101,
+        "total_rows": 101,
+        "coverage_percent": 100.0
+      },
+      "hourly_rate": {
+        "filled_count": 47,
+        "total_rows": 101,
+        "coverage_percent": 46.53
+      },
+      "zone": {
+        "filled_count": 91,
+        "total_rows": 101,
+        "coverage_percent": 90.1
+      },
+      "max_weekly_hours": {
+        "filled_count": 101,
+        "total_rows": 101,
+        "coverage_percent": 100.0
+      },
+      "vehicle_assigned": {
+        "filled_count": 1,
+        "total_rows": 101,
+        "coverage_percent": 0.99
+      },
+      "tools_assigned": {
+        "filled_count": 1,
+        "total_rows": 101,
+        "coverage_percent": 0.99
+      },
+      "schedule_json": {
+        "filled_count": 2,
+        "total_rows": 101,
+        "coverage_percent": 1.98
+      },
+      "photo": {
+        "filled_count": 1,
+        "total_rows": 101,
+        "coverage_percent": 0.99
+      },
+      "on_call": {
+        "filled_count": 101,
+        "total_rows": 101,
+        "coverage_percent": 100.0
+      },
+      "schedule_json_bkp": {
+        "filled_count": 2,
+        "total_rows": 101,
+        "coverage_percent": 1.98
+      },
+      "department": {
+        "filled_count": 98,
+        "total_rows": 101,
+        "coverage_percent": 97.03
+      }
+    }
+  },
+  "vehicles": {
+    "total_rows": 1805,
+    "columns": {
+      "id": {
+        "filled_count": 1805,
+        "total_rows": 1805,
+        "coverage_percent": 100.0
+      },
+      "customer_id": {
+        "filled_count": 1805,
+        "total_rows": 1805,
+        "coverage_percent": 100.0
+      },
+      "make": {
+        "filled_count": 1804,
+        "total_rows": 1805,
+        "coverage_percent": 99.94
+      },
+      "model": {
+        "filled_count": 1804,
+        "total_rows": 1805,
+        "coverage_percent": 99.94
+      },
+      "year": {
+        "filled_count": 1804,
+        "total_rows": 1805,
+        "coverage_percent": 99.94
+      },
+      "mileage": {
+        "filled_count": 1801,
+        "total_rows": 1805,
+        "coverage_percent": 99.78
+      },
+      "vin": {
+        "filled_count": 1803,
+        "total_rows": 1805,
+        "coverage_percent": 99.89
+      },
+      "license_plate": {
+        "filled_count": 1802,
+        "total_rows": 1805,
+        "coverage_percent": 99.83
+      },
+      "color": {
+        "filled_count": 1800,
+        "total_rows": 1805,
+        "coverage_percent": 99.72
+      },
+      "fuel_type": {
+        "filled_count": 1800,
+        "total_rows": 1805,
+        "coverage_percent": 99.72
+      },
+      "notes": {
+        "filled_count": 727,
+        "total_rows": 1805,
+        "coverage_percent": 40.28
+      },
+      "created_at": {
+        "filled_count": 1805,
+        "total_rows": 1805,
+        "coverage_percent": 100.0
+      },
+      "updated_at": {
+        "filled_count": 1805,
+        "total_rows": 1805,
+        "coverage_percent": 100.0
+      }
+    }
+  },
+  "work_orders": {
+    "total_rows": 2267,
+    "columns": {
+      "id": {
+        "filled_count": 2267,
+        "total_rows": 2267,
+        "coverage_percent": 100.0
+      },
+      "claim_number": {
+        "filled_count": 2267,
+        "total_rows": 2267,
+        "coverage_percent": 100.0
+      },
+      "customer_name": {
+        "filled_count": 2267,
+        "total_rows": 2267,
+        "coverage_percent": 100.0
+      },
+      "customer_address": {
+        "filled_count": 2267,
+        "total_rows": 2267,
+        "coverage_percent": 100.0
+      },
+      "customer_phone": {
+        "filled_count": 2263,
+        "total_rows": 2267,
+        "coverage_percent": 99.82
+      },
+      "customer_email": {
+        "filled_count": 2253,
+        "total_rows": 2267,
+        "coverage_percent": 99.38
+      },
+      "description": {
+        "filled_count": 2267,
+        "total_rows": 2267,
+        "coverage_percent": 100.0
+      },
+      "priority": {
+        "filled_count": 2267,
+        "total_rows": 2267,
+        "coverage_percent": 100.0
+      },
+      "status": {
+        "filled_count": 2267,
+        "total_rows": 2267,
+        "coverage_percent": 100.0
+      },
+      "time_status": {
+        "filled_count": 2267,
+        "total_rows": 2267,
+        "coverage_percent": 100.0
+      },
+      "assigned_technician_id": {
+        "filled_count": 2257,
+        "total_rows": 2267,
+        "coverage_percent": 99.56
+      },
+      "created_by_user_id": {
+        "filled_count": 2267,
+        "total_rows": 2267,
+        "coverage_percent": 100.0
+      },
+      "customer_id": {
+        "filled_count": 2252,
+        "total_rows": 2267,
+        "coverage_percent": 99.34
+      },
+      "estimated_duration": {
+        "filled_count": 2260,
+        "total_rows": 2267,
+        "coverage_percent": 99.69
+      },
+      "estimated_cost": {
+        "filled_count": 2250,
+        "total_rows": 2267,
+        "coverage_percent": 99.25
+      },
+      "actual_duration": {
+        "filled_count": 0,
+        "total_rows": 2267,
+        "coverage_percent": 0.0
+      },
+      "actual_cost": {
+        "filled_count": 1605,
+        "total_rows": 2267,
+        "coverage_percent": 70.8
+      },
+      "scheduled_date": {
+        "filled_count": 10,
+        "total_rows": 2267,
+        "coverage_percent": 0.44
+      },
+      "completion_date": {
+        "filled_count": 1,
+        "total_rows": 2267,
+        "coverage_percent": 0.04
+      },
+      "notes": {
+        "filled_count": 5,
+        "total_rows": 2267,
+        "coverage_percent": 0.22
+      },
+      "created_at": {
+        "filled_count": 2267,
+        "total_rows": 2267,
+        "coverage_percent": 100.0
+      },
+      "updated_at": {
+        "filled_count": 2267,
+        "total_rows": 2267,
+        "coverage_percent": 100.0
+      },
+      "location_address": {
+        "filled_count": 2,
+        "total_rows": 2267,
+        "coverage_percent": 0.09
+      },
+      "location_latitude": {
+        "filled_count": 2250,
+        "total_rows": 2267,
+        "coverage_percent": 99.25
+      },
+      "location_longitude": {
+        "filled_count": 2250,
+        "total_rows": 2267,
+        "coverage_percent": 99.25
+      },
+      "internal_notes": {
+        "filled_count": 2,
+        "total_rows": 2267,
+        "coverage_percent": 0.09
+      },
+      "vehicle_id": {
+        "filled_count": 2251,
+        "total_rows": 2267,
+        "coverage_percent": 99.29
+      },
+      "appointment_id": {
+        "filled_count": 0,
+        "total_rows": 2267,
+        "coverage_percent": 0.0
+      },
+      "recurrence_type": {
+        "filled_count": 2267,
+        "total_rows": 2267,
+        "coverage_percent": 100.0
+      },
+      "recurrence_interval": {
+        "filled_count": 2267,
+        "total_rows": 2267,
+        "coverage_percent": 100.0
+      },
+      "recurrence_end_date": {
+        "filled_count": 0,
+        "total_rows": 2267,
+        "coverage_percent": 0.0
+      },
+      "is_all_day": {
+        "filled_count": 2267,
+        "total_rows": 2267,
+        "coverage_percent": 100.0
+      },
+      "event_color": {
+        "filled_count": 2267,
+        "total_rows": 2267,
+        "coverage_percent": 100.0
+      },
+      "parent_event_id": {
+        "filled_count": 0,
+        "total_rows": 2267,
+        "coverage_percent": 0.0
+      },
+      "is_exception": {
+        "filled_count": 2267,
+        "total_rows": 2267,
+        "coverage_percent": 100.0
+      },
+      "exception_date": {
+        "filled_count": 0,
+        "total_rows": 2267,
+        "coverage_percent": 0.0
+      }
+    }
+  },
+  "interventions": {
+    "total_rows": 2,
+    "columns": {
+      "id": {
+        "filled_count": 2,
+        "total_rows": 2,
+        "coverage_percent": 100.0
+      },
+      "work_order_id": {
+        "filled_count": 2,
+        "total_rows": 2,
+        "coverage_percent": 100.0
+      },
+      "task_id": {
+        "filled_count": 2,
+        "total_rows": 2,
+        "coverage_percent": 100.0
+      },
+      "technician_id": {
+        "filled_count": 0,
+        "total_rows": 2,
+        "coverage_percent": 0.0
+      },
+      "started_at": {
+        "filled_count": 0,
+        "total_rows": 2,
+        "coverage_percent": 0.0
+      },
+      "ended_at": {
+        "filled_count": 0,
+        "total_rows": 2,
+        "coverage_percent": 0.0
+      },
+      "result_status": {
+        "filled_count": 2,
+        "total_rows": 2,
+        "coverage_percent": 100.0
+      },
+      "summary": {
+        "filled_count": 2,
+        "total_rows": 2,
+        "coverage_percent": 100.0
+      },
+      "created_at": {
+        "filled_count": 2,
+        "total_rows": 2,
+        "coverage_percent": 100.0
+      }
+    }
+  },
+  "appointments": {
+    "total_rows": 2,
+    "columns": {
+      "id": {
+        "filled_count": 2,
+        "total_rows": 2,
+        "coverage_percent": 100.0
+      },
+      "customer_id": {
+        "filled_count": 2,
+        "total_rows": 2,
+        "coverage_percent": 100.0
+      },
+      "scheduled_date": {
+        "filled_count": 2,
+        "total_rows": 2,
+        "coverage_percent": 100.0
+      },
+      "duration_minutes": {
+        "filled_count": 1,
+        "total_rows": 2,
+        "coverage_percent": 50.0
+      },
+      "description": {
+        "filled_count": 1,
+        "total_rows": 2,
+        "coverage_percent": 50.0
+      },
+      "notes": {
+        "filled_count": 1,
+        "total_rows": 2,
+        "coverage_percent": 50.0
+      },
+      "created_by_user_id": {
+        "filled_count": 0,
+        "total_rows": 2,
+        "coverage_percent": 0.0
+      },
+      "created_at": {
+        "filled_count": 2,
+        "total_rows": 2,
+        "coverage_percent": 100.0
+      },
+      "status": {
+        "filled_count": 2,
+        "total_rows": 2,
+        "coverage_percent": 100.0
+      },
+      "vehicle_id": {
+        "filled_count": 0,
+        "total_rows": 2,
+        "coverage_percent": 0.0
+      }
+    }
+  },
+  "inventory_items": {
+    "total_rows": 11,
+    "columns": {
+      "id": {
+        "filled_count": 11,
+        "total_rows": 11,
+        "coverage_percent": 100.0
+      },
+      "name": {
+        "filled_count": 11,
+        "total_rows": 11,
+        "coverage_percent": 100.0
+      },
+      "description": {
+        "filled_count": 10,
+        "total_rows": 11,
+        "coverage_percent": 90.91
+      },
+      "category": {
+        "filled_count": 10,
+        "total_rows": 11,
+        "coverage_percent": 90.91
+      },
+      "sku": {
+        "filled_count": 10,
+        "total_rows": 11,
+        "coverage_percent": 90.91
+      },
+      "current_stock": {
+        "filled_count": 11,
+        "total_rows": 11,
+        "coverage_percent": 100.0
+      },
+      "min_stock": {
+        "filled_count": 11,
+        "total_rows": 11,
+        "coverage_percent": 100.0
+      },
+      "max_stock": {
+        "filled_count": 11,
+        "total_rows": 11,
+        "coverage_percent": 100.0
+      },
+      "reserved_stock": {
+        "filled_count": 11,
+        "total_rows": 11,
+        "coverage_percent": 100.0
+      },
+      "unit_cost": {
+        "filled_count": 11,
+        "total_rows": 11,
+        "coverage_percent": 100.0
+      },
+      "supplier": {
+        "filled_count": 10,
+        "total_rows": 11,
+        "coverage_percent": 90.91
+      },
+      "location": {
+        "filled_count": 10,
+        "total_rows": 11,
+        "coverage_percent": 90.91
+      },
+      "is_active": {
+        "filled_count": 11,
+        "total_rows": 11,
+        "coverage_percent": 100.0
+      },
+      "created_at": {
+        "filled_count": 11,
+        "total_rows": 11,
+        "coverage_percent": 100.0
+      },
+      "updated_at": {
+        "filled_count": 11,
+        "total_rows": 11,
+        "coverage_percent": 100.0
+      }
+    }
+  }
+}

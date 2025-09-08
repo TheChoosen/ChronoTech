@@ -75,7 +75,7 @@ def supervisor_dashboard():
             cursor.execute(f"""
                 SELECT 
                     wot.*,
-                    wo.title as wo_title,
+                    wo.description as wo_title,
                     wo.claim_number,
                     wo.customer_id,
                     wo.vehicle_id,
@@ -327,7 +327,7 @@ def task_details(task_id):
             cursor.execute("""
                 SELECT 
                     wot.*,
-                    wo.title as wo_title,
+                    wo.description as wo_title,
                     wo.claim_number,
                     c.name as customer_name,
                     c.phone as customer_phone,
@@ -473,7 +473,7 @@ def planning():
             cursor.execute("""
                 SELECT 
                     wot.*,
-                    wo.title as wo_title,
+                    wo.description as wo_title,
                     wo.claim_number,
                     c.name as customer_name,
                     t.name as technician_name,
