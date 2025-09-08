@@ -3,11 +3,13 @@ ChronoTech - Module Interventions & Travaux (v2.0)
 Application Flask principale basée sur le PRD Fusionné
 Architecture moderne avec design Claymorphism et intégration IA
 SÉCURISÉ - Sprint 1 Security Implementation
+DASHBOARD INNOVATIONS - Phases 1-3 Implementation
 """
 import traceback
 import importlib
 import importlib.util
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
+from flask_socketio import SocketIO
 import os
 import logging
 from datetime import datetime, timedelta
@@ -32,10 +34,10 @@ from core.utils import (
 from core.security import init_security, SecurityConfig, get_csrf_token, security_headers, audit_log
 
 # Import and register optional blueprints
-from routes.appointments import bp as appointments_bp
-from routes.vehicles import bp as vehicles_bp
-from routes.products import bp as products_bp
-from routes.invoices import bp as invoices_bp
+from routes.appointments.routes import bp as appointments_bp
+from routes.vehicles.routes import bp as vehicles_bp
+from routes.products.routes import bp as products_bp
+from routes.invoices.routes import bp as invoices_bp
 
 # Import Sprint 2 API blueprints
 try:
@@ -46,13 +48,25 @@ except ImportError as e:
     print(f"Warning: Sprint 2 blueprints non disponibles: {e}")
     SPRINT2_AVAILABLE = False
 
+# NOUVEAU SPRINT 2 - Expérience Terrain Augmentée
+try:
+    from core.voice_to_action import voice_engine
+    from core.offline_sync import init_sync_manager, sync_manager
+    from core.ar_checklist import ar_overlay
+    from routes.api.sprint2_api import register_sprint2_routes
+    SPRINT2_FIELD_EXPERIENCE = True
+    print("🚀 Sprint 2 Field Experience - Modules chargés avec succès")
+except ImportError as e:
+    print(f"Warning: Sprint 2 Field Experience non disponible: {e}")
+    SPRINT2_FIELD_EXPERIENCE = False
+
 # Configuration du logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Import Customer 360 API routes après logger
 try:
-    from routes.customer360_api import customer360_api
+    from routes.api.customer360 import customer360_api
     CUSTOMER360_API_AVAILABLE = True
 except ImportError as e:
     logger.warning(f"Customer 360 API non disponible: {e}")
@@ -127,13 +141,42 @@ def create_app(config_class=Config):
     except Exception as e:
         logger.warning(f"Impossible d'enregistrer invoices blueprint: {e}")
     
-    # Register Chat API blueprint
+    # Register Dashboard Innovation APIs
     try:
-        from routes.chat_api import chat_bp
-        app.register_blueprint(chat_bp, url_prefix='/api/chat')
-        logger.info("✅ Chat API blueprint enregistré")
+        from routes.api.contextual_chat import contextual_chat_bp
+        app.register_blueprint(contextual_chat_bp)
+        logger.info("✅ Contextual Chat API blueprint enregistré")
     except Exception as e:
-        logger.warning(f"Impossible d'enregistrer chat API blueprint: {e}")
+        logger.warning(f"Impossible d'enregistrer contextual chat API blueprint: {e}")
+    
+    try:
+        from routes.ai.copilot_api import copilot_bp
+        app.register_blueprint(copilot_bp, url_prefix='/api/copilot')
+        logger.info("✅ Copilot AI blueprint enregistré")
+    except Exception as e:
+        logger.warning(f"Impossible d'enregistrer copilot AI blueprint: {e}")
+    
+    # Register Sprint 1 IA APIs - Livrables requis
+    try:
+        from routes.ai.sprint1_api import ai_sprint1_bp
+        app.register_blueprint(ai_sprint1_bp)
+        logger.info("✅ Sprint 1 IA APIs enregistrées (/ai/suggestions, /ai/previsions)")
+    except Exception as e:
+        logger.warning(f"Impossible d'enregistrer Sprint 1 IA APIs: {e}")
+    
+    try:
+        from routes.dashboard.widgets_api import widgets_api_bp
+        app.register_blueprint(widgets_api_bp)
+        logger.info("✅ Dashboard Widgets API blueprint enregistré")
+    except Exception as e:
+        logger.warning(f"Impossible d'enregistrer dashboard widgets API blueprint: {e}")
+        
+    try:
+        from routes.dashboard.widgets_routes import widgets_routes_bp
+        app.register_blueprint(widgets_routes_bp)
+        logger.info("✅ Dashboard Widgets Routes blueprint enregistré")
+    except Exception as e:
+        logger.warning(f"Impossible d'enregistrer dashboard widgets routes blueprint: {e}")
     
     # Register Sprint 2 API blueprints (sécurisés)
     if SPRINT2_AVAILABLE:
@@ -150,31 +193,70 @@ def create_app(config_class=Config):
             logger.error(f"❌ Erreur enregistrement API Interventions: {e}")
         
         try:
-            from routes.ai_routes import ai_bp
+            from routes.ai.routes import ai_bp
             app.register_blueprint(ai_bp, url_prefix='/api/v1')
             logger.info("✅ AI Routes blueprint enregistré (Sprint 2) - /api/v1/ai")
         except Exception as e:
             logger.error(f"❌ Erreur enregistrement AI Routes: {e}")
+    
+    # NOUVEAU SPRINT 2 - Expérience Terrain Augmentée
+    if SPRINT2_FIELD_EXPERIENCE:
+        try:
+            # Enregistrer les routes API Sprint 2
+            register_sprint2_routes(app)
+            
+            # Initialiser le gestionnaire de synchronisation
+            mysql_config = {
+                'host': app.config.get('DATABASE_HOST', 'localhost'),
+                'user': app.config.get('DATABASE_USER', 'root'),
+                'password': app.config.get('DATABASE_PASSWORD', ''),
+                'database': app.config.get('DATABASE_NAME', 'chronotech'),
+                'charset': 'utf8mb4'
+            }
+            
+            sync_manager = init_sync_manager(mysql_config)
+            sync_manager.start_sync_service()
+            
+            logger.info("🚀✅ Sprint 2 Field Experience initialisé - Voice + Offline + AR")
+            
+        except Exception as e:
+            logger.error(f"❌ Erreur Sprint 2 Field Experience: {e}")
+            logger.error(traceback.format_exc())
     else:
         logger.warning("⚠️ Sprint 2 API blueprints non disponibles - fonctionnalités limitées")
     
+    # Register Sprint 3 blueprints (Collaboration immersive)
+    try:
+        from routes.client_portal import client_portal_bp
+        app.register_blueprint(client_portal_bp)
+        logger.info("✅ Client Portal blueprint enregistré (Sprint 3) - /client")
+    except Exception as e:
+        logger.error(f"❌ Erreur enregistrement Client Portal blueprint: {e}")
+    
+    try:
+        from core.visual_annotations import visual_annotations_bp
+        app.register_blueprint(visual_annotations_bp)
+        logger.info("✅ Visual Annotations blueprint enregistré (Sprint 3) - /api/annotations")
+    except Exception as e:
+        logger.error(f"❌ Erreur enregistrement Visual Annotations blueprint: {e}")
+
     # Register Sprint 3 blueprints (Interface Mobile, Superviseur & PDF)
     try:
-        from routes.mobile import mobile_bp
+        from routes.mobile.routes import mobile_bp
         app.register_blueprint(mobile_bp, url_prefix='/mobile')
         logger.info("✅ Mobile blueprint enregistré (Sprint 3) - /mobile")
     except Exception as e:
         logger.error(f"❌ Erreur enregistrement Mobile blueprint: {e}")
     
     try:
-        from routes.supervisor import supervisor_bp
+        from routes.supervisor.routes import supervisor_bp
         app.register_blueprint(supervisor_bp, url_prefix='/supervisor')
         logger.info("✅ Supervisor blueprint enregistré (Sprint 3) - /supervisor")
     except Exception as e:
         logger.error(f"❌ Erreur enregistrement Supervisor blueprint: {e}")
     
     try:
-        from routes.pdf import pdf_bp
+        from routes.pdf.routes import pdf_bp
         app.register_blueprint(pdf_bp, url_prefix='/pdf')
         logger.info("✅ PDF blueprint enregistré (Sprint 3) - /pdf")
     except Exception as e:
@@ -182,7 +264,7 @@ def create_app(config_class=Config):
     
     # Register Work Order Extensions (assignations, temps, notes)
     try:
-        from routes.work_order_extensions import bp as work_order_ext_bp
+        from routes.work_orders.extensions import bp as work_order_ext_bp
         app.register_blueprint(work_order_ext_bp)
         logger.info("✅ Work Order Extensions blueprint enregistré")
     except Exception as e:
@@ -226,6 +308,17 @@ def create_app(config_class=Config):
 
 # Création de l'application
 app = create_app()
+
+# Initialisation de Socket.IO pour le chat en temps réel
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+
+# Initialiser les événements Socket.IO pour le chat contextuel
+try:
+    from routes.api.contextual_chat import init_socketio_events
+    init_socketio_events(socketio)
+    logger.info("✅ Socket.IO initialisé pour le chat contextuel")
+except Exception as e:
+    logger.warning(f"Impossible d'initialiser Socket.IO: {e}")
 
 # Auto-login pour admin@chronotech.fr (développement uniquement)
 @app.before_request
@@ -558,6 +651,82 @@ def dashboard():
         if conn:
             conn.close()
 
+# NOUVELLE ROUTE - Sprint 2 Interface Terrain Augmentée
+@app.route('/field-interface')
+@login_required
+def field_interface():
+    """Interface terrain augmentée pour techniciens - Sprint 2"""
+    try:
+        # Vérifier que l'utilisateur est un technicien
+        if session.get('user_role') not in ['technician', 'supervisor']:
+            flash('Interface réservée aux techniciens', 'warning')
+            return redirect(url_for('dashboard'))
+        
+        conn = get_db_connection()
+        if conn is None:
+            flash('Service de base de données temporairement indisponible', 'error')
+            return redirect(url_for('dashboard'))
+        
+        with conn.cursor() as cursor:
+            user_id = session.get('user_id')
+            
+            # Récupérer le work order actuel du technicien (s'il y en a un)
+            cursor.execute("""
+                SELECT wo.*, c.name as customer_name, c.address
+                FROM work_orders wo
+                LEFT JOIN customers c ON wo.customer_id = c.id
+                WHERE wo.assigned_technician_id = %s
+                AND wo.status = 'in_progress'
+                ORDER BY wo.updated_at DESC
+                LIMIT 1
+            """, (user_id,))
+            
+            current_work_order = cursor.fetchone()
+            
+            # Si aucun work order en cours, prendre le plus récent assigné
+            if not current_work_order:
+                cursor.execute("""
+                    SELECT wo.*, c.name as customer_name, c.address
+                    FROM work_orders wo
+                    LEFT JOIN customers c ON wo.customer_id = c.id
+                    WHERE wo.assigned_technician_id = %s
+                    AND wo.status IN ('pending', 'assigned')
+                    ORDER BY COALESCE(wo.scheduled_date, wo.created_at) ASC
+                    LIMIT 1
+                """, (user_id,))
+                current_work_order = cursor.fetchone()
+            
+            # Récupérer les notes existantes pour ce work order
+            work_order_notes = []
+            if current_work_order:
+                cursor.execute("""
+                    SELECT * FROM intervention_notes 
+                    WHERE work_order_id = %s
+                    ORDER BY created_at DESC
+                """, (current_work_order['id'],))
+                work_order_notes = cursor.fetchall()
+            
+            # Déterminer s'il faut afficher le tutorial
+            show_tutorial = session.get('first_field_visit', True)
+            if show_tutorial:
+                session['first_field_visit'] = False
+            
+            return render_template('sprint2_field_interface.html',
+                                 work_order=current_work_order,
+                                 work_order_notes=work_order_notes,
+                                 user_name=session.get('user_name'),
+                                 show_tutorial=show_tutorial,
+                                 sprint2_enabled=SPRINT2_FIELD_EXPERIENCE)
+                                 
+    except Exception as e:
+        logger.error(f"Erreur interface terrain: {e}")
+        logger.error(traceback.format_exc())
+        flash('Erreur lors du chargement de l\'interface terrain', 'error')
+        return redirect(url_for('dashboard'))
+    finally:
+        if conn:
+            conn.close()
+
 # Routes pour le profil utilisateur et paramètres
 @app.route('/profile')
 @login_required
@@ -749,7 +918,7 @@ api_bp = None
 
 # Import work_orders package (structure consolidée)
 try:
-    from routes.work_orders import bp as work_orders_bp
+    from routes.work_orders.routes import bp as work_orders_bp
     logger.info("✅ work_orders blueprint importé avec succès")
 except Exception as e:
     logger.error(f"❌ Erreur import work_orders: {e}")
@@ -759,7 +928,7 @@ except Exception as e:
 try:
     # Import interventions SÉCURISÉ - Sprint 1 Security
     interventions_spec = importlib.util.spec_from_file_location("interventions_secure_module", 
-                                                               "/home/amenard/Chronotech/ChronoTech/routes/interventions_secure.py")
+                                                               "/home/amenard/Chronotech/ChronoTech/routes/interventions/secure.py")
     interventions_module = importlib.util.module_from_spec(interventions_spec)
     interventions_spec.loader.exec_module(interventions_module)
     interventions_bp = interventions_module.bp
@@ -774,7 +943,7 @@ except Exception as e:
     # Fallback vers l'ancien module
     try:
         interventions_spec = importlib.util.spec_from_file_location("interventions_module", 
-                                                                   "/home/amenard/Chronotech/ChronoTech/routes/interventions.py")
+                                                                   "/home/amenard/Chronotech/ChronoTech/routes/interventions/routes.py")
         interventions_module = importlib.util.module_from_spec(interventions_spec)
         interventions_spec.loader.exec_module(interventions_module)
         interventions_bp = interventions_module.bp
@@ -786,14 +955,14 @@ except Exception as e:
         interventions_bp = None
     
 try:  
-    import routes.customers_modular as customers_module
+    import routes.customers.modular as customers_module
     customers_bp = customers_module.bp
     logger.info("✅ customers blueprint importé avec succès")
 except Exception as e:
     logger.error(f"❌ Erreur import customers: {e}")
     # Try fallback to the basic customers module
     try:
-        import routes.customers as customers_module
+        import routes.customers.routes as customers_module
         customers_bp = customers_module.bp
         logger.warning("⚠️ Fallback vers customers module basique")
     except Exception as e2:
@@ -801,21 +970,21 @@ except Exception as e:
         customers_bp = None
 
 try:
-    import routes.technicians as technicians_module
+    import routes.technicians.routes as technicians_module
     technicians_bp = technicians_module.bp
     logger.info("✅ technicians blueprint importé avec succès")
 except Exception as e:
     logger.error(f"❌ Erreur import technicians: {e}")
 
 try:
-    import routes.analytics as analytics_module
+    import routes.analytics.routes as analytics_module
     analytics_bp = analytics_module.bp
     logger.info("✅ analytics blueprint importé avec succès")
 except Exception as e:
     logger.error(f"❌ Erreur import analytics: {e}")
 
 try:
-    import routes.api as api_module
+    import routes.api.main as api_module
     api_bp = api_module.bp
     logger.info("✅ api blueprint importé avec succès")
 except Exception as e:
@@ -864,7 +1033,7 @@ if ROUTES_AVAILABLE:
         
         # Enregistrer openai si disponible
         try:
-            from routes.openai import openai_bp
+            from routes.ai.openai import openai_bp
             app.register_blueprint(openai_bp, url_prefix='/openai')
             logger.info("✅ OpenAI blueprint enregistré")
             
@@ -886,7 +1055,7 @@ if ROUTES_AVAILABLE:
         
         # Enregistrer time tracking
         try:
-            from routes.time_tracking import time_tracking_bp
+            from routes.time_tracking.routes import time_tracking_bp
             app.register_blueprint(time_tracking_bp, url_prefix='/time_tracking')
             logger.info("✅ Time Tracking blueprint enregistré")
             

@@ -87,6 +87,36 @@
         </div>
     </section>
 
+    <!-- Dashboard Widgets Innovation - Phase 1-3 -->
+    <div class="row dashboard-widgets-container" id="dashboard-widgets-grid">
+        <!-- Widget Copilote IA -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            {% include 'dashboard/components/copilot_widget.html' %}
+        </div>
+        
+        <!-- Widget Customer 360 -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            {% include 'dashboard/components/customer360_widget.html' %}
+        </div>
+        
+        <!-- Widget Chat Contextuel -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            {% include 'dashboard/components/contextual_chat_widget.html' %}
+        </div>
+    </div>
+    
+    <!-- Bouton de personnalisation des widgets -->
+    <div class="row mb-4">
+        <div class="col-12 text-center">
+            <button class="btn btn-outline-primary btn-sm" id="customize-dashboard" onclick="dashboardWidgets.toggleCustomizationMode()">
+                <i class="fa-solid fa-gear me-2"></i>Personnaliser le Dashboard
+            </button>
+            <button class="btn btn-outline-secondary btn-sm ms-2" onclick="dashboardWidgets.resetLayout()">
+                <i class="fa-solid fa-undo me-2"></i>Réinitialiser
+            </button>
+        </div>
+    </div>
+
     <!-- ChronoChat Interface principale avec Kanban Board -->
     <div class="row">
         <!-- Section Kanban Work Orders (largeur principale) -->
@@ -270,37 +300,25 @@
 </div>
 
 <!-- Modales ChronoChat -->
-{% include 'dashboard/modal/quick_actions_modal.html' %}
-
-{% include 'dashboard/modal/team_chat_modal.html' %}
-
-{% include 'dashboard/modal/agenda_modal.html' %}
-
-{% include 'dashboard/modal/event_modal.html' %}
-
-{% include 'dashboard/modal/event_details_modal.html' %}
-{% include 'dashboard/modal/notifications_modal.html' %} {% include 'dashboard/modal/aura_modal.html' %}
-
-{% include 'dashboard/modal/stats_modal.html' %}
-
-{% include 'dashboard/modal/modules_modal.html' %}
-
-{% include 'dashboard/modal/departments_modal.html' %}
-
-{% include 'dashboard/modal/work_order_modal.html' %}
+{% include 'templates/dashboard/modal/quick_actions_modal.html' %}
+{% include 'templates/dashboard/modal/team_chat_modal.html' %}
+{% include 'templates/dashboard/modal/agenda_modal.html' %}
+{% include 'templates/dashboard/modal/event_modal.html' %}
+{% include 'templates/dashboard/modal/event_details_modal.html' %}
+{% include 'templates/dashboard/modal/notifications_modal.html' %}
+{% include 'templates/dashboard/modal/aura_modal.html' %}
+{% include 'templates/dashboard/modal/stats_modal.html' %}
+{% include 'templates/dashboard/modal/modules_modal.html' %}
+{% include 'templates/dashboard/modal/departments_modal.html' %}
+{% include 'templates/dashboard/modal/work_order_modal.html' %}
 
 <!-- Modales Kanban -->
-{% include 'dashboard/modal/technicians_kanban_modal.html' %}
-
-{% include 'dashboard/modal/work_orders_kanban_modal.html' %}
-
-{% include 'dashboard/modal/work_order_details_modal.html' %}
-
-{% include 'dashboard/modal/assign_technician_modal.html' %}
-
-{% include 'dashboard/modal/add_time_modal.html' %}
-
-{% include 'dashboard/modal/add_note_modal.html' %}
+{% include 'templates/dashboard/modal/technicians_kanban_modal.html' %}
+{% include 'templates/dashboard/modal/work_orders_kanban_modal.html' %}
+{% include 'templates/dashboard/modal/work_order_details_modal.html' %}
+{% include 'templates/dashboard/modal/assign_technician_modal.html' %}
+{% include 'templates/dashboard/modal/add_time_modal.html' %}
+{% include 'templates/dashboard/modal/add_note_modal.html' %}
 
 <!-- Modal Simple - Temporairement désactivé pour éviter conflit d'IDs -->
 <!-- {% include 'dashboard/modal/work_order_simple_details_modal.html' %} -->
@@ -4442,6 +4460,34 @@
 
         // Initialiser les calculs de temps
         setupTimeCalculations();
+        
+        // Initialiser les widgets d'innovation du dashboard (Phases 1-3)
+        // Ces widgets sont chargés en dernier pour éviter les conflicts
+        setTimeout(() => {
+            console.log('🚀 Initialisation des widgets d\'innovation...');
+            
+            // Le Copilot AI est déjà initialisé
+            
+            // Customer 360 Widget sera initialisé par son propre script
+            
+            // Chat Contextuel sera initialisé par son propre script
+            
+            // Dashboard Widgets System sera initialisé par son propre script
+            
+        }, 3000);
     });
 </script>
+
+<!-- Scripts pour les widgets d'innovation du dashboard -->
+<script src="{{ url_for('static', filename='js/copilot-ai.js') }}"></script>
+<script src="{{ url_for('static', filename='js/customer360-widget.js') }}"></script>
+<script src="{{ url_for('static', filename='js/contextual-chat.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard-widgets.js') }}"></script>
+
+<!-- Sprint 1 IA - Système de notifications contextuelles -->
+<script src="{{ url_for('static', filename='js/ai-notifications.js') }}"></script>
+
+<!-- GridStack.js pour le système de widgets personnalisables -->
+<script src="https://cdn.jsdelivr.net/npm/gridstack@9.2.0/dist/gridstack-all.js"></script>
+
 {% endblock %}

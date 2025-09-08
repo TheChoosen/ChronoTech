@@ -1,6 +1,7 @@
 Flask==2.2.2
 Flask-PyMySQL
 flask-login>=0.6.2
+Flask-SocketIO>=5.3.0
 python-dotenv
 PyMySQL
 Werkzeug==2.2.3
@@ -17,6 +18,13 @@ openai>=1.0.0
 google-api-python-client>=2.90.0
 google-auth>=2.20.0
 google-auth-oauthlib>=1.0.0
+
+# Sprint 2 - Expérience Terrain Augmentée
+# opencv-python>=4.8.0  # Pour AR (optionnel - installé si nécessaire)
+# aiohttp>=3.8.0        # Pour sync async (optionnel)
+mysql-connector-python>=8.0.0  # Sync offline MySQL
+numpy>=1.21.0                   # Traitement AR
+SpeechRecognition>=3.10.0       # Voice recognition backup
 google-auth-httplib2>=0.1.0
 httplib2>=0.22.0
 

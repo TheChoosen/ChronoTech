@@ -1,0 +1,959 @@
+/* CSS pour le template dashboard main.html */
+/* Styles FullCalendar minimaux pour éviter les erreurs de chargement */
+.fc-view-harness,
+.fc-view,
+.fc-toolbar {
+    position: relative;
+}
+
+.fc-event {
+    display: block;
+    padding: 2px;
+    margin: 1px 0;
+    border-radius: 3px;
+    background: #3788d8;
+    color: white;
+    text-decoration: none;
+}
+
+.fc-daygrid-event-harness {
+    position: relative;
+}
+
+/* Ajustements spécifiques pour l'intégration avec base.html */
+.chronochat-dashboard {
+    margin-top: -1.5rem;
+    /* Compensation du padding container */
+}
+
+/* Personnalisations pour les statuts Kanban spécifiques */
+.kanban-column[data-status="nouveau"] {
+    --status-color: var(--info-color);
+}
+
+.kanban-column[data-status="assigne"] {
+    --status-color: var(--warning-color);
+}
+
+.kanban-column[data-status="en-cours"] {
+    --status-color: var(--primary-color);
+}
+
+.kanban-column[data-status="en-attente"] {
+    --status-color: var(--warning-color);
+}
+
+.kanban-column[data-status="termine"] {
+    --status-color: var(--success-color);
+}
+
+.kanban-column[data-status="facture"] {
+    --status-color: var(--success-color);
+}
+
+.kanban-column::before {
+    background: var(--status-color, var(--primary-color));
+}
+
+/* Intégration harmonieuse avec la navbar */
+@media (min-width: 992px) {
+    .chronochat-dashboard {
+        border-radius: var(--border-radius) var(--border-radius) 0 0;
+    }
+}
+
+/* Suppressions d'effets pour un rendu plus sobre */
+.clay-element:hover,
+.clay-card:hover,
+.kanban-column:hover,
+.kanban-card:hover {
+    transform: none !important;
+    /* Supprime tous les effets de translation */
+}
+
+/* Réduction de la transparence globale */
+.badge {
+    opacity: 0.95 !important;
+}
+
+/* Désactivation des animations subtiles */
+* {
+    animation-duration: 0s !important;
+    transition-duration: 0.2s !important;
+    /* Transitions très rapides */
+}
+
+/* Réduction des ombres pour moins d'effets */
+.clay-element,
+.clay-card,
+.kanban-column,
+.kanban-card {
+    box-shadow: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light) !important;
+    transition: all 0.3s ease;
+}
+
+/* Animations pour le drag & drop */
+.kanban-card.status-changed {
+    animation: statusChanged 0.6s ease;
+    border: 2px solid #007bff;
+}
+
+@keyframes statusChanged {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 8px 25px rgba(0, 123, 255, 0.3);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+.kanban-card.dragging {
+    opacity: 0.8;
+    transform: rotate(5deg) scale(1.05);
+    z-index: 1000;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.kanban-column.drag-over {
+    background-color: rgba(0, 123, 255, 0.1);
+    border: 2px dashed #007bff;
+}
+
+/* Toast notifications */
+.toast-notification {
+    font-family: 'Inter', sans-serif;
+    border-left: 4px solid rgba(255, 255, 255, 0.3);
+}
+
+.toast-notification:hover {
+    cursor: pointer;
+    opacity: 0.9;
+}
+
+/* Conteneur toast couche supérieure */
+.toast-layer {
+    z-index: 1090;
+    /* supérieur à modal (1050) pour rester visible */
+}
+
+/* Styles pour le Kanban Techniciens */
+.technician-board {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.tech-column {
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background: #fff;
+}
+
+.tech-header {
+    padding: 0.5rem;
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    font-size: 0.875rem;
+}
+
+.tech-content {
+    min-height: 60px;
+    padding: 0.5rem;
+    background: #f8f9fa;
+}
+
+.tech-card {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tech-card:hover {
+    border-color: #0d6efd;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.tech-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #007bff, #6f42c1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 0.75rem;
+}
+
+.tech-info {
+    flex: 1;
+}
+
+.tech-name {
+    font-weight: 600;
+    font-size: 0.875rem;
+    margin: 0;
+}
+
+.tech-role {
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin: 0;
+}
+
+.tech-status {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-left: auto;
+}
+
+.tech-status.available {
+    background: #28a745;
+}
+
+.tech-status.busy {
+    background: #ffc107;
+}
+
+.tech-status.break {
+    background: #17a2b8;
+}
+
+.tech-status.offline {
+    background: #6c757d;
+}
+
+/* Styles pour le Diagramme de Gantt */
+.gantt-container {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    background: white;
+}
+
+.gantt-header {
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.gantt-timeline {
+    display: flex;
+    height: 40px;
+    align-items: center;
+    padding: 0 0.5rem;
+    min-width: 800px;
+}
+
+.gantt-day {
+    flex: 1;
+    text-align: center;
+    padding: 0.25rem;
+    border-right: 1px solid #dee2e6;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.gantt-day:last-child {
+    border-right: none;
+}
+
+.gantt-body {
+    min-width: 800px;
+}
+
+.gantt-row {
+    display: flex;
+    border-bottom: 1px solid #f0f0f0;
+    min-height: 50px;
+    align-items: center;
+    position: relative;
+}
+
+.gantt-row:hover {
+    background: #f8f9fa;
+}
+
+.gantt-task {
+    position: absolute;
+    height: 30px;
+    border-radius: 4px;
+    color: white;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    padding: 0 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 5;
+}
+
+.gantt-task:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.gantt-task::after {
+    content: '👁️';
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    font-size: 0.8rem;
+    pointer-events: none;
+}
+
+.gantt-task:hover::after {
+    opacity: 0.8;
+}
+
+.gantt-task.priority-low {
+    background: #17a2b8;
+}
+
+.gantt-task.priority-medium {
+    background: #ffc107;
+    color: #000;
+}
+
+.gantt-task.priority-high {
+    background: #fd7e14;
+}
+
+.gantt-task.priority-urgent {
+    background: #dc3545;
+}
+
+.gantt-task-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 500;
+}
+
+.gantt-legend {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.gantt-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.gantt-legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 2px;
+}
+
+/* Styles pour la section résumé des techniciens */
+.technicians-summary {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.tech-stat-card {
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.tech-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Styles pour la modal Kanban Techniciens */
+.tech-kanban-column {
+    border: 2px solid #dee2e6;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    background: #fff;
+    min-height: 400px;
+    transition: all 0.2s ease;
+}
+
+.tech-kanban-column:hover {
+    border-color: #adb5bd;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.tech-kanban-column.drag-over {
+    border-color: #0d6efd;
+    background: #f8f9ff;
+    transform: scale(1.02);
+}
+
+.tech-kanban-header {
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.tech-kanban-content {
+    min-height: 350px;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    overflow-y: auto;
+}
+
+.tech-kanban-card {
+    background: white;
+    border: 2px solid #e9ecef;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+    cursor: grab;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.tech-kanban-card:hover {
+    border-color: #0d6efd;
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.15);
+    transform: translateY(-2px);
+}
+
+.tech-kanban-card:active {
+    cursor: grabbing;
+    transform: rotate(2deg);
+}
+
+.tech-kanban-card.dragging {
+    opacity: 0.7;
+    transform: rotate(5deg) scale(1.05);
+    z-index: 1000;
+}
+
+.tech-kanban-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #007bff, #6f42c1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.tech-kanban-info {
+    text-align: center;
+}
+
+.tech-kanban-name {
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+    color: #343a40;
+}
+
+.tech-kanban-role {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+}
+
+.tech-kanban-details {
+    font-size: 0.8rem;
+    color: #495057;
+}
+
+.tech-kanban-status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 0.5rem;
+}
+
+.tech-kanban-status-indicator.available {
+    background: #28a745;
+}
+
+.tech-kanban-status-indicator.busy {
+    background: #ffc107;
+}
+
+.tech-kanban-status-indicator.break {
+    background: #17a2b8;
+}
+
+.tech-kanban-status-indicator.offline {
+    background: #6c757d;
+}
+
+.tech-stats-summary {
+    font-size: 0.9rem;
+}
+
+.tech-stats-summary span {
+    font-weight: 600;
+    color: #495057;
+}
+
+/* Animation pour les changements de statut */
+@keyframes statusChange {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+.tech-kanban-card.status-changed {
+    animation: statusChange 0.3s ease;
+}
+
+/* Responsive pour la modal */
+@media (max-width: 768px) {
+    .tech-kanban-column {
+        margin-bottom: 1rem;
+    }
+
+    .tech-kanban-content {
+        min-height: 200px;
+    }
+
+    .modal-xl {
+        max-width: 95%;
+    }
+}
+
+/* Styles pour la section résumé des bons de travail */
+.work-orders-summary {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.wo-stat-card {
+    transition: all 0.2s ease;
+    cursor: pointer;
+    height: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.wo-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Styles pour la modal Kanban Bons de Travail */
+.wo-kanban-column {
+    border: 2px solid #dee2e6;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    background: #fff;
+    min-height: 500px;
+    transition: all 0.2s ease;
+}
+
+.wo-kanban-column:hover {
+    border-color: #adb5bd;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.wo-kanban-column.drag-over {
+    border-color: #0d6efd;
+    background: #f8f9ff;
+    transform: scale(1.02);
+}
+
+.wo-kanban-header {
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.wo-kanban-content {
+    min-height: 450px;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    overflow-y: auto;
+}
+
+.wo-kanban-card {
+    background: white;
+    border: 2px solid #e9ecef;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+    cursor: grab;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    position: relative;
+}
+
+.wo-kanban-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-top: 10px solid #007bff;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.wo-kanban-card:hover::before {
+    opacity: 0.7;
+}
+
+.wo-kanban-card:hover {
+    border-color: #0d6efd;
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.15);
+    transform: translateY(-2px);
+    cursor: pointer;
+}
+
+.wo-kanban-card:active {
+    cursor: grabbing;
+    transform: rotate(1deg);
+}
+
+.wo-kanban-card.dragging {
+    opacity: 0.7;
+    transform: rotate(3deg) scale(1.05);
+    z-index: 1000;
+}
+
+.wo-kanban-card.urgent-priority {
+    border-left: 4px solid #dc3545;
+    background: linear-gradient(90deg, #fff5f5 0%, #ffffff 10%);
+}
+
+.wo-kanban-card.high-priority {
+    border-left: 4px solid #fd7e14;
+    background: linear-gradient(90deg, #fff8f0 0%, #ffffff 10%);
+}
+
+.wo-kanban-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
+}
+
+.wo-kanban-card-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #343a40;
+    margin: 0;
+}
+
+.wo-kanban-card-customer {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+}
+
+.wo-kanban-card-description {
+    font-size: 0.85rem;
+    color: #495057;
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+    max-height: 3.9rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+}
+
+.wo-kanban-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.75rem;
+    color: #6c757d;
+}
+
+.wo-kanban-card-technician {
+    font-weight: 500;
+}
+
+.wo-kanban-card-date {
+    opacity: 0.8;
+}
+
+.wo-priority-badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+}
+
+.wo-stats-summary {
+    font-size: 0.9rem;
+}
+
+.wo-stats-summary span {
+    font-weight: 600;
+    color: #495057;
+}
+
+/* Animation pour les changements de statut des bons de travail */
+@keyframes woStatusChange {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+.wo-kanban-card.status-changed {
+    animation: woStatusChange 0.3s ease;
+}
+
+/* Responsive pour la modal Kanban Work Orders */
+@media (max-width: 1200px) {
+    .wo-kanban-column {
+        margin-bottom: 1rem;
+    }
+
+    .wo-kanban-content {
+        min-height: 300px;
+    }
+}
+
+@media (max-width: 768px) {
+    .wo-kanban-content {
+        min-height: 250px;
+    }
+
+    .wo-kanban-header h6 {
+        font-size: 0.8rem;
+    }
+
+    .wo-kanban-card {
+        padding: 0.5rem;
+    }
+}
+
+/* Styles pour la modal de détails des bons de travail */
+.timeline {
+    position: relative;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 0;
+}
+
+.timeline-marker {
+    position: relative;
+    z-index: 2;
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    position: relative;
+}
+
+.timeline-content::before {
+    content: '';
+    position: absolute;
+    left: -8px;
+    top: 15px;
+    width: 0;
+    height: 0;
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    border-right: 8px solid #dee2e6;
+}
+
+.timeline-content::after {
+    content: '';
+    position: absolute;
+    left: -7px;
+    top: 15px;
+    width: 0;
+    height: 0;
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    border-right: 8px solid #f8f9fa;
+}
+
+/* Styles pour les cartes de détails */
+#workOrderDetailsModal .card {
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+#workOrderDetailsModal .card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+#workOrderDetailsModal .card-header {
+    background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+}
+
+#workOrderDetailsModal .card-body {
+    padding: 1.25rem;
+}
+
+/* Amélioration des badges dans la modal */
+#workOrderDetailsModal .badge {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 0.375rem;
+}
+
+/* Styles pour la barre de progression personnalisée */
+#workOrderDetailsModal .progress {
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background: #e9ecef;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+#workOrderDetailsModal .progress-bar {
+    border-radius: 0.5rem;
+    transition: width 0.6s ease;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Responsive pour la modal de détails */
+@media (max-width: 992px) {
+    #workOrderDetailsModal .modal-dialog {
+        max-width: 95%;
+        margin: 1rem auto;
+    }
+
+    #workOrderDetailsModal .card-body {
+        padding: 1rem;
+    }
+
+    #workOrderDetailsModal .timeline {
+        max-height: 200px;
+    }
+}
+
+@media (max-width: 768px) {
+    #workOrderDetailsModal .modal-dialog {
+        margin: 0.5rem;
+    }
+
+    #workOrderDetailsModal .row.mb-3 {
+        margin-bottom: 1rem !important;
+    }
+
+    #workOrderDetailsModal .col-sm-4,
+    #workOrderDetailsModal .col-sm-5 {
+        margin-bottom: 0.25rem;
+    }
+
+    #workOrderDetailsModal .modal-footer .d-flex {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    #workOrderDetailsModal .modal-footer .d-flex>div {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+/* Animation pour l'ouverture de la modal */
+#workOrderDetailsModal .modal-content {
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Styles spéciaux pour les éléments interactifs */
+#workOrderDetailsModal .card-body .row:hover {
+    background: rgba(13, 110, 253, 0.05);
+    border-radius: 0.25rem;
+    padding: 0.25rem;
+    margin: -0.25rem;
+    transition: all 0.2s ease;
+}
+
+/* Amélioration visuelle des zones de texte */
+#workOrderDetailsModal .border.rounded {
+    background: #ffffff;
+    border: 2px solid #e9ecef !important;
+    transition: border-color 0.2s ease;
+}
+
+#workOrderDetailsModal .border.rounded:hover {
+    border-color: #adb5bd !important;
+}

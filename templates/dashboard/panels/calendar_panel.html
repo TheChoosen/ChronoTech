@@ -1,0 +1,623 @@
+<!-- Panel Calendrier pour Dashboard -->
+<div class="dashboard-panel calendar-panel" id="calendarPanel">
+    <div class="panel-header">
+        <h4><i class="fas fa-calendar-alt me-2"></i>Calendrier</h4>
+        <div class="panel-controls">
+            <div class="btn-group me-2" role="group">
+                <button class="btn btn-sm btn-outline-primary" onclick="changeCalendarView('month')">Mois</button>
+                <button class="btn btn-sm btn-outline-primary" onclick="changeCalendarView('week')">Semaine</button>
+                <button class="btn btn-sm btn-outline-primary" onclick="changeCalendarView('day')">Jour</button>
+            </div>
+            <button class="btn btn-sm btn-primary" onclick="createEvent()">
+                <i class="fas fa-plus"></i> Événement
+            </button>
+        </div>
+    </div>
+    
+    <div class="panel-content">
+        <!-- Navigation du calendrier -->
+        <div class="calendar-nav">
+            <button class="btn btn-sm btn-ghost" onclick="previousPeriod()">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <h5 id="currentPeriod">Janvier 2024</h5>
+            <button class="btn btn-sm btn-ghost" onclick="nextPeriod()">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+        
+        <!-- Vue calendrier -->
+        <div class="calendar-container">
+            <div id="calendar" class="calendar-grid">
+                <!-- Le calendrier sera généré dynamiquement -->
+            </div>
+        </div>
+        
+        <!-- Mini agenda -->
+        <div class="agenda-mini">
+            <h6><i class="fas fa-list me-2"></i>Événements du jour</h6>
+            <div id="todayEvents" class="today-events">
+                <!-- Les événements du jour seront listés ici -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.calendar-panel {
+    background: var(--bg-color);
+    border-radius: 15px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+.calendar-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.calendar-nav h5 {
+    margin: 0;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.calendar-container {
+    padding: 1rem;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+    background: var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.calendar-header {
+    background: var(--primary-color);
+    color: white;
+    padding: 0.5rem;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.calendar-day {
+    background: white;
+    min-height: 80px;
+    padding: 0.5rem;
+    position: relative;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.calendar-day:hover {
+    background: var(--bg-hover);
+}
+
+.calendar-day.other-month {
+    background: var(--bg-disabled);
+    color: var(--text-muted);
+}
+
+.calendar-day.today {
+    background: var(--primary-light);
+    border: 2px solid var(--primary-color);
+}
+
+.calendar-day.selected {
+    background: var(--primary-color);
+    color: white;
+}
+
+.day-number {
+    font-weight: 600;
+    margin-bottom: 0.3rem;
+}
+
+.day-events {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.event-item {
+    background: var(--primary-color);
+    color: white;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.event-item.maintenance {
+    background: var(--warning-color);
+}
+
+.event-item.meeting {
+    background: var(--info-color);
+}
+
+.event-item.deadline {
+    background: var(--danger-color);
+}
+
+.agenda-mini {
+    padding: 1rem;
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+}
+
+.agenda-mini h6 {
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+}
+
+.today-events {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.today-event {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    background: white;
+    border-radius: 8px;
+    border-left: 4px solid var(--primary-color);
+}
+
+.event-time {
+    font-weight: 600;
+    color: var(--primary-color);
+    min-width: 60px;
+    font-size: 0.8rem;
+}
+
+.event-details {
+    flex: 1;
+    margin-left: 0.5rem;
+}
+
+.event-title {
+    font-weight: 600;
+    color: var(--text-color);
+    font-size: 0.9rem;
+}
+
+.event-description {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+/* Vue semaine */
+.week-view .calendar-grid {
+    grid-template-columns: 80px repeat(7, 1fr);
+    grid-template-rows: 40px repeat(24, 40px);
+}
+
+.week-time-slot {
+    background: var(--bg-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    border-right: 1px solid var(--border-color);
+}
+
+.week-day-header {
+    background: var(--primary-color);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.week-day-name {
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.week-day-number {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+/* Vue jour */
+.day-view .calendar-container {
+    display: flex;
+    gap: 1rem;
+}
+
+.day-schedule {
+    flex: 2;
+}
+
+.day-details {
+    flex: 1;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+@media (max-width: 768px) {
+    .calendar-grid {
+        font-size: 0.8rem;
+    }
+    
+    .calendar-day {
+        min-height: 60px;
+        padding: 0.3rem;
+    }
+    
+    .panel-controls {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .btn-group {
+        margin: 0 !important;
+    }
+}
+</style>
+
+<script>
+// Système de Calendrier
+window.CalendarSystem = {
+    currentDate: new Date(),
+    currentView: 'month',
+    events: [],
+    
+    // Initialiser le calendrier
+    async init() {
+        await this.loadEvents();
+        this.render();
+        this.updateTodayEvents();
+    },
+    
+    // Charger les événements
+    async loadEvents() {
+        try {
+            const response = await fetch('/api/calendar/events');
+            this.events = await response.json();
+        } catch (error) {
+            console.error('Erreur lors du chargement des événements:', error);
+            this.events = this.generateSampleEvents(); // Données de test
+        }
+    },
+    
+    // Générer des événements de test
+    generateSampleEvents() {
+        const today = new Date();
+        return [
+            {
+                id: 1,
+                title: 'Maintenance Véhicule #123',
+                date: today.toISOString().split('T')[0],
+                time: '09:00',
+                type: 'maintenance',
+                description: 'Révision complète véhicule'
+            },
+            {
+                id: 2,
+                title: 'Réunion équipe',
+                date: today.toISOString().split('T')[0],
+                time: '14:00',
+                type: 'meeting',
+                description: 'Point mensuel équipe technique'
+            },
+            {
+                id: 3,
+                title: 'Échéance contrat',
+                date: new Date(today.getTime() + 24*60*60*1000).toISOString().split('T')[0],
+                time: '17:00',
+                type: 'deadline',
+                description: 'Renouvellement contrat client'
+            }
+        ];
+    },
+    
+    // Rendre le calendrier
+    render() {
+        this.updatePeriodTitle();
+        
+        switch (this.currentView) {
+            case 'month':
+                this.renderMonth();
+                break;
+            case 'week':
+                this.renderWeek();
+                break;
+            case 'day':
+                this.renderDay();
+                break;
+        }
+    },
+    
+    // Rendre la vue mois
+    renderMonth() {
+        const calendar = document.getElementById('calendar');
+        calendar.className = 'calendar-grid month-view';
+        
+        const firstDay = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth(), 1);
+        const lastDay = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth() + 1, 0);
+        const startDate = new Date(firstDay);
+        startDate.setDate(startDate.getDate() - firstDay.getDay());
+        
+        // En-têtes des jours
+        const headers = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+        let html = headers.map(day => `<div class="calendar-header">${day}</div>`).join('');
+        
+        // Jours du mois
+        const currentDate = new Date(startDate);
+        for (let i = 0; i < 42; i++) {
+            const isCurrentMonth = currentDate.getMonth() === this.currentDate.getMonth();
+            const isToday = this.isToday(currentDate);
+            const dayEvents = this.getEventsForDate(currentDate);
+            
+            html += `
+                <div class="calendar-day ${!isCurrentMonth ? 'other-month' : ''} ${isToday ? 'today' : ''}"
+                     onclick="selectDate('${currentDate.toISOString().split('T')[0]}')">
+                    <div class="day-number">${currentDate.getDate()}</div>
+                    <div class="day-events">
+                        ${dayEvents.slice(0, 3).map(event => 
+                            `<div class="event-item ${event.type}" onclick="openEvent(${event.id}); event.stopPropagation();">
+                                ${event.title}
+                            </div>`
+                        ).join('')}
+                        ${dayEvents.length > 3 ? `<div class="event-item">+${dayEvents.length - 3} autres</div>` : ''}
+                    </div>
+                </div>
+            `;
+            
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        
+        calendar.innerHTML = html;
+    },
+    
+    // Rendre la vue semaine
+    renderWeek() {
+        const calendar = document.getElementById('calendar');
+        calendar.className = 'calendar-grid week-view';
+        
+        const startOfWeek = this.getStartOfWeek(this.currentDate);
+        let html = '<div class="week-time-slot"></div>'; // Coin vide
+        
+        // En-têtes des jours
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(startOfWeek);
+            date.setDate(date.getDate() + i);
+            const isToday = this.isToday(date);
+            
+            html += `
+                <div class="week-day-header ${isToday ? 'today' : ''}">
+                    <div class="week-day-name">${this.getDayName(date)}</div>
+                    <div class="week-day-number">${date.getDate()}</div>
+                </div>
+            `;
+        }
+        
+        // Créneaux horaires
+        for (let hour = 0; hour < 24; hour++) {
+            html += `<div class="week-time-slot">${hour}:00</div>`;
+            
+            for (let day = 0; day < 7; day++) {
+                const date = new Date(startOfWeek);
+                date.setDate(date.getDate() + day);
+                date.setHours(hour);
+                
+                const events = this.getEventsForDateTime(date);
+                html += `
+                    <div class="calendar-day" onclick="createEventAt('${date.toISOString()}')">
+                        ${events.map(event => 
+                            `<div class="event-item ${event.type}" onclick="openEvent(${event.id}); event.stopPropagation();">
+                                ${event.title}
+                            </div>`
+                        ).join('')}
+                    </div>
+                `;
+            }
+        }
+        
+        calendar.innerHTML = html;
+    },
+    
+    // Rendre la vue jour
+    renderDay() {
+        const calendar = document.getElementById('calendar');
+        calendar.className = 'day-view';
+        
+        const events = this.getEventsForDate(this.currentDate);
+        
+        const html = `
+            <div class="day-schedule">
+                <h6>Planning du ${this.formatDate(this.currentDate)}</h6>
+                <div class="day-timeline">
+                    ${this.renderDayTimeline(events)}
+                </div>
+            </div>
+            <div class="day-details">
+                <h6>Détails du jour</h6>
+                <div class="day-stats">
+                    <p><strong>${events.length}</strong> événements</p>
+                    <p><strong>${events.filter(e => e.type === 'maintenance').length}</strong> maintenances</p>
+                    <p><strong>${events.filter(e => e.type === 'meeting').length}</strong> réunions</p>
+                </div>
+            </div>
+        `;
+        
+        calendar.innerHTML = html;
+    },
+    
+    // Utilitaires
+    isToday(date) {
+        const today = new Date();
+        return date.toDateString() === today.toDateString();
+    },
+    
+    getEventsForDate(date) {
+        const dateStr = date.toISOString().split('T')[0];
+        return this.events.filter(event => event.date === dateStr);
+    },
+    
+    getEventsForDateTime(date) {
+        const events = this.getEventsForDate(date);
+        const hour = date.getHours();
+        return events.filter(event => {
+            const eventHour = parseInt(event.time.split(':')[0]);
+            return eventHour === hour;
+        });
+    },
+    
+    getStartOfWeek(date) {
+        const start = new Date(date);
+        start.setDate(date.getDate() - date.getDay());
+        return start;
+    },
+    
+    getDayName(date) {
+        return date.toLocaleDateString('fr-FR', { weekday: 'short' });
+    },
+    
+    formatDate(date) {
+        return date.toLocaleDateString('fr-FR', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        });
+    },
+    
+    updatePeriodTitle() {
+        const title = document.getElementById('currentPeriod');
+        
+        switch (this.currentView) {
+            case 'month':
+                title.textContent = this.currentDate.toLocaleDateString('fr-FR', { 
+                    year: 'numeric', 
+                    month: 'long' 
+                });
+                break;
+            case 'week':
+                const startOfWeek = this.getStartOfWeek(this.currentDate);
+                const endOfWeek = new Date(startOfWeek);
+                endOfWeek.setDate(endOfWeek.getDate() + 6);
+                title.textContent = `${startOfWeek.getDate()}-${endOfWeek.getDate()} ${startOfWeek.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}`;
+                break;
+            case 'day':
+                title.textContent = this.formatDate(this.currentDate);
+                break;
+        }
+    },
+    
+    updateTodayEvents() {
+        const container = document.getElementById('todayEvents');
+        const todayEvents = this.getEventsForDate(new Date());
+        
+        if (!todayEvents.length) {
+            container.innerHTML = '<p class="text-muted">Aucun événement aujourd\'hui</p>';
+            return;
+        }
+        
+        container.innerHTML = todayEvents.map(event => `
+            <div class="today-event" onclick="openEvent(${event.id})">
+                <div class="event-time">${event.time}</div>
+                <div class="event-details">
+                    <div class="event-title">${event.title}</div>
+                    <div class="event-description">${event.description}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+};
+
+// Fonctions globales
+function changeCalendarView(view) {
+    CalendarSystem.currentView = view;
+    CalendarSystem.render();
+    
+    // Mettre à jour les boutons actifs
+    document.querySelectorAll('.btn-group .btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+}
+
+function previousPeriod() {
+    switch (CalendarSystem.currentView) {
+        case 'month':
+            CalendarSystem.currentDate.setMonth(CalendarSystem.currentDate.getMonth() - 1);
+            break;
+        case 'week':
+            CalendarSystem.currentDate.setDate(CalendarSystem.currentDate.getDate() - 7);
+            break;
+        case 'day':
+            CalendarSystem.currentDate.setDate(CalendarSystem.currentDate.getDate() - 1);
+            break;
+    }
+    CalendarSystem.render();
+}
+
+function nextPeriod() {
+    switch (CalendarSystem.currentView) {
+        case 'month':
+            CalendarSystem.currentDate.setMonth(CalendarSystem.currentDate.getMonth() + 1);
+            break;
+        case 'week':
+            CalendarSystem.currentDate.setDate(CalendarSystem.currentDate.getDate() + 7);
+            break;
+        case 'day':
+            CalendarSystem.currentDate.setDate(CalendarSystem.currentDate.getDate() + 1);
+            break;
+    }
+    CalendarSystem.render();
+}
+
+function selectDate(dateStr) {
+    CalendarSystem.currentDate = new Date(dateStr);
+    CalendarSystem.updateTodayEvents();
+}
+
+function createEvent() {
+    // Ouvrir le modal de création d'événement
+    if (typeof openCreateEventModal === 'function') {
+        openCreateEventModal();
+    } else {
+        NotificationSystem.showToast('Fonctionnalité de création d\'événement à implémenter', 'info');
+    }
+}
+
+function createEventAt(dateTimeStr) {
+    const date = new Date(dateTimeStr);
+    createEvent(date);
+}
+
+function openEvent(eventId) {
+    // Ouvrir le modal de détails de l'événement
+    if (typeof openEventDetailsModal === 'function') {
+        openEventDetailsModal(eventId);
+    } else {
+        NotificationSystem.showToast(`Ouverture événement ${eventId}`, 'info');
+    }
+}
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+    if (document.getElementById('calendarPanel')) {
+        CalendarSystem.init();
+    }
+});
+</script>

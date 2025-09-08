@@ -1,12 +1,25 @@
 """
 Configuration de sécurité centralisée pour ChronoTech
 Sprint 1 - Security Hardening
+Sprint 3 - Client Portal Security
 """
 from flask_wtf.csrf import CSRFProtect
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import os
 import secrets
+
+# Import Sprint 3 client security functions
+try:
+    from core.client_security import generate_client_token, verify_client_token, generate_secure_link
+except ImportError:
+    # Fallback si pas encore créé
+    def generate_client_token(work_order_id):
+        return None
+    def verify_client_token(work_order_id, token):
+        return False
+    def generate_secure_link(work_order_id):
+        return None
 
 class SecurityConfig:
     """Configuration centralisée des mesures de sécurité"""

@@ -131,6 +131,16 @@
                                     <i class="fa-solid fa-calendar-check me-2"></i>Rendez-vous
                                 </a>
                             </li>
+                            {% if session.user_role in ['technician', 'supervisor'] %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item {{ 'active' if 'field_interface' in request.endpoint }}"
+                                    href="{{ url_for('field_interface') }}">
+                                    <i class="fa-solid fa-mobile-alt me-2 text-primary"></i>Interface Terrain
+                                    <span class="badge bg-success ms-1">Sprint 2</span>
+                                </a>
+                            </li>
+                            {% endif %}
                         </ul>
                     </li>
                     <li class="nav-item dropdown">

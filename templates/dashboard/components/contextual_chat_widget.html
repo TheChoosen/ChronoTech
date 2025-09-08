@@ -1,0 +1,362 @@
+<!-- Chat Contextuel Widget -->
+<div class="dashboard-widget" id="contextual-chat-widget" data-widget-type="contextual_chat">
+    <div class="widget-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="widget-title">
+                <i class="fa-solid fa-comments me-2 text-primary"></i>
+                <span>Chat Contextuel</span>
+                <span class="badge bg-success ms-2" id="chat-online-count">0</span>
+            </div>
+            <div class="widget-actions">
+                <button class="btn btn-sm btn-outline-secondary me-1" id="toggle-chat-sidebar">
+                    <i class="fa-solid fa-users"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-secondary me-1" id="chat-settings">
+                    <i class="fa-solid fa-gear"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="dashboardWidgets.toggleWidget('contextual-chat-widget')">
+                    <i class="fa-solid fa-minus"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="widget-content p-0" style="height: 500px;">
+        <!-- État initial - Sélection de contexte -->
+        <div id="chat-context-selector" class="h-100 d-flex flex-column justify-content-center align-items-center text-center p-4">
+            <div class="mb-4">
+                <i class="fa-solid fa-comments fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Sélectionnez un contexte</h5>
+                <p class="text-muted small">Choisissez une intervention, un client ou un véhicule pour commencer une conversation</p>
+            </div>
+            
+            <div class="row g-3 w-100" style="max-width: 400px;">
+                <div class="col-12">
+                    <div class="btn btn-outline-primary w-100 chat-context-btn" data-context="work_order">
+                        <i class="fa-solid fa-wrench me-2"></i>
+                        <div>
+                            <div class="fw-semibold">Intervention</div>
+                            <small class="text-muted">Chat sur une intervention spécifique</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="btn btn-outline-success w-100 chat-context-btn" data-context="customer">
+                        <i class="fa-solid fa-user me-2"></i>
+                        <div>
+                            <div class="fw-semibold">Client</div>
+                            <small class="text-muted">Discussion générale avec/sur un client</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="btn btn-outline-info w-100 chat-context-btn" data-context="vehicle">
+                        <i class="fa-solid fa-car me-2"></i>
+                        <div>
+                            <div class="fw-semibold">Véhicule</div>
+                            <small class="text-muted">Suivi et maintenance d'un véhicule</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interface de chat active -->
+        <div id="chat-interface" class="h-100 d-none">
+            <div class="chat-container h-100 d-flex flex-column">
+                <!-- En-tête du chat avec contexte -->
+                <div class="chat-header border-bottom p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <button class="btn btn-sm btn-outline-secondary me-2" id="back-to-context-selector">
+                                <i class="fa-solid fa-arrow-left"></i>
+                            </button>
+                            <div>
+                                <div class="fw-semibold" id="chat-context-title">Chargement...</div>
+                                <div class="text-muted small" id="chat-context-subtitle"></div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <div class="online-users me-2" id="chat-online-users">
+                                <!-- Les avatars des utilisateurs en ligne seront ajoutés ici -->
+                            </div>
+                            <div class="text-muted small" id="chat-status">En ligne</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Indicateur de frappe -->
+                    <div class="typing-indicator mt-2 d-none" id="typing-indicator">
+                        <small class="text-muted">
+                            <span id="typing-users"></span> <span>est en train d'écrire...</span>
+                            <span class="typing-dots">
+                                <span></span><span></span><span></span>
+                            </span>
+                        </small>
+                    </div>
+                </div>
+
+                <!-- Zone des messages -->
+                <div class="chat-messages flex-grow-1 p-3" id="chat-messages" style="overflow-y: auto; max-height: 300px;">
+                    <div class="text-center text-muted small mb-3" id="chat-loading">
+                        <i class="fa-solid fa-spinner fa-spin me-2"></i>
+                        Chargement des messages...
+                    </div>
+                    <!-- Les messages seront ajoutés ici dynamiquement -->
+                </div>
+
+                <!-- Zone de saisie -->
+                <div class="chat-input-area border-top p-3">
+                    <div class="input-group">
+                        <button class="btn btn-outline-secondary" type="button" id="chat-attach-file">
+                            <i class="fa-solid fa-paperclip"></i>
+                        </button>
+                        <input type="text" 
+                               class="form-control" 
+                               id="chat-message-input" 
+                               placeholder="Tapez votre message..."
+                               autocomplete="off">
+                        <button class="btn btn-primary" type="button" id="chat-send-message">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Input de fichier masqué -->
+                    <input type="file" id="chat-file-input" class="d-none" accept="image/*,application/pdf,.doc,.docx,.txt">
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar utilisateurs (cachée par défaut) -->
+        <div class="chat-sidebar position-absolute top-0 end-0 h-100 bg-light border-start d-none" id="chat-sidebar" style="width: 250px; z-index: 10;">
+            <div class="p-3 border-bottom">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">Participants</h6>
+                    <button class="btn btn-sm btn-outline-secondary" id="close-chat-sidebar">
+                        <i class="fa-solid fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-3">
+                <div id="chat-participants-list">
+                    <!-- Liste des participants -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de sélection d'entités -->
+<div class="modal fade" id="chatEntitySelectorModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fa-solid fa-search me-2"></i>
+                    Sélectionner <span id="entity-type-label"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <input type="text" 
+                           class="form-control" 
+                           id="entity-search-input" 
+                           placeholder="Rechercher...">
+                </div>
+                <div class="entity-search-results" id="entity-search-results" style="max-height: 300px; overflow-y: auto;">
+                    <div class="text-center text-muted p-4">
+                        <i class="fa-solid fa-search fa-2x mb-2"></i>
+                        <p>Tapez au moins 2 caractères pour rechercher</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Templates de messages -->
+<template id="chat-message-template">
+    <div class="chat-message mb-3" data-message-id="">
+        <div class="d-flex">
+            <div class="message-avatar me-2">
+                <div class="avatar-circle"></div>
+            </div>
+            <div class="message-content flex-grow-1">
+                <div class="message-header d-flex justify-content-between align-items-center mb-1">
+                    <div class="message-author fw-semibold"></div>
+                    <div class="message-time text-muted small"></div>
+                </div>
+                <div class="message-body"></div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="chat-file-message-template">
+    <div class="chat-message mb-3" data-message-id="">
+        <div class="d-flex">
+            <div class="message-avatar me-2">
+                <div class="avatar-circle"></div>
+            </div>
+            <div class="message-content flex-grow-1">
+                <div class="message-header d-flex justify-content-between align-items-center mb-1">
+                    <div class="message-author fw-semibold"></div>
+                    <div class="message-time text-muted small"></div>
+                </div>
+                <div class="file-attachment border rounded p-2">
+                    <div class="d-flex align-items-center">
+                        <i class="fa-solid fa-file me-2 text-primary"></i>
+                        <div class="flex-grow-1">
+                            <div class="file-name fw-semibold"></div>
+                            <div class="file-info text-muted small"></div>
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary download-file">
+                            <i class="fa-solid fa-download"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="chat-participant-template">
+    <div class="participant-item d-flex align-items-center mb-2 p-2 rounded">
+        <div class="participant-avatar me-2">
+            <div class="avatar-circle small"></div>
+        </div>
+        <div class="flex-grow-1">
+            <div class="participant-name fw-semibold small"></div>
+            <div class="participant-status text-muted" style="font-size: 0.75rem;"></div>
+        </div>
+        <div class="participant-online-indicator"></div>
+    </div>
+</template>
+
+<style>
+/* Styles pour le chat */
+.chat-context-btn {
+    text-align: left;
+    padding: 1rem;
+    border: 2px solid;
+    transition: all 0.3s ease;
+}
+
+.chat-context-btn:hover {
+    background-color: var(--bs-primary-bg-subtle);
+    transform: translateY(-2px);
+}
+
+.chat-messages {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0,0,0,0.2) transparent;
+}
+
+.chat-messages::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+    background-color: rgba(0,0,0,0.2);
+    border-radius: 3px;
+}
+
+.chat-message.own {
+    margin-left: 20%;
+}
+
+.chat-message.own .message-content {
+    background-color: var(--bs-primary);
+    color: white;
+    border-radius: 18px 18px 4px 18px;
+    padding: 0.75rem 1rem;
+    margin-left: auto;
+}
+
+.chat-message:not(.own) .message-content {
+    background-color: var(--bs-light);
+    border-radius: 18px 18px 18px 4px;
+    padding: 0.75rem 1rem;
+}
+
+.avatar-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--bs-primary), var(--bs-info));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 0.8rem;
+}
+
+.avatar-circle.small {
+    width: 24px;
+    height: 24px;
+    font-size: 0.7rem;
+}
+
+.typing-dots span {
+    display: inline-block;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background-color: var(--bs-primary);
+    margin: 0 1px;
+    animation: typing 1.4s infinite ease-in-out;
+}
+
+.typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+.typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes typing {
+    0%, 80%, 100% { 
+        transform: scale(0);
+        opacity: 0.5;
+    }
+    40% { 
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.participant-online-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--bs-success);
+}
+
+.participant-online-indicator.offline {
+    background-color: var(--bs-secondary);
+}
+
+.file-attachment {
+    background-color: var(--bs-light);
+}
+
+.entity-search-result {
+    cursor: pointer;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    transition: background-color 0.2s ease;
+}
+
+.entity-search-result:hover {
+    background-color: var(--bs-primary-bg-subtle);
+}
+
+.entity-search-result.selected {
+    background-color: var(--bs-primary);
+    color: white;
+}
+</style>

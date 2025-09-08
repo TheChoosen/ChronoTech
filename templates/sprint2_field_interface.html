@@ -1,0 +1,396 @@
+<!-- ChronoTech Sprint 2 - Template Interface Terrain Augmentée -->
+<!-- Interface mobile optimisée pour techniciens avec Voice + AR + Offline -->
+
+{% extends "base.html" %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/sprint2-field.css') }}">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+{% endblock %}
+
+{% block content %}
+<div class="field-interface-container">
+    
+    <!-- Header Mobile Optimisé -->
+    <div class="field-header">
+        <div class="header-top">
+            <h1><i class="fas fa-tools"></i> Terrain Augmenté</h1>
+            <div class="connection-status">
+                <div id="offline-indicator" class="offline-indicator" style="display: none;">
+                    <i class="fas fa-wifi-slash"></i> Offline
+                </div>
+            </div>
+        </div>
+        
+        <!-- Work Order Info -->
+        <div class="current-work-order" id="current-work-order">
+            <div class="wo-info">
+                <span class="wo-id">#{{ work_order.id if work_order else 'N/A' }}</span>
+                <span class="wo-title">{{ work_order.title if work_order else 'Aucun work order sélectionné' }}</span>
+            </div>
+            <div class="wo-status status-{{ work_order.status if work_order else 'pending' }}">
+                {{ work_order.status if work_order else 'pending' }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Interface Vocale -->
+    <div class="voice-interface-section">
+        <div class="voice-controls">
+            <button id="voice-toggle-btn" class="voice-toggle-btn">
+                <i class="fas fa-microphone"></i>
+                <span>Parler</span>
+            </button>
+            
+            <div class="voice-status-info">
+                <div id="voice-status" class="voice-status">Appuyez pour parler</div>
+                <div class="supported-commands">
+                    <small>Commandes: "commencer", "terminer", "ajouter note", "problème"</small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Transcription en temps réel -->
+        <div id="voice-transcription" class="voice-transcription">
+            <div class="transcription-placeholder">
+                <i class="fas fa-comment-dots"></i>
+                Les commandes vocales apparaîtront ici
+            </div>
+        </div>
+        
+        <!-- Traitement vocal -->
+        <div id="voice-processing" class="voice-processing" style="display: none;">
+            <!-- Contenu généré dynamiquement -->
+        </div>
+        
+        <!-- Suggestions vocales -->
+        <div id="voice-suggestions" class="voice-suggestions" style="display: none;">
+            <!-- Contenu généré dynamiquement -->
+        </div>
+    </div>
+
+    <!-- Interface AR -->
+    <div class="ar-interface-section">
+        <div class="ar-header">
+            <h3><i class="fas fa-eye"></i> Réalité Augmentée</h3>
+            <button id="ar-start-btn" class="ar-start-btn">
+                <i class="fas fa-camera"></i> Démarrer AR
+            </button>
+        </div>
+        
+        <!-- Interface AR (cachée par défaut) -->
+        <div id="ar-interface" class="ar-interface" style="display: none;">
+            <div class="ar-camera-container">
+                <video id="ar-video" class="ar-video" autoplay muted playsinline></video>
+                <canvas id="ar-canvas" class="ar-canvas"></canvas>
+                <div id="ar-overlay" class="ar-overlay">
+                    <!-- Overlay AR généré dynamiquement -->
+                </div>
+            </div>
+            
+            <div class="ar-controls">
+                <button id="ar-stop-btn" class="ar-stop-btn">
+                    <i class="fas fa-stop"></i> Arrêter
+                </button>
+                <button id="ar-capture-btn" class="ar-capture-btn">
+                    <i class="fas fa-camera"></i> Capturer
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mode Offline Info -->
+    <div class="offline-section">
+        <div class="offline-header">
+            <h3><i class="fas fa-cloud-download-alt"></i> Mode Offline</h3>
+            <button id="sync-now-btn" class="sync-now-btn">
+                <i class="fas fa-sync-alt"></i> Synchroniser
+            </button>
+        </div>
+        
+        <div id="offline-stats" class="offline-stats">
+            <!-- Stats générées dynamiquement -->
+        </div>
+    </div>
+
+    <!-- Historique Actions -->
+    <div class="actions-history-section">
+        <h3><i class="fas fa-history"></i> Historique</h3>
+        
+        <div class="history-tabs">
+            <button class="tab-btn active" data-tab="voice">Vocal</button>
+            <button class="tab-btn" data-tab="ar">AR</button>
+            <button class="tab-btn" data-tab="sync">Sync</button>
+        </div>
+        
+        <div class="history-content">
+            <div id="voice-history" class="history-tab active">
+                <div class="history-placeholder">
+                    <i class="fas fa-microphone"></i>
+                    Aucune commande vocale récente
+                </div>
+            </div>
+            
+            <div id="ar-history" class="history-tab">
+                <div class="history-placeholder">
+                    <i class="fas fa-eye"></i>
+                    Aucune session AR récente
+                </div>
+            </div>
+            
+            <div id="sync-history" class="history-tab">
+                <div class="history-placeholder">
+                    <i class="fas fa-sync-alt"></i>
+                    Aucune synchronisation récente
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Work Order Actions -->
+    <div class="work-order-actions">
+        <div class="action-grid">
+            <button class="action-btn voice-start" data-voice-command="commencer">
+                <i class="fas fa-play"></i>
+                <span>Commencer</span>
+            </button>
+            
+            <button class="action-btn voice-complete" data-voice-command="terminer">
+                <i class="fas fa-check"></i>
+                <span>Terminer</span>
+            </button>
+            
+            <button class="action-btn voice-note" data-voice-command="note">
+                <i class="fas fa-sticky-note"></i>
+                <span>Note</span>
+            </button>
+            
+            <button class="action-btn voice-issue" data-voice-command="problème">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>Problème</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Notes du Work Order -->
+    <div class="work-order-notes-section">
+        <h3><i class="fas fa-clipboard-list"></i> Notes</h3>
+        <div id="work-order-notes" class="work-order-notes">
+            {% if work_order and work_order.notes %}
+                {% for note in work_order.notes %}
+                <div class="note-item {{ 'voice-note' if 'voice' in note.type else 'manual-note' }}">
+                    <div class="note-header">
+                        <i class="fas fa-{{ 'microphone' if 'voice' in note.type else 'edit' }}"></i>
+                        <span>{{ note.created_at.strftime('%H:%M') }}</span>
+                    </div>
+                    <div class="note-content">{{ note.content }}</div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="notes-placeholder">
+                    <i class="fas fa-clipboard"></i>
+                    Aucune note pour ce work order
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+
+<!-- Modal Sélection Template AR -->
+<div id="ar-checklist-modal" class="modal ar-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-list-check"></i> Sélectionner une Checklist AR</h3>
+            <span class="close">&times;</span>
+        </div>
+        
+        <div class="modal-body">
+            <div id="ar-templates-list" class="ar-templates-list">
+                <!-- Templates chargés dynamiquement -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Rapport AR -->
+<div id="ar-report-modal" class="modal report-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-chart-line"></i> Rapport d'Inspection AR</h3>
+            <span class="close">&times;</span>
+        </div>
+        
+        <div class="modal-body">
+            <div id="ar-report-content" class="ar-report-content">
+                <!-- Rapport généré dynamiquement -->
+            </div>
+        </div>
+        
+        <div class="modal-footer">
+            <button class="btn btn-primary" id="save-ar-report">
+                <i class="fas fa-save"></i> Sauvegarder
+            </button>
+            <button class="btn btn-secondary" id="close-ar-report">
+                Fermer
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Notifications Toast -->
+<div id="field-notifications" class="field-notifications">
+    <!-- Notifications générées dynamiquement -->
+</div>
+
+<!-- Instructions d'utilisation (Première visite) -->
+{% if show_tutorial %}
+<div id="field-tutorial" class="field-tutorial">
+    <div class="tutorial-content">
+        <h3><i class="fas fa-graduation-cap"></i> Interface Terrain Augmentée</h3>
+        
+        <div class="tutorial-steps">
+            <div class="tutorial-step">
+                <i class="fas fa-microphone"></i>
+                <h4>Commandes Vocales</h4>
+                <p>Utilisez votre voix pour contrôler les work orders : "commencer", "terminer", "ajouter note"</p>
+            </div>
+            
+            <div class="tutorial-step">
+                <i class="fas fa-camera"></i>
+                <h4>Réalité Augmentée</h4>
+                <p>Pointez la caméra vers les équipements pour afficher les checklists d'inspection</p>
+            </div>
+            
+            <div class="tutorial-step">
+                <i class="fas fa-wifi-slash"></i>
+                <h4>Mode Offline</h4>
+                <p>Continuez à travailler sans Internet. Tout se synchronise automatiquement</p>
+            </div>
+        </div>
+        
+        <div class="tutorial-actions">
+            <button class="btn btn-primary" id="start-tutorial">Commencer</button>
+            <button class="btn btn-secondary" id="skip-tutorial">Passer</button>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/sprint2-field-interface.js') }}"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Configuration initiale
+    {% if work_order %}
+    sprint2Interface.setCurrentWorkOrder({{ work_order.id }});
+    {% endif %}
+    
+    // Gérer les boutons d'actions rapides
+    document.querySelectorAll('.action-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const command = this.dataset.voiceCommand;
+            if (command && sprint2Interface.voiceRecognition) {
+                // Simuler une commande vocale
+                sprint2Interface.processVoiceCommand(command);
+            }
+        });
+    });
+    
+    // Gérer les modals
+    document.querySelectorAll('.modal .close').forEach(closeBtn => {
+        closeBtn.addEventListener('click', function() {
+            this.closest('.modal').style.display = 'none';
+        });
+    });
+    
+    // Gérer les onglets d'historique
+    document.querySelectorAll('.tab-btn').forEach(tabBtn => {
+        tabBtn.addEventListener('click', function() {
+            const tabName = this.dataset.tab;
+            
+            // Désactiver tous les onglets
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.history-tab').forEach(tab => tab.classList.remove('active'));
+            
+            // Activer l'onglet sélectionné
+            this.classList.add('active');
+            document.getElementById(tabName + '-history').classList.add('active');
+        });
+    });
+    
+    // Tutorial
+    {% if show_tutorial %}
+    const startTutorialBtn = document.getElementById('start-tutorial');
+    const skipTutorialBtn = document.getElementById('skip-tutorial');
+    const tutorialDiv = document.getElementById('field-tutorial');
+    
+    if (startTutorialBtn) {
+        startTutorialBtn.addEventListener('click', function() {
+            tutorialDiv.style.display = 'none';
+            sprint2Interface.showNotification('🎯 Interface Terrain Augmentée prête !', 'success');
+        });
+    }
+    
+    if (skipTutorialBtn) {
+        skipTutorialBtn.addEventListener('click', function() {
+            tutorialDiv.style.display = 'none';
+        });
+    }
+    {% endif %}
+    
+    // Raccourcis tactiles pour mobile
+    let touchStartY = 0;
+    let touchEndY = 0;
+    
+    document.addEventListener('touchstart', function(e) {
+        touchStartY = e.changedTouches[0].screenY;
+    });
+    
+    document.addEventListener('touchend', function(e) {
+        touchEndY = e.changedTouches[0].screenY;
+        handleSwipeGesture();
+    });
+    
+    function handleSwipeGesture() {
+        const swipeThreshold = 50;
+        const diff = touchStartY - touchEndY;
+        
+        if (Math.abs(diff) > swipeThreshold) {
+            if (diff > 0) {
+                // Swipe up - Activer la voix
+                if (!sprint2Interface.isListening) {
+                    sprint2Interface.startVoiceListening();
+                }
+            } else {
+                // Swipe down - Désactiver la voix
+                if (sprint2Interface.isListening) {
+                    sprint2Interface.stopVoiceListening();
+                }
+            }
+        }
+    }
+    
+    // Auto-refresh du statut offline
+    setInterval(function() {
+        sprint2Interface.checkOfflineStatus();
+    }, 30000); // Toutes les 30 secondes
+    
+    console.log('🚀 Interface Terrain Augmentée Sprint 2 initialisée');
+});
+
+// Notification système pour le mode offline
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/static/js/field-service-worker.js')
+        .then(function(registration) {
+            console.log('Service Worker enregistré');
+        })
+        .catch(function(error) {
+            console.log('Erreur Service Worker:', error);
+        });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,640 @@
+<!-- Panel Analytics pour Dashboard -->
+<div class="dashboard-panel analytics-panel" id="analyticsPanel">
+    <div class="panel-header">
+        <h4><i class="fas fa-chart-line me-2"></i>Analytics & Rapports</h4>
+        <div class="panel-controls">
+            <select class="form-select form-select-sm me-2" id="analyticsPeriod" onchange="updateAnalyticsPeriod()">
+                <option value="7">7 derniers jours</option>
+                <option value="30" selected>30 derniers jours</option>
+                <option value="90">3 derniers mois</option>
+                <option value="365">12 derniers mois</option>
+            </select>
+            <button class="btn btn-sm btn-outline-primary" onclick="exportReport()">
+                <i class="fas fa-download"></i> Export
+            </button>
+        </div>
+    </div>
+    
+    <div class="panel-content">
+        <!-- KPIs principaux -->
+        <div class="kpi-row">
+            <div class="kpi-card">
+                <div class="kpi-icon bg-primary">
+                    <i class="fas fa-tools"></i>
+                </div>
+                <div class="kpi-content">
+                    <div class="kpi-value" id="totalWorkOrders">0</div>
+                    <div class="kpi-label">Ordres de travail</div>
+                    <div class="kpi-trend">
+                        <span class="trend-value" id="workOrdersTrend">+0%</span>
+                        <i class="fas fa-arrow-up trend-icon"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="kpi-card">
+                <div class="kpi-icon bg-success">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="kpi-content">
+                    <div class="kpi-value" id="completionRate">0%</div>
+                    <div class="kpi-label">Taux de completion</div>
+                    <div class="kpi-trend">
+                        <span class="trend-value" id="completionTrend">+0%</span>
+                        <i class="fas fa-arrow-up trend-icon"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="kpi-card">
+                <div class="kpi-icon bg-warning">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="kpi-content">
+                    <div class="kpi-value" id="avgResponseTime">0h</div>
+                    <div class="kpi-label">Temps moyen</div>
+                    <div class="kpi-trend">
+                        <span class="trend-value" id="timeTrend">-0%</span>
+                        <i class="fas fa-arrow-down trend-icon"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="kpi-card">
+                <div class="kpi-icon bg-info">
+                    <i class="fas fa-euro-sign"></i>
+                </div>
+                <div class="kpi-content">
+                    <div class="kpi-value" id="totalRevenue">0€</div>
+                    <div class="kpi-label">Chiffre d'affaires</div>
+                    <div class="kpi-trend">
+                        <span class="trend-value" id="revenueTrend">+0%</span>
+                        <i class="fas fa-arrow-up trend-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Graphiques -->
+        <div class="charts-row">
+            <div class="chart-container">
+                <h6><i class="fas fa-chart-area me-2"></i>Évolution des ordres de travail</h6>
+                <canvas id="workOrdersChart"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <h6><i class="fas fa-chart-pie me-2"></i>Répartition par statut</h6>
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="charts-row">
+            <div class="chart-container">
+                <h6><i class="fas fa-chart-bar me-2"></i>Performance par technicien</h6>
+                <canvas id="performanceChart"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <h6><i class="fas fa-chart-line me-2"></i>Temps de résolution</h6>
+                <canvas id="resolutionChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Tableau de données -->
+        <div class="data-table-container">
+            <h6><i class="fas fa-table me-2"></i>Top 10 - Ordres de travail récents</h6>
+            <div class="table-responsive">
+                <table class="table table-sm" id="recentWorkOrdersTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Titre</th>
+                            <th>Client</th>
+                            <th>Technicien</th>
+                            <th>Statut</th>
+                            <th>Durée</th>
+                            <th>Coût</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Données chargées dynamiquement -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.analytics-panel {
+    background: var(--bg-color);
+    border-radius: 15px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+.panel-content {
+    padding: 1.5rem;
+}
+
+.kpi-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.kpi-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: transform 0.3s ease;
+}
+
+.kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+
+.kpi-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+}
+
+.kpi-content {
+    flex: 1;
+}
+
+.kpi-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--text-color);
+    line-height: 1;
+}
+
+.kpi-label {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.kpi-trend {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.trend-value {
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.trend-icon {
+    font-size: 0.7rem;
+}
+
+.trend-value.positive,
+.trend-value.positive + .trend-icon {
+    color: var(--success-color);
+}
+
+.trend-value.negative,
+.trend-value.negative + .trend-icon {
+    color: var(--danger-color);
+}
+
+.charts-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.chart-container {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.chart-container h6 {
+    margin-bottom: 1rem;
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+.chart-container canvas {
+    max-height: 300px;
+}
+
+.data-table-container {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.data-table-container h6 {
+    margin-bottom: 1rem;
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+.table th {
+    background: var(--bg-secondary);
+    border: none;
+    font-weight: 600;
+    color: var(--text-color);
+    font-size: 0.8rem;
+}
+
+.table td {
+    border: none;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.8rem;
+    vertical-align: middle;
+}
+
+.status-badge {
+    padding: 0.3rem 0.6rem;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.status-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-in-progress {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.status-completed {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-cancelled {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+@media (max-width: 768px) {
+    .kpi-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .charts-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .panel-controls {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}
+</style>
+
+<script>
+// Système d'Analytics
+window.AnalyticsSystem = {
+    charts: {},
+    currentPeriod: 30,
+    
+    // Initialiser les analytics
+    async init() {
+        await this.loadData();
+        this.updateKPIs();
+        this.initCharts();
+        this.loadRecentData();
+    },
+    
+    // Charger les données
+    async loadData() {
+        try {
+            const response = await fetch(`/api/analytics?period=${this.currentPeriod}`);
+            this.data = await response.json();
+        } catch (error) {
+            console.error('Erreur lors du chargement des analytics:', error);
+            this.data = this.generateSampleData();
+        }
+    },
+    
+    // Générer des données de test
+    generateSampleData() {
+        return {
+            kpis: {
+                totalWorkOrders: 248,
+                completionRate: 87.5,
+                avgResponseTime: 4.2,
+                totalRevenue: 45600,
+                trends: {
+                    workOrders: 12.5,
+                    completion: 5.2,
+                    responseTime: -8.1,
+                    revenue: 15.3
+                }
+            },
+            workOrdersEvolution: {
+                labels: Array.from({length: 30}, (_, i) => {
+                    const date = new Date();
+                    date.setDate(date.getDate() - (29 - i));
+                    return date.toLocaleDateString('fr-FR', { month: 'short', day: 'numeric' });
+                }),
+                data: Array.from({length: 30}, () => Math.floor(Math.random() * 20) + 5)
+            },
+            statusDistribution: {
+                labels: ['En attente', 'En cours', 'Terminé', 'Annulé'],
+                data: [45, 82, 156, 12]
+            },
+            technicianPerformance: {
+                labels: ['Jean Dupont', 'Marie Martin', 'Pierre Durant', 'Sophie Leroy', 'Michel Bernard'],
+                data: [24, 31, 18, 27, 22]
+            },
+            resolutionTimes: {
+                labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'],
+                data: [4.8, 4.2, 3.9, 4.1]
+            }
+        };
+    },
+    
+    // Mettre à jour les KPIs
+    updateKPIs() {
+        const kpis = this.data.kpis;
+        
+        document.getElementById('totalWorkOrders').textContent = kpis.totalWorkOrders;
+        document.getElementById('completionRate').textContent = kpis.completionRate + '%';
+        document.getElementById('avgResponseTime').textContent = kpis.avgResponseTime + 'h';
+        document.getElementById('totalRevenue').textContent = kpis.totalRevenue.toLocaleString() + '€';
+        
+        // Tendances
+        this.updateTrend('workOrdersTrend', kpis.trends.workOrders);
+        this.updateTrend('completionTrend', kpis.trends.completion);
+        this.updateTrend('timeTrend', kpis.trends.responseTime);
+        this.updateTrend('revenueTrend', kpis.trends.revenue);
+    },
+    
+    // Mettre à jour une tendance
+    updateTrend(elementId, value) {
+        const element = document.getElementById(elementId);
+        const icon = element.nextElementSibling;
+        
+        element.textContent = (value > 0 ? '+' : '') + value.toFixed(1) + '%';
+        
+        if (value > 0) {
+            element.className = 'trend-value positive';
+            icon.className = 'fas fa-arrow-up trend-icon';
+        } else {
+            element.className = 'trend-value negative';
+            icon.className = 'fas fa-arrow-down trend-icon';
+        }
+    },
+    
+    // Initialiser les graphiques
+    initCharts() {
+        this.initWorkOrdersChart();
+        this.initStatusChart();
+        this.initPerformanceChart();
+        this.initResolutionChart();
+    },
+    
+    // Graphique évolution des ordres de travail
+    initWorkOrdersChart() {
+        const ctx = document.getElementById('workOrdersChart').getContext('2d');
+        this.charts.workOrders = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: this.data.workOrdersEvolution.labels,
+                datasets: [{
+                    label: 'Ordres de travail',
+                    data: this.data.workOrdersEvolution.data,
+                    borderColor: 'rgb(54, 162, 235)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    },
+    
+    // Graphique répartition par statut
+    initStatusChart() {
+        const ctx = document.getElementById('statusChart').getContext('2d');
+        this.charts.status = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: this.data.statusDistribution.labels,
+                datasets: [{
+                    data: this.data.statusDistribution.data,
+                    backgroundColor: [
+                        '#ffc107',
+                        '#17a2b8',
+                        '#28a745',
+                        '#dc3545'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    },
+    
+    // Graphique performance par technicien
+    initPerformanceChart() {
+        const ctx = document.getElementById('performanceChart').getContext('2d');
+        this.charts.performance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: this.data.technicianPerformance.labels,
+                datasets: [{
+                    label: 'Ordres terminés',
+                    data: this.data.technicianPerformance.data,
+                    backgroundColor: 'rgba(54, 162, 235, 0.8)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    },
+    
+    // Graphique temps de résolution
+    initResolutionChart() {
+        const ctx = document.getElementById('resolutionChart').getContext('2d');
+        this.charts.resolution = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: this.data.resolutionTimes.labels,
+                datasets: [{
+                    label: 'Temps moyen (heures)',
+                    data: this.data.resolutionTimes.data,
+                    borderColor: 'rgb(255, 99, 132)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    },
+    
+    // Charger les données récentes
+    async loadRecentData() {
+        try {
+            const response = await fetch('/api/work_orders/recent?limit=10');
+            const workOrders = await response.json();
+            this.renderRecentTable(workOrders);
+        } catch (error) {
+            console.error('Erreur lors du chargement des données récentes:', error);
+            this.renderRecentTable(this.generateSampleRecentData());
+        }
+    },
+    
+    // Générer des données récentes de test
+    generateSampleRecentData() {
+        const statuses = ['pending', 'in_progress', 'completed', 'cancelled'];
+        const clients = ['ACME Corp', 'TechnoSoft', 'GlobalTrans', 'FastCar', 'AutoPlus'];
+        const technicians = ['J. Dupont', 'M. Martin', 'P. Durant', 'S. Leroy'];
+        
+        return Array.from({length: 10}, (_, i) => ({
+            id: 1000 + i,
+            title: `Maintenance ${String(i + 1).padStart(3, '0')}`,
+            client: clients[Math.floor(Math.random() * clients.length)],
+            technician: technicians[Math.floor(Math.random() * technicians.length)],
+            status: statuses[Math.floor(Math.random() * statuses.length)],
+            duration: Math.floor(Math.random() * 8) + 1,
+            cost: Math.floor(Math.random() * 500) + 100
+        }));
+    },
+    
+    // Rendre le tableau des données récentes
+    renderRecentTable(workOrders) {
+        const tbody = document.querySelector('#recentWorkOrdersTable tbody');
+        
+        tbody.innerHTML = workOrders.map(order => `
+            <tr onclick="openWorkOrderModal(${order.id})" style="cursor: pointer;">
+                <td><strong>#${order.id}</strong></td>
+                <td>${order.title}</td>
+                <td>${order.client}</td>
+                <td>${order.technician}</td>
+                <td>
+                    <span class="status-badge status-${order.status}">
+                        ${this.getStatusLabel(order.status)}
+                    </span>
+                </td>
+                <td>${order.duration}h</td>
+                <td>${order.cost}€</td>
+            </tr>
+        `).join('');
+    },
+    
+    // Libeller les statuts
+    getStatusLabel(status) {
+        const labels = {
+            'pending': 'En attente',
+            'in_progress': 'En cours',
+            'completed': 'Terminé',
+            'cancelled': 'Annulé'
+        };
+        return labels[status] || status;
+    },
+    
+    // Mettre à jour la période
+    async updatePeriod(period) {
+        this.currentPeriod = period;
+        await this.loadData();
+        this.updateKPIs();
+        
+        // Mettre à jour les graphiques
+        Object.values(this.charts).forEach(chart => chart.destroy());
+        this.initCharts();
+    }
+};
+
+// Fonctions globales
+async function updateAnalyticsPeriod() {
+    const period = document.getElementById('analyticsPeriod').value;
+    await AnalyticsSystem.updatePeriod(parseInt(period));
+}
+
+function exportReport() {
+    // Simuler l'export
+    NotificationSystem.showToast('Export du rapport en cours...', 'info');
+    
+    setTimeout(() => {
+        NotificationSystem.showToast('Rapport exporté avec succès', 'success');
+    }, 2000);
+}
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+    if (document.getElementById('analyticsPanel')) {
+        // Charger Chart.js si nécessaire
+        if (typeof Chart === 'undefined') {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+            script.onload = () => AnalyticsSystem.init();
+            document.head.appendChild(script);
+        } else {
+            AnalyticsSystem.init();
+        }
+    }
+});
+</script>

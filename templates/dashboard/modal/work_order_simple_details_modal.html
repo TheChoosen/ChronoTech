@@ -1,265 +1,115 @@
-<!-- Modal Détails Bon de Travail (Version Simplifiée - Reconstruction) -->
-<div class="modal fade" id="workOrderSimpleDetailsModal" tabindex="-1"
-    aria-labelledby="workOrderSimpleDetailsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
+<!-- Modal Simple pour Détails des Bons de Travail -->
+<div class="modal fade" id="workOrderSimpleDetailsModal" tabindex="-1" aria-labelledby="workOrderSimpleDetailsModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="workOrderSimpleDetailsModalLabel">
-                    <i class="fa-solid fa-clipboard-check me-2 text-primary"></i>Détails du Bon de Travail
+                    <i class="fa-solid fa-file-lines me-2 text-primary"></i>Bon de Travail
+                    <span id="simple-modal-work-order-number" class="badge bg-primary ms-2">#</span>
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
             </div>
             <div class="modal-body">
-                <!-- Informations principales du bon de travail -->
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <div class="row mb-3">
-                            <div class="col-sm-4">
-                                <strong>Numéro :</strong>
-                            </div>
-                            <div class="col-sm-8">
-                                <span id="detail-claim-number">#WO-000</span>
-                            </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-sm-4">
-                                <strong>Client :</strong>
-                            </div>
-                            <div class="col-sm-8">
-                                <span id="detail-customer-name">-</span>
-                            </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-sm-4">
-                                <strong>Statut :</strong>
-                            </div>
-                            <div class="col-sm-8">
-                                <span id="detail-status-badge" class="badge">-</span>
-                            </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-sm-4">
-                                <strong>Priorité :</strong>
-                            </div>
-                            <div class="col-sm-8">
-                                <span id="detail-priority-badge" class="badge">-</span>
-                            </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-sm-4">
-                                <strong>Technicien :</strong>
-                            </div>
-                            <div class="col-sm-8">
-                                <span id="detail-technician">Non assigné</span>
-                            </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-sm-4">
-                                <strong>Créé le :</strong>
-                            </div>
-                            <div class="col-sm-8">
-                                <span id="detail-created-date">-</span>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-sm-4">
-                                <strong>Dernière MAJ :</strong>
-                            </div>
-                            <div class="col-sm-8">
-                                <span id="detail-updated-date">-</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Conteneur principal pour les sections -->
                 <div class="row">
-                    <!-- Description et Notes -->
-                    <div class="col-lg-6 mb-4">
-                        <div class="card h-100">
-                            <div class="card-header">
-                                <h6 class="mb-0">
-                                    <i class="fa-solid fa-file-text me-2 text-info"></i>Description et Notes
-                                </h6>
-                            </div>
-                            <div class="card-body">
-                                <div class="mb-3">
-                                    <strong>Description :</strong>
-                                    <div class="border rounded p-2 mt-1" style="min-height: 80px; background: #f8f9fa;">
-                                        <span id="detail-description">Aucune description</span>
-                                    </div>
-                                </div>
-                                <div class="mb-3">
-                                    <strong>Notes internes :</strong>
-                                    <div class="border rounded p-2 mt-1" style="min-height: 60px; background: #f8f9fa;">
-                                        <span id="detail-notes">Aucune note</span>
-                                    </div>
-                                </div>
-                                <div>
-                                    <strong>Instructions spéciales :</strong>
-                                    <div class="border rounded p-2 mt-1" style="min-height: 50px; background: #fff3cd;">
-                                        <span id="detail-instructions">Aucune instruction</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    <!-- Informations de base -->
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Client</label>
+                        <p class="form-control-plaintext" id="simple-customer-name">-</p>
                     </div>
-
-                    <!-- Planning et Temps -->
-                    <div class="col-lg-6 mb-4">
-                        <div class="card h-100">
-                            <div class="card-header">
-                                <h6 class="mb-0">
-                                    <i class="fa-solid fa-clock me-2 text-warning"></i>Planning et Temps
-                                </h6>
-                            </div>
-                            <div class="card-body">
-                                <div class="row mb-3">
-                                    <div class="col-sm-5">
-                                        <strong>Date prévue :</strong>
-                                    </div>
-                                    <div class="col-sm-7">
-                                        <span id="detail-scheduled-date">Non planifié</span>
-                                    </div>
-                                </div>
-                                <div class="row mb-3">
-                                    <div class="col-sm-5">
-                                        <strong>Durée estimée :</strong>
-                                    </div>
-                                    <div class="col-sm-7">
-                                        <span id="detail-estimated-duration">-</span>
-                                    </div>
-                                </div>
-                                <div class="row mb-3">
-                                    <div class="col-sm-5">
-                                        <strong>Temps passé :</strong>
-                                    </div>
-                                    <div class="col-sm-7">
-                                        <span id="detail-time-spent">0h 0m</span>
-                                    </div>
-                                </div>
-                                <div class="row mb-3">
-                                    <div class="col-sm-5">
-                                        <strong>Progression :</strong>
-                                    </div>
-                                    <div class="col-sm-7">
-                                        <div class="progress" style="height: 20px;">
-                                            <div id="detail-progress-bar" class="progress-bar" role="progressbar"
-                                                aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"
-                                                style="width: 0%">
-                                                <span id="detail-progress-text">0%</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-sm-5">
-                                        <strong>Date limite :</strong>
-                                    </div>
-                                    <div class="col-sm-7">
-                                        <span id="detail-deadline" class="text-danger">Non définie</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Statut</label>
+                        <span id="simple-status-badge" class="badge bg-secondary">-</span>
                     </div>
-
-                    <!-- Informations Financières -->
-                    <div class="col-lg-6 mb-4">
-                        <div class="card h-100">
-                            <div class="card-header">
-                                <h6 class="mb-0">
-                                    <i class="fa-solid fa-euro-sign me-2 text-success"></i>Informations Financières
-                                </h6>
-                            </div>
-                            <div class="card-body">
-                                <div class="row mb-3">
-                                    <div class="col-sm-5">
-                                        <strong>Devis :</strong>
-                                    </div>
-                                    <div class="col-sm-7">
-                                        <span id="detail-quote-amount">0,00 €</span>
-                                    </div>
-                                </div>
-                                <div class="row mb-3">
-                                    <div class="col-sm-5">
-                                        <strong>Coût matériaux :</strong>
-                                    </div>
-                                    <div class="col-sm-7">
-                                        <span id="detail-materials-cost">0,00 €</span>
-                                    </div>
-                                </div>
-                                <div class="row mb-3">
-                                    <div class="col-sm-5">
-                                        <strong>Coût main d'œuvre :</strong>
-                                    </div>
-                                    <div class="col-sm-7">
-                                        <span id="detail-labor-cost">0,00 €</span>
-                                    </div>
-                                </div>
-                                <div class="row mb-3">
-                                    <div class="col-sm-5">
-                                        <strong>Total facturé :</strong>
-                                    </div>
-                                    <div class="col-sm-7">
-                                        <strong><span id="detail-total-amount">0,00 €</span></strong>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-sm-5">
-                                        <strong>Statut facture :</strong>
-                                    </div>
-                                    <div class="col-sm-7">
-                                        <span id="detail-invoice-status" class="badge bg-secondary">Non facturé</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Priorité</label>
+                        <span id="simple-priority-badge" class="badge bg-info">-</span>
                     </div>
-
-                    <!-- Section vide pour équilibrage (optionnel) -->
-                    <div class="col-lg-6 mb-4">
-                        <!-- Espace pour ajouter d'autres informations si nécessaire -->
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Technicien</label>
+                        <p class="form-control-plaintext" id="simple-technician-name">-</p>
                     </div>
-
-                    <!-- Historique et Activités (pleine largeur) -->
-                    <div class="col-12">
-                        <div class="card">
-                            <div class="card-header">
-                                <h6 class="mb-0">
-                                    <i class="fa-solid fa-history me-2 text-dark"></i>Historique des Activités
-                                </h6>
-                            </div>
-                            <div class="card-body">
-                                <div class="timeline" id="detail-activity-timeline">
-                                    <!-- Timeline sera générée dynamiquement -->
-                                </div>
-                            </div>
-                        </div>
+                    <div class="col-12 mb-3">
+                        <label class="form-label fw-bold">Description</label>
+                        <p class="form-control-plaintext" id="simple-description">-</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Date de création</label>
+                        <p class="form-control-plaintext" id="simple-created-date">-</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Date prévue</label>
+                        <p class="form-control-plaintext" id="simple-scheduled-date">-</p>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <div class="d-flex justify-content-between w-100">
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-outline-primary" onclick="assignTechnician()">
-                            <i class="fa-solid fa-user-plus me-1"></i>Assigner Technicien
-                        </button>
-                        <button class="btn btn-outline-success" onclick="addTimeEntry()">
-                            <i class="fa-solid fa-clock me-1"></i>Ajouter Temps
-                        </button>
-                        <button class="btn btn-outline-info" onclick="addNote()">
-                            <i class="fa-solid fa-comment me-1"></i>Ajouter Note
-                        </button>
-                    </div>
-                    <div>
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fermer</button>
-                        <button type="button" class="btn btn-primary" onclick="updateWorkOrderStatus()">
-                            <i class="fa-solid fa-save me-1"></i>Mettre à jour
-                        </button>
-                    </div>
-                </div>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                <button type="button" class="btn btn-primary" onclick="openFullDetailsModal()">
+                    <i class="fa-solid fa-expand me-1"></i>Voir les détails complets
+                </button>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+// Fonction pour ouvrir la modal simple avec les données
+function openSimpleWorkOrderModal(workOrderData) {
+    // Remplir les données
+    document.getElementById('simple-modal-work-order-number').textContent = '#' + workOrderData.id;
+    document.getElementById('simple-customer-name').textContent = workOrderData.customer_name || '-';
+    document.getElementById('simple-technician-name').textContent = workOrderData.technician_name || 'Non assigné';
+    document.getElementById('simple-description').textContent = workOrderData.description || '-';
+    document.getElementById('simple-created-date').textContent = workOrderData.created_date || '-';
+    document.getElementById('simple-scheduled-date').textContent = workOrderData.scheduled_date || '-';
+    
+    // Badges de statut
+    const statusBadge = document.getElementById('simple-status-badge');
+    statusBadge.textContent = workOrderData.status || '-';
+    statusBadge.className = 'badge ' + getStatusBadgeClass(workOrderData.status);
+    
+    // Badge de priorité
+    const priorityBadge = document.getElementById('simple-priority-badge');
+    priorityBadge.textContent = workOrderData.priority || '-';
+    priorityBadge.className = 'badge ' + getPriorityBadgeClass(workOrderData.priority);
+    
+    // Ouvrir la modal
+    new bootstrap.Modal(document.getElementById('workOrderSimpleDetailsModal')).show();
+}
+
+// Fonction pour ouvrir les détails complets
+function openFullDetailsModal() {
+    // Fermer la modal simple
+    bootstrap.Modal.getInstance(document.getElementById('workOrderSimpleDetailsModal')).hide();
+    
+    // Ouvrir la modal détaillée (si elle existe)
+    const fullModal = document.getElementById('workOrderDetailsModal');
+    if (fullModal) {
+        new bootstrap.Modal(fullModal).show();
+    }
+}
+
+// Fonctions utilitaires pour les badges
+function getStatusBadgeClass(status) {
+    const statusClasses = {
+        'draft': 'bg-secondary',
+        'pending': 'bg-warning',
+        'assigned': 'bg-info',
+        'in_progress': 'bg-primary',
+        'completed': 'bg-success',
+        'cancelled': 'bg-danger'
+    };
+    return statusClasses[status] || 'bg-secondary';
+}
+
+function getPriorityBadgeClass(priority) {
+    const priorityClasses = {
+        'low': 'bg-success',
+        'medium': 'bg-warning',
+        'high': 'bg-danger',
+        'urgent': 'bg-danger'
+    };
+    return priorityClasses[priority] || 'bg-info';
+}
+</script>

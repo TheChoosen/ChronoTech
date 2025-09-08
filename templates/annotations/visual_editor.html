@@ -1,0 +1,608 @@
+<!-- 
+ChronoTech - Interface d'Annotations Visuelles Sprint 3
+Template pour annoter photos et pièces jointes
+-->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChronoTech - Annotations Visuelles</title>
+    
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .annotation-container {
+            position: relative;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 600px;
+            overflow: hidden;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+        }
+        
+        #annotation-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .toolbar {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        
+        .tool-group {
+            display: flex;
+            gap: 0.25rem;
+            margin-right: 1rem;
+        }
+        
+        .tool-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 5px;
+            padding: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 40px;
+            text-align: center;
+        }
+        
+        .tool-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-1px);
+        }
+        
+        .tool-btn.active {
+            background: rgba(255,255,255,0.9);
+            color: #495057;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .color-picker {
+            width: 40px;
+            height: 40px;
+            border: 2px solid white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .stroke-slider {
+            width: 100px;
+        }
+        
+        .sidebar {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            height: fit-content;
+        }
+        
+        .annotation-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .annotation-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-left: 4px solid #007bff;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .annotation-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+        
+        .annotation-item.selected {
+            background: #cce7ff;
+            border-left-color: #0056b3;
+        }
+        
+        .annotation-type {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-bottom: 0.25rem;
+        }
+        
+        .annotation-content {
+            font-weight: 500;
+            color: #495057;
+        }
+        
+        .annotation-meta {
+            font-size: 0.75rem;
+            color: #6c757d;
+            margin-top: 0.5rem;
+        }
+        
+        .stats-card {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        
+        .photo-selector {
+            margin-bottom: 1.5rem;
+        }
+        
+        .photo-thumbnail {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 5px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .photo-thumbnail:hover {
+            border-color: #007bff;
+            transform: scale(1.05);
+        }
+        
+        .photo-thumbnail.active {
+            border-color: #0056b3;
+            box-shadow: 0 0 10px rgba(0,123,255,0.5);
+        }
+        
+        @media (max-width: 768px) {
+            .toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .tool-group {
+                justify-content: center;
+                margin: 0;
+            }
+            
+            .canvas-container {
+                height: 400px;
+            }
+        }
+        
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-3">
+        <div class="row">
+            <!-- Panneau principal -->
+            <div class="col-lg-8">
+                <div class="annotation-container mb-3">
+                    <!-- Toolbar -->
+                    <div class="toolbar">
+                        <div class="tool-group">
+                            <button class="tool-btn active" data-tool="select" title="Sélectionner">
+                                <i class="fas fa-mouse-pointer"></i>
+                            </button>
+                            <button class="tool-btn" data-tool="arrow" title="Flèche">
+                                <i class="fas fa-long-arrow-alt-right"></i>
+                            </button>
+                            <button class="tool-btn" data-tool="rectangle" title="Rectangle">
+                                <i class="fas fa-square"></i>
+                            </button>
+                            <button class="tool-btn" data-tool="circle" title="Cercle">
+                                <i class="fas fa-circle"></i>
+                            </button>
+                            <button class="tool-btn" data-tool="text" title="Texte">
+                                <i class="fas fa-font"></i>
+                            </button>
+                            <button class="tool-btn" data-tool="freehand" title="Dessin libre">
+                                <i class="fas fa-pencil-alt"></i>
+                            </button>
+                            <button class="tool-btn" data-tool="highlight" title="Surlignage">
+                                <i class="fas fa-highlighter"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="tool-group">
+                            <label class="small me-2">Couleur:</label>
+                            <input type="color" id="color-picker" class="color-picker" value="#ff0000">
+                        </div>
+                        
+                        <div class="tool-group">
+                            <label class="small me-2">Épaisseur:</label>
+                            <input type="range" id="stroke-slider" class="stroke-slider" min="1" max="10" value="3">
+                            <span id="stroke-value" class="small ms-2">3px</span>
+                        </div>
+                        
+                        <div class="tool-group ms-auto">
+                            <button id="clear-all" class="tool-btn" title="Effacer tout">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            <button id="undo" class="tool-btn" title="Annuler">
+                                <i class="fas fa-undo"></i>
+                            </button>
+                            <button id="save-annotations" class="tool-btn" title="Sauvegarder">
+                                <i class="fas fa-save"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Zone de canvas -->
+                    <div class="canvas-container">
+                        <canvas id="annotation-canvas"></canvas>
+                        <div id="loading-overlay" class="loading-overlay" style="display: none;">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary mb-2" role="status"></div>
+                                <div>Chargement de l'image...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Instructions -->
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title">
+                            <i class="fas fa-info-circle me-2"></i>Instructions
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <ul class="list-unstyled small">
+                                    <li><i class="fas fa-mouse-pointer text-primary me-2"></i><strong>Sélectionner:</strong> Cliquer sur une annotation</li>
+                                    <li><i class="fas fa-long-arrow-alt-right text-primary me-2"></i><strong>Flèche:</strong> Glisser pour dessiner</li>
+                                    <li><i class="fas fa-square text-primary me-2"></i><strong>Rectangle:</strong> Glisser pour créer</li>
+                                    <li><i class="fas fa-circle text-primary me-2"></i><strong>Cercle:</strong> Glisser pour dimensionner</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <ul class="list-unstyled small">
+                                    <li><i class="fas fa-font text-primary me-2"></i><strong>Texte:</strong> Cliquer pour placer</li>
+                                    <li><i class="fas fa-pencil-alt text-primary me-2"></i><strong>Dessin libre:</strong> Glisser pour dessiner</li>
+                                    <li><i class="fas fa-highlighter text-primary me-2"></i><strong>Surlignage:</strong> Glisser pour surligner</li>
+                                    <li><i class="fas fa-mobile-alt text-primary me-2"></i><strong>Mobile:</strong> Support tactile complet</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Stats -->
+                <div id="stats-card" class="stats-card">
+                    <h5 class="mb-3">
+                        <i class="fas fa-chart-bar me-2"></i>Statistiques
+                    </h5>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="h3 mb-0" id="total-annotations">0</div>
+                            <small>Annotations</small>
+                        </div>
+                        <div class="col-6">
+                            <div class="h3 mb-0" id="total-photos">0</div>
+                            <small>Photos</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sélecteur de photos -->
+                <div class="sidebar">
+                    <h6 class="mb-3">
+                        <i class="fas fa-images me-2"></i>Photos disponibles
+                    </h6>
+                    <div id="photo-selector" class="photo-selector">
+                        <div class="text-center text-muted">
+                            <i class="fas fa-spinner fa-spin me-2"></i>Chargement des photos...
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Liste des annotations -->
+                <div class="sidebar">
+                    <h6 class="mb-3">
+                        <i class="fas fa-list me-2"></i>Annotations actuelles
+                    </h6>
+                    <div id="annotation-list" class="annotation-list">
+                        <div class="text-center text-muted">
+                            Aucune annotation pour cette photo
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/visual-annotations.js"></script>
+    
+    <script>
+        // Configuration
+        const workOrderId = {{ work_order_id }};
+        let currentPhotoId = null;
+        let currentPhotoUrl = null;
+        
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPhotos();
+            bindToolbarEvents();
+            bindSidebarEvents();
+        });
+        
+        // Charger les photos disponibles
+        async function loadPhotos() {
+            try {
+                const response = await fetch(`/api/annotations/workorder/${workOrderId}/photos`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayPhotos(data.photos);
+                    updateStats(data.photos);
+                    
+                    // Sélectionner la première photo automatiquement
+                    if (data.photos.length > 0) {
+                        selectPhoto(data.photos[0]);
+                    }
+                } else {
+                    showError('Erreur lors du chargement des photos');
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                showError('Erreur de connexion');
+            }
+        }
+        
+        // Afficher les photos dans le sélecteur
+        function displayPhotos(photos) {
+            const selector = document.getElementById('photo-selector');
+            
+            if (photos.length === 0) {
+                selector.innerHTML = '<div class="text-muted">Aucune photo disponible</div>';
+                return;
+            }
+            
+            selector.innerHTML = photos.map(photo => `
+                <div class="d-inline-block me-2 mb-2 position-relative">
+                    <img src="${photo.file_path}" 
+                         class="photo-thumbnail" 
+                         data-photo-id="${photo.id}"
+                         data-photo-url="${photo.file_path}"
+                         alt="${photo.filename}"
+                         title="${photo.filename}">
+                    <span class="badge bg-primary position-absolute top-0 end-0" 
+                          style="transform: translate(50%, -50%);">
+                        ${photo.annotation_count}
+                    </span>
+                </div>
+            `).join('');
+        }
+        
+        // Sélectionner une photo
+        function selectPhoto(photo) {
+            currentPhotoId = photo.id;
+            currentPhotoUrl = photo.file_path;
+            
+            // Mettre à jour l'UI
+            document.querySelectorAll('.photo-thumbnail').forEach(thumb => {
+                thumb.classList.remove('active');
+            });
+            
+            const selectedThumb = document.querySelector(`[data-photo-id="${photo.id}"]`);
+            if (selectedThumb) {
+                selectedThumb.classList.add('active');
+            }
+            
+            // Initialiser l'outil d'annotation
+            showLoadingOverlay();
+            initAnnotationTool('annotation-canvas', photo.file_path, workOrderId, photo.id);
+            
+            // Mettre à jour la liste des annotations
+            updateAnnotationsList(photo.annotations || []);
+            
+            setTimeout(hideLoadingOverlay, 1000);
+        }
+        
+        // Mettre à jour les statistiques
+        function updateStats(photos) {
+            const totalPhotos = photos.length;
+            const totalAnnotations = photos.reduce((sum, photo) => sum + photo.annotation_count, 0);
+            
+            document.getElementById('total-photos').textContent = totalPhotos;
+            document.getElementById('total-annotations').textContent = totalAnnotations;
+        }
+        
+        // Mettre à jour la liste des annotations
+        function updateAnnotationsList(annotations) {
+            const list = document.getElementById('annotation-list');
+            
+            if (annotations.length === 0) {
+                list.innerHTML = '<div class="text-center text-muted">Aucune annotation pour cette photo</div>';
+                return;
+            }
+            
+            list.innerHTML = annotations.map(annotation => `
+                <div class="annotation-item" data-annotation-id="${annotation.id}">
+                    <div class="annotation-type">${getAnnotationTypeLabel(annotation.annotation_type)}</div>
+                    <div class="annotation-content">${annotation.text_content || 'Annotation visuelle'}</div>
+                    <div class="annotation-meta">
+                        ${annotation.created_by_name} • ${formatDate(annotation.created_at)}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Labels des types d'annotations
+        function getAnnotationTypeLabel(type) {
+            const labels = {
+                'arrow': 'Flèche',
+                'circle': 'Cercle',
+                'rectangle': 'Rectangle',
+                'text': 'Texte',
+                'freehand': 'Dessin libre',
+                'highlight': 'Surlignage'
+            };
+            return labels[type] || type;
+        }
+        
+        // Formater une date
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString('fr-FR', {
+                day: '2-digit',
+                month: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        // Binder les événements de la toolbar
+        function bindToolbarEvents() {
+            // Outils
+            document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const tool = this.dataset.tool;
+                    setActiveTool(tool);
+                    if (annotationTool) {
+                        annotationTool.setTool(tool);
+                    }
+                });
+            });
+            
+            // Couleur
+            document.getElementById('color-picker').addEventListener('change', function() {
+                if (annotationTool) {
+                    annotationTool.tools[annotationTool.currentTool].color = this.value;
+                }
+            });
+            
+            // Épaisseur
+            const strokeSlider = document.getElementById('stroke-slider');
+            const strokeValue = document.getElementById('stroke-value');
+            
+            strokeSlider.addEventListener('input', function() {
+                strokeValue.textContent = this.value + 'px';
+                if (annotationTool) {
+                    annotationTool.tools[annotationTool.currentTool].strokeWidth = parseInt(this.value);
+                }
+            });
+            
+            // Actions
+            document.getElementById('clear-all').addEventListener('click', clearAllAnnotations);
+            document.getElementById('undo').addEventListener('click', undoLastAnnotation);
+            document.getElementById('save-annotations').addEventListener('click', saveAllAnnotations);
+        }
+        
+        // Binder les événements de la sidebar
+        function bindSidebarEvents() {
+            // Sélection de photos
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('photo-thumbnail')) {
+                    const photoId = e.target.dataset.photoId;
+                    const photoUrl = e.target.dataset.photoUrl;
+                    
+                    // Trouver la photo dans les données
+                    // Pour l'instant, recréer un objet basique
+                    selectPhoto({
+                        id: parseInt(photoId),
+                        file_path: photoUrl,
+                        annotations: []
+                    });
+                }
+            });
+        }
+        
+        // Définir l'outil actif
+        function setActiveTool(toolName) {
+            document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            const activeBtn = document.querySelector(`[data-tool="${toolName}"]`);
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+            }
+        }
+        
+        // Actions
+        function clearAllAnnotations() {
+            if (confirm('Supprimer toutes les annotations de cette photo ?')) {
+                if (annotationTool) {
+                    annotationTool.annotations = [];
+                    annotationTool.redraw();
+                }
+            }
+        }
+        
+        function undoLastAnnotation() {
+            if (annotationTool && annotationTool.annotations.length > 0) {
+                annotationTool.annotations.pop();
+                annotationTool.redraw();
+            }
+        }
+        
+        function saveAllAnnotations() {
+            showToast('Annotations sauvegardées automatiquement', 'success');
+        }
+        
+        // Utilitaires UI
+        function showLoadingOverlay() {
+            document.getElementById('loading-overlay').style.display = 'flex';
+        }
+        
+        function hideLoadingOverlay() {
+            document.getElementById('loading-overlay').style.display = 'none';
+        }
+        
+        function showError(message) {
+            showToast(message, 'error');
+        }
+        
+        function showToast(message, type = 'info') {
+            // Réutiliser la fonction du script d'annotations
+            if (annotationTool) {
+                annotationTool.showToast(message, type);
+            } else {
+                alert(message); // Fallback
+            }
+        }
+    </script>
+</body>
+</html>
