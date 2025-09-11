@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+
+{% block title %}RBAC Administration - ChronoTech{% endblock %}
+
+{% block extra_css %}
+<style>
+.rbac-stats-card {
+    background: linear-gradient(135deg, var(--clay-primary) 0%, var(--clay-primary-dark) 100%);
+    border: none;
+    border-radius: 20px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.rbac-stats-card .card-body {
+    position: relative;
+    z-index: 2;
+}
+
+.rbac-stats-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255,255,255,0.1);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+    z-index: 1;
+}
+
+.security-severity-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+}
+
+.security-low { background: #d4edda; color: #155724; }
+.security-medium { background: #fff3cd; color: #856404; }
+.security-high { background: #f8d7da; color: #721c24; }
+.security-critical { background: #d1ecf1; color: #0c5460; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="clay-title">
+                        <i class="fa-solid fa-shield-halved text-primary me-2"></i>
+                        Administration RBAC
+                    </h2>
+                    <p class="text-muted">Gestion des rôles, permissions et sécurité avancée</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('rbac.export_audit', format='json') }}" class="btn btn-outline-primary">
+                        <i class="fa-solid fa-download me-1"></i>Export Audit
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques principales -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card rbac-stats-card text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">{{ total_users }}</h3>
+                            <p class="mb-0">Utilisateurs actifs</p>
+                        </div>
+                        <div class="fs-1 opacity-75">
+                            <i class="fa-solid fa-users"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card rbac-stats-card text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">{{ total_roles }}</h3>
+                            <p class="mb-0">Rôles système</p>
+                        </div>
+                        <div class="fs-1 opacity-75">
+                            <i class="fa-solid fa-user-tag"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card rbac-stats-card text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">{{ total_permissions }}</h3>
+                            <p class="mb-0">Permissions disponibles</p>
+                        </div>
+                        <div class="fs-1 opacity-75">
+                            <i class="fa-solid fa-key"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card rbac-stats-card text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">
+                                {{ security_stats.get('high', 0) + security_stats.get('critical', 0) }}
+                            </h3>
+                            <p class="mb-0">Alertes sécurité</p>
+                        </div>
+                        <div class="fs-1 opacity-75">
+                            <i class="fa-solid fa-exclamation-triangle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation principale -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card clay-card">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <a href="{{ url_for('rbac.list_users') }}" class="btn btn-outline-primary w-100 h-100 d-flex flex-column justify-content-center align-items-center p-3">
+                                <i class="fa-solid fa-users fa-2x mb-2"></i>
+                                <strong>Gestion Utilisateurs</strong>
+                                <small class="text-muted">Permissions individuelles</small>
+                            </a>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <a href="{{ url_for('rbac.list_roles') }}" class="btn btn-outline-success w-100 h-100 d-flex flex-column justify-content-center align-items-center p-3">
+                                <i class="fa-solid fa-user-tag fa-2x mb-2"></i>
+                                <strong>Gestion Rôles</strong>
+                                <small class="text-muted">Permissions par rôle</small>
+                            </a>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <a href="{{ url_for('rbac.audit_logs') }}" class="btn btn-outline-info w-100 h-100 d-flex flex-column justify-content-center align-items-center p-3">
+                                <i class="fa-solid fa-list-check fa-2x mb-2"></i>
+                                <strong>Logs d'Audit</strong>
+                                <small class="text-muted">Traçabilité des actions</small>
+                            </a>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <a href="{{ url_for('rbac.security_events') }}" class="btn btn-outline-warning w-100 h-100 d-flex flex-column justify-content-center align-items-center p-3">
+                                <i class="fa-solid fa-shield-alt fa-2x mb-2"></i>
+                                <strong>Événements Sécurité</strong>
+                                <small class="text-muted">Incidents et alertes</small>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Répartition des utilisateurs par rôle -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card clay-card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fa-solid fa-chart-pie me-2"></i>
+                        Répartition par Rôle
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for role_data in users_by_role %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <strong>{{ role_data.role|title }}</strong>
+                        </div>
+                        <div>
+                            <span class="badge bg-primary">{{ role_data.count }} utilisateurs</span>
+                        </div>
+                    </div>
+                    <div class="progress mb-3" style="height: 6px;">
+                        <div class="progress-bar" 
+                             style="width: {{ (role_data.count / total_users * 100) if total_users > 0 else 0 }}%"></div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card clay-card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fa-solid fa-exclamation-triangle me-2"></i>
+                        Événements Sécurité (7 derniers jours)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if security_stats %}
+                        {% for severity, count in security_stats.items() %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <span class="security-severity-badge security-{{ severity }}">
+                                    {{ severity|title }}
+                                </span>
+                            </div>
+                            <div>
+                                <strong>{{ count }} événements</strong>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-muted">
+                            <i class="fa-solid fa-check-circle fa-3x mb-3 text-success"></i>
+                            <p>Aucun événement de sécurité récent</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions rapides -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card clay-card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fa-solid fa-bolt me-2"></i>
+                        Actions Rapides
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <button class="btn btn-outline-primary w-100" onclick="window.open('/api/v1/docs/', '_blank')">
+                                <i class="fa-solid fa-book me-2"></i>
+                                Documentation API
+                            </button>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <button class="btn btn-outline-success w-100" onclick="exportAuditLogs('csv')">
+                                <i class="fa-solid fa-file-csv me-2"></i>
+                                Export CSV Audit
+                            </button>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <button class="btn btn-outline-info w-100" onclick="checkSystemHealth()">
+                                <i class="fa-solid fa-heartbeat me-2"></i>
+                                Vérifier Système
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function exportAuditLogs(format) {
+    window.location.href = `{{ url_for('rbac.export_audit') }}?format=${format}`;
+    showToast(`Export ${format.toUpperCase()} en cours...`, 'info');
+}
+
+function checkSystemHealth() {
+    fetch('/api/v1/health')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'healthy') {
+                showToast('Système opérationnel ✅', 'success');
+            } else {
+                showToast('Problème détecté ⚠️', 'warning');
+            }
+        })
+        .catch(error => {
+            showToast('Erreur lors de la vérification', 'error');
+        });
+}
+
+// Actualisation automatique des statistiques
+setInterval(() => {
+    location.reload();
+}, 300000); // 5 minutes
+</script>
+{% endblock %}

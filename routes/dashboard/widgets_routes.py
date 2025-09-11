@@ -1,31 +1,20 @@
 """
-Routes pour la gestion du dashboard et widgets
+Dashboard Widgets Routes
+Routes pour la personnalisation des widgets
 """
-from flask import Blueprint, render_template, session, redirect, url_for
-from .widgets_api import widgets_bp
+from flask import Blueprint, render_template, session
+from core.security import login_required
 
-# Créer le blueprint principal
-bp = Blueprint('dashboard', __name__)
+widgets_routes_bp = Blueprint('widgets_routes', __name__)
 
-# Enregistrer les routes API des widgets
-bp.register_blueprint(widgets_bp, url_prefix='/api')
+@widgets_routes_bp.route('/dashboard/widgets/customize')
+@login_required
+def customize_widgets():
+    """Page de personnalisation des widgets"""
+    return render_template('dashboard/customize_widgets.html')
 
-@bp.route('/')
-def dashboard():
-    """Page principale du dashboard"""
-    if 'user_id' not in session:
-        return redirect(url_for('auth_login'))
-    
-    return render_template('dashboard/main.html',
-                         user_name=session.get('user_name', 'Utilisateur'),
-                         user_role=session.get('user_role', 'technician'))
-
-@bp.route('/customize')
-def customize_dashboard():
-    """Page de personnalisation du dashboard"""
-    if 'user_id' not in session:
-        return redirect(url_for('auth_login'))
-    
-    return render_template('dashboard/customize.html',
-                         user_name=session.get('user_name', 'Utilisateur'),
-                         user_role=session.get('user_role', 'technician'))
+@widgets_routes_bp.route('/dashboard/widgets/preview/<widget_id>')
+@login_required
+def preview_widget(widget_id):
+    """Prévisualisation d'un widget"""
+    return render_template(f'dashboard/components/{widget_id}_widget.html')

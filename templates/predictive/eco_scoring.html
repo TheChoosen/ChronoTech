@@ -1,0 +1,474 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">🌱 Eco-Scoring</h1>
+                    <p class="text-muted">Évaluation environnementale des interventions</p>
+                </div>
+                <div>
+                    <button class="btn btn-success" onclick="calculateAllEcoScores()">
+                        <i class="fas fa-calculator"></i> Calculer tous les scores
+                    </button>
+                    <button class="btn btn-outline-success" onclick="exportEcoReport()">
+                        <i class="fas fa-download"></i> Rapport Eco
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques Eco-Score -->
+    <div class="row mb-4" id="eco-stats-cards">
+        <div class="col-12 text-center">
+            <div class="spinner-border text-success" role="status">
+                <span class="visually-hidden">Chargement...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Graphiques et tendances -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0">📈 Évolution Eco-Score Mensuelle</h5>
+                </div>
+                <div class="card-body">
+                    <div id="eco-chart-container" style="height: 300px;">
+                        <div class="d-flex align-items-center justify-content-center h-100">
+                            <div class="text-center">
+                                <i class="fas fa-chart-line fa-3x text-success mb-3"></i>
+                                <p class="text-muted">Graphique d'évolution</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0">🏆 Distribution des Notes</h5>
+                </div>
+                <div class="card-body">
+                    <div id="grades-distribution">
+                        <!-- Chargé dynamiquement -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Détails par Work Order -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">🔍 Work Orders avec Eco-Score</h5>
+                        <div>
+                            <select class="form-select form-select-sm" id="score-filter" onchange="filterByScore()">
+                                <option value="">Tous les scores</option>
+                                <option value="A">Grade A (80-100)</option>
+                                <option value="B">Grade B (60-79)</option>
+                                <option value="C">Grade C (40-59)</option>
+                                <option value="D">Grade D (0-39)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="work-orders-eco-table">
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-success" role="status">
+                                <span class="visually-hidden">Chargement...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de calcul Eco-Score -->
+<div class="modal fade" id="ecoCalculationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Calcul Eco-Score</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="eco-calculation-body">
+                <!-- Contenu dynamique -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let ecoStatsData = null;
+
+// Chargement initial
+document.addEventListener('DOMContentLoaded', function() {
+    loadEcoStats();
+    loadWorkOrdersEcoTable();
+});
+
+function loadEcoStats() {
+    fetch('/api/predictive/eco-score/stats')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                ecoStatsData = data;
+                displayEcoStats(data.stats);
+                displayEcoChart(data.monthly_evolution);
+                displayGradesDistribution(data.stats);
+            } else {
+                showError('Erreur lors du chargement des statistiques eco-score');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showError('Erreur de communication avec le serveur');
+        });
+}
+
+function displayEcoStats(stats) {
+    const container = document.getElementById('eco-stats-cards');
+    
+    const html = `
+        <div class="col-md-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="bg-success bg-opacity-10 p-3 rounded-circle d-inline-flex mb-3">
+                        <i class="fas fa-clipboard-check text-success fa-2x"></i>
+                    </div>
+                    <h3 class="text-success mb-1">${stats.total_scored || 0}</h3>
+                    <p class="text-muted mb-0">Work Orders Évalués</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="bg-primary bg-opacity-10 p-3 rounded-circle d-inline-flex mb-3">
+                        <i class="fas fa-chart-bar text-primary fa-2x"></i>
+                    </div>
+                    <h3 class="text-primary mb-1">${(stats.avg_score || 0).toFixed(1)}</h3>
+                    <p class="text-muted mb-0">Score Moyen</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="bg-warning bg-opacity-10 p-3 rounded-circle d-inline-flex mb-3">
+                        <i class="fas fa-smog text-warning fa-2x"></i>
+                    </div>
+                    <h3 class="text-warning mb-1">${(stats.total_carbon || 0).toFixed(1)} kg</h3>
+                    <p class="text-muted mb-0">Empreinte Carbone</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="bg-info bg-opacity-10 p-3 rounded-circle d-inline-flex mb-3">
+                        <i class="fas fa-recycle text-info fa-2x"></i>
+                    </div>
+                    <h3 class="text-info mb-1">${(stats.total_recycled || 0).toFixed(1)} kg</h3>
+                    <p class="text-muted mb-0">Matériaux Recyclés</p>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.innerHTML = html;
+}
+
+function displayEcoChart(monthlyData) {
+    const container = document.getElementById('eco-chart-container');
+    
+    if (!monthlyData || monthlyData.length === 0) {
+        container.innerHTML = `
+            <div class="d-flex align-items-center justify-content-center h-100">
+                <div class="text-center">
+                    <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Aucune donnée mensuelle disponible</p>
+                </div>
+            </div>
+        `;
+        return;
+    }
+    
+    // Graphique simple avec barres CSS
+    const maxScore = Math.max(...monthlyData.map(d => d.avg_score));
+    const barsHtml = monthlyData.slice(-6).map(data => {
+        const height = (data.avg_score / maxScore) * 100;
+        const date = new Date(data.month + '-01');
+        const monthName = date.toLocaleDateString('fr-FR', { month: 'short' });
+        
+        return `
+            <div class="text-center" style="flex: 1;">
+                <div style="height: 200px; display: flex; align-items: end; justify-content: center;">
+                    <div style="
+                        width: 30px; 
+                        height: ${height}%; 
+                        background: linear-gradient(135deg, #28a745, #20c997); 
+                        border-radius: 4px 4px 0 0;
+                        display: flex;
+                        align-items: start;
+                        justify-content: center;
+                        color: white;
+                        font-size: 11px;
+                        font-weight: bold;
+                        padding-top: 4px;
+                    ">${data.avg_score.toFixed(0)}</div>
+                </div>
+                <div class="small text-muted mt-2">${monthName}</div>
+                <div class="small text-muted">${data.count} WO</div>
+            </div>
+        `;
+    }).join('');
+    
+    container.innerHTML = `
+        <div style="display: flex; height: 100%; align-items: end; padding: 20px;">
+            ${barsHtml}
+        </div>
+    `;
+}
+
+function displayGradesDistribution(stats) {
+    const container = document.getElementById('grades-distribution');
+    const total = stats.total_scored || 1;
+    
+    const grades = [
+        { grade: 'A', count: stats.grade_a_count || 0, color: '#28a745', min: 80 },
+        { grade: 'B', count: stats.grade_b_count || 0, color: '#17a2b8', min: 60 },
+        { grade: 'C', count: stats.grade_c_count || 0, color: '#ffc107', min: 40 },
+        { grade: 'D', count: stats.grade_d_count || 0, color: '#dc3545', min: 0 }
+    ];
+    
+    const html = grades.map(grade => {
+        const percentage = (grade.count / total * 100).toFixed(1);
+        return `
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="fw-bold">Grade ${grade.grade}</span>
+                    <span class="text-muted">${grade.count} (${percentage}%)</span>
+                </div>
+                <div class="progress" style="height: 12px;">
+                    <div class="progress-bar" 
+                         style="width: ${percentage}%; background-color: ${grade.color};">
+                    </div>
+                </div>
+                <div class="small text-muted mt-1">${grade.min}+ points</div>
+            </div>
+        `;
+    }).join('');
+    
+    container.innerHTML = html;
+}
+
+function loadWorkOrdersEcoTable() {
+    // Simuler des données pour l'exemple
+    const mockData = [
+        { id: 1, title: 'Réparation système hydraulique', eco_score: 85, grade: 'A', carbon: 2.5, recycled: 8.0, distance: 12.5 },
+        { id: 2, title: 'Maintenance préventive véhicule', eco_score: 72, grade: 'B', carbon: 5.2, recycled: 3.5, distance: 25.3 },
+        { id: 3, title: 'Remplacement pièces moteur', eco_score: 58, grade: 'C', carbon: 8.7, recycled: 12.0, distance: 18.2 },
+        { id: 4, title: 'Diagnostic électronique', eco_score: 91, grade: 'A', carbon: 1.2, recycled: 0.0, distance: 8.5 },
+        { id: 5, title: 'Réparation carrosserie', eco_score: 45, grade: 'C', carbon: 12.5, recycled: 15.5, distance: 35.0 }
+    ];
+    
+    displayWorkOrdersTable(mockData);
+}
+
+function displayWorkOrdersTable(workOrders) {
+    const container = document.getElementById('work-orders-eco-table');
+    
+    if (workOrders.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <i class="fas fa-leaf fa-3x text-muted mb-3"></i>
+                <p class="text-muted">Aucun work order avec eco-score trouvé</p>
+                <button class="btn btn-success" onclick="calculateAllEcoScores()">
+                    <i class="fas fa-calculator"></i> Calculer les scores
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    const gradeColors = {
+        'A': 'success',
+        'B': 'info', 
+        'C': 'warning',
+        'D': 'danger'
+    };
+    
+    const html = `
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Work Order</th>
+                        <th>Eco-Score</th>
+                        <th>Grade</th>
+                        <th>Carbone (kg)</th>
+                        <th>Recyclé (kg)</th>
+                        <th>Distance (km)</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${workOrders.map(wo => `
+                        <tr>
+                            <td>
+                                <div>
+                                    <strong>#${wo.id}</strong>
+                                </div>
+                                <div class="small text-muted">${wo.title}</div>
+                            </td>
+                            <td>
+                                <div class="fw-bold text-${gradeColors[wo.grade] || 'secondary'}">
+                                    ${wo.eco_score}
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-${gradeColors[wo.grade] || 'secondary'}">
+                                    ${wo.grade}
+                                </span>
+                            </td>
+                            <td>${wo.carbon.toFixed(1)}</td>
+                            <td class="text-success">${wo.recycled.toFixed(1)}</td>
+                            <td>${wo.distance.toFixed(1)}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" 
+                                        onclick="recalculateEcoScore(${wo.id})">
+                                    <i class="fas fa-calculator"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-info" 
+                                        onclick="showEcoDetails(${wo.id})">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    container.innerHTML = html;
+}
+
+function filterByScore() {
+    // Implémenter le filtrage par grade
+    loadWorkOrdersEcoTable();
+}
+
+function calculateAllEcoScores() {
+    if (!confirm('Calculer les eco-scores pour tous les work orders ? Cette opération peut prendre quelques minutes.')) {
+        return;
+    }
+    
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calcul en cours...';
+    btn.disabled = true;
+    
+    // Simuler le calcul
+    setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        showSuccess('Eco-scores calculés avec succès !');
+        loadEcoStats();
+        loadWorkOrdersEcoTable();
+    }, 3000);
+}
+
+function recalculateEcoScore(workOrderId) {
+    fetch(`/api/predictive/eco-score/calculate/${workOrderId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showEcoCalculationResult(data.data);
+                loadWorkOrdersEcoTable();
+            } else {
+                showError(data.error || 'Erreur lors du calcul');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showError('Erreur de communication');
+        });
+}
+
+function showEcoCalculationResult(result) {
+    const modalBody = document.getElementById('eco-calculation-body');
+    
+    const html = `
+        <div class="text-center mb-4">
+            <div class="display-4 text-success mb-2">${result.eco_score}</div>
+            <h5>Grade ${result.grade}</h5>
+            <p class="text-muted">Work Order #${result.work_order_id}</p>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Métriques Environnementales</h6>
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-smog text-warning me-2"></i> Carbone: ${result.metrics.carbon_footprint_kg.toFixed(2)} kg</li>
+                    <li><i class="fas fa-bolt text-info me-2"></i> Énergie: ${result.metrics.energy_consumption_kwh.toFixed(2)} kWh</li>
+                    <li><i class="fas fa-route text-primary me-2"></i> Distance: ${result.metrics.travel_distance_km.toFixed(2)} km</li>
+                    <li><i class="fas fa-recycle text-success me-2"></i> Recyclé: ${result.metrics.recycled_materials_kg.toFixed(2)} kg</li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h6>Suggestions d'Amélioration</h6>
+                <ul class="list-unstyled">
+                    ${result.suggestions.map(suggestion => 
+                        `<li><i class="fas fa-lightbulb text-warning me-2"></i> ${suggestion}</li>`
+                    ).join('')}
+                </ul>
+            </div>
+        </div>
+    `;
+    
+    modalBody.innerHTML = html;
+    new bootstrap.Modal(document.getElementById('ecoCalculationModal')).show();
+}
+
+function showEcoDetails(workOrderId) {
+    // Implémenter l'affichage des détails
+    alert(`Détails eco-score pour Work Order #${workOrderId}`);
+}
+
+function exportEcoReport() {
+    alert('Export du rapport eco-scoring en cours de développement');
+}
+
+function showSuccess(message) {
+    // Implémenter notification de succès
+    console.log('SUCCESS:', message);
+}
+
+function showError(message) {
+    // Implémenter notification d'erreur
+    console.error('ERROR:', message);
+}
+</script>
+{% endblock %}

@@ -14,24 +14,27 @@
                 <button class="btn btn-sm btn-outline-secondary me-1" id="chat-settings">
                     <i class="fa-solid fa-gear"></i>
                 </button>
-                <button class="btn btn-sm btn-outline-secondary" onclick="dashboardWidgets.toggleWidget('contextual-chat-widget')">
+                <button class="btn btn-sm btn-outline-secondary"
+                    onclick="dashboardWidgets.toggleWidget('contextual-chat-widget')">
                     <i class="fa-solid fa-minus"></i>
                 </button>
             </div>
         </div>
     </div>
 
-    <div class="widget-content p-0" style="height: 500px;">
+    <div class="widget-content p-0">
         <!-- État initial - Sélection de contexte -->
-        <div id="chat-context-selector" class="h-100 d-flex flex-column justify-content-center align-items-center text-center p-4">
+        <div id="chat-context-selector"
+            class="h-100 d-flex flex-column justify-content-center align-items-center text-center p-4">
             <div class="mb-4">
                 <i class="fa-solid fa-comments fa-3x text-muted mb-3"></i>
                 <h5 class="text-muted">Sélectionnez un contexte</h5>
-                <p class="text-muted small">Choisissez une intervention, un client ou un véhicule pour commencer une conversation</p>
+                <p class="text-muted small">Choisissez une intervention, un client ou un véhicule pour commencer une
+                    conversation</p>
             </div>
-            
-            <div class="row g-3 w-100" style="max-width: 400px;">
-                <div class="col-12">
+
+            <div class="row g-3 w-100">
+                <div class="col-4">
                     <div class="btn btn-outline-primary w-100 chat-context-btn" data-context="work_order">
                         <i class="fa-solid fa-wrench me-2"></i>
                         <div>
@@ -40,7 +43,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-12">
+                <div class="col-4">
                     <div class="btn btn-outline-success w-100 chat-context-btn" data-context="customer">
                         <i class="fa-solid fa-user me-2"></i>
                         <div>
@@ -49,7 +52,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-12">
+                <div class="col-4">
                     <div class="btn btn-outline-info w-100 chat-context-btn" data-context="vehicle">
                         <i class="fa-solid fa-car me-2"></i>
                         <div>
@@ -83,7 +86,7 @@
                             <div class="text-muted small" id="chat-status">En ligne</div>
                         </div>
                     </div>
-                    
+
                     <!-- Indicateur de frappe -->
                     <div class="typing-indicator mt-2 d-none" id="typing-indicator">
                         <small class="text-muted">
@@ -96,7 +99,8 @@
                 </div>
 
                 <!-- Zone des messages -->
-                <div class="chat-messages flex-grow-1 p-3" id="chat-messages" style="overflow-y: auto; max-height: 300px;">
+                <div class="chat-messages flex-grow-1 p-3" id="chat-messages"
+                    style="overflow-y: auto; max-height: 300px;">
                     <div class="text-center text-muted small mb-3" id="chat-loading">
                         <i class="fa-solid fa-spinner fa-spin me-2"></i>
                         Chargement des messages...
@@ -110,24 +114,23 @@
                         <button class="btn btn-outline-secondary" type="button" id="chat-attach-file">
                             <i class="fa-solid fa-paperclip"></i>
                         </button>
-                        <input type="text" 
-                               class="form-control" 
-                               id="chat-message-input" 
-                               placeholder="Tapez votre message..."
-                               autocomplete="off">
+                        <input type="text" class="form-control" id="chat-message-input"
+                            placeholder="Tapez votre message..." autocomplete="off">
                         <button class="btn btn-primary" type="button" id="chat-send-message">
                             <i class="fa-solid fa-paper-plane"></i>
                         </button>
                     </div>
-                    
+
                     <!-- Input de fichier masqué -->
-                    <input type="file" id="chat-file-input" class="d-none" accept="image/*,application/pdf,.doc,.docx,.txt">
+                    <input type="file" id="chat-file-input" class="d-none"
+                        accept="image/*,application/pdf,.doc,.docx,.txt">
                 </div>
             </div>
         </div>
 
         <!-- Sidebar utilisateurs (cachée par défaut) -->
-        <div class="chat-sidebar position-absolute top-0 end-0 h-100 bg-light border-start d-none" id="chat-sidebar" style="width: 250px; z-index: 10;">
+        <div class="chat-sidebar position-absolute top-0 end-0 h-100 bg-light border-start d-none" id="chat-sidebar"
+            style="width: 250px; z-index: 10;">
             <div class="p-3 border-bottom">
                 <div class="d-flex justify-content-between align-items-center">
                     <h6 class="mb-0">Participants</h6>
@@ -158,12 +161,10 @@
             </div>
             <div class="modal-body">
                 <div class="mb-3">
-                    <input type="text" 
-                           class="form-control" 
-                           id="entity-search-input" 
-                           placeholder="Rechercher...">
+                    <input type="text" class="form-control" id="entity-search-input" placeholder="Rechercher...">
                 </div>
-                <div class="entity-search-results" id="entity-search-results" style="max-height: 300px; overflow-y: auto;">
+                <div class="entity-search-results" id="entity-search-results"
+                    style="max-height: 300px; overflow-y: auto;">
                     <div class="text-center text-muted p-4">
                         <i class="fa-solid fa-search fa-2x mb-2"></i>
                         <p>Tapez au moins 2 caractères pour rechercher</p>
@@ -237,126 +238,135 @@
 </template>
 
 <style>
-/* Styles pour le chat */
-.chat-context-btn {
-    text-align: left;
-    padding: 1rem;
-    border: 2px solid;
-    transition: all 0.3s ease;
-}
-
-.chat-context-btn:hover {
-    background-color: var(--bs-primary-bg-subtle);
-    transform: translateY(-2px);
-}
-
-.chat-messages {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(0,0,0,0.2) transparent;
-}
-
-.chat-messages::-webkit-scrollbar {
-    width: 6px;
-}
-
-.chat-messages::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.chat-messages::-webkit-scrollbar-thumb {
-    background-color: rgba(0,0,0,0.2);
-    border-radius: 3px;
-}
-
-.chat-message.own {
-    margin-left: 20%;
-}
-
-.chat-message.own .message-content {
-    background-color: var(--bs-primary);
-    color: white;
-    border-radius: 18px 18px 4px 18px;
-    padding: 0.75rem 1rem;
-    margin-left: auto;
-}
-
-.chat-message:not(.own) .message-content {
-    background-color: var(--bs-light);
-    border-radius: 18px 18px 18px 4px;
-    padding: 0.75rem 1rem;
-}
-
-.avatar-circle {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--bs-primary), var(--bs-info));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: bold;
-    font-size: 0.8rem;
-}
-
-.avatar-circle.small {
-    width: 24px;
-    height: 24px;
-    font-size: 0.7rem;
-}
-
-.typing-dots span {
-    display: inline-block;
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background-color: var(--bs-primary);
-    margin: 0 1px;
-    animation: typing 1.4s infinite ease-in-out;
-}
-
-.typing-dots span:nth-child(1) { animation-delay: -0.32s; }
-.typing-dots span:nth-child(2) { animation-delay: -0.16s; }
-
-@keyframes typing {
-    0%, 80%, 100% { 
-        transform: scale(0);
-        opacity: 0.5;
+    /* Styles pour le chat */
+    .chat-context-btn {
+        text-align: left;
+        padding: 1rem;
+        border: 2px solid;
+        transition: all 0.3s ease;
     }
-    40% { 
-        transform: scale(1);
-        opacity: 1;
+
+    .chat-context-btn:hover {
+        background-color: var(--bs-primary-bg-subtle);
+        transform: translateY(-2px);
     }
-}
 
-.participant-online-indicator {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background-color: var(--bs-success);
-}
+    .chat-messages {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+    }
 
-.participant-online-indicator.offline {
-    background-color: var(--bs-secondary);
-}
+    .chat-messages::-webkit-scrollbar {
+        width: 6px;
+    }
 
-.file-attachment {
-    background-color: var(--bs-light);
-}
+    .chat-messages::-webkit-scrollbar-track {
+        background: transparent;
+    }
 
-.entity-search-result {
-    cursor: pointer;
-    padding: 0.75rem;
-    border-radius: 0.5rem;
-    transition: background-color 0.2s ease;
-}
+    .chat-messages::-webkit-scrollbar-thumb {
+        background-color: rgba(0, 0, 0, 0.2);
+        border-radius: 3px;
+    }
 
-.entity-search-result:hover {
-    background-color: var(--bs-primary-bg-subtle);
-}
+    .chat-message.own {
+        margin-left: 20%;
+    }
 
-.entity-search-result.selected {
-    background-color: var(--bs-primary);
-    color: white;
-}
+    .chat-message.own .message-content {
+        background-color: var(--bs-primary);
+        color: white;
+        border-radius: 18px 18px 4px 18px;
+        padding: 0.75rem 1rem;
+        margin-left: auto;
+    }
+
+    .chat-message:not(.own) .message-content {
+        background-color: var(--bs-light);
+        border-radius: 18px 18px 18px 4px;
+        padding: 0.75rem 1rem;
+    }
+
+    .avatar-circle {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--bs-primary), var(--bs-info));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 0.8rem;
+    }
+
+    .avatar-circle.small {
+        width: 24px;
+        height: 24px;
+        font-size: 0.7rem;
+    }
+
+    .typing-dots span {
+        display: inline-block;
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background-color: var(--bs-primary);
+        margin: 0 1px;
+        animation: typing 1.4s infinite ease-in-out;
+    }
+
+    .typing-dots span:nth-child(1) {
+        animation-delay: -0.32s;
+    }
+
+    .typing-dots span:nth-child(2) {
+        animation-delay: -0.16s;
+    }
+
+    @keyframes typing {
+
+        0%,
+        80%,
+        100% {
+            transform: scale(0);
+            opacity: 0.5;
+        }
+
+        40% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    .participant-online-indicator {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: var(--bs-success);
+    }
+
+    .participant-online-indicator.offline {
+        background-color: var(--bs-secondary);
+    }
+
+    .file-attachment {
+        background-color: var(--bs-light);
+    }
+
+    .entity-search-result {
+        cursor: pointer;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        transition: background-color 0.2s ease;
+    }
+
+    .entity-search-result:hover {
+        background-color: var(--bs-primary-bg-subtle);
+    }
+
+    .entity-search-result.selected {
+        background-color: var(--bs-primary);
+        color: white;
+    }
 </style>

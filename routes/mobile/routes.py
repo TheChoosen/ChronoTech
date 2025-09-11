@@ -1,3 +1,4 @@
+from core.database import get_db_connection
 """
 Routes Mobile pour Techniciens - Sprint 3
 Interface optimisée mobile avec actions rapides
@@ -8,19 +9,11 @@ from functools import wraps
 import os
 import pymysql
 
-# Blueprint mobile
+# Blueprint mobile  
 mobile_bp = Blueprint('mobile', __name__, url_prefix='/mobile')
 
-def get_db_connection():
-    """Connexion à la base de données"""
-    return pymysql.connect(
-        host=os.getenv('MYSQL_HOST', 'localhost'),
-        user=os.getenv('MYSQL_USER', 'root'),
-        password=os.getenv('MYSQL_PASSWORD', ''),
-        database=os.getenv('MYSQL_DB', 'chronotech'),
-        charset='utf8mb4',
-        cursorclass=pymysql.cursors.DictCursor
-    )
+# Import de la connexion centralisée
+from core.database import get_db_connection
 
 def require_technician(f):
     """Décorateur pour vérifier le rôle technicien"""

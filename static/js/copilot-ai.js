@@ -43,7 +43,7 @@ class CopilotAI {
         }
 
         try {
-            const response = await fetch('/api/copilot/insights', {
+            const response = await fetch('/api/dashboard/copilot/insights', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -351,7 +351,7 @@ class CopilotAI {
     }
 
     async getInsights() {
-        const response = await fetch('/api/copilot/insights');
+        const response = await fetch('/api/dashboard/copilot/insights');
         const data = await response.json();
         return data.success ? data.insights : {};
     }

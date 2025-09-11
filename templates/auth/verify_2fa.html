@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Vérification 2FA - ChronoTech{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-4">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark text-center">
+                    <h4 class="mb-0">
+                        <i class="fa-solid fa-lock me-2"></i>
+                        Authentification 2FA
+                    </h4>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-4">
+                        <i class="fa-solid fa-mobile-screen-button fa-3x text-primary mb-3"></i>
+                        <p class="text-muted">
+                            Entrez le code de vérification depuis votre application d'authentification
+                        </p>
+                    </div>
+                    
+                    <form method="POST">
+                        <div class="mb-3">
+                            <input type="text" class="form-control form-control-lg text-center" 
+                                   name="token" placeholder="000000" maxlength="6" required
+                                   style="font-size: 1.5rem; letter-spacing: 0.2em;">
+                        </div>
+                        
+                        <div class="d-grid mb-3">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fa-solid fa-check me-2"></i>
+                                Vérifier
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div class="text-muted small">
+                        <p class="mb-1">Vous n'avez pas accès à votre appareil ?</p>
+                        <a href="{{ url_for('dashboard') }}" class="text-decoration-none">
+                            <i class="fa-solid fa-arrow-left me-1"></i>
+                            Retour au dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-focus sur le champ de saisie
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelector('input[name="token"]').focus();
+});
+
+// Auto-submit après 6 caractères
+document.querySelector('input[name="token"]').addEventListener('input', function(e) {
+    if (e.target.value.length === 6) {
+        setTimeout(() => {
+            e.target.closest('form').submit();
+        }, 500);
+    }
+});
+</script>
+{% endblock %}

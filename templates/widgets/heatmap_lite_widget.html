@@ -1,0 +1,390 @@
+<!-- Widget Heatmap Lite - Sprint 7.1 -->
+<div class="col-lg-4 col-md-6 mb-4" data-widget="heatmap-lite">
+    <div class="card claymorphism-card h-100">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">
+                <i class="fas fa-map-marked-alt text-danger me-2"></i>
+                Carte Interventions
+            </h6>
+            <div class="dropdown">
+                <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="fas fa-filter"></i>
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#" onclick="filterHeatmap('today')">Aujourd'hui</a></li>
+                    <li><a class="dropdown-item" href="#" onclick="filterHeatmap('week')">Cette semaine</a></li>
+                    <li><a class="dropdown-item" href="#" onclick="filterHeatmap('month')">Ce mois</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="#" onclick="openFullHeatmap()">Vue complète</a></li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="card-body p-0">
+            <!-- Mini carte Google Maps -->
+            <div id="heatmapLiteContainer" style="height: 200px; position: relative;">
+                <div id="heatmapLite" style="height: 100%; width: 100%;"></div>
+                
+                <!-- Overlay d'informations -->
+                <div class="heatmap-overlay" style="position: absolute; top: 10px; left: 10px; z-index: 1000;">
+                    <div class="bg-white rounded shadow-sm p-2" style="backdrop-filter: blur(10px); background: rgba(255,255,255,0.9);">
+                        <small class="text-muted d-block">Densité d'interventions</small>
+                        <div class="d-flex align-items-center">
+                            <div class="density-indicator high me-2"></div>
+                            <small>Élevée</small>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <div class="density-indicator medium me-2"></div>
+                            <small>Moyenne</small>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <div class="density-indicator low me-2"></div>
+                            <small>Faible</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bouton expansion -->
+                <button class="btn btn-primary btn-sm expand-btn" onclick="openFullHeatmap()" 
+                        style="position: absolute; bottom: 10px; right: 10px; z-index: 1000;">
+                    <i class="fas fa-expand-alt"></i>
+                </button>
+                
+                <!-- Loading spinner -->
+                <div id="heatmapLoading" class="d-flex align-items-center justify-content-center h-100" 
+                     style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.9);">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Chargement...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card-footer">
+            <div class="row text-center">
+                <div class="col-4">
+                    <small class="text-muted">Zones actives</small>
+                    <div class="fw-bold text-danger" id="activeZones">0</div>
+                </div>
+                <div class="col-4">
+                    <small class="text-muted">Interventions</small>
+                    <div class="fw-bold" id="totalInterventions">0</div>
+                </div>
+                <div class="col-4">
+                    <small class="text-muted">Période</small>
+                    <div class="fw-bold text-primary" id="currentPeriod">Semaine</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.density-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.density-indicator.high {
+    background: #ff4444;
+    box-shadow: 0 0 10px rgba(255, 68, 68, 0.6);
+}
+
+.density-indicator.medium {
+    background: #ffaa00;
+    box-shadow: 0 0 8px rgba(255, 170, 0, 0.6);
+}
+
+.density-indicator.low {
+    background: #00aa44;
+    box-shadow: 0 0 6px rgba(0, 170, 68, 0.6);
+}
+
+.expand-btn {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.expand-btn:hover {
+    transform: scale(1.1);
+    transition: transform 0.2s ease;
+}
+
+#heatmapLiteContainer {
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.heatmap-overlay {
+    transition: opacity 0.3s ease;
+}
+
+.heatmap-overlay:hover {
+    opacity: 0.7;
+}
+</style>
+
+<script>
+// Variables globales pour Heatmap Lite
+let heatmapLiteMap = null;
+let heatmapData = [];
+let currentFilter = 'week';
+let heatmapLayer = null;
+
+// Initialisation de la carte
+function initHeatmapLite() {
+    // Vérifier si Google Maps est chargé
+    if (typeof google === 'undefined') {
+        console.warn('⚠️ Google Maps API non chargée');
+        showHeatmapError('Google Maps non disponible');
+        return;
+    }
+    
+    // Configuration par défaut centré sur Paris
+    const defaultCenter = { lat: 48.8566, lng: 2.3522 };
+    
+    // Initialiser la carte
+    heatmapLiteMap = new google.maps.Map(document.getElementById('heatmapLite'), {
+        zoom: 11,
+        center: defaultCenter,
+        mapTypeId: 'roadmap',
+        styles: [
+            {
+                "featureType": "all",
+                "elementType": "geometry.fill",
+                "stylers": [{ "weight": "2.00" }]
+            },
+            {
+                "featureType": "all",
+                "elementType": "geometry.stroke",
+                "stylers": [{ "color": "#9c9c9c" }]
+            },
+            {
+                "featureType": "all",
+                "elementType": "labels.text",
+                "stylers": [{ "visibility": "on" }]
+            }
+        ],
+        disableDefaultUI: true,
+        zoomControl: true,
+        zoomControlOptions: {
+            position: google.maps.ControlPosition.TOP_RIGHT
+        }
+    });
+    
+    // Charger les données initiales
+    loadHeatmapData(currentFilter);
+    
+    // Masquer le loading
+    hideHeatmapLoading();
+}
+
+// Chargement des données heatmap
+async function loadHeatmapData(period = 'week') {
+    showHeatmapLoading();
+    
+    try {
+        const response = await fetch(`/api/v1/interventions/heatmap?period=${period}`);
+        if (!response.ok) {
+            throw new Error('Erreur chargement données heatmap');
+        }
+        
+        const data = await response.json();
+        heatmapData = data.interventions || [];
+        
+        // Mettre à jour la carte
+        updateHeatmapVisualization();
+        
+        // Mettre à jour les statistiques
+        updateHeatmapStats(data.stats || {});
+        
+    } catch (error) {
+        console.error('❌ Erreur chargement heatmap:', error);
+        showHeatmapError('Erreur de chargement');
+    } finally {
+        hideHeatmapLoading();
+    }
+}
+
+// Mise à jour de la visualisation
+function updateHeatmapVisualization() {
+    if (!heatmapLiteMap || !heatmapData.length) return;
+    
+    // Supprimer l'ancienne heatmap
+    if (heatmapLayer) {
+        heatmapLayer.setMap(null);
+    }
+    
+    // Convertir les données en points Google Maps
+    const heatmapPoints = heatmapData.map(intervention => {
+        return new google.maps.LatLng(
+            intervention.latitude || (48.8566 + (Math.random() - 0.5) * 0.1),
+            intervention.longitude || (2.3522 + (Math.random() - 0.5) * 0.1)
+        );
+    });
+    
+    // Créer la nouvelle heatmap
+    heatmapLayer = new google.maps.visualization.HeatmapLayer({
+        data: heatmapPoints,
+        map: heatmapLiteMap,
+        radius: 50,
+        opacity: 0.8,
+        gradient: [
+            'rgba(0, 255, 255, 0)',
+            'rgba(0, 255, 255, 1)',
+            'rgba(0, 191, 255, 1)',
+            'rgba(0, 127, 255, 1)',
+            'rgba(0, 63, 255, 1)',
+            'rgba(0, 0, 255, 1)',
+            'rgba(0, 0, 223, 1)',
+            'rgba(0, 0, 191, 1)',
+            'rgba(0, 0, 159, 1)',
+            'rgba(0, 0, 127, 1)',
+            'rgba(63, 0, 91, 1)',
+            'rgba(127, 0, 63, 1)',
+            'rgba(191, 0, 31, 1)',
+            'rgba(255, 0, 0, 1)'
+        ]
+    });
+    
+    // Ajuster la vue pour inclure tous les points
+    if (heatmapPoints.length > 0) {
+        const bounds = new google.maps.LatLngBounds();
+        heatmapPoints.forEach(point => bounds.extend(point));
+        heatmapLiteMap.fitBounds(bounds);
+        
+        // Limiter le zoom maximum
+        google.maps.event.addListenerOnce(heatmapLiteMap, 'bounds_changed', function() {
+            if (heatmapLiteMap.getZoom() > 13) {
+                heatmapLiteMap.setZoom(13);
+            }
+        });
+    }
+}
+
+// Mise à jour des statistiques
+function updateHeatmapStats(stats) {
+    document.getElementById('activeZones').textContent = stats.activeZones || calculateActiveZones();
+    document.getElementById('totalInterventions').textContent = stats.totalInterventions || heatmapData.length;
+    document.getElementById('currentPeriod').textContent = getPeriodLabel(currentFilter);
+}
+
+// Calcul zones actives (approximation)
+function calculateActiveZones() {
+    if (!heatmapData.length) return 0;
+    
+    // Grouper les interventions par zone (approximation par grille)
+    const zones = new Set();
+    heatmapData.forEach(intervention => {
+        const zoneKey = `${Math.floor((intervention.latitude || 48.8566) * 100)}_${Math.floor((intervention.longitude || 2.3522) * 100)}`;
+        zones.add(zoneKey);
+    });
+    
+    return zones.size;
+}
+
+// Obtenir le label de période
+function getPeriodLabel(period) {
+    const labels = {
+        'today': 'Aujourd\'hui',
+        'week': 'Semaine',
+        'month': 'Mois'
+    };
+    return labels[period] || 'Semaine';
+}
+
+// Filtrage des données
+function filterHeatmap(period) {
+    currentFilter = period;
+    loadHeatmapData(period);
+}
+
+// Ouverture heatmap complète
+function openFullHeatmap() {
+    // Ouvrir dans un nouvel onglet ou modal
+    window.open('/predictive/heatmap', '_blank');
+}
+
+// Gestion du loading
+function showHeatmapLoading() {
+    document.getElementById('heatmapLoading').style.display = 'flex';
+}
+
+function hideHeatmapLoading() {
+    document.getElementById('heatmapLoading').style.display = 'none';
+}
+
+// Affichage erreur
+function showHeatmapError(message) {
+    const container = document.getElementById('heatmapLite');
+    container.innerHTML = `
+        <div class="d-flex align-items-center justify-content-center h-100 text-muted">
+            <div class="text-center">
+                <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                <div>${message}</div>
+                <button class="btn btn-sm btn-outline-primary mt-2" onclick="initHeatmapLite()">
+                    Réessayer
+                </button>
+            </div>
+        </div>
+    `;
+    hideHeatmapLoading();
+}
+
+// Initialisation au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    // Attendre que Google Maps soit chargé
+    if (typeof google !== 'undefined' && google.maps) {
+        initHeatmapLite();
+    } else {
+        // Attendre le chargement de Google Maps
+        window.addEventListener('google-maps-loaded', initHeatmapLite);
+        
+        // Fallback après 5 secondes
+        setTimeout(() => {
+            if (!heatmapLiteMap) {
+                console.warn('⚠️ Google Maps non chargé après 5s');
+                showHeatmapError('Google Maps non disponible');
+            }
+        }, 5000);
+    }
+});
+
+// Redimensionnement de la carte lors du resize de la fenêtre
+window.addEventListener('resize', function() {
+    if (heatmapLiteMap) {
+        google.maps.event.trigger(heatmapLiteMap, 'resize');
+    }
+});
+</script>
+
+<!-- Chargement Google Maps avec Heatmap API -->
+<script>
+// Fonction pour charger Google Maps si pas déjà fait
+function loadGoogleMapsAPI() {
+    if (typeof google === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=visualization&callback=onGoogleMapsLoaded';
+        script.async = true;
+        script.defer = true;
+        document.head.appendChild(script);
+    }
+}
+
+// Callback Google Maps
+function onGoogleMapsLoaded() {
+    window.dispatchEvent(new Event('google-maps-loaded'));
+}
+
+// Auto-chargement si nécessaire
+if (typeof google === 'undefined') {
+    loadGoogleMapsAPI();
+}
+</script>

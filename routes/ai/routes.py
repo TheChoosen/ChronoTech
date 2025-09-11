@@ -1,3 +1,4 @@
+from core.database import get_db_connection
 """
 Routes IA pour les interventions - Sprint 2 Production
 Endpoints pour l'analyse IA, suggestions et résumés
@@ -16,16 +17,8 @@ logger = logging.getLogger(__name__)
 # Blueprint pour les routes IA
 ai_bp = Blueprint('ai', __name__)
 
-def get_db_connection():
-    """Connexion à la base de données"""
-    return pymysql.connect(
-        host=os.getenv('MYSQL_HOST', 'localhost'),
-        user=os.getenv('MYSQL_USER', 'root'),
-        password=os.getenv('MYSQL_PASSWORD', ''),
-        database=os.getenv('MYSQL_DB', 'chronotech'),
-        charset='utf8mb4',
-        cursorclass=pymysql.cursors.DictCursor
-    )
+# Import de la connexion centralisée
+from core.database import get_db_connection
 
 def require_auth(f):
     """Décorateur pour vérifier l'authentification"""

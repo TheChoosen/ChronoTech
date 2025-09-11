@@ -11,6 +11,100 @@ class Customer360Widget {
         this.init();
     }
 
+
+    
+    // Intégration MySQL Customer 360
+    async loadCustomerFromMySQL(customerId) {
+        try {
+            const response = await fetch(`/api/dashboard/customer-360/${customerId}`);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            
+            const data = await response.json();
+            this.displayCustomer360Data(data);
+            
+            return data;
+        } catch (error) {
+            console.error('❌ Erreur Customer 360 MySQL:', error);
+            this.showError('Impossible de charger les données client');
+            return null;
+        }
+    }
+    
+    displayCustomer360Data(data) {
+        if (!data.basic_info) return;
+        
+        // Mise à jour de l'interface
+        const container = document.getElementById('customer360-main');
+        if (!container) return;
+        
+        // Informations de base
+        const customerName = data.basic_info.customer_name || 'Client inconnu';
+        const customerEmail = data.basic_info.customer_email || '';
+        const customerPhone = data.basic_info.customer_phone || '';
+        
+        // Statistiques work orders
+        const woSummary = data.work_orders_summary || {};
+        const totalOrders = woSummary.total_orders || 0;
+        const totalValue = woSummary.total_value || 0;
+        
+        // Mettre à jour l'affichage
+        container.innerHTML = `
+            <div class="customer-header mb-4">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <div class="d-flex align-items-center">
+                            <div class="customer-avatar me-3">
+                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" 
+                                     style="width: 60px; height: 60px; font-size: 24px;">
+                                    <span>${this.getInitials(customerName)}</span>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="mb-1">${customerName}</h4>
+                                <div class="text-muted">
+                                    ${customerEmail ? `<i class="fa-solid fa-envelope me-1"></i>${customerEmail}` : ''}
+                                    ${customerPhone ? `<br><i class="fa-solid fa-phone me-1"></i>${customerPhone}` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <div class="customer-stats">
+                            <div class="stat-item">
+                                <span class="stat-value">${totalOrders}</span>
+                                <span class="stat-label">Interventions</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value">${totalValue.toFixed(2)}€</span>
+                                <span class="stat-label">Total dépensé</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="customer-details">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Résumé des interventions</h6>
+                        ${this.renderWorkOrdersSummary(woSummary)}
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Véhicules</h6>
+                        ${this.renderVehiclesSummary(data.vehicles_summary)}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        container.classList.remove('d-none');
+        document.getElementById('customer360-initial').classList.add('d-none');
+    }
+    
+    getInitials(name) {
+        return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    }
+    
     init() {
         this.bindEvents();
         this.setupSearchAutocomplete();

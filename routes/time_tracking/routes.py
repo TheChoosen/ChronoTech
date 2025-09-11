@@ -1,3 +1,4 @@
+from core.database import get_db_connection
 """
 Routes pour le système de tracking temporel des interventions
 """
@@ -9,16 +10,8 @@ import os
 # Blueprint pour les routes de tracking temporel
 time_tracking_bp = Blueprint('time_tracking', __name__)
 
-def get_db_connection():
-    """Connexion à la base de données"""
-    return pymysql.connect(
-        host=os.getenv('MYSQL_HOST', 'localhost'),
-        user=os.getenv('MYSQL_USER', 'root'),
-        password=os.getenv('MYSQL_PASSWORD', ''),
-        database=os.getenv('MYSQL_DB', 'chronotech'),
-        charset='utf8mb4',
-        cursorclass=pymysql.cursors.DictCursor
-    )
+# Import de la connexion centralisée
+from core.database import get_db_connection
 
 @time_tracking_bp.route('/interventions/<int:work_order_id>/time_action', methods=['POST'])
 def time_action(work_order_id):
@@ -238,7 +231,9 @@ def delete_time_entry(work_order_id, entry_id):
             cursor.execute("DELETE FROM intervention_time_tracking WHERE id = %s", (entry_id,))
             
             conn.commit()
+            return jsonify({'success': True, 'message': 'Entrée supprimée'})
             
+    except Exception as e:
         conn.rollback()
         return jsonify({'success': False, 'message': f'Erreur: {str(e)}'}), 500
     finally:

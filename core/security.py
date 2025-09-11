@@ -164,3 +164,89 @@ def audit_log(action):
             return f(*args, **kwargs)
         return decorated_function
     return decorator
+
+# JWT Token Authentication Functions (Sprint 3/6 fixes)
+def token_required(f):
+    """
+    Décorateur pour vérifier l'authentification par token JWT
+    """
+    from functools import wraps
+    from flask import session, redirect, url_for, flash, request, jsonify, current_app
+    import jwt
+    
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        
+        # Vérifier le header Authorization
+        if 'Authorization' in request.headers:
+            auth_header = request.headers['Authorization']
+            try:
+                token = auth_header.split(' ')[1]  # Format: "Bearer <token>"
+            except IndexError:
+                return jsonify({'message': 'Format de token invalide'}), 401
+        
+        # Vérifier le token dans les paramètres de requête (pour les liens publics)
+        if not token and 'token' in request.args:
+            token = request.args.get('token')
+        
+        if not token:
+            return jsonify({'message': 'Token manquant'}), 401
+        
+        try:
+            # Décoder le token
+            data = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
+            
+            # Vérifier l'expiration
+            if 'exp' in data and datetime.utcnow().timestamp() > data['exp']:
+                return jsonify({'message': 'Token expiré'}), 401
+            
+            # Ajouter les données du token à la requête
+            request.token_data = data
+            
+        except jwt.ExpiredSignatureError:
+            return jsonify({'message': 'Token expiré'}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({'message': 'Token invalide'}), 401
+        
+        return f(*args, **kwargs)
+    
+    return decorated
+
+def generate_api_token(user_id, expires_in=3600):
+    """Générer un token JWT pour l'API"""
+    import jwt
+    from flask import current_app
+    
+    payload = {
+        'user_id': user_id,
+        'exp': datetime.utcnow() + timedelta(seconds=expires_in),
+        'iat': datetime.utcnow()
+    }
+    
+    token = jwt.encode(payload, current_app.config['SECRET_KEY'], algorithm='HS256')
+    return token
+
+def verify_api_token(token):
+    """Vérifier et décoder un token JWT"""
+    import jwt
+    from flask import current_app
+    
+    try:
+        data = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
+        return data
+    except:
+        return None
+
+def login_required(f):
+    """Décorateur pour exiger une authentification utilisateur"""
+    from functools import wraps
+    from flask import session, redirect, url_for, request
+    
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            # Rediriger vers la page de connexion
+            return redirect(url_for('login', next=request.url))
+        return f(*args, **kwargs)
+    return decorated_function

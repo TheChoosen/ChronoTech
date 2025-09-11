@@ -1,53 +1,73 @@
 /**
- * JavaScript Kanban Board - Sprint 3
- * Bibliothèque spécialisée pour interface Kanban drag & drop
+ * Vue Kanban des Interventions - ChronoTech
+ * Gestion du drag & drop et interactions en temps réel
  */
 
-class KanbanBoard {
-    constructor(containerId, options = {}) {
-        this.container = document.getElementById(containerId);
-        this.options = {
-            columns: ['pending', 'assigned', 'in-progress', 'done'],
-            editable: true,
-            sortable: true,
-            onTaskMove: null,
-            onTaskClick: null,
-            ...options
-        };
-        
-        this.tasks = [];
-        this.draggedTask = null;
-        this.dropZones = [];
+class InterventionKanban {
+    constructor() {
+        this.data = null;
+        this.sortableInstances = [];
+        this.autoRefreshInterval = null;
+        this.autoRefreshEnabled = true;
+        this.currentInterventionId = null;
+        this.technicians = [];
         
         this.init();
     }
     
-    init() {
-        this.setupBoard();
+    async init() {
         this.setupEventListeners();
+        await this.loadTechnicians();
+        await this.loadKanbanData();
+        this.startAutoRefresh();
     }
     
-    setupBoard() {
-        this.container.className = 'kanban-board';
-        this.container.innerHTML = '';
+    setupEventListeners() {
+        // Filtres
+        document.getElementById('technician-filter').addEventListener('change', () => this.loadKanbanData());
+        document.getElementById('priority-filter').addEventListener('change', () => this.loadKanbanData());
+        document.getElementById('date-filter').addEventListener('change', () => this.loadKanbanData());
         
-        this.options.columns.forEach(columnId => {
-            const column = this.createColumn(columnId);
-            this.container.appendChild(column);
-        });
+        // Actions
+        document.getElementById('refresh-btn').addEventListener('click', () => this.loadKanbanData());
+        document.getElementById('auto-refresh-toggle').addEventListener('click', () => this.toggleAutoRefresh());
+        
+        // Modal assignation
+        const technicianSelect = document.getElementById('technician-select');
+        const confirmBtn = document.getElementById('confirm-assign');
+        
+        if (technicianSelect) {
+            technicianSelect.addEventListener('change', (e) => {
+                const techId = e.target.value;
+                
+                if (techId) {
+                    confirmBtn.disabled = false;
+                    this.showTechnicianWorkload(techId);
+                } else {
+                    confirmBtn.disabled = true;
+                    document.getElementById('technician-workload').style.display = 'none';
+                }
+            });
+        }
+        
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', () => this.confirmAssignment());
+        }
     }
     
-    createColumn(columnId) {
-        const column = document.createElement('div');
-        column.className = 'kanban-column';
-        column.dataset.status = columnId;
-        
-        column.innerHTML = `
-            <div class="column-header">
-                <h3 class="column-title">${this.getColumnTitle(columnId)}</h3>
-                <span class="column-count">0</span>
-            </div>
-            <div class="column-body" data-column="${columnId}">
+    async loadTechnicians() {
+        try {
+            const response = await fetch('/api/kanban/technicians');
+            const result = await response.json();
+            
+            if (result.success) {
+                this.technicians = result.technicians;
+                this.populateTechnicianFilters();
+            }
+        } catch (error) {
+            console.error('Erreur chargement techniciens:', error);
+        }
+    }
                 <div class="drop-zone">
                     Glissez une tâche ici
                 </div>

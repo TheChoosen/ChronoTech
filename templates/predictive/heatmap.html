@@ -1,0 +1,261 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h1 class="h4 mb-0">🗺️ Heatmap des Interventions</h1>
+                            <p class="text-muted mb-0">Visualisation géographique des zones d'intervention</p>
+                        </div>
+                        <div>
+                            <select class="form-select" id="period-filter" onchange="updateHeatmap()">
+                                <option value="all">Toute la période</option>
+                                <option value="last_30_days">30 derniers jours</option>
+                                <option value="last_90_days">90 derniers jours</option>
+                                <option value="last_year">Dernière année</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-body p-0">
+                    <div id="map-container" style="height: 600px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <div class="d-flex align-items-center justify-content-center h-100 text-white">
+                            <div class="text-center">
+                                <i class="fas fa-map-marked-alt fa-4x mb-4 opacity-75"></i>
+                                <h3 class="mb-3">Carte des Interventions</h3>
+                                <p class="mb-4">Visualisation des zones chaudes d'interventions avec densité et coûts</p>
+                                <button class="btn btn-light btn-lg" onclick="loadHeatmapData()">
+                                    <i class="fas fa-play"></i> Charger la Heatmap
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Statistiques des zones -->
+    <div class="row mt-4" id="zones-stats" style="display: none;">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0">📊 Statistiques par Zone</h5>
+                </div>
+                <div class="card-body">
+                    <div id="zones-table-container">
+                        <!-- Tableau chargé dynamiquement -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let heatmapData = null;
+
+function updateHeatmap() {
+    loadHeatmapData();
+}
+
+function loadHeatmapData() {
+    const period = document.getElementById('period-filter').value;
+    const params = period !== 'all' ? `?period=${period}` : '';
+    
+    // Afficher un spinner
+    document.getElementById('map-container').innerHTML = `
+        <div class="d-flex align-items-center justify-content-center h-100">
+            <div class="text-center">
+                <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;"></div>
+                <p class="text-muted">Chargement des données de la heatmap...</p>
+            </div>
+        </div>
+    `;
+    
+    fetch(`/api/predictive/heatmap${params}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                heatmapData = data.data;
+                displayHeatmapPlaceholder();
+                displayZonesStats();
+            } else {
+                showError('Erreur lors du chargement de la heatmap: ' + (data.error || 'Erreur inconnue'));
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showError('Erreur de communication avec le serveur');
+        });
+}
+
+function displayHeatmapPlaceholder() {
+    const container = document.getElementById('map-container');
+    
+    if (!heatmapData || heatmapData.heatmap_points.length === 0) {
+        container.innerHTML = `
+            <div class="d-flex align-items-center justify-content-center h-100">
+                <div class="text-center">
+                    <i class="fas fa-info-circle fa-3x text-info mb-3"></i>
+                    <h4>Aucune donnée disponible</h4>
+                    <p class="text-muted">Aucune intervention avec coordonnées GPS trouvée pour la période sélectionnée</p>
+                </div>
+            </div>
+        `;
+        return;
+    }
+    
+    // Simuler une heatmap avec des points colorés
+    const points = heatmapData.heatmap_points.slice(0, 20); // Limiter pour l'affichage
+    
+    const pointsHtml = points.map((point, index) => {
+        const intensity = Math.min(point.weight * 100, 100);
+        const size = 20 + (intensity / 5);
+        const opacity = Math.max(0.3, point.weight);
+        
+        return `
+            <div class="heatmap-point" 
+                 style="
+                     position: absolute; 
+                     left: ${20 + (index % 8) * 12}%; 
+                     top: ${20 + Math.floor(index / 8) * 15}%; 
+                     width: ${size}px; 
+                     height: ${size}px; 
+                     background: rgba(255, 87, 51, ${opacity}); 
+                     border-radius: 50%; 
+                     cursor: pointer;
+                     display: flex;
+                     align-items: center;
+                     justify-content: center;
+                     color: white;
+                     font-size: 12px;
+                     font-weight: bold;
+                     box-shadow: 0 2px 8px rgba(255, 87, 51, 0.3);
+                     border: 2px solid rgba(255, 255, 255, 0.8);
+                 "
+                 title="Interventions: ${point.count} | Coût moyen: ${point.avg_cost.toFixed(2)}€ | Client: ${point.customer}"
+                 onclick="showPointDetails(${index})">
+                ${point.count}
+            </div>
+        `;
+    }).join('');
+    
+    container.innerHTML = `
+        <div style="position: relative; height: 100%; background: linear-gradient(135deg, #43cea2 0%, #185a9d 100%); border-radius: 8px; overflow: hidden;">
+            <div style="position: absolute; top: 20px; left: 20px; background: rgba(255,255,255,0.9); padding: 15px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                <h6 class="mb-2">🗺️ Heatmap des Interventions</h6>
+                <div class="small text-muted">
+                    <div><strong>${heatmapData.total_interventions}</strong> interventions analysées</div>
+                    <div><strong>${heatmapData.zones.length}</strong> zones identifiées</div>
+                </div>
+            </div>
+            
+            <div style="position: absolute; bottom: 20px; right: 20px; background: rgba(255,255,255,0.9); padding: 10px; border-radius: 8px; font-size: 12px;">
+                <div><span style="display: inline-block; width: 12px; height: 12px; background: rgba(255, 87, 51, 0.3); border-radius: 50%; margin-right: 5px;"></span> Faible activité</div>
+                <div><span style="display: inline-block; width: 12px; height: 12px; background: rgba(255, 87, 51, 0.7); border-radius: 50%; margin-right: 5px;"></span> Activité moyenne</div>
+                <div><span style="display: inline-block; width: 12px; height: 12px; background: rgba(255, 87, 51, 1.0); border-radius: 50%; margin-right: 5px;"></span> Forte activité</div>
+            </div>
+            
+            ${pointsHtml}
+        </div>
+    `;
+}
+
+function displayZonesStats() {
+    if (!heatmapData || heatmapData.zones.length === 0) {
+        document.getElementById('zones-stats').style.display = 'none';
+        return;
+    }
+    
+    const zones = heatmapData.zones;
+    const tableHtml = `
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Zone</th>
+                        <th>Interventions</th>
+                        <th>Coût Moyen</th>
+                        <th>Rayon</th>
+                        <th>Intensité</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${zones.map(zone => `
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <span style="display: inline-block; width: 16px; height: 16px; background: ${zone.color_hex}; border-radius: 50%; margin-right: 8px;"></span>
+                                    ${zone.zone_name}
+                                </div>
+                            </td>
+                            <td><span class="badge bg-primary">${zone.intervention_count}</span></td>
+                            <td><strong>${zone.avg_cost.toFixed(2)}€</strong></td>
+                            <td>${zone.radius_km} km</td>
+                            <td>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar" style="width: ${Math.min(100, zone.intervention_count * 10)}%; background: ${zone.color_hex};"></div>
+                                </div>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    document.getElementById('zones-table-container').innerHTML = tableHtml;
+    document.getElementById('zones-stats').style.display = 'block';
+}
+
+function showPointDetails(index) {
+    if (!heatmapData || !heatmapData.heatmap_points[index]) return;
+    
+    const point = heatmapData.heatmap_points[index];
+    alert(`Détails du point d'intervention:
+Nombre d'interventions: ${point.count}
+Coût moyen: ${point.avg_cost.toFixed(2)}€
+Client: ${point.customer}
+Intensité: ${(point.weight * 100).toFixed(1)}%`);
+}
+
+function showError(message) {
+    document.getElementById('map-container').innerHTML = `
+        <div class="d-flex align-items-center justify-content-center h-100">
+            <div class="text-center">
+                <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+                <h4>Erreur</h4>
+                <p class="text-muted">${message}</p>
+                <button class="btn btn-primary" onclick="loadHeatmapData()">
+                    <i class="fas fa-redo"></i> Réessayer
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+// Chargement initial
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-chargement différé
+    setTimeout(loadHeatmapData, 1000);
+});
+</script>
+
+<style>
+.heatmap-point {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.heatmap-point:hover {
+    transform: scale(1.2);
+    box-shadow: 0 4px 16px rgba(255, 87, 51, 0.5) !important;
+    z-index: 10;
+}
+</style>
+{% endblock %}

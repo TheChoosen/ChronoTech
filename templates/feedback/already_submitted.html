@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Feedback déjà soumis{% endblock %}
+
+{% block page_styles %}
+<style>
+.already-submitted-page {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 2rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.submitted-container {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    padding: 4rem 3rem;
+    max-width: 600px;
+    width: 90%;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.submitted-icon {
+    font-size: 5rem;
+    color: #10b981;
+    margin-bottom: 2rem;
+}
+
+.submitted-title {
+    font-size: 2.5rem;
+    color: #333;
+    margin-bottom: 1rem;
+    font-weight: 700;
+}
+
+.submitted-message {
+    font-size: 1.2rem;
+    color: #666;
+    margin-bottom: 3rem;
+    line-height: 1.6;
+}
+
+.feedback-summary {
+    background: #f8f9fa;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 3rem;
+    text-align: left;
+}
+
+.summary-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.summary-item:last-child {
+    border-bottom: none;
+}
+
+.summary-label {
+    font-weight: 500;
+    color: #555;
+}
+
+.summary-value {
+    font-weight: 600;
+    color: #333;
+}
+
+.star-display {
+    color: #ffc107;
+    font-size: 1.2rem;
+}
+
+.submission-date {
+    background: #e3f2fd;
+    border: 1px solid #bbdefb;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 2rem;
+    color: #1565c0;
+}
+
+.close-btn {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+    color: white;
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: 50px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.close-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(107, 114, 128, 0.4);
+    color: white;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="already-submitted-page">
+    <div class="submitted-container">
+        <div class="submitted-icon">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        
+        <h1 class="submitted-title">Feedback déjà soumis</h1>
+        
+        <p class="submitted-message">
+            Vous avez déjà soumis votre évaluation pour cette intervention. 
+            Merci pour votre temps et vos commentaires précieux !
+        </p>
+
+        {% if feedback.submitted_at %}
+        <div class="submission-date">
+            <i class="fas fa-calendar-check"></i>
+            <strong>Soumis le :</strong> 
+            {{ feedback.submitted_at.strftime('%d/%m/%Y à %H:%M') }}
+        </div>
+        {% endif %}
+
+        {% if feedback %}
+        <div class="feedback-summary">
+            <h3 class="summary-title">Votre évaluation</h3>
+            
+            <div class="summary-item">
+                <span class="summary-label">Intervention</span>
+                <span class="summary-value">#{{ feedback.claim_number }}</span>
+            </div>
+            
+            <div class="summary-item">
+                <span class="summary-label">Technicien</span>
+                <span class="summary-value">{{ feedback.technician_name }}</span>
+            </div>
+            
+            {% if feedback.overall_satisfaction %}
+            <div class="summary-item">
+                <span class="summary-label">Satisfaction générale</span>
+                <span class="summary-value star-display">
+                    {% for i in range(feedback.overall_satisfaction) %}★{% endfor %}
+                    {% for i in range(5 - feedback.overall_satisfaction) %}☆{% endfor %}
+                </span>
+            </div>
+            {% endif %}
+            
+            {% if feedback.nps_score is not none %}
+            <div class="summary-item">
+                <span class="summary-label">Score de recommandation</span>
+                <span class="summary-value">{{ feedback.nps_score }}/10</span>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <button onclick="window.close()" class="close-btn">
+            <i class="fas fa-times"></i>
+            Fermer cette page
+        </button>
+    </div>
+</div>
+{% endblock %}

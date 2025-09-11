@@ -414,3 +414,108 @@ def get_work_order_notes(work_order_id):
     except Exception as e:
         logging.error(f"Erreur récupération notes: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
+
+@bp.route('/api/work_orders/<int:work_order_id>/start', methods=['POST'])
+def start_work_order(work_order_id):
+    """Démarrer une intervention (changer le statut à 'in_progress')"""
+    try:
+        user_id = session.get('user_id')
+        if not user_id:
+            return jsonify({'success': False, 'error': 'Utilisateur non authentifié'}), 401
+        
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'success': False, 'error': 'Database connection failed'}), 500
+        
+        cursor = conn.cursor()
+        
+        # Vérifier que l'utilisateur peut démarrer cette intervention
+        cursor.execute("""
+            SELECT assigned_technician_id, status
+            FROM work_orders 
+            WHERE id = %s
+        """, (work_order_id,))
+        
+        order = cursor.fetchone()
+        if not order:
+            return jsonify({'success': False, 'error': 'Bon de travail non trouvé'}), 404
+        
+        # Vérifier les permissions
+        user_role = session.get('user_role')
+        if user_role not in ['admin', 'supervisor'] and order[0] != user_id:
+            return jsonify({'success': False, 'error': 'Permission refusée'}), 403
+        
+        # Vérifier que l'intervention peut être démarrée
+        if order[1] in ['completed', 'cancelled']:
+            return jsonify({'success': False, 'error': 'Cette intervention ne peut plus être démarrée'}), 400
+        
+        # Mettre à jour le statut
+        cursor.execute("""
+            UPDATE work_orders 
+            SET status = 'in_progress', 
+                time_status = 'in_progress',
+                updated_at = NOW()
+            WHERE id = %s
+        """, (work_order_id,))
+        
+        # Ajouter une entrée dans le log des temps si elle n'existe pas
+        cursor.execute("""
+            INSERT IGNORE INTO intervention_time_tracking 
+            (work_order_id, technician_id, action, action_time, notes)
+            VALUES (%s, %s, 'start', NOW(), 'Intervention démarrée depuis le dashboard')
+        """, (work_order_id, user_id))
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Intervention démarrée avec succès'
+        })
+        
+    except Exception as e:
+        logging.error(f"Erreur démarrage intervention: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@bp.route('/api/work_orders/<int:work_order_id>/status', methods=['POST'])
+def update_work_order_status(work_order_id):
+    """Mettre à jour le statut d'un bon de travail"""
+    try:
+        data = request.get_json()
+        new_status = data.get('status')
+        
+        if new_status not in ['pending', 'assigned', 'in_progress', 'completed', 'cancelled']:
+            return jsonify({'success': False, 'error': 'Statut invalide'}), 400
+            
+        user_id = session.get('user_id')
+        if not user_id:
+            return jsonify({'success': False, 'error': 'Utilisateur non authentifié'}), 401
+        
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'success': False, 'error': 'Database connection failed'}), 500
+        
+        cursor = conn.cursor()
+        
+        # Mettre à jour le statut
+        cursor.execute("""
+            UPDATE work_orders 
+            SET status = %s, 
+                updated_at = NOW()
+            WHERE id = %s
+        """, (new_status, work_order_id))
+        
+        if cursor.rowcount == 0:
+            return jsonify({'success': False, 'error': 'Bon de travail non trouvé'}), 404
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Statut mis à jour vers {new_status}'
+        })
+        
+    except Exception as e:
+        logging.error(f"Erreur mise à jour statut: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500

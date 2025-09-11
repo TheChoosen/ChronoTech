@@ -19,10 +19,10 @@ def get_db_connection(schema: str | None = None):
     the `MYSQL_DATABASE` env var is used.
     """
     try:
-        host = os.getenv('MYSQL_HOST', 'localhost')
-        user = os.getenv('MYSQL_USER', 'root')
-        password = os.getenv('MYSQL_PASSWORD', '')
-        database = schema or os.getenv('MYSQL_DATABASE', '')
+        host = os.getenv('MYSQL_HOST', '192.168.50.101')
+        user = os.getenv('MYSQL_USER', 'gsicloud')
+        password = os.getenv('MYSQL_PASSWORD', 'TCOChoosenOne204$')
+        database = schema or os.getenv('MYSQL_DATABASE', 'bdm')
         port = int(os.getenv('MYSQL_PORT', '3306'))
 
         conn = pymysql.connect(

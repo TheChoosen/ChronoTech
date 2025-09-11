@@ -1,0 +1,767 @@
+<!-- Sprint 7.3 - Widget Simulation & Optimisation -->
+<div class="widget" id="simulation-widget" data-widget="simulation">
+    <div class="widget-header">
+        <div class="widget-title">
+            <i class="fas fa-calculator text-purple-500"></i>
+            <span>Simulation & Optimisation</span>
+        </div>
+        <div class="widget-actions">
+            <button class="widget-btn" onclick="refreshSimulation()">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+            <button class="widget-btn" onclick="openSimulationPanel()">
+                <i class="fas fa-expand"></i>
+            </button>
+        </div>
+    </div>
+    
+    <div class="widget-content">
+        <!-- Mode Simulation Planning -->
+        <div class="simulation-section">
+            <h4 class="section-title">
+                <i class="fas fa-calendar-alt text-blue-500"></i>
+                Mode Simulation Planning
+            </h4>
+            
+            <div class="simulation-form">
+                <div class="form-row">
+                    <select id="work-order-select" class="form-control">
+                        <option value="">Sélectionner un bon de travail...</option>
+                    </select>
+                </div>
+                
+                <div class="form-row">
+                    <input type="date" id="new-date" class="form-control" placeholder="Nouvelle date">
+                    <select id="new-technician" class="form-control">
+                        <option value="">Technicien actuel</option>
+                    </select>
+                </div>
+                
+                <button class="btn btn-primary btn-sm" onclick="runSimulation()">
+                    <i class="fas fa-play"></i> Simuler Impact
+                </button>
+            </div>
+            
+            <!-- Résultats de simulation -->
+            <div id="simulation-results" class="simulation-results hidden">
+                <div class="impact-summary">
+                    <div class="impact-score">
+                        <span class="score-label">Score d'Impact:</span>
+                        <span id="impact-score" class="score-value">--</span>
+                    </div>
+                    <div class="impact-status">
+                        <span id="impact-status" class="status-badge">--</span>
+                    </div>
+                </div>
+                
+                <div class="timeline-comparison">
+                    <div class="timeline-before">
+                        <h5>Avant</h5>
+                        <div id="timeline-before" class="timeline-items"></div>
+                    </div>
+                    <div class="timeline-after">
+                        <h5>Après</h5>
+                        <div id="timeline-after" class="timeline-items"></div>
+                    </div>
+                </div>
+                
+                <div class="recommendations">
+                    <h5>Recommandations</h5>
+                    <div id="recommendations-list" class="recommendations-list"></div>
+                </div>
+                
+                <div class="simulation-actions">
+                    <button class="btn btn-success btn-sm" onclick="acceptSimulation()">
+                        <i class="fas fa-check"></i> Accepter
+                    </button>
+                    <button class="btn btn-secondary btn-sm" onclick="rejectSimulation()">
+                        <i class="fas fa-times"></i> Refuser
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Auto-répartition Intelligente -->
+        <div class="optimization-section">
+            <h4 class="section-title">
+                <i class="fas fa-magic text-green-500"></i>
+                Auto-répartition Intelligente
+            </h4>
+            
+            <div class="optimization-controls">
+                <div class="criteria-selection">
+                    <label>Critère d'optimisation:</label>
+                    <select id="optimization-criteria" class="form-control">
+                        <option value="balanced">Équilibrée</option>
+                        <option value="skills_based">Basée compétences</option>
+                        <option value="eco_optimized">Éco-optimisée</option>
+                        <option value="time_optimized">Temps optimisé</option>
+                    </select>
+                </div>
+                
+                <div class="pending-orders">
+                    <span class="orders-count">
+                        <span id="pending-count">0</span> bons en attente
+                    </span>
+                    <button class="btn btn-info btn-sm" onclick="runOptimization()">
+                        <i class="fas fa-robot"></i> Auto-Optimiser
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Résultats d'optimisation -->
+            <div id="optimization-results" class="optimization-results hidden">
+                <div class="optimization-header">
+                    <div class="confidence-score">
+                        <span class="confidence-label">Confiance:</span>
+                        <div class="confidence-bar">
+                            <div id="confidence-fill" class="confidence-fill"></div>
+                        </div>
+                        <span id="confidence-percent">--</span>
+                    </div>
+                </div>
+                
+                <div class="proposed-assignments">
+                    <h5>Assignations Proposées</h5>
+                    <div id="assignments-list" class="assignments-list"></div>
+                </div>
+                
+                <div class="improvement-metrics">
+                    <div class="metric">
+                        <span class="metric-label">Efficacité:</span>
+                        <span id="efficiency-gain" class="metric-value">+0%</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Équilibre:</span>
+                        <span id="balance-improvement" class="metric-value">+0%</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Éco-Score:</span>
+                        <span id="eco-improvement" class="metric-value">+0%</span>
+                    </div>
+                </div>
+                
+                <div class="optimization-actions">
+                    <button class="btn btn-success btn-sm" onclick="applyOptimization()">
+                        <i class="fas fa-check-double"></i> Appliquer
+                    </button>
+                    <button class="btn btn-warning btn-sm" onclick="modifyOptimization()">
+                        <i class="fas fa-edit"></i> Modifier
+                    </button>
+                    <button class="btn btn-secondary btn-sm" onclick="cancelOptimization()">
+                        <i class="fas fa-times"></i> Annuler
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Statistiques Rapides -->
+        <div class="quick-stats">
+            <div class="stat-item">
+                <span class="stat-label">Planning Optimisé:</span>
+                <span id="optimization-percentage" class="stat-value">--</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Dernière Simulation:</span>
+                <span id="last-simulation" class="stat-value">Jamais</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.simulation-section, .optimization-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #6366f1;
+}
+
+.optimization-section {
+    border-left-color: #10b981;
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.simulation-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.form-row {
+    display: flex;
+    gap: 10px;
+}
+
+.form-control {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.simulation-results, .optimization-results {
+    margin-top: 15px;
+    padding: 12px;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+}
+
+.impact-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.impact-score {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.score-value {
+    font-size: 18px;
+    font-weight: bold;
+    color: #6366f1;
+}
+
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.status-badge.success { background: #dcfce7; color: #166534; }
+.status-badge.warning { background: #fef3c7; color: #92400e; }
+.status-badge.error { background: #fecaca; color: #991b1b; }
+
+.timeline-comparison {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.timeline-items {
+    max-height: 120px;
+    overflow-y: auto;
+}
+
+.timeline-item {
+    padding: 6px 8px;
+    margin-bottom: 4px;
+    background: #f3f4f6;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.recommendations-list {
+    max-height: 100px;
+    overflow-y: auto;
+}
+
+.recommendation-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    margin-bottom: 6px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.recommendation-item.success { background: #dcfce7; }
+.recommendation-item.warning { background: #fef3c7; }
+.recommendation-item.error { background: #fecaca; }
+
+.optimization-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.criteria-selection {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.criteria-selection label {
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.pending-orders {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.orders-count {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.confidence-score {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.confidence-bar {
+    flex: 1;
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.confidence-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #f59e0b, #10b981);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.assignments-list {
+    max-height: 120px;
+    overflow-y: auto;
+    margin-bottom: 15px;
+}
+
+.assignment-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    margin-bottom: 4px;
+    background: #f9fafb;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.improvement-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.metric {
+    text-align: center;
+    padding: 8px;
+    background: #f3f4f6;
+    border-radius: 4px;
+}
+
+.metric-label {
+    display: block;
+    font-size: 11px;
+    color: #6b7280;
+    margin-bottom: 4px;
+}
+
+.metric-value {
+    font-size: 14px;
+    font-weight: bold;
+    color: #10b981;
+}
+
+.simulation-actions, .optimization-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
+.quick-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-label {
+    display: block;
+    font-size: 11px;
+    color: #6b7280;
+    margin-bottom: 2px;
+}
+
+.stat-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-primary { background: #6366f1; color: white; }
+.btn-success { background: #10b981; color: white; }
+.btn-warning { background: #f59e0b; color: white; }
+.btn-info { background: #0ea5e9; color: white; }
+.btn-secondary { background: #6b7280; color: white; }
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-sm {
+    padding: 4px 8px;
+    font-size: 11px;
+}
+</style>
+
+<script>
+// Variables globales pour la simulation
+let currentSimulation = null;
+let currentOptimization = null;
+
+// Initialisation du widget
+document.addEventListener('DOMContentLoaded', function() {
+    loadWorkOrders();
+    loadTechnicians();
+    loadPendingOrdersCount();
+    loadQuickStats();
+});
+
+function loadWorkOrders() {
+    fetch('/api/work-orders/active')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('work-order-select');
+            select.innerHTML = '<option value="">Sélectionner un bon de travail...</option>';
+            
+            data.work_orders.forEach(wo => {
+                const option = document.createElement('option');
+                option.value = wo.id;
+                option.textContent = `${wo.title} - ${wo.scheduled_date || 'Non planifié'}`;
+                select.appendChild(option);
+            });
+        })
+        .catch(error => console.error('Erreur chargement bons de travail:', error));
+}
+
+function loadTechnicians() {
+    fetch('/api/users/technicians')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('new-technician');
+            select.innerHTML = '<option value="">Technicien actuel</option>';
+            
+            data.technicians.forEach(tech => {
+                const option = document.createElement('option');
+                option.value = tech.id;
+                option.textContent = `${tech.name} (${tech.current_workload || 0} tâches)`;
+                select.appendChild(option);
+            });
+        })
+        .catch(error => console.error('Erreur chargement techniciens:', error));
+}
+
+function loadPendingOrdersCount() {
+    fetch('/api/work-orders/pending/count')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('pending-count').textContent = data.count;
+        })
+        .catch(error => console.error('Erreur chargement nombre en attente:', error));
+}
+
+function loadQuickStats() {
+    // Charger les statistiques rapides
+    fetch('/api/simulation/stats')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('optimization-percentage').textContent = 
+                data.optimization_percentage + '%';
+            document.getElementById('last-simulation').textContent = 
+                data.last_simulation || 'Jamais';
+        })
+        .catch(error => console.error('Erreur chargement stats:', error));
+}
+
+function runSimulation() {
+    const workOrderId = document.getElementById('work-order-select').value;
+    const newDate = document.getElementById('new-date').value;
+    const newTechnicianId = document.getElementById('new-technician').value;
+    
+    if (!workOrderId || !newDate) {
+        alert('Veuillez sélectionner un bon de travail et une nouvelle date');
+        return;
+    }
+    
+    const simulationData = {
+        work_order_id: parseInt(workOrderId),
+        new_scheduled_date: newDate,
+        new_technician_id: newTechnicianId ? parseInt(newTechnicianId) : null
+    };
+    
+    fetch('/api/simulation/schedule-change', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(simulationData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            currentSimulation = data;
+            displaySimulationResults(data);
+        } else {
+            alert('Erreur lors de la simulation: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Erreur simulation:', error);
+        alert('Erreur lors de la simulation');
+    });
+}
+
+function displaySimulationResults(simulation) {
+    const resultsDiv = document.getElementById('simulation-results');
+    resultsDiv.classList.remove('hidden');
+    
+    // Score d'impact
+    document.getElementById('impact-score').textContent = 
+        simulation.impacts.overall_score + '/100';
+    
+    // Statut
+    const statusSpan = document.getElementById('impact-status');
+    const score = simulation.impacts.overall_score;
+    if (score >= 80) {
+        statusSpan.textContent = 'Recommandé';
+        statusSpan.className = 'status-badge success';
+    } else if (score >= 60) {
+        statusSpan.textContent = 'Acceptable';
+        statusSpan.className = 'status-badge warning';
+    } else {
+        statusSpan.textContent = 'Déconseillé';
+        statusSpan.className = 'status-badge error';
+    }
+    
+    // Timeline avant
+    const timelineBefore = document.getElementById('timeline-before');
+    timelineBefore.innerHTML = '';
+    simulation.timeline_comparison.before.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'timeline-item';
+        div.textContent = `${item.title} - ${item.date} (${item.technician})`;
+        timelineBefore.appendChild(div);
+    });
+    
+    // Timeline après
+    const timelineAfter = document.getElementById('timeline-after');
+    timelineAfter.innerHTML = '';
+    simulation.timeline_comparison.after.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'timeline-item';
+        div.textContent = `${item.title} - ${item.date} (${item.technician})`;
+        timelineAfter.appendChild(div);
+    });
+    
+    // Recommandations
+    const recommendationsList = document.getElementById('recommendations-list');
+    recommendationsList.innerHTML = '';
+    simulation.recommendations.forEach(rec => {
+        const div = document.createElement('div');
+        div.className = `recommendation-item ${rec.type}`;
+        div.innerHTML = `
+            <i class="fas fa-${rec.type === 'success' ? 'check' : rec.type === 'warning' ? 'exclamation' : 'times'}"></i>
+            <div>
+                <strong>${rec.title}</strong><br>
+                <small>${rec.description}</small>
+            </div>
+        `;
+        recommendationsList.appendChild(div);
+    });
+}
+
+function runOptimization() {
+    const criteria = document.getElementById('optimization-criteria').value;
+    
+    fetch('/api/simulation/auto-optimize', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ criteria: criteria })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            currentOptimization = data;
+            displayOptimizationResults(data);
+        } else {
+            alert('Erreur lors de l\'optimisation: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Erreur optimisation:', error);
+        alert('Erreur lors de l\'optimisation');
+    });
+}
+
+function displayOptimizationResults(optimization) {
+    const resultsDiv = document.getElementById('optimization-results');
+    resultsDiv.classList.remove('hidden');
+    
+    // Score de confiance
+    const confidence = Math.round(optimization.confidence_score * 100);
+    document.getElementById('confidence-fill').style.width = confidence + '%';
+    document.getElementById('confidence-percent').textContent = confidence + '%';
+    
+    // Assignations proposées
+    const assignmentsList = document.getElementById('assignments-list');
+    assignmentsList.innerHTML = '';
+    optimization.proposed_assignments.forEach(assignment => {
+        const div = document.createElement('div');
+        div.className = 'assignment-item';
+        div.innerHTML = `
+            <span>Bon #${assignment.work_order_id}</span>
+            <span>${assignment.technician_name}</span>
+            <small>${assignment.reason}</small>
+        `;
+        assignmentsList.appendChild(div);
+    });
+    
+    // Métriques d'amélioration
+    document.getElementById('efficiency-gain').textContent = 
+        '+' + optimization.estimated_improvements.efficiency_gain + '%';
+    document.getElementById('balance-improvement').textContent = 
+        '+' + optimization.estimated_improvements.workload_balance + '%';
+    document.getElementById('eco-improvement').textContent = 
+        '+' + optimization.estimated_improvements.eco_score_improvement + '%';
+}
+
+function acceptSimulation() {
+    if (!currentSimulation) return;
+    
+    if (confirm('Êtes-vous sûr de vouloir appliquer cette simulation ?')) {
+        // Appliquer la simulation
+        fetch('/api/simulation/apply', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ simulation_id: currentSimulation.simulation_id })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert('Simulation appliquée avec succès !');
+                document.getElementById('simulation-results').classList.add('hidden');
+                loadWorkOrders();
+                loadQuickStats();
+                currentSimulation = null;
+            } else {
+                alert('Erreur lors de l\'application: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur application:', error);
+            alert('Erreur lors de l\'application');
+        });
+    }
+}
+
+function rejectSimulation() {
+    document.getElementById('simulation-results').classList.add('hidden');
+    currentSimulation = null;
+}
+
+function applyOptimization() {
+    if (!currentOptimization) return;
+    
+    if (confirm('Êtes-vous sûr de vouloir appliquer cette optimisation ?')) {
+        fetch('/api/simulation/apply-optimization', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ optimization_id: currentOptimization.optimization_id })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert('Optimisation appliquée avec succès !');
+                document.getElementById('optimization-results').classList.add('hidden');
+                loadPendingOrdersCount();
+                loadQuickStats();
+                currentOptimization = null;
+            } else {
+                alert('Erreur lors de l\'application: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur application optimisation:', error);
+            alert('Erreur lors de l\'application');
+        });
+    }
+}
+
+function modifyOptimization() {
+    // Ouvrir un modal pour modifier l'optimisation
+    alert('Fonctionnalité de modification en développement');
+}
+
+function cancelOptimization() {
+    document.getElementById('optimization-results').classList.add('hidden');
+    currentOptimization = null;
+}
+
+function refreshSimulation() {
+    loadWorkOrders();
+    loadTechnicians();
+    loadPendingOrdersCount();
+    loadQuickStats();
+    
+    // Masquer les résultats
+    document.getElementById('simulation-results').classList.add('hidden');
+    document.getElementById('optimization-results').classList.add('hidden');
+    
+    currentSimulation = null;
+    currentOptimization = null;
+}
+
+function openSimulationPanel() {
+    // Ouvrir le panel de simulation en plein écran
+    alert('Panel de simulation plein écran en développement');
+}
+</script>

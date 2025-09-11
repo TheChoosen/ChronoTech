@@ -1,0 +1,1053 @@
+<!-- Sprint 9.2 - Widget Planification Proactive & Optimisation -->
+<div class="clay-card dashboard-widget" id="scheduler-optimizer-widget">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">
+            <i class="fa-solid fa-robot me-2 text-primary"></i>
+            Planification IA - Optimisation Proactive
+        </h6>
+        <div class="widget-controls">
+            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#schedulerOptimizerModal">
+                <i class="fa-solid fa-expand me-1"></i>Vue complète
+            </button>
+        </div>
+    </div>
+    
+    <div class="card-body p-3">
+        <!-- Score d'efficacité projetée -->
+        <div class="efficiency-score-container mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-bold">Score d'Efficacité Projetée</span>
+                <span class="badge bg-success" id="efficiency-score-badge">---%</span>
+            </div>
+            <div class="progress mb-2" style="height: 20px;">
+                <div class="progress-bar bg-gradient" id="efficiency-progress" role="progressbar" 
+                     style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                    <span id="efficiency-score-text">Calcul en cours...</span>
+                </div>
+            </div>
+            <div class="d-flex justify-content-between small text-muted">
+                <span>Actuel: <span id="current-efficiency">--%</span></span>
+                <span>Amélioration: <span id="improvement-gain">+-%</span></span>
+            </div>
+        </div>
+
+        <!-- Actions rapides -->
+        <div class="quick-actions-container mb-3">
+            <div class="row g-2">
+                <div class="col-6">
+                    <button class="btn btn-primary btn-sm w-100" onclick="optimizeMyDay()">
+                        <i class="fa-solid fa-magic-wand-sparkles me-1"></i>
+                        <span class="d-none d-lg-inline">Optimiser ma</span> Journée
+                    </button>
+                </div>
+                <div class="col-6">
+                    <button class="btn btn-outline-info btn-sm w-100" onclick="generateScenarios()">
+                        <i class="fa-solid fa-chart-line me-1"></i>
+                        <span class="d-none d-lg-inline">Multi</span>-Scénarios
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistiques d'optimisation -->
+        <div class="optimization-stats">
+            <div class="row text-center g-2">
+                <div class="col-4">
+                    <div class="stat-item">
+                        <div class="stat-value text-primary fw-bold" id="pending-orders">0</div>
+                        <div class="stat-label small text-muted">En attente</div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="stat-item">
+                        <div class="stat-value text-success fw-bold" id="available-techs">0</div>
+                        <div class="stat-label small text-muted">Disponibles</div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="stat-item">
+                        <div class="stat-value text-warning fw-bold" id="time-saved">--min</div>
+                        <div class="stat-label small text-muted">Économisé</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status et recommandations -->
+        <div class="optimization-status mt-3">
+            <div id="optimization-status-indicator" class="alert alert-info py-2 mb-2" role="alert">
+                <i class="fa-solid fa-info-circle me-1"></i>
+                <span id="status-message">Prêt pour l'optimisation</span>
+            </div>
+            
+            <div id="recommendations-container" class="d-none">
+                <div class="small fw-bold mb-1">Recommandations IA:</div>
+                <ul id="recommendations-list" class="small mb-0 ps-3">
+                    <!-- Recommandations générées dynamiquement -->
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal complète pour l'optimisation -->
+<div class="modal fade" id="schedulerOptimizerModal" tabindex="-1" aria-labelledby="schedulerOptimizerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="schedulerOptimizerModalLabel">
+                    <i class="fa-solid fa-robot me-2 text-primary"></i>
+                    Optimisation Proactive de la Planification
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Onglets -->
+                <ul class="nav nav-tabs" id="optimizerTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="optimize-tab" data-bs-toggle="tab" data-bs-target="#optimize-panel" type="button" role="tab">
+                            <i class="fa-solid fa-magic-wand-sparkles me-1"></i>Optimisation
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="scenarios-tab" data-bs-toggle="tab" data-bs-target="#scenarios-panel" type="button" role="tab">
+                            <i class="fa-solid fa-chart-line me-1"></i>Multi-Scénarios
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="gantt-simulation-tab" data-bs-toggle="tab" data-bs-target="#gantt-simulation-panel" type="button" role="tab">
+                            <i class="fa-solid fa-chart-gantt me-1"></i>Simulation Gantt
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="constraints-tab" data-bs-toggle="tab" data-bs-target="#constraints-panel" type="button" role="tab">
+                            <i class="fa-solid fa-sliders me-1"></i>Contraintes
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="optimizerTabsContent">
+                    <!-- Onglet Optimisation -->
+                    <div class="tab-pane fade show active" id="optimize-panel" role="tabpanel">
+                        <div class="row mt-3">
+                            <!-- Configuration -->
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0"><i class="fa-solid fa-sliders me-2"></i>Configuration</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label for="optimization-mode" class="form-label">Mode d'optimisation</label>
+                                            <select class="form-select" id="optimization-mode">
+                                                <option value="fast">Rapide (10s)</option>
+                                                <option value="balanced" selected>Équilibré (30s)</option>
+                                                <option value="quality">Qualité Max (60s)</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="optimization-date" class="form-label">Date à optimiser</label>
+                                            <input type="date" class="form-control" id="optimization-date">
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="include-priority-weight" checked>
+                                                <label class="form-check-label" for="include-priority-weight">
+                                                    Pondération par priorité
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="geographic-clustering" checked>
+                                                <label class="form-check-label" for="geographic-clustering">
+                                                    Regroupement géographique
+                                                </label>
+                                            </div>
+                                        </div>
+                                        
+                                        <button class="btn btn-primary w-100" onclick="runOptimization()">
+                                            <i class="fa-solid fa-play me-2"></i>Lancer l'optimisation
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Résultats -->
+                            <div class="col-md-8">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0"><i class="fa-solid fa-chart-bar me-2"></i>Résultats d'optimisation</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="optimization-results-container" class="text-center text-muted">
+                                            <i class="fa-solid fa-chart-line fa-3x mb-3 opacity-50"></i>
+                                            <p>Cliquez sur "Lancer l'optimisation" pour voir les résultats</p>
+                                        </div>
+                                        
+                                        <div id="optimization-results" class="d-none">
+                                            <!-- Score d'efficacité -->
+                                            <div class="efficiency-score-large mb-4">
+                                                <div class="text-center">
+                                                    <div class="display-6 fw-bold text-primary" id="final-efficiency-score">85%</div>
+                                                    <div class="text-muted">Score d'efficacité projetée</div>
+                                                </div>
+                                                <div class="progress mt-2" style="height: 25px;">
+                                                    <div class="progress-bar bg-success" id="final-efficiency-bar" style="width: 85%">
+                                                        <span class="fw-bold">Excellent</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Métriques détaillées -->
+                                            <div class="row g-3 mb-4">
+                                                <div class="col-md-3">
+                                                    <div class="text-center p-3 bg-light rounded">
+                                                        <div class="h5 mb-1 text-success" id="assigned-count">0</div>
+                                                        <div class="small text-muted">Assignés</div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <div class="text-center p-3 bg-light rounded">
+                                                        <div class="h5 mb-1 text-info" id="travel-time-total">0min</div>
+                                                        <div class="small text-muted">Trajet total</div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <div class="text-center p-3 bg-light rounded">
+                                                        <div class="h5 mb-1 text-warning" id="work-time-total">0min</div>
+                                                        <div class="small text-muted">Travail total</div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <div class="text-center p-3 bg-light rounded">
+                                                        <div class="h5 mb-1 text-primary" id="cost-optimization">0%</div>
+                                                        <div class="small text-muted">Économies</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Actions -->
+                                            <div class="text-center">
+                                                <button class="btn btn-success me-2" onclick="applyOptimization()">
+                                                    <i class="fa-solid fa-check me-2"></i>Appliquer l'optimisation
+                                                </button>
+                                                <button class="btn btn-outline-secondary" onclick="exportOptimization()">
+                                                    <i class="fa-solid fa-download me-2"></i>Exporter
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Onglet Multi-Scénarios -->
+                    <div class="tab-pane fade" id="scenarios-panel" role="tabpanel">
+                        <div class="mt-3">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="mb-0">Comparaison de scénarios</h6>
+                                <button class="btn btn-primary btn-sm" onclick="generateMultipleScenarios()">
+                                    <i class="fa-solid fa-sync me-1"></i>Générer scénarios
+                                </button>
+                            </div>
+                            
+                            <div id="scenarios-container">
+                                <div class="text-center text-muted py-4">
+                                    <i class="fa-solid fa-chart-line fa-3x mb-3 opacity-50"></i>
+                                    <p>Générez des scénarios pour comparer différentes approches d'optimisation</p>
+                                </div>
+                            </div>
+                            
+                            <div id="scenarios-comparison" class="d-none">
+                                <!-- Tableau de comparaison -->
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Scénario</th>
+                                                <th>Efficacité</th>
+                                                <th>Trajet</th>
+                                                <th>Assignés</th>
+                                                <th>Économies</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="scenarios-table-body">
+                                            <!-- Lignes générées dynamiquement -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Onglet Simulation Gantt -->
+                    <div class="tab-pane fade" id="gantt-simulation-panel" role="tabpanel">
+                        <div class="mt-3">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="mb-0">Simulation Gantt Multi-Scénarios</h6>
+                                <div>
+                                    <select class="form-select form-select-sm me-2" id="gantt-scenario-selector" style="display: inline-block; width: auto;">
+                                        <option value="">Choisir un scénario</option>
+                                    </select>
+                                    <button class="btn btn-outline-primary btn-sm" onclick="loadGanttSimulation()">
+                                        <i class="fa-solid fa-eye me-1"></i>Prévisualiser
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div id="gantt-simulation-container" class="border rounded p-3">
+                                <div class="text-center text-muted py-4">
+                                    <i class="fa-solid fa-chart-gantt fa-3x mb-3 opacity-50"></i>
+                                    <p>Sélectionnez un scénario pour voir la simulation Gantt</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Onglet Contraintes -->
+                    <div class="tab-pane fade" id="constraints-panel" role="tabpanel">
+                        <div class="mt-3">
+                            <h6 class="mb-3">Configuration des contraintes d'optimisation</h6>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h6 class="mb-0">Contraintes temporelles</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <label for="max-work-hours" class="form-label">Heures max par jour</label>
+                                                <input type="range" class="form-range" id="max-work-hours" min="6" max="12" value="8">
+                                                <div class="d-flex justify-content-between small text-muted">
+                                                    <span>6h</span>
+                                                    <span id="max-work-hours-value">8h</span>
+                                                    <span>12h</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label for="travel-speed" class="form-label">Vitesse de déplacement (km/h)</label>
+                                                <input type="range" class="form-range" id="travel-speed" min="30" max="80" value="50">
+                                                <div class="d-flex justify-content-between small text-muted">
+                                                    <span>30</span>
+                                                    <span id="travel-speed-value">50</span>
+                                                    <span>80</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label for="setup-time" class="form-label">Temps de préparation (min)</label>
+                                                <input type="range" class="form-range" id="setup-time" min="5" max="60" value="15">
+                                                <div class="d-flex justify-content-between small text-muted">
+                                                    <span>5min</span>
+                                                    <span id="setup-time-value">15min</span>
+                                                    <span>60min</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h6 class="mb-0">Contraintes de priorité</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <label class="form-label">Poids des priorités</label>
+                                                <div class="row g-2">
+                                                    <div class="col-6">
+                                                        <label class="form-label small">Urgent</label>
+                                                        <input type="number" class="form-control form-control-sm" id="priority-urgent" value="1000">
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <label class="form-label small">Élevée</label>
+                                                        <input type="number" class="form-control form-control-sm" id="priority-high" value="500">
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <label class="form-label small">Moyenne</label>
+                                                        <input type="number" class="form-control form-control-sm" id="priority-medium" value="100">
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <label class="form-label small">Faible</label>
+                                                        <input type="number" class="form-control form-control-sm" id="priority-low" value="50">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="skill-matching-required" checked>
+                                                    <label class="form-check-label" for="skill-matching-required">
+                                                        Correspondance de compétences obligatoire
+                                                    </label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="geographic-clustering-enabled" checked>
+                                                    <label class="form-check-label" for="geographic-clustering-enabled">
+                                                        Regroupement géographique
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="text-center mt-3">
+                                <button class="btn btn-primary" onclick="saveConstraints()">
+                                    <i class="fa-solid fa-save me-2"></i>Sauvegarder les contraintes
+                                </button>
+                                <button class="btn btn-outline-secondary ms-2" onclick="resetConstraints()">
+                                    <i class="fa-solid fa-undo me-2"></i>Réinitialiser
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+class SchedulerOptimizerWidget {
+    constructor() {
+        this.currentOptimization = null;
+        this.scenarios = [];
+        this.constraints = {};
+        
+        this.init();
+    }
+    
+    init() {
+        console.log('🚀 Initialisation Widget Optimisation Planification');
+        
+        // Initialiser la date à aujourd'hui
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('optimization-date').value = today;
+        
+        // Charger les données initiales
+        this.loadInitialData();
+        this.setupEventListeners();
+        this.startPeriodicUpdates();
+    }
+    
+    async loadInitialData() {
+        try {
+            // Charger le score d'efficacité initial
+            await this.updateEfficiencyScore();
+            
+            // Charger les statistiques
+            await this.loadOptimizationStats();
+            
+            // Charger les contraintes
+            await this.loadConstraints();
+            
+        } catch (error) {
+            console.error('❌ Erreur chargement données initiales:', error);
+        }
+    }
+    
+    setupEventListeners() {
+        // Sliders de contraintes
+        document.getElementById('max-work-hours').addEventListener('input', (e) => {
+            document.getElementById('max-work-hours-value').textContent = e.target.value + 'h';
+        });
+        
+        document.getElementById('travel-speed').addEventListener('input', (e) => {
+            document.getElementById('travel-speed-value').textContent = e.target.value;
+        });
+        
+        document.getElementById('setup-time').addEventListener('input', (e) => {
+            document.getElementById('setup-time-value').textContent = e.target.value + 'min';
+        });
+    }
+    
+    async updateEfficiencyScore() {
+        try {
+            const date = document.getElementById('optimization-date')?.value || new Date().toISOString().split('T')[0];
+            const mode = document.getElementById('optimization-mode')?.value || 'balanced';
+            
+            const response = await fetch(`/api/v1/ai/scheduler/efficiency-score?date=${date}&mode=${mode}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                const score = data.score;
+                
+                // Mettre à jour le widget principal
+                document.getElementById('efficiency-score-badge').textContent = score.projected_efficiency + '%';
+                document.getElementById('efficiency-progress').style.width = score.projected_efficiency + '%';
+                document.getElementById('efficiency-score-text').textContent = score.rating;
+                document.getElementById('current-efficiency').textContent = score.current_efficiency + '%';
+                document.getElementById('improvement-gain').textContent = '+' + score.improvement_percent + '%';
+                
+                // Colorer la barre selon le score
+                const progressBar = document.getElementById('efficiency-progress');
+                progressBar.className = 'progress-bar bg-gradient';
+                if (score.projected_efficiency >= 80) {
+                    progressBar.classList.add('bg-success');
+                } else if (score.projected_efficiency >= 60) {
+                    progressBar.classList.add('bg-warning');
+                } else {
+                    progressBar.classList.add('bg-danger');
+                }
+                
+                console.log('✅ Score d\'efficacité mis à jour:', score.projected_efficiency + '%');
+            }
+        } catch (error) {
+            console.error('❌ Erreur mise à jour score efficacité:', error);
+            document.getElementById('efficiency-score-text').textContent = 'Erreur calcul';
+        }
+    }
+    
+    async loadOptimizationStats() {
+        try {
+            // Simuler le chargement des statistiques
+            // En production, cela viendrait d'une API
+            const stats = {
+                pending_orders: Math.floor(Math.random() * 15) + 5,
+                available_techs: Math.floor(Math.random() * 8) + 3,
+                time_saved: Math.floor(Math.random() * 120) + 30
+            };
+            
+            document.getElementById('pending-orders').textContent = stats.pending_orders;
+            document.getElementById('available-techs').textContent = stats.available_techs;
+            document.getElementById('time-saved').textContent = stats.time_saved + 'min';
+            
+        } catch (error) {
+            console.error('❌ Erreur chargement statistiques:', error);
+        }
+    }
+    
+    async loadConstraints() {
+        try {
+            const response = await fetch('/api/v1/ai/scheduler/constraints');
+            const data = await response.json();
+            
+            if (data.success) {
+                this.constraints = data.constraints;
+                
+                // Mettre à jour l'interface
+                document.getElementById('max-work-hours').value = this.constraints.max_work_hours;
+                document.getElementById('max-work-hours-value').textContent = this.constraints.max_work_hours + 'h';
+                document.getElementById('travel-speed').value = this.constraints.travel_speed_kmh;
+                document.getElementById('travel-speed-value').textContent = this.constraints.travel_speed_kmh;
+                document.getElementById('setup-time').value = this.constraints.setup_time_minutes;
+                document.getElementById('setup-time-value').textContent = this.constraints.setup_time_minutes + 'min';
+                
+                console.log('✅ Contraintes chargées');
+            }
+        } catch (error) {
+            console.error('❌ Erreur chargement contraintes:', error);
+        }
+    }
+    
+    startPeriodicUpdates() {
+        // Mettre à jour le score d'efficacité toutes les 2 minutes
+        setInterval(() => {
+            this.updateEfficiencyScore();
+        }, 120000);
+        
+        // Mettre à jour les statistiques toutes les 30 secondes
+        setInterval(() => {
+            this.loadOptimizationStats();
+        }, 30000);
+    }
+    
+    async runOptimization() {
+        try {
+            const button = event.target;
+            const originalText = button.innerHTML;
+            
+            // Animation de chargement
+            button.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Optimisation...';
+            button.disabled = true;
+            
+            // Masquer les résultats précédents
+            document.getElementById('optimization-results-container').classList.remove('d-none');
+            document.getElementById('optimization-results').classList.add('d-none');
+            
+            // Préparer les données
+            const optimizationData = {
+                mode: document.getElementById('optimization-mode').value,
+                date_filter: document.getElementById('optimization-date').value,
+                constraints: {
+                    max_hours: parseInt(document.getElementById('max-work-hours').value),
+                    travel_limit: parseInt(document.getElementById('travel-speed').value),
+                    priority_weight: document.getElementById('include-priority-weight').checked
+                }
+            };
+            
+            // Appel API
+            const response = await fetch('/api/v1/ai/scheduler/optimize', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(optimizationData)
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                this.currentOptimization = data.data;
+                this.displayOptimizationResults(data.data);
+                
+                // Mettre à jour le status
+                document.getElementById('status-message').textContent = 'Optimisation terminée avec succès';
+                document.getElementById('optimization-status-indicator').className = 'alert alert-success py-2 mb-2';
+                
+                // Afficher les recommandations
+                if (data.data.recommendations && data.data.recommendations.length > 0) {
+                    this.displayRecommendations(data.data.recommendations);
+                }
+                
+            } else {
+                throw new Error(data.error);
+            }
+            
+        } catch (error) {
+            console.error('❌ Erreur optimisation:', error);
+            document.getElementById('status-message').textContent = 'Erreur durant l\'optimisation: ' + error.message;
+            document.getElementById('optimization-status-indicator').className = 'alert alert-danger py-2 mb-2';
+            
+        } finally {
+            // Restaurer le bouton
+            const button = document.querySelector('[onclick="runOptimization()"]');
+            button.innerHTML = originalText;
+            button.disabled = false;
+        }
+    }
+    
+    displayOptimizationResults(data) {
+        // Afficher les résultats
+        document.getElementById('optimization-results-container').classList.add('d-none');
+        document.getElementById('optimization-results').classList.remove('d-none');
+        
+        // Score d'efficacité
+        document.getElementById('final-efficiency-score').textContent = data.statistics.efficiency_score + '%';
+        document.getElementById('final-efficiency-bar').style.width = data.statistics.efficiency_score + '%';
+        
+        // Métriques
+        document.getElementById('assigned-count').textContent = data.statistics.assigned_orders;
+        document.getElementById('travel-time-total').textContent = data.statistics.total_travel_time_minutes + 'min';
+        document.getElementById('work-time-total').textContent = data.statistics.total_work_time_minutes + 'min';
+        document.getElementById('cost-optimization').textContent = data.statistics.cost_optimization_percent + '%';
+        
+        console.log('✅ Résultats d\'optimisation affichés');
+    }
+    
+    displayRecommendations(recommendations) {
+        const container = document.getElementById('recommendations-container');
+        const list = document.getElementById('recommendations-list');
+        
+        list.innerHTML = '';
+        
+        recommendations.forEach(rec => {
+            const li = document.createElement('li');
+            li.innerHTML = `<i class="fa-solid fa-${rec.type === 'warning' ? 'triangle-exclamation text-warning' : 'info-circle text-info'} me-1"></i>${rec.message}`;
+            list.appendChild(li);
+        });
+        
+        container.classList.remove('d-none');
+    }
+    
+    async generateMultipleScenarios() {
+        try {
+            const button = event.target;
+            const originalText = button.innerHTML;
+            
+            button.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i>Génération...';
+            button.disabled = true;
+            
+            const response = await fetch('/api/v1/ai/scheduler/scenarios', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    date_filter: document.getElementById('optimization-date').value,
+                    scenario_count: 3
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                this.scenarios = data.scenarios;
+                this.displayScenariosComparison(data.scenarios);
+                
+                // Remplir le sélecteur Gantt
+                this.populateGanttScenarioSelector(data.scenarios);
+            } else {
+                throw new Error(data.error);
+            }
+            
+        } catch (error) {
+            console.error('❌ Erreur génération scénarios:', error);
+            alert('Erreur lors de la génération des scénarios: ' + error.message);
+            
+        } finally {
+            const button = document.querySelector('[onclick="generateMultipleScenarios()"]');
+            button.innerHTML = '<i class="fa-solid fa-sync me-1"></i>Générer scénarios';
+            button.disabled = false;
+        }
+    }
+    
+    displayScenariosComparison(scenarios) {
+        document.getElementById('scenarios-container').classList.add('d-none');
+        document.getElementById('scenarios-comparison').classList.remove('d-none');
+        
+        const tbody = document.getElementById('scenarios-table-body');
+        tbody.innerHTML = '';
+        
+        scenarios.forEach(scenario => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>
+                    <strong>${scenario.name}</strong><br>
+                    <small class="text-muted">${scenario.description}</small>
+                </td>
+                <td>
+                    <span class="badge bg-${scenario.efficiency_score >= 80 ? 'success' : scenario.efficiency_score >= 60 ? 'warning' : 'danger'}">
+                        ${scenario.efficiency_score}%
+                    </span>
+                </td>
+                <td>${scenario.total_travel_time}min</td>
+                <td>${scenario.assigned_count}</td>
+                <td>${scenario.cost_optimization}%</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary me-1" onclick="schedulerWidget.previewScenario(${scenario.id})">
+                        <i class="fa-solid fa-eye"></i>
+                    </button>
+                    <button class="btn btn-sm btn-success" onclick="schedulerWidget.applyScenario(${scenario.id})">
+                        <i class="fa-solid fa-check"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+        
+        console.log('✅ Comparaison scénarios affichée:', scenarios.length + ' scénarios');
+    }
+    
+    populateGanttScenarioSelector(scenarios) {
+        const selector = document.getElementById('gantt-scenario-selector');
+        selector.innerHTML = '<option value="">Choisir un scénario</option>';
+        
+        scenarios.forEach(scenario => {
+            const option = document.createElement('option');
+            option.value = scenario.id;
+            option.textContent = `${scenario.name} (${scenario.efficiency_score}%)`;
+            selector.appendChild(option);
+        });
+    }
+    
+    async applyScenario(scenarioId) {
+        try {
+            const scenario = this.scenarios.find(s => s.id === scenarioId);
+            if (!scenario) {
+                throw new Error('Scénario non trouvé');
+            }
+            
+            const confirmed = confirm(`Voulez-vous appliquer le scénario "${scenario.name}" ?\n\nEfficacité: ${scenario.efficiency_score}%\nAssignations: ${scenario.assigned_count} bons de travail`);
+            
+            if (!confirmed) return;
+            
+            const response = await fetch(`/api/v1/ai/scheduler/apply/${scenarioId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    assignments: scenario.assignments,
+                    confirm: true
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                alert('Scénario appliqué avec succès !');
+                
+                // Rafraîchir les données
+                this.updateEfficiencyScore();
+                this.loadOptimizationStats();
+                
+                // Fermer la modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('schedulerOptimizerModal'));
+                modal.hide();
+                
+            } else {
+                throw new Error(data.error);
+            }
+            
+        } catch (error) {
+            console.error('❌ Erreur application scénario:', error);
+            alert('Erreur lors de l\'application du scénario: ' + error.message);
+        }
+    }
+    
+    previewScenario(scenarioId) {
+        // Basculer vers l'onglet Gantt et charger le scénario
+        const ganttTab = document.getElementById('gantt-simulation-tab');
+        ganttTab.click();
+        
+        // Sélectionner le scénario
+        document.getElementById('gantt-scenario-selector').value = scenarioId;
+        
+        // Charger la simulation
+        setTimeout(() => {
+            this.loadGanttSimulation();
+        }, 300);
+    }
+    
+    loadGanttSimulation() {
+        const scenarioId = document.getElementById('gantt-scenario-selector').value;
+        if (!scenarioId) return;
+        
+        const scenario = this.scenarios.find(s => s.id == scenarioId);
+        if (!scenario) return;
+        
+        const container = document.getElementById('gantt-simulation-container');
+        
+        // Générer une visualisation Gantt simplifiée
+        let ganttHTML = '<div class="gantt-simulation">';
+        
+        Object.entries(scenario.schedule).forEach(([techId, schedule]) => {
+            if (schedule.length > 0) {
+                ganttHTML += `
+                    <div class="gantt-row mb-3">
+                        <div class="gantt-tech-name fw-bold mb-2">Technicien ${techId}</div>
+                        <div class="gantt-timeline d-flex">
+                `;
+                
+                schedule.forEach((item, index) => {
+                    const width = Math.max(100, item.duration / 10); // Largeur basée sur la durée
+                    const color = this.getPriorityColor(item.priority);
+                    
+                    ganttHTML += `
+                        <div class="gantt-task me-1" 
+                             style="width: ${width}px; background-color: ${color}; height: 30px; display: flex; align-items: center; padding: 0 8px; color: white; font-size: 0.75rem; border-radius: 4px;"
+                             title="${item.customer_name} - ${item.description}">
+                            #${item.work_order_id}
+                        </div>
+                    `;
+                });
+                
+                ganttHTML += '</div></div>';
+            }
+        });
+        
+        ganttHTML += '</div>';
+        
+        container.innerHTML = ganttHTML;
+        
+        console.log('✅ Simulation Gantt chargée pour scénario', scenarioId);
+    }
+    
+    getPriorityColor(priority) {
+        const colors = {
+            'urgent': '#dc3545',
+            'high': '#fd7e14', 
+            'medium': '#ffc107',
+            'low': '#17a2b8'
+        };
+        return colors[priority] || colors.medium;
+    }
+    
+    async saveConstraints() {
+        try {
+            const constraints = {
+                max_work_hours: parseInt(document.getElementById('max-work-hours').value),
+                travel_speed_kmh: parseInt(document.getElementById('travel-speed').value),
+                setup_time_minutes: parseInt(document.getElementById('setup-time').value),
+                priority_weights: {
+                    urgent: parseInt(document.getElementById('priority-urgent').value),
+                    high: parseInt(document.getElementById('priority-high').value),
+                    medium: parseInt(document.getElementById('priority-medium').value),
+                    low: parseInt(document.getElementById('priority-low').value)
+                },
+                skill_matching_required: document.getElementById('skill-matching-required').checked,
+                geographic_clustering: document.getElementById('geographic-clustering-enabled').checked
+            };
+            
+            const response = await fetch('/api/v1/ai/scheduler/constraints', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(constraints)
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                alert('Contraintes sauvegardées avec succès !');
+                this.constraints = data.constraints;
+            } else {
+                throw new Error(data.error);
+            }
+            
+        } catch (error) {
+            console.error('❌ Erreur sauvegarde contraintes:', error);
+            alert('Erreur lors de la sauvegarde: ' + error.message);
+        }
+    }
+    
+    resetConstraints() {
+        // Remettre les valeurs par défaut
+        document.getElementById('max-work-hours').value = 8;
+        document.getElementById('max-work-hours-value').textContent = '8h';
+        document.getElementById('travel-speed').value = 50;
+        document.getElementById('travel-speed-value').textContent = '50';
+        document.getElementById('setup-time').value = 15;
+        document.getElementById('setup-time-value').textContent = '15min';
+        
+        document.getElementById('priority-urgent').value = 1000;
+        document.getElementById('priority-high').value = 500;
+        document.getElementById('priority-medium').value = 100;
+        document.getElementById('priority-low').value = 50;
+        
+        document.getElementById('skill-matching-required').checked = true;
+        document.getElementById('geographic-clustering-enabled').checked = true;
+    }
+}
+
+// Fonctions globales pour les boutons onClick
+let schedulerWidget;
+
+function optimizeMyDay() {
+    if (!schedulerWidget) {
+        schedulerWidget = new SchedulerOptimizerWidget();
+    }
+    
+    // Optimisation rapide pour la journée courante
+    fetch('/api/v1/ai/scheduler/optimize-day', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            technician_id: 1, // TODO: récupérer l'ID utilisateur connecté
+            date: new Date().toISOString().split('T')[0]
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const gain = data.data.efficiency_gain;
+            const timeSaved = data.data.time_saved_minutes;
+            
+            alert(`✅ Journée optimisée !\n\nGain d'efficacité: +${gain}%\nTemps économisé: ${timeSaved} minutes`);
+            
+            // Mettre à jour les statistiques
+            schedulerWidget.updateEfficiencyScore();
+            schedulerWidget.loadOptimizationStats();
+        } else {
+            alert('❌ Erreur: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('❌ Erreur optimisation journée:', error);
+        alert('Erreur lors de l\'optimisation');
+    });
+}
+
+function generateScenarios() {
+    if (!schedulerWidget) {
+        schedulerWidget = new SchedulerOptimizerWidget();
+    }
+    
+    // Ouvrir la modal et aller à l'onglet scénarios
+    const modal = new bootstrap.Modal(document.getElementById('schedulerOptimizerModal'));
+    modal.show();
+    
+    setTimeout(() => {
+        document.getElementById('scenarios-tab').click();
+    }, 300);
+}
+
+function runOptimization() {
+    if (!schedulerWidget) {
+        schedulerWidget = new SchedulerOptimizerWidget();
+    }
+    schedulerWidget.runOptimization();
+}
+
+function generateMultipleScenarios() {
+    if (!schedulerWidget) {
+        schedulerWidget = new SchedulerOptimizerWidget();
+    }
+    schedulerWidget.generateMultipleScenarios();
+}
+
+function loadGanttSimulation() {
+    if (!schedulerWidget) {
+        schedulerWidget = new SchedulerOptimizerWidget();
+    }
+    schedulerWidget.loadGanttSimulation();
+}
+
+function saveConstraints() {
+    if (!schedulerWidget) {
+        schedulerWidget = new SchedulerOptimizerWidget();
+    }
+    schedulerWidget.saveConstraints();
+}
+
+function resetConstraints() {
+    if (!schedulerWidget) {
+        schedulerWidget = new SchedulerOptimizerWidget();
+    }
+    schedulerWidget.resetConstraints();
+}
+
+function applyOptimization() {
+    if (!schedulerWidget || !schedulerWidget.currentOptimization) {
+        alert('Aucune optimisation à appliquer');
+        return;
+    }
+    
+    const confirmed = confirm('Voulez-vous appliquer cette optimisation ?\n\nCela mettra à jour les assignations des bons de travail.');
+    
+    if (confirmed) {
+        // Utiliser le premier scénario ou l'optimisation courante
+        schedulerWidget.applyScenario(1);
+    }
+}
+
+function exportOptimization() {
+    if (!schedulerWidget || !schedulerWidget.currentOptimization) {
+        alert('Aucune optimisation à exporter');
+        return;
+    }
+    
+    // Créer et télécharger un fichier JSON
+    const data = JSON.stringify(schedulerWidget.currentOptimization, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `optimisation_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    
+    URL.revokeObjectURL(url);
+}
+
+// Initialiser le widget au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    // Attendre un peu pour éviter les conflits avec d'autres initialisations
+    setTimeout(() => {
+        schedulerWidget = new SchedulerOptimizerWidget();
+    }, 1000);
+});
+</script>

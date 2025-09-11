@@ -1,0 +1,477 @@
+/* Vue Kanban - Interventions ChronoTech */
+
+:root {
+    --kanban-column-bg: rgba(255, 255, 255, 0.95);
+    --kanban-card-bg: rgba(255, 255, 255, 0.98);
+    --kanban-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    --kanban-border: rgba(255, 255, 255, 0.2);
+    --priority-urgent: #dc3545;
+    --priority-high: #fd7e14;
+    --priority-medium: #ffc107;
+    --priority-low: #6c757d;
+    --status-pending: #6c757d;
+    --status-assigned: #007bff;
+    --status-progress: #ffc107;
+    --status-waiting: #fd7e14;
+    --status-completed: #28a745;
+    --status-cancelled: #dc3545;
+}
+
+.kanban-container {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.kanban-header {
+    background: var(--kanban-column-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--kanban-border);
+    box-shadow: var(--kanban-shadow);
+}
+
+.kanban-board {
+    min-height: 70vh;
+    padding: 0.5rem;
+}
+
+/* Colonnes Kanban */
+.kanban-column {
+    flex: 0 0 280px;
+    min-height: 500px;
+    background: var(--kanban-column-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--kanban-border);
+    border-radius: 16px;
+    box-shadow: var(--kanban-shadow);
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+}
+
+.kanban-column:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+.kanban-column-header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--kanban-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+    border-radius: 16px 16px 0 0;
+}
+
+.kanban-column-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.kanban-column-count {
+    background: var(--primary-color);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    min-width: 24px;
+    text-align: center;
+}
+
+.kanban-column-body {
+    flex: 1;
+    padding: 1rem;
+    overflow-y: auto;
+    min-height: 400px;
+}
+
+/* Cartes d'intervention */
+.kanban-card {
+    background: var(--kanban-card-bg);
+    border: 1px solid var(--kanban-border);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    position: relative;
+    overflow: hidden;
+}
+
+.kanban-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary-color);
+}
+
+.kanban-card.dragging {
+    opacity: 0.5;
+    transform: rotate(5deg);
+    z-index: 1000;
+}
+
+.kanban-card.drag-over {
+    border-color: var(--primary-color);
+    background: rgba(0, 123, 255, 0.05);
+}
+
+/* Priorité visuelle */
+.kanban-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--priority-low);
+    transition: all 0.3s ease;
+}
+
+.kanban-card.priority-urgent::before {
+    background: var(--priority-urgent);
+}
+
+.kanban-card.priority-high::before {
+    background: var(--priority-high);
+}
+
+.kanban-card.priority-medium::before {
+    background: var(--priority-medium);
+}
+
+.kanban-card.priority-low::before {
+    background: var(--priority-low);
+}
+
+/* En-tête de carte */
+.kanban-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+}
+
+.kanban-card-number {
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.kanban-card-number:hover {
+    text-decoration: underline;
+}
+
+.kanban-card-priority {
+    padding: 0.25rem 0.5rem;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.priority-urgent {
+    background: rgba(220, 53, 69, 0.1);
+    color: var(--priority-urgent);
+    border: 1px solid rgba(220, 53, 69, 0.2);
+}
+
+.priority-high {
+    background: rgba(253, 126, 20, 0.1);
+    color: var(--priority-high);
+    border: 1px solid rgba(253, 126, 20, 0.2);
+}
+
+.priority-medium {
+    background: rgba(255, 193, 7, 0.1);
+    color: #856404;
+    border: 1px solid rgba(255, 193, 7, 0.2);
+}
+
+.priority-low {
+    background: rgba(108, 117, 125, 0.1);
+    color: var(--priority-low);
+    border: 1px solid rgba(108, 117, 125, 0.2);
+}
+
+/* Contenu de carte */
+.kanban-card-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.kanban-card-customer {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.kanban-card-technician {
+    font-size: 0.8rem;
+    color: var(--info-color);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.kanban-card-vehicle {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 0.75rem;
+    font-style: italic;
+}
+
+/* Pied de carte */
+.kanban-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    font-size: 0.75rem;
+}
+
+.kanban-card-date {
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.kanban-card-date.overdue {
+    color: var(--danger-color);
+    font-weight: 600;
+}
+
+.kanban-card-indicators {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.kanban-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--text-muted);
+}
+
+.kanban-indicator.has-content {
+    color: var(--primary-color);
+}
+
+/* États de drag & drop */
+.kanban-column.drag-over {
+    background: rgba(0, 123, 255, 0.05);
+    border-color: var(--primary-color);
+    transform: scale(1.02);
+}
+
+.kanban-column.drop-zone {
+    border: 2px dashed var(--primary-color);
+    background: rgba(0, 123, 255, 0.02);
+}
+
+/* Badges de statut sur les colonnes */
+.status-pending .kanban-column-title::before {
+    content: '⏳';
+    margin-right: 0.5rem;
+}
+
+.status-assigned .kanban-column-title::before {
+    content: '👤';
+    margin-right: 0.5rem;
+}
+
+.status-in_progress .kanban-column-title::before {
+    content: '🔧';
+    margin-right: 0.5rem;
+}
+
+.status-waiting_parts .kanban-column-title::before {
+    content: '📦';
+    margin-right: 0.5rem;
+}
+
+.status-completed .kanban-column-title::before {
+    content: '✅';
+    margin-right: 0.5rem;
+}
+
+.status-cancelled .kanban-column-title::before {
+    content: '❌';
+    margin-right: 0.5rem;
+}
+
+/* Actions de carte */
+.kanban-card-actions {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.kanban-card:hover .kanban-card-actions {
+    opacity: 1;
+}
+
+.kanban-card-action {
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    cursor: pointer;
+    margin-left: 0.25rem;
+    transition: all 0.3s ease;
+}
+
+.kanban-card-action:hover {
+    background: var(--primary-color);
+    color: white;
+    transform: scale(1.1);
+}
+
+/* Messages vides */
+.kanban-empty {
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+    padding: 2rem 1rem;
+    opacity: 0.7;
+}
+
+/* Animation de chargement */
+.kanban-loading {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-muted);
+}
+
+.kanban-loading .spinner-border {
+    width: 2rem;
+    height: 2rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .kanban-board {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .kanban-column {
+        flex: none;
+        min-height: 300px;
+    }
+    
+    .header-content {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .header-right {
+        justify-content: center;
+        margin-top: 1rem;
+    }
+    
+    .filter-group {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 576px) {
+    .kanban-container {
+        padding: 0.5rem;
+    }
+    
+    .kanban-header {
+        padding: 1rem;
+    }
+    
+    .stats-row {
+        justify-content: center;
+    }
+    
+    .stat-badge {
+        font-size: 0.75rem !important;
+        padding: 0.2rem 0.5rem !important;
+    }
+}
+
+/* Animation d'entrée */
+.kanban-card {
+    animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Notification de mise à jour */
+.update-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--success-color);
+    color: white;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    box-shadow: var(--kanban-shadow);
+    z-index: 1050;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+}
+
+.update-notification.show {
+    transform: translateX(0);
+}
+
+/* Indicateur auto-refresh */
+.auto-refresh-indicator {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--primary-color);
+    color: white;
+    padding: 0.5rem;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+    z-index: 1000;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}

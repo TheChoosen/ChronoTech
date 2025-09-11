@@ -4,7 +4,7 @@ APIs manquantes pour compléter le Sprint 1 Copilote IA
 """
 from flask import Blueprint, request, jsonify, session
 from core.ai_copilot import copilot_ai
-from core.database import db_manager
+from core.database import db_manager, get_db_connection
 from datetime import datetime, timedelta
 import logging
 import json
@@ -191,8 +191,8 @@ def get_best_technician_for_task():
 def get_technician_overload_suggestions():
     """Détecte les techniciens en surcharge"""
     try:
-        conn = db_manager.get_connection()
-        cursor = conn.cursor(dictionary=True)
+        conn = get_db_connection()
+        cursor = conn.cursor()
         
         # Requête pour détecter surcharge
         cursor.execute("""
@@ -202,7 +202,7 @@ def get_technician_overload_suggestions():
                 AVG(TIMESTAMPDIFF(HOUR, wo.created_at, NOW())) as avg_task_age,
                 SUM(CASE WHEN wo.priority = 'urgent' THEN 1 ELSE 0 END) as urgent_tasks
             FROM users u
-            LEFT JOIN work_orders wo ON u.id = wo.assigned_to AND wo.status IN ('assigned', 'in_progress')
+            LEFT JOIN work_orders wo ON u.id = wo.assigned_technician_id AND wo.status IN ('assigned', 'in_progress')
             WHERE u.role = 'technician'
             GROUP BY u.id, u.name
             HAVING active_tasks > 5 OR urgent_tasks > 2
@@ -240,8 +240,8 @@ def get_technician_overload_suggestions():
 def get_optimal_assignment_suggestions():
     """Suggestions d'assignation optimale"""
     try:
-        conn = db_manager.get_connection()
-        cursor = conn.cursor(dictionary=True)
+        conn = get_db_connection()
+        cursor = conn.cursor()
         
         # Tâches non assignées
         cursor.execute("""
@@ -249,7 +249,7 @@ def get_optimal_assignment_suggestions():
             FROM work_orders wo
             LEFT JOIN customers c ON wo.customer_id = c.id
             LEFT JOIN vehicles v ON wo.vehicle_id = v.id
-            WHERE wo.assigned_to IS NULL AND wo.status = 'pending'
+            WHERE wo.assigned_technician_id IS NULL AND wo.status = 'pending'
             ORDER BY wo.priority DESC, wo.created_at ASC
             LIMIT 10
         """)
@@ -261,11 +261,11 @@ def get_optimal_assignment_suggestions():
             # Analyser le meilleur technicien
             best_tech = copilot_ai.suggest_best_technician(task)
             
-            if best_tech:
+            if best_tech and isinstance(best_tech, dict) and 'name' in best_tech:
                 suggestions.append({
                     'type': 'optimal_assignment',
                     'title': f"Assignation suggérée: Tâche #{task['claim_number']}",
-                    'message': f"Technicien recommandé: {best_tech['name']} (Score: {best_tech['score']:.1f})",
+                    'message': f"Technicien recommandé: {best_tech['name']} (Score: {best_tech.get('score', 0):.1f})",
                     'severity': 'medium',
                     'priority_score': 50 + (20 if task['priority'] == 'urgent' else 0),
                     'task_id': task['id'],
@@ -439,8 +439,8 @@ def analyze_task_requirements(task_data):
 def get_available_technicians(scheduled_date=None):
     """Récupère les techniciens disponibles"""
     try:
-        conn = db_manager.get_connection()
-        cursor = conn.cursor(dictionary=True)
+        conn = get_db_connection()
+        cursor = conn.cursor()
         
         cursor.execute("""
             SELECT 
@@ -449,7 +449,7 @@ def get_available_technicians(scheduled_date=None):
                 AVG(wo.completion_time) as avg_completion_time,
                 GROUP_CONCAT(DISTINCT us.skill_name) as skills
             FROM users u
-            LEFT JOIN work_orders wo ON u.id = wo.assigned_to AND wo.status IN ('assigned', 'in_progress')
+            LEFT JOIN work_orders wo ON u.id = wo.assigned_technician_id AND wo.status IN ('assigned', 'in_progress')
             LEFT JOIN user_skills us ON u.id = us.user_id
             WHERE u.role = 'technician' AND u.is_active = 1
             GROUP BY u.id, u.name, u.email

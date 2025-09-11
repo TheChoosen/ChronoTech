@@ -1,3 +1,4 @@
+from core.database import get_db_connection
 """
 Routes API sécurisées Sprint 2 - Interventions
 Gestion des interventions avec validation IA et upload médias
@@ -26,16 +27,8 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov', 'mp3', 'wav', '
 # Créer le dossier d'upload s'il n'existe pas
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-def get_db_connection():
-    """Connexion à la base de données"""
-    return pymysql.connect(
-        host=os.getenv('MYSQL_HOST', 'localhost'),
-        user=os.getenv('MYSQL_USER', 'root'),
-        password=os.getenv('MYSQL_PASSWORD', ''),
-        database=os.getenv('MYSQL_DB', 'chronotech'),
-        charset='utf8mb4',
-        cursorclass=pymysql.cursors.DictCursor
-    )
+# Import de la connexion centralisée
+from core.database import get_db_connection
 
 def require_auth(f):
     """Décorateur pour vérifier l'authentification"""

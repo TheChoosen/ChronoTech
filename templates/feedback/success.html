@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+
+{% block title %}Merci pour votre feedback{% endblock %}
+
+{% block page_styles %}
+<style>
+.success-page {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 2rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.success-container {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    padding: 4rem 3rem;
+    max-width: 600px;
+    width: 90%;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.success-icon {
+    font-size: 5rem;
+    color: #10b981;
+    margin-bottom: 2rem;
+    animation: bounce 1s ease-in-out;
+}
+
+@keyframes bounce {
+    0%, 20%, 60%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-20px); }
+    80% { transform: translateY(-10px); }
+}
+
+.success-title {
+    font-size: 2.5rem;
+    color: #333;
+    margin-bottom: 1rem;
+    font-weight: 700;
+}
+
+.success-message {
+    font-size: 1.2rem;
+    color: #666;
+    margin-bottom: 3rem;
+    line-height: 1.6;
+}
+
+.feedback-summary {
+    background: #f8f9fa;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 3rem;
+    text-align: left;
+}
+
+.summary-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.summary-item:last-child {
+    border-bottom: none;
+}
+
+.summary-label {
+    font-weight: 500;
+    color: #555;
+}
+
+.summary-value {
+    font-weight: 600;
+    color: #333;
+}
+
+.star-display {
+    color: #ffc107;
+    font-size: 1.2rem;
+}
+
+.nps-score {
+    background: #3b82f6;
+    color: white;
+    padding: 0.3rem 0.8rem;
+    border-radius: 15px;
+    font-weight: bold;
+}
+
+.actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.action-btn {
+    padding: 1rem 2rem;
+    border-radius: 50px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    color: white;
+    box-shadow: 0 5px 15px rgba(59, 130, 246, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+    color: white;
+}
+
+.btn-secondary {
+    background: white;
+    color: #6b7280;
+    border: 2px solid #e5e7eb;
+}
+
+.btn-secondary:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+    color: #374151;
+}
+
+.footer-text {
+    margin-top: 3rem;
+    font-size: 0.9rem;
+    color: #9ca3af;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .success-container {
+        padding: 3rem 2rem;
+        margin: 1rem;
+    }
+    
+    .success-title {
+        font-size: 2rem;
+    }
+    
+    .success-message {
+        font-size: 1.1rem;
+    }
+    
+    .actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .action-btn {
+        width: 100%;
+        max-width: 300px;
+        justify-content: center;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="success-page">
+    <div class="success-container">
+        <div class="success-icon">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        
+        <h1 class="success-title">Merci !</h1>
+        
+        <p class="success-message">
+            Votre évaluation a été enregistrée avec succès. 
+            Votre avis est précieux et nous aide à améliorer continuellement nos services.
+        </p>
+
+        {% if result and result.feedback_data %}
+        <div class="feedback-summary">
+            <h3 class="summary-title">Récapitulatif de votre évaluation</h3>
+            
+            <div class="summary-item">
+                <span class="summary-label">Satisfaction générale</span>
+                <span class="summary-value star-display">
+                    {% for i in range(result.feedback_data.overall_satisfaction) %}★{% endfor %}
+                    {% for i in range(5 - result.feedback_data.overall_satisfaction) %}☆{% endfor %}
+                </span>
+            </div>
+            
+            <div class="summary-item">
+                <span class="summary-label">Qualité du travail</span>
+                <span class="summary-value star-display">
+                    {% for i in range(result.feedback_data.quality_work) %}★{% endfor %}
+                    {% for i in range(5 - result.feedback_data.quality_work) %}☆{% endfor %}
+                </span>
+            </div>
+            
+            <div class="summary-item">
+                <span class="summary-label">Professionnalisme</span>
+                <span class="summary-value star-display">
+                    {% for i in range(result.feedback_data.technician_professionalism) %}★{% endfor %}
+                    {% for i in range(5 - result.feedback_data.technician_professionalism) %}☆{% endfor %}
+                </span>
+            </div>
+            
+            <div class="summary-item">
+                <span class="summary-label">Score de recommandation</span>
+                <span class="summary-value">
+                    <span class="nps-score">{{ result.feedback_data.nps_score }}/10</span>
+                </span>
+            </div>
+            
+            {% if result.feedback_data.positive_feedback %}
+            <div class="summary-item">
+                <span class="summary-label">Points positifs</span>
+                <span class="summary-value" style="font-style: italic; max-width: 60%; text-align: right;">
+                    "{{ result.feedback_data.positive_feedback[:100] }}{% if result.feedback_data.positive_feedback|length > 100 %}...{% endif %}"
+                </span>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <div class="actions">
+            <a href="#" onclick="window.close(); return false;" class="action-btn btn-primary">
+                <i class="fas fa-times"></i>
+                Fermer cette page
+            </a>
+            
+            <a href="mailto:contact@chronotech.com?subject=Feedback%20supplémentaire" class="action-btn btn-secondary">
+                <i class="fas fa-envelope"></i>
+                Nous contacter
+            </a>
+        </div>
+        
+        <p class="footer-text">
+            Cette évaluation nous aide à récompenser nos meilleurs techniciens et à améliorer 
+            nos services pour tous nos clients.
+        </p>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+// Fermer automatiquement après 30 secondes si demandé
+setTimeout(function() {
+    if (confirm('Souhaitez-vous fermer cette page automatiquement ?')) {
+        window.close();
+    }
+}, 30000);
+
+// Animer l'icône de succès
+document.addEventListener('DOMContentLoaded', function() {
+    const icon = document.querySelector('.success-icon');
+    
+    // Ajouter un effet de pulsation après l'animation de rebond
+    setTimeout(function() {
+        icon.style.animation = 'pulse 2s infinite';
+    }, 1000);
+});
+
+// Animation de pulsation pour l'icône
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

@@ -1,6 +1,152 @@
 """
-Routes pour la gestion des widgets personnalisables
+Dashboard Widgets API
+Gestion des widgets personnalisables du dashboard
 """
+from flask import Blueprint, request, jsonify, session
+from core.database import db_manager
+from core.security import login_required
+import json
+
+widgets_api_bp = Blueprint('widgets_api', __name__)
+
+@widgets_api_bp.route('/api/widgets/layout', methods=['GET'])
+@login_required
+def get_widget_layout():
+    """Récupérer la configuration des widgets de l'utilisateur"""
+    user_id = session.get('user_id')
+    
+    conn = db_manager.get_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    cursor.execute("""
+        SELECT layout_config 
+        FROM user_dashboard_config 
+        WHERE user_id = %s
+    """, (user_id,))
+    
+    result = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    
+    if result and result['layout_config']:
+        return jsonify({
+            'success': True,
+            'layout': json.loads(result['layout_config'])
+        })
+    
+    # Configuration par défaut
+    default_layout = {
+        'widgets': [
+            {'id': 'copilot', 'x': 0, 'y': 0, 'w': 4, 'h': 4},
+            {'id': 'customer360', 'x': 4, 'y': 0, 'w': 4, 'h': 4},
+            {'id': 'chat', 'x': 8, 'y': 0, 'w': 4, 'h': 4}
+        ]
+    }
+    
+    return jsonify({
+        'success': True,
+        'layout': default_layout
+    })
+
+@widgets_api_bp.route('/api/widgets/layout', methods=['POST'])
+@login_required
+def save_widget_layout():
+    """Sauvegarder la configuration des widgets"""
+    user_id = session.get('user_id')
+    layout = request.json.get('layout')
+    
+    if not layout:
+        return jsonify({'success': False, 'message': 'Layout manquant'}), 400
+    
+    conn = db_manager.get_connection()
+    cursor = conn.cursor()
+    
+    # Upsert de la configuration
+    cursor.execute("""
+        INSERT INTO user_dashboard_config (user_id, layout_config)
+        VALUES (%s, %s)
+        ON DUPLICATE KEY UPDATE 
+        layout_config = VALUES(layout_config),
+        updated_at = CURRENT_TIMESTAMP
+    """, (user_id, json.dumps(layout)))
+    
+    conn.commit()
+    cursor.close()
+    conn.close()
+    
+    return jsonify({'success': True})
+
+@widgets_api_bp.route('/api/widgets/available', methods=['GET'])
+@login_required
+def get_available_widgets():
+    """Récupérer la liste des widgets disponibles"""
+    widgets = [
+        {
+            'id': 'copilot',
+            'name': 'Copilote IA',
+            'description': 'Assistant intelligent avec suggestions et alertes',
+            'icon': 'fa-robot',
+            'minWidth': 3,
+            'minHeight': 3,
+            'defaultWidth': 4,
+            'defaultHeight': 4
+        },
+        {
+            'id': 'customer360',
+            'name': 'Vue 360° Client',
+            'description': 'Vue complète des informations client',
+            'icon': 'fa-user-circle',
+            'minWidth': 3,
+            'minHeight': 3,
+            'defaultWidth': 4,
+            'defaultHeight': 4
+        },
+        {
+            'id': 'chat',
+            'name': 'Chat Contextuel',
+            'description': 'Communication temps réel par contexte',
+            'icon': 'fa-comments',
+            'minWidth': 3,
+            'minHeight': 3,
+            'defaultWidth': 4,
+            'defaultHeight': 4
+        },
+        {
+            'id': 'kpi',
+            'name': 'KPI Techniciens',
+            'description': 'Indicateurs de performance en temps réel',
+            'icon': 'fa-chart-line',
+            'minWidth': 4,
+            'minHeight': 3,
+            'defaultWidth': 6,
+            'defaultHeight': 4
+        },
+        {
+            'id': 'predictive',
+            'name': 'Alertes Prédictives',
+            'description': 'Détection proactive des problèmes',
+            'icon': 'fa-bell',
+            'minWidth': 3,
+            'minHeight': 3,
+            'defaultWidth': 4,
+            'defaultHeight': 4
+        },
+        {
+            'id': 'heatmap',
+            'name': 'Carte des Interventions',
+            'description': 'Visualisation géographique des activités',
+            'icon': 'fa-map-marker-alt',
+            'minWidth': 4,
+            'minHeight': 4,
+            'defaultWidth': 6,
+            'defaultHeight': 5
+        }
+    ]
+    
+    return jsonify({
+        'success': True,
+        'widgets': widgets
+    })
 from flask import Blueprint, request, jsonify, session, render_template
 from core.database import db_manager
 import json

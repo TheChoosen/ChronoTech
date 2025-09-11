@@ -1,0 +1,385 @@
+<!-- Widget Gamification pour Dashboard -->
+<div class="widget gamification-widget" data-widget-type="gamification">
+    <div class="widget-header">
+        <div class="widget-title">
+            <i class="fas fa-trophy"></i>
+            <span>Gamification</span>
+        </div>
+        <div class="widget-actions">
+            <button class="widget-action-btn" onclick="refreshGamificationWidget()" title="Actualiser">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+            <a href="{{ url_for('gamification.gamification_dashboard') }}" class="widget-action-btn" title="Voir tout">
+                <i class="fas fa-external-link-alt"></i>
+            </a>
+        </div>
+    </div>
+    
+    <div class="widget-content">
+        <!-- Profil résumé -->
+        <div class="gamification-profile-summary">
+            <div class="profile-stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value">{{ profile.total_points or 0 }}</div>
+                    <div class="stat-label">Points Total</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">{{ profile.badges_earned or 0 }}/{{ profile.total_badges or 0 }}</div>
+                    <div class="stat-label">Badges</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">{{ "%.1f"|format(profile.avg_satisfaction or 0) }}</div>
+                    <div class="stat-label">Satisfaction</div>
+                </div>
+            </div>
+            
+            {% if profile.completion_rate %}
+            <div class="progress-section">
+                <div class="progress-label">Progression badges: {{ profile.completion_rate }}%</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ profile.completion_rate }}%;"></div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if config.show_badges and badges %}
+        <!-- Section badges -->
+        <div class="widget-section badges-section">
+            <h4 class="section-title">
+                <i class="fas fa-medal"></i>
+                Mes Badges Récents
+            </h4>
+            <div class="badges-mini-grid">
+                {% for badge in badges[:6] %}
+                <div class="badge-mini {{ 'earned' if badge.earned else 'not-earned' }}" 
+                     title="{{ badge.description }}">
+                    <div class="badge-icon" style="color: {{ badge.color }};">{{ badge.icon }}</div>
+                    <div class="badge-name">{{ badge.name }}</div>
+                    {% if badge.earned %}
+                        <div class="earned-indicator">✓</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if config.show_leaderboard and leaderboard %}
+        <!-- Section classement -->
+        <div class="widget-section leaderboard-section">
+            <h4 class="section-title">
+                <i class="fas fa-list-ol"></i>
+                Top Performers
+            </h4>
+            <div class="leaderboard-mini">
+                {% for entry in leaderboard %}
+                <div class="leaderboard-mini-item">
+                    <div class="rank-mini {{ 'gold' if loop.index == 1 else 'silver' if loop.index == 2 else 'bronze' if loop.index == 3 else '' }}">
+                        {{ loop.index }}
+                    </div>
+                    <div class="player-mini-info">
+                        <div class="player-name">{{ entry.entity_name }}</div>
+                        <div class="player-points">{{ entry.total_points }}pts</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Actions rapides -->
+        <div class="widget-actions-bar">
+            <a href="{{ url_for('gamification.gamification_dashboard') }}" class="widget-btn primary">
+                <i class="fas fa-trophy"></i>
+                Dashboard
+            </a>
+            <a href="{{ url_for('gamification.leaderboard_page') }}" class="widget-btn secondary">
+                <i class="fas fa-list"></i>
+                Classements
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Styles spécifiques au widget gamification */
+.gamification-widget {
+    background: var(--glass-background);
+    backdrop-filter: blur(10px);
+    border-radius: var(--border-radius-large);
+    border: 1px solid var(--border-glass);
+    box-shadow: var(--clay-shadow);
+}
+
+.gamification-profile-summary {
+    margin-bottom: 1.5rem;
+}
+
+.profile-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 0.8rem;
+    background: var(--surface-color);
+    border-radius: var(--border-radius);
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    display: block;
+    margin-bottom: 0.3rem;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.progress-section {
+    margin-top: 1rem;
+}
+
+.progress-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 6px;
+    background: var(--border-light);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--success-gradient);
+    transition: width 0.3s ease;
+}
+
+.widget-section {
+    margin-bottom: 1.5rem;
+}
+
+.section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.badges-mini-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.8rem;
+}
+
+.badge-mini {
+    background: var(--surface-color);
+    border-radius: var(--border-radius);
+    padding: 0.8rem 0.5rem;
+    text-align: center;
+    position: relative;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.badge-mini.earned {
+    border-color: var(--success-color);
+    box-shadow: 0 0 10px rgba(74, 222, 128, 0.2);
+}
+
+.badge-mini.not-earned {
+    opacity: 0.6;
+    filter: grayscale(30%);
+}
+
+.badge-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.3rem;
+}
+
+.badge-name {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    line-height: 1.2;
+}
+
+.earned-indicator {
+    position: absolute;
+    top: 0.3rem;
+    right: 0.3rem;
+    background: var(--success-color);
+    color: white;
+    font-size: 0.6rem;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.leaderboard-mini {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.leaderboard-mini-item {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.5rem;
+    background: var(--surface-color);
+    border-radius: var(--border-radius);
+}
+
+.rank-mini {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--border-light);
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+.rank-mini.gold { background: linear-gradient(135deg, #FFD700, #FFA500); color: white; }
+.rank-mini.silver { background: linear-gradient(135deg, #C0C0C0, #808080); color: white; }
+.rank-mini.bronze { background: linear-gradient(135deg, #CD7F32, #A0522D); color: white; }
+
+.player-mini-info {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.player-name {
+    font-weight: 500;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+}
+
+.player-points {
+    font-weight: 600;
+    color: var(--primary-color);
+    font-size: 0.8rem;
+}
+
+.widget-actions-bar {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.widget-btn {
+    flex: 1;
+    padding: 0.6rem 1rem;
+    border-radius: var(--border-radius);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    transition: all 0.3s ease;
+}
+
+.widget-btn.primary {
+    background: var(--primary-gradient);
+    color: white;
+}
+
+.widget-btn.primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 15px rgba(59, 130, 246, 0.3);
+    color: white;
+}
+
+.widget-btn.secondary {
+    background: var(--surface-color);
+    color: var(--text-primary);
+    border: 1px solid var(--border-light);
+}
+
+.widget-btn.secondary:hover {
+    background: var(--border-light);
+    color: var(--text-primary);
+}
+
+/* Responsive pour petit widget */
+@media (max-width: 768px) {
+    .profile-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .badges-mini-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+</style>
+
+<script>
+async function refreshGamificationWidget() {
+    try {
+        const widget = document.querySelector('.gamification-widget');
+        const refreshBtn = widget.querySelector('.fa-sync-alt');
+        
+        // Animation de rotation
+        refreshBtn.style.animation = 'spin 1s linear infinite';
+        
+        // Simuler le rafraîchissement (remplacer par appel API réel)
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Ici, vous pouvez ajouter la logique pour recharger les données
+        // const response = await fetch('/api/gamification/widget-data');
+        // const data = await response.json();
+        // updateWidgetContent(data);
+        
+        refreshBtn.style.animation = '';
+        
+        // Afficher un message de succès
+        if (window.showNotification) {
+            window.showNotification('Données gamification actualisées', 'success');
+        }
+        
+    } catch (error) {
+        console.error('Erreur rafraîchissement widget gamification:', error);
+        if (window.showNotification) {
+            window.showNotification('Erreur lors de l\'actualisation', 'error');
+        }
+    }
+}
+
+// Animation CSS pour la rotation
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+`;
+document.head.appendChild(style);
+</script>

@@ -1,0 +1,413 @@
+<!-- Widget Voice Assistant - Sprint 7.1 -->
+<div class="col-lg-4 col-md-6 mb-4" data-widget="voice-assistant">
+    <div class="card claymorphism-card h-100">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">
+                <i class="fas fa-microphone text-primary me-2"></i>
+                Assistant Vocal
+            </h6>
+            <div class="dropdown">
+                <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="fas fa-cog"></i>
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#" onclick="toggleVoiceAssistant()">Activer/Désactiver</a></li>
+                    <li><a class="dropdown-item" href="#" onclick="configureVoiceCommands()">Configurer commandes</a></li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="card-body text-center">
+            <!-- Status Voice Assistant -->
+            <div class="voice-status mb-3">
+                <div class="voice-indicator" id="voiceIndicator">
+                    <i class="fas fa-microphone-alt" id="micIcon"></i>
+                </div>
+                <div class="status-text mt-2">
+                    <span id="voiceStatus" class="badge bg-secondary">En attente</span>
+                </div>
+            </div>
+            
+            <!-- Commandes rapides -->
+            <div class="quick-commands">
+                <h6 class="text-muted mb-2">Commandes disponibles :</h6>
+                <div class="command-list">
+                    <small class="text-muted d-block">"Démarrer tâche"</small>
+                    <small class="text-muted d-block">"Ajouter note"</small>
+                    <small class="text-muted d-block">"Ouvrir fiche client"</small>
+                    <small class="text-muted d-block">"Créer intervention"</small>
+                    <small class="text-muted d-block">"Afficher planning"</small>
+                </div>
+            </div>
+            
+            <!-- Micro flottant -->
+            <div class="floating-mic mt-3">
+                <button class="btn btn-primary btn-lg rounded-circle" id="voiceTrigger" onclick="toggleListening()">
+                    <i class="fas fa-microphone"></i>
+                </button>
+            </div>
+            
+            <!-- Dernière commande -->
+            <div class="last-command mt-3" id="lastCommand" style="display: none;">
+                <div class="alert alert-info py-2">
+                    <small><strong>Dernière commande :</strong> <span id="lastCommandText"></span></small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card-footer">
+            <div class="row text-center">
+                <div class="col-4">
+                    <small class="text-muted">Commandes</small>
+                    <div class="fw-bold" id="commandCount">0</div>
+                </div>
+                <div class="col-4">
+                    <small class="text-muted">Réussite</small>
+                    <div class="fw-bold text-success" id="successRate">0%</div>
+                </div>
+                <div class="col-4">
+                    <small class="text-muted">Temps moy.</small>
+                    <div class="fw-bold" id="avgResponseTime">0ms</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.voice-indicator {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.voice-indicator.listening {
+    animation: pulse 2s infinite;
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
+.voice-indicator.processing {
+    animation: spin 1s linear infinite;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(17, 153, 142, 0.7); }
+    70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(17, 153, 142, 0); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(17, 153, 142, 0); }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+#micIcon {
+    font-size: 2rem;
+    color: white;
+}
+
+.floating-mic button {
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+}
+
+.floating-mic button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+}
+
+.command-list {
+    max-height: 120px;
+    overflow-y: auto;
+}
+
+.quick-commands {
+    background: rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 15px;
+}
+</style>
+
+<script>
+// Variables globales pour Voice Assistant
+let isListening = false;
+let recognition = null;
+let commandCount = 0;
+let successfulCommands = 0;
+let responseTimes = [];
+
+// Initialisation Speech Recognition
+function initVoiceAssistant() {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        
+        recognition.lang = 'fr-FR';
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        
+        recognition.onstart = function() {
+            console.log('🎤 Voice Assistant démarré');
+            updateVoiceStatus('listening', 'Écoute en cours...');
+        };
+        
+        recognition.onresult = function(event) {
+            const command = event.results[0][0].transcript.toLowerCase();
+            console.log('🗣️ Commande reçue:', command);
+            
+            updateLastCommand(command);
+            processVoiceCommand(command);
+        };
+        
+        recognition.onerror = function(event) {
+            console.error('❌ Erreur Voice Assistant:', event.error);
+            updateVoiceStatus('error', 'Erreur reconnaissance');
+            stopListening();
+        };
+        
+        recognition.onend = function() {
+            console.log('🔇 Voice Assistant arrêté');
+            stopListening();
+        };
+    } else {
+        console.warn('⚠️ Speech Recognition non supporté');
+        showNotification('Voice Assistant non supporté par ce navigateur', 'warning');
+    }
+}
+
+// Toggle listening
+function toggleListening() {
+    if (!recognition) {
+        initVoiceAssistant();
+        return;
+    }
+    
+    if (isListening) {
+        stopListening();
+    } else {
+        startListening();
+    }
+}
+
+function startListening() {
+    if (recognition && !isListening) {
+        isListening = true;
+        recognition.start();
+        updateVoiceStatus('listening', 'Parlez maintenant...');
+    }
+}
+
+function stopListening() {
+    isListening = false;
+    if (recognition) {
+        recognition.stop();
+    }
+    updateVoiceStatus('idle', 'En attente');
+}
+
+// Mise à jour du statut visuel
+function updateVoiceStatus(status, text) {
+    const indicator = document.getElementById('voiceIndicator');
+    const statusElement = document.getElementById('voiceStatus');
+    const micIcon = document.getElementById('micIcon');
+    
+    // Reset classes
+    indicator.className = 'voice-indicator';
+    
+    switch(status) {
+        case 'listening':
+            indicator.classList.add('listening');
+            statusElement.className = 'badge bg-success';
+            micIcon.className = 'fas fa-microphone';
+            break;
+        case 'processing':
+            indicator.classList.add('processing');
+            statusElement.className = 'badge bg-warning';
+            micIcon.className = 'fas fa-cog fa-spin';
+            break;
+        case 'error':
+            statusElement.className = 'badge bg-danger';
+            micIcon.className = 'fas fa-microphone-slash';
+            break;
+        default:
+            statusElement.className = 'badge bg-secondary';
+            micIcon.className = 'fas fa-microphone-alt';
+    }
+    
+    statusElement.textContent = text;
+}
+
+// Traitement des commandes vocales
+function processVoiceCommand(command) {
+    const startTime = Date.now();
+    updateVoiceStatus('processing', 'Traitement...');
+    commandCount++;
+    
+    // Commandes disponibles
+    const commands = {
+        'démarrer tâche': () => startTask(),
+        'commencer tâche': () => startTask(),
+        'ajouter note': () => addNote(),
+        'nouvelle note': () => addNote(),
+        'ouvrir fiche': () => openCustomerFile(),
+        'fiche client': () => openCustomerFile(),
+        'créer intervention': () => createIntervention(),
+        'nouvelle intervention': () => createIntervention(),
+        'afficher planning': () => showPlanning(),
+        'voir planning': () => showPlanning(),
+        'planning': () => showPlanning()
+    };
+    
+    // Chercher la commande correspondante
+    let commandExecuted = false;
+    for (const [trigger, action] of Object.entries(commands)) {
+        if (command.includes(trigger)) {
+            try {
+                action();
+                commandExecuted = true;
+                successfulCommands++;
+                
+                // Notification vocale de confirmation
+                speakConfirmation(`Commande "${trigger}" exécutée`);
+                showNotification(`✅ Commande "${trigger}" exécutée`, 'success');
+                break;
+            } catch (error) {
+                console.error('Erreur exécution commande:', error);
+                showNotification(`❌ Erreur lors de l'exécution: ${trigger}`, 'error');
+            }
+        }
+    }
+    
+    if (!commandExecuted) {
+        showNotification(`❓ Commande non reconnue: "${command}"`, 'warning');
+        speakConfirmation("Commande non reconnue");
+    }
+    
+    // Calcul temps de réponse
+    const responseTime = Date.now() - startTime;
+    responseTimes.push(responseTime);
+    
+    // Mise à jour des statistiques
+    updateVoiceStats();
+    updateVoiceStatus('idle', 'En attente');
+}
+
+// Actions des commandes vocales
+function startTask() {
+    // Ouvrir modal de démarrage de tâche ou démarrer la première tâche disponible
+    if (typeof openTaskModal === 'function') {
+        openTaskModal();
+    } else {
+        console.log('🚀 Démarrage de tâche demandé');
+    }
+}
+
+function addNote() {
+    // Ouvrir modal d'ajout de note
+    if (typeof openNoteModal === 'function') {
+        openNoteModal();
+    } else {
+        console.log('📝 Ajout de note demandé');
+    }
+}
+
+function openCustomerFile() {
+    // Ouvrir la première fiche client ou modal de recherche
+    if (typeof openCustomerModal === 'function') {
+        openCustomerModal();
+    } else {
+        console.log('👤 Ouverture fiche client demandée');
+    }
+}
+
+function createIntervention() {
+    // Créer nouvelle intervention
+    if (typeof createNewIntervention === 'function') {
+        createNewIntervention();
+    } else {
+        console.log('🔧 Création intervention demandée');
+    }
+}
+
+function showPlanning() {
+    // Afficher ou basculer vers vue planning
+    if (typeof switchToGanttView === 'function') {
+        switchToGanttView();
+    } else {
+        console.log('📅 Affichage planning demandé');
+    }
+}
+
+// Synthèse vocale pour confirmations
+function speakConfirmation(text) {
+    if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'fr-FR';
+        utterance.rate = 1.2;
+        utterance.volume = 0.8;
+        speechSynthesis.speak(utterance);
+    }
+}
+
+// Mise à jour des statistiques
+function updateVoiceStats() {
+    document.getElementById('commandCount').textContent = commandCount;
+    
+    const successRate = commandCount > 0 ? Math.round((successfulCommands / commandCount) * 100) : 0;
+    document.getElementById('successRate').textContent = successRate + '%';
+    
+    const avgTime = responseTimes.length > 0 ? 
+        Math.round(responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length) : 0;
+    document.getElementById('avgResponseTime').textContent = avgTime + 'ms';
+}
+
+// Affichage dernière commande
+function updateLastCommand(command) {
+    const lastCommandElement = document.getElementById('lastCommand');
+    const lastCommandText = document.getElementById('lastCommandText');
+    
+    lastCommandText.textContent = command;
+    lastCommandElement.style.display = 'block';
+    
+    // Masquer après 5 secondes
+    setTimeout(() => {
+        lastCommandElement.style.display = 'none';
+    }, 5000);
+}
+
+// Configuration Voice Assistant
+function toggleVoiceAssistant() {
+    // Toggle activation/désactivation
+    const status = document.getElementById('voiceStatus').textContent;
+    if (status === 'Désactivé') {
+        initVoiceAssistant();
+        showNotification('Voice Assistant activé', 'success');
+    } else {
+        if (recognition) {
+            recognition.abort();
+            recognition = null;
+        }
+        updateVoiceStatus('disabled', 'Désactivé');
+        showNotification('Voice Assistant désactivé', 'info');
+    }
+}
+
+function configureVoiceCommands() {
+    // Ouvrir modal de configuration (à implémenter)
+    showNotification('Configuration Voice Assistant (à venir)', 'info');
+}
+
+// Initialisation au chargement
+document.addEventListener('DOMContentLoaded', function() {
+    initVoiceAssistant();
+});
+</script>

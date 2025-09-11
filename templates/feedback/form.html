@@ -1,0 +1,698 @@
+{% extends "base.html" %}
+
+{% block title %}Évaluation de l'intervention{% endblock %}
+
+{% block page_styles %}
+<style>
+.feedback-form-page {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 2rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.feedback-container {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    padding: 3rem;
+    max-width: 800px;
+    width: 90%;
+    margin: 0 auto;
+}
+
+.feedback-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.feedback-header h1 {
+    color: #333;
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.feedback-header p {
+    color: #666;
+    font-size: 1.1rem;
+}
+
+.intervention-info {
+    background: #f8f9fa;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 3rem;
+    border-left: 5px solid #3b82f6;
+}
+
+.intervention-details {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 1rem;
+    align-items: center;
+}
+
+.technician-photo {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #3b82f6;
+}
+
+.technician-placeholder {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.intervention-text h3 {
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.intervention-text p {
+    color: #666;
+    margin-bottom: 0.3rem;
+}
+
+.form-section {
+    margin-bottom: 3rem;
+}
+
+.section-title {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.rating-group {
+    margin-bottom: 2rem;
+}
+
+.rating-label {
+    display: block;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.star-rating {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.star {
+    font-size: 2rem;
+    color: #ddd;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.star:hover,
+.star.active {
+    color: #ffc107;
+    transform: scale(1.1);
+}
+
+.rating-description {
+    font-size: 0.9rem;
+    color: #666;
+    min-height: 1.2rem;
+    margin-top: 0.5rem;
+}
+
+.nps-section {
+    margin-bottom: 3rem;
+}
+
+.nps-scale {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 1.5rem 0;
+    gap: 0.5rem;
+}
+
+.nps-number {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    border: 2px solid #ddd;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    color: #666;
+}
+
+.nps-number:hover {
+    border-color: #3b82f6;
+    background: #f0f8ff;
+}
+
+.nps-number.selected {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+    transform: scale(1.1);
+}
+
+.nps-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 0.5rem;
+}
+
+.textarea-group {
+    margin-bottom: 2rem;
+}
+
+.textarea-label {
+    display: block;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.feedback-textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: 1rem;
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 1rem;
+    resize: vertical;
+    transition: border-color 0.3s ease;
+}
+
+.feedback-textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.checkbox-group {
+    margin-bottom: 2rem;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.checkbox-item:hover {
+    background: #e9ecef;
+}
+
+.checkbox-item input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.checkbox-label {
+    font-weight: 500;
+    color: #333;
+    cursor: pointer;
+}
+
+.submit-section {
+    text-align: center;
+    border-top: 2px solid #f0f0f0;
+    padding-top: 2rem;
+}
+
+.submit-btn {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    color: white;
+    border: none;
+    padding: 1rem 3rem;
+    border-radius: 50px;
+    font-size: 1.2rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(59, 130, 246, 0.3);
+}
+
+.submit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+}
+
+.submit-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.error-message {
+    background: #fee;
+    color: #c53030;
+    padding: 1rem;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+    border: 1px solid #fecaca;
+}
+
+.success-message {
+    background: #f0fff4;
+    color: #38a169;
+    padding: 1rem;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+    border: 1px solid #9ae6b4;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .feedback-container {
+        padding: 2rem 1.5rem;
+        margin: 1rem;
+    }
+    
+    .feedback-header h1 {
+        font-size: 2rem;
+    }
+    
+    .intervention-details {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 1.5rem;
+    }
+    
+    .star-rating {
+        justify-content: center;
+    }
+    
+    .nps-scale {
+        flex-wrap: wrap;
+        gap: 0.3rem;
+    }
+    
+    .nps-number {
+        width: 40px;
+        height: 40px;
+        font-size: 0.9rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="feedback-form-page">
+    <div class="feedback-container">
+        <div class="feedback-header">
+            <h1>
+                <i class="fas fa-star"></i>
+                Évaluation de l'intervention
+            </h1>
+            <p>Votre avis nous aide à améliorer nos services</p>
+        </div>
+
+        {% if error %}
+        <div class="error-message">
+            <i class="fas fa-exclamation-triangle"></i>
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <!-- Informations de l'intervention -->
+        <div class="intervention-info">
+            <div class="intervention-details">
+                <div>
+                    {% if feedback.technician_photo %}
+                        <img src="{{ feedback.technician_photo }}" alt="Photo technicien" class="technician-photo">
+                    {% else %}
+                        <div class="technician-placeholder">
+                            {{ feedback.technician_name[0].upper() }}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="intervention-text">
+                    <h3>Intervention réalisée par {{ feedback.technician_name }}</h3>
+                    <p><strong>Réclamation :</strong> #{{ feedback.claim_number }}</p>
+                    <p><strong>Description :</strong> {{ feedback.work_description }}</p>
+                    <p><strong>Client :</strong> {{ feedback.customer_name }}</p>
+                </div>
+            </div>
+        </div>
+
+        <form action="{{ url_for('feedback.submit_feedback', token=token) }}" method="POST" id="feedback-form">
+            <!-- Évaluations par étoiles -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-star"></i>
+                    Évaluez notre service
+                </h3>
+
+                <div class="rating-group">
+                    <label class="rating-label">Satisfaction générale</label>
+                    <div class="star-rating" data-rating="overall_satisfaction">
+                        <span class="star" data-value="1">★</span>
+                        <span class="star" data-value="2">★</span>
+                        <span class="star" data-value="3">★</span>
+                        <span class="star" data-value="4">★</span>
+                        <span class="star" data-value="5">★</span>
+                    </div>
+                    <div class="rating-description" data-for="overall_satisfaction"></div>
+                    <input type="hidden" name="overall_satisfaction" required>
+                </div>
+
+                <div class="rating-group">
+                    <label class="rating-label">Qualité du travail effectué</label>
+                    <div class="star-rating" data-rating="quality_work">
+                        <span class="star" data-value="1">★</span>
+                        <span class="star" data-value="2">★</span>
+                        <span class="star" data-value="3">★</span>
+                        <span class="star" data-value="4">★</span>
+                        <span class="star" data-value="5">★</span>
+                    </div>
+                    <div class="rating-description" data-for="quality_work"></div>
+                    <input type="hidden" name="quality_work" required>
+                </div>
+
+                <div class="rating-group">
+                    <label class="rating-label">Professionnalisme du technicien</label>
+                    <div class="star-rating" data-rating="technician_professionalism">
+                        <span class="star" data-value="1">★</span>
+                        <span class="star" data-value="2">★</span>
+                        <span class="star" data-value="3">★</span>
+                        <span class="star" data-value="4">★</span>
+                        <span class="star" data-value="5">★</span>
+                    </div>
+                    <div class="rating-description" data-for="technician_professionalism"></div>
+                    <input type="hidden" name="technician_professionalism" required>
+                </div>
+
+                <div class="rating-group">
+                    <label class="rating-label">Rapidité d'intervention</label>
+                    <div class="star-rating" data-rating="response_time_satisfaction">
+                        <span class="star" data-value="1">★</span>
+                        <span class="star" data-value="2">★</span>
+                        <span class="star" data-value="3">★</span>
+                        <span class="star" data-value="4">★</span>
+                        <span class="star" data-value="5">★</span>
+                    </div>
+                    <div class="rating-description" data-for="response_time_satisfaction"></div>
+                    <input type="hidden" name="response_time_satisfaction" required>
+                </div>
+
+                <div class="rating-group">
+                    <label class="rating-label">Qualité de la communication</label>
+                    <div class="star-rating" data-rating="communication_quality">
+                        <span class="star" data-value="1">★</span>
+                        <span class="star" data-value="2">★</span>
+                        <span class="star" data-value="3">★</span>
+                        <span class="star" data-value="4">★</span>
+                        <span class="star" data-value="5">★</span>
+                    </div>
+                    <div class="rating-description" data-for="communication_quality"></div>
+                    <input type="hidden" name="communication_quality" required>
+                </div>
+            </div>
+
+            <!-- Score NPS -->
+            <div class="nps-section">
+                <h3 class="section-title">
+                    <i class="fas fa-thumbs-up"></i>
+                    Recommandation
+                </h3>
+                
+                <label class="rating-label">
+                    Sur une échelle de 0 à 10, quelle est la probabilité que vous recommandiez nos services ?
+                </label>
+                
+                <div class="nps-scale">
+                    {% for i in range(11) %}
+                    <div class="nps-number" data-value="{{ i }}">{{ i }}</div>
+                    {% endfor %}
+                </div>
+                
+                <div class="nps-labels">
+                    <span>Pas du tout probable</span>
+                    <span>Extrêmement probable</span>
+                </div>
+                
+                <input type="hidden" name="nps_score" required>
+            </div>
+
+            <!-- Commentaires -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-comment"></i>
+                    Vos commentaires
+                </h3>
+
+                <div class="textarea-group">
+                    <label class="textarea-label">Qu'avez-vous particulièrement apprécié ?</label>
+                    <textarea name="positive_feedback" class="feedback-textarea" 
+                              placeholder="Décrivez les points positifs de l'intervention..."></textarea>
+                </div>
+
+                <div class="textarea-group">
+                    <label class="textarea-label">Que pourrait-on améliorer ?</label>
+                    <textarea name="improvement_feedback" class="feedback-textarea" 
+                              placeholder="Suggérez des améliorations..."></textarea>
+                </div>
+
+                <div class="textarea-group">
+                    <label class="textarea-label">Commentaires supplémentaires</label>
+                    <textarea name="additional_comments" class="feedback-textarea" 
+                              placeholder="Autres remarques ou suggestions..."></textarea>
+                </div>
+            </div>
+
+            <!-- Questions finales -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-check-circle"></i>
+                    Questions finales
+                </h3>
+
+                <div class="checkbox-group">
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="would_recommend">
+                        <span class="checkbox-label">Je recommanderais cette entreprise à un ami</span>
+                    </label>
+
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="would_use_again">
+                        <span class="checkbox-label">Je ferais de nouveau appel à vos services</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Bouton de soumission -->
+            <div class="submit-section">
+                <button type="submit" class="submit-btn" id="submit-btn">
+                    <i class="fas fa-paper-plane"></i>
+                    Envoyer mon évaluation
+                </button>
+                <p style="margin-top: 1rem; color: #666; font-size: 0.9rem;">
+                    Merci de prendre le temps d'évaluer notre service
+                </p>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+// Descriptions des évaluations
+const ratingDescriptions = {
+    overall_satisfaction: [
+        "Très insatisfait",
+        "Insatisfait", 
+        "Neutre",
+        "Satisfait",
+        "Très satisfait"
+    ],
+    quality_work: [
+        "Travail de mauvaise qualité",
+        "Qualité insuffisante",
+        "Qualité correcte",
+        "Bonne qualité",
+        "Excellente qualité"
+    ],
+    technician_professionalism: [
+        "Pas professionnel",
+        "Peu professionnel",
+        "Professionnel",
+        "Très professionnel",
+        "Exemplaire"
+    ],
+    response_time_satisfaction: [
+        "Beaucoup trop lent",
+        "Trop lent",
+        "Acceptable",
+        "Rapide",
+        "Très rapide"
+    ],
+    communication_quality: [
+        "Très mauvaise",
+        "Mauvaise",
+        "Correcte",
+        "Bonne",
+        "Excellente"
+    ]
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Gérer les évaluations par étoiles
+    document.querySelectorAll('.star-rating').forEach(ratingGroup => {
+        const stars = ratingGroup.querySelectorAll('.star');
+        const ratingName = ratingGroup.dataset.rating;
+        const hiddenInput = document.querySelector(`input[name="${ratingName}"]`);
+        const descriptionDiv = document.querySelector(`[data-for="${ratingName}"]`);
+        
+        stars.forEach((star, index) => {
+            star.addEventListener('click', function() {
+                const value = parseInt(this.dataset.value);
+                
+                // Mettre à jour l'affichage des étoiles
+                stars.forEach((s, i) => {
+                    if (i < value) {
+                        s.classList.add('active');
+                    } else {
+                        s.classList.remove('active');
+                    }
+                });
+                
+                // Mettre à jour la valeur cachée
+                hiddenInput.value = value;
+                
+                // Afficher la description
+                if (ratingDescriptions[ratingName]) {
+                    descriptionDiv.textContent = ratingDescriptions[ratingName][value - 1];
+                }
+                
+                validateForm();
+            });
+            
+            // Effet de survol
+            star.addEventListener('mouseenter', function() {
+                const value = parseInt(this.dataset.value);
+                stars.forEach((s, i) => {
+                    if (i < value) {
+                        s.style.color = '#ffc107';
+                    } else {
+                        s.style.color = '#ddd';
+                    }
+                });
+            });
+        });
+        
+        // Restaurer l'état au survol de sortie
+        ratingGroup.addEventListener('mouseleave', function() {
+            const currentValue = hiddenInput.value;
+            stars.forEach((s, i) => {
+                if (i < currentValue) {
+                    s.style.color = '#ffc107';
+                } else {
+                    s.style.color = '#ddd';
+                }
+            });
+        });
+    });
+    
+    // Gérer le score NPS
+    document.querySelectorAll('.nps-number').forEach(number => {
+        number.addEventListener('click', function() {
+            // Désélectionner tous
+            document.querySelectorAll('.nps-number').forEach(n => {
+                n.classList.remove('selected');
+            });
+            
+            // Sélectionner celui-ci
+            this.classList.add('selected');
+            
+            // Mettre à jour la valeur cachée
+            document.querySelector('input[name="nps_score"]').value = this.dataset.value;
+            
+            validateForm();
+        });
+    });
+    
+    // Validation du formulaire
+    document.getElementById('feedback-form').addEventListener('submit', function(e) {
+        if (!validateForm()) {
+            e.preventDefault();
+            alert('Veuillez compléter toutes les évaluations obligatoires (étoiles et score de recommandation).');
+            return false;
+        }
+        
+        // Désactiver le bouton pour éviter les doublons
+        const submitBtn = document.getElementById('submit-btn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Envoi en cours...';
+    });
+});
+
+function validateForm() {
+    const requiredRatings = [
+        'overall_satisfaction', 
+        'quality_work', 
+        'technician_professionalism',
+        'response_time_satisfaction', 
+        'communication_quality',
+        'nps_score'
+    ];
+    
+    let isValid = true;
+    
+    requiredRatings.forEach(rating => {
+        const input = document.querySelector(`input[name="${rating}"]`);
+        if (!input.value) {
+            isValid = false;
+        }
+    });
+    
+    const submitBtn = document.getElementById('submit-btn');
+    if (isValid) {
+        submitBtn.style.opacity = '1';
+        submitBtn.style.cursor = 'pointer';
+    } else {
+        submitBtn.style.opacity = '0.6';
+        submitBtn.style.cursor = 'not-allowed';
+    }
+    
+    return isValid;
+}
+
+// Validation initiale
+validateForm();
+</script>
+{% endblock %}

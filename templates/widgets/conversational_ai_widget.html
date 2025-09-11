@@ -1,0 +1,669 @@
+<!-- Widget IA Conversationnelle - Sprint 7.2 -->
+<div class="col-lg-6 col-md-8 mb-4" data-widget="conversational-ai">
+    <div class="card claymorphism-card h-100">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">
+                <i class="fas fa-robot text-info me-2"></i>
+                Assistant IA ChronoTech
+            </h6>
+            <div class="ai-status">
+                <span class="badge bg-success" id="aiStatus">
+                    <i class="fas fa-circle me-1"></i>
+                    En ligne
+                </span>
+            </div>
+        </div>
+        
+        <div class="card-body d-flex flex-column" style="height: 400px;">
+            <!-- Zone de conversation -->
+            <div class="conversation-area flex-grow-1 mb-3" id="conversationArea">
+                <!-- Message d'accueil -->
+                <div class="message ai-message">
+                    <div class="message-avatar">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="message-content">
+                        <div class="message-text">
+                            Bonjour ! Je suis votre assistant IA ChronoTech. Posez-moi des questions sur :
+                            <ul class="mt-2 mb-0">
+                                <li>Disponibilité des techniciens</li>
+                                <li>Charge de travail</li>
+                                <li>Tâches urgentes</li>
+                                <li>Performances et statistiques</li>
+                            </ul>
+                        </div>
+                        <div class="message-time">
+                            <small class="text-muted">${new Date().toLocaleTimeString()}</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Suggestions rapides -->
+            <div class="quick-suggestions mb-3" id="quickSuggestions">
+                <div class="suggestion-buttons">
+                    <button class="btn btn-sm btn-outline-primary suggestion-btn" 
+                            onclick="askQuestion('Quels techniciens sont disponibles aujourd\'hui ?')">
+                        👥 Techniciens disponibles
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary suggestion-btn" 
+                            onclick="askQuestion('Y a-t-il des tâches urgentes ?')">
+                        🚨 Tâches urgentes
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary suggestion-btn" 
+                            onclick="askQuestion('Performance de l\'équipe cette semaine')">
+                        📊 Performances équipe
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Zone de saisie -->
+            <div class="input-area">
+                <div class="input-group">
+                    <input type="text" 
+                           class="form-control" 
+                           id="aiQuestionInput" 
+                           placeholder="Posez votre question..."
+                           onkeypress="handleKeyPress(event)">
+                    <button class="btn btn-primary" 
+                            type="button" 
+                            id="sendButton"
+                            onclick="sendQuestion()">
+                        <i class="fas fa-paper-plane" id="sendIcon"></i>
+                    </button>
+                </div>
+                
+                <!-- Indicateur de frappe -->
+                <div class="typing-indicator" id="typingIndicator" style="display: none;">
+                    <div class="typing-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                    <small class="text-muted ms-2">L'IA réfléchit...</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card-footer">
+            <div class="row text-center">
+                <div class="col-4">
+                    <small class="text-muted">Questions</small>
+                    <div class="fw-bold" id="questionCount">0</div>
+                </div>
+                <div class="col-4">
+                    <small class="text-muted">Temps moy.</small>
+                    <div class="fw-bold text-success" id="avgResponseTime">0ms</div>
+                </div>
+                <div class="col-4">
+                    <small class="text-muted">Satisfaction</small>
+                    <div class="fw-bold text-warning" id="satisfactionRate">95%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.conversation-area {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 15px;
+    overflow-y: auto;
+    max-height: 280px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.message {
+    display: flex;
+    margin-bottom: 15px;
+    animation: fadeInUp 0.3s ease;
+}
+
+.message:last-child {
+    margin-bottom: 0;
+}
+
+.user-message {
+    justify-content: flex-end;
+}
+
+.user-message .message-content {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    margin-left: 20px;
+}
+
+.ai-message .message-content {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    margin-right: 20px;
+}
+
+.message-avatar {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+.ai-message .message-avatar {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
+.message-content {
+    max-width: 80%;
+    padding: 12px 16px;
+    border-radius: 18px;
+    word-wrap: break-word;
+}
+
+.message-text {
+    margin-bottom: 5px;
+}
+
+.message-time {
+    text-align: right;
+}
+
+.user-message .message-time {
+    text-align: left;
+}
+
+.quick-suggestions {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 10px;
+}
+
+.suggestion-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.suggestion-btn {
+    font-size: 0.8rem;
+    padding: 4px 8px;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+}
+
+.suggestion-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.typing-indicator {
+    display: flex;
+    align-items: center;
+    margin-top: 8px;
+    padding: 5px 0;
+}
+
+.typing-dots {
+    display: flex;
+    gap: 4px;
+}
+
+.typing-dots span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--bs-primary);
+    animation: typing 1.4s infinite;
+}
+
+.typing-dots span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-dots span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typing {
+    0%, 60%, 100% {
+        transform: translateY(0);
+        opacity: 0.5;
+    }
+    30% {
+        transform: translateY(-10px);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.ai-status .badge {
+    animation: pulse-badge 2s infinite;
+}
+
+@keyframes pulse-badge {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.input-group {
+    border-radius: 25px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.input-group .form-control {
+    border: none;
+    padding: 12px 20px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    color: inherit;
+}
+
+.input-group .form-control:focus {
+    box-shadow: none;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.input-group .btn {
+    border: none;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.response-chart {
+    margin-top: 10px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.data-table {
+    font-size: 0.875rem;
+    margin-top: 10px;
+}
+
+.data-table td, .data-table th {
+    padding: 6px 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+</style>
+
+<script>
+// Variables globales pour l'IA conversationnelle
+let conversationHistory = [];
+let questionCount = 0;
+let responseTimes = [];
+let isProcessing = false;
+
+// Initialisation du widget IA
+function initConversationalAI() {
+    // Charger l'historique récent si disponible
+    loadRecentHistory();
+    
+    // Focus sur le champ de saisie
+    document.getElementById('aiQuestionInput').focus();
+}
+
+// Envoi d'une question
+async function sendQuestion() {
+    const input = document.getElementById('aiQuestionInput');
+    const question = input.value.trim();
+    
+    if (!question || isProcessing) return;
+    
+    // Nettoyer le champ de saisie
+    input.value = '';
+    
+    // Afficher la question de l'utilisateur
+    addUserMessage(question);
+    
+    // Démarrer l'indicateur de traitement
+    showTypingIndicator();
+    isProcessing = true;
+    updateSendButton(true);
+    
+    const startTime = Date.now();
+    
+    try {
+        // Appel à l'API IA
+        const response = await fetch('/api/v1/ai/conversation', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify({
+                question: question,
+                context: getConversationContext()
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Erreur de communication avec l\'IA');
+        }
+        
+        const aiResponse = await response.json();
+        
+        // Calculer le temps de réponse
+        const responseTime = Date.now() - startTime;
+        responseTimes.push(responseTime);
+        
+        // Afficher la réponse de l'IA
+        addAIMessage(aiResponse);
+        
+        // Mettre à jour les statistiques
+        questionCount++;
+        updateStats();
+        
+        // Mettre à jour les suggestions
+        updateSuggestions(aiResponse.suggestions || []);
+        
+    } catch (error) {
+        console.error('❌ Erreur IA conversationnelle:', error);
+        addAIMessage({
+            response: {
+                text: "Désolé, une erreur s'est produite. Veuillez réessayer.",
+                data: null,
+                charts: []
+            }
+        });
+    } finally {
+        hideTypingIndicator();
+        isProcessing = false;
+        updateSendButton(false);
+        
+        // Refocuser sur le champ de saisie
+        input.focus();
+    }
+}
+
+// Gestion de la touche Entrée
+function handleKeyPress(event) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        sendQuestion();
+    }
+}
+
+// Question prédéfinie
+function askQuestion(question) {
+    document.getElementById('aiQuestionInput').value = question;
+    sendQuestion();
+}
+
+// Ajout d'un message utilisateur
+function addUserMessage(text) {
+    const conversationArea = document.getElementById('conversationArea');
+    const messageHtml = `
+        <div class="message user-message">
+            <div class="message-content">
+                <div class="message-text">${escapeHtml(text)}</div>
+                <div class="message-time">
+                    <small class="text-muted">${new Date().toLocaleTimeString()}</small>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    conversationArea.insertAdjacentHTML('beforeend', messageHtml);
+    conversationArea.scrollTop = conversationArea.scrollHeight;
+}
+
+// Ajout d'un message IA
+function addAIMessage(apiResponse) {
+    const conversationArea = document.getElementById('conversationArea');
+    const response = apiResponse.response || apiResponse;
+    
+    let messageContent = `
+        <div class="message ai-message">
+            <div class="message-avatar">
+                <i class="fas fa-robot"></i>
+            </div>
+            <div class="message-content">
+                <div class="message-text">${formatAIResponse(response.text)}</div>
+    `;
+    
+    // Ajouter les graphiques si disponibles
+    if (response.charts && response.charts.length > 0) {
+        response.charts.forEach((chart, index) => {
+            messageContent += `
+                <div class="response-chart">
+                    <strong>${chart.title}</strong>
+                    <canvas id="aiChart_${Date.now()}_${index}" width="300" height="150"></canvas>
+                </div>
+            `;
+        });
+    }
+    
+    // Ajouter les données tabulaires si disponibles
+    if (response.data && typeof response.data === 'object' && response.data.technicians) {
+        messageContent += generateDataTable(response.data.technicians);
+    }
+    
+    messageContent += `
+                <div class="message-time">
+                    <small class="text-muted">
+                        ${new Date().toLocaleTimeString()}
+                        ${response.processing_time ? ` • ${response.processing_time}ms` : ''}
+                    </small>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    conversationArea.insertAdjacentHTML('beforeend', messageContent);
+    
+    // Dessiner les graphiques
+    if (response.charts && response.charts.length > 0) {
+        response.charts.forEach((chart, index) => {
+            setTimeout(() => {
+                drawChart(`aiChart_${Date.now()}_${index}`, chart);
+            }, 100);
+        });
+    }
+    
+    conversationArea.scrollTop = conversationArea.scrollLength;
+}
+
+// Formatage du texte de réponse IA
+function formatAIResponse(text) {
+    if (!text) return '';
+    
+    return text
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')  // Gras
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')              // Italique
+        .replace(/\n/g, '<br>')                            // Retours à la ligne
+        .replace(/• /g, '• ')                              // Puces
+        .replace(/✅/g, '<span class="text-success">✅</span>')
+        .replace(/❌/g, '<span class="text-danger">❌</span>')
+        .replace(/⚠️/g, '<span class="text-warning">⚠️</span>')
+        .replace(/🚨/g, '<span class="text-danger">🚨</span>');
+}
+
+// Génération d'un tableau de données
+function generateDataTable(data) {
+    if (!Array.isArray(data) || data.length === 0) return '';
+    
+    const headers = Object.keys(data[0]);
+    let tableHtml = `
+        <div class="data-table mt-2">
+            <table class="table table-sm table-dark">
+                <thead>
+                    <tr>
+                        ${headers.map(h => `<th>${h}</th>`).join('')}
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    data.slice(0, 5).forEach(row => {  // Limiter à 5 lignes
+        tableHtml += `
+            <tr>
+                ${headers.map(h => `<td>${row[h] || ''}</td>`).join('')}
+            </tr>
+        `;
+    });
+    
+    tableHtml += `
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    return tableHtml;
+}
+
+// Dessin d'un graphique
+function drawChart(canvasId, chartData) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    
+    // Graphique simple (doughnut)
+    if (chartData.type === 'doughnut') {
+        drawDoughnutChart(ctx, chartData.data, canvas.width, canvas.height);
+    }
+}
+
+// Graphique en doughnut simple
+function drawDoughnutChart(ctx, data, width, height) {
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const radius = Math.min(width, height) / 3;
+    
+    const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
+    const colors = data.datasets[0].backgroundColor || ['#28a745', '#ffc107', '#fd7e14', '#dc3545'];
+    
+    let currentAngle = -Math.PI / 2;
+    
+    data.datasets[0].data.forEach((value, index) => {
+        const sliceAngle = (value / total) * 2 * Math.PI;
+        
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle);
+        ctx.arc(centerX, centerY, radius * 0.6, currentAngle + sliceAngle, currentAngle, true);
+        ctx.fillStyle = colors[index % colors.length];
+        ctx.fill();
+        
+        currentAngle += sliceAngle;
+    });
+    
+    // Légende
+    data.labels.forEach((label, index) => {
+        const y = 10 + index * 15;
+        ctx.fillStyle = colors[index % colors.length];
+        ctx.fillRect(10, y, 10, 10);
+        ctx.fillStyle = '#fff';
+        ctx.font = '12px Arial';
+        ctx.fillText(`${label}: ${data.datasets[0].data[index]}`, 25, y + 8);
+    });
+}
+
+// Indicateur de traitement
+function showTypingIndicator() {
+    document.getElementById('typingIndicator').style.display = 'flex';
+}
+
+function hideTypingIndicator() {
+    document.getElementById('typingIndicator').style.display = 'none';
+}
+
+// Mise à jour du bouton d'envoi
+function updateSendButton(processing) {
+    const sendButton = document.getElementById('sendButton');
+    const sendIcon = document.getElementById('sendIcon');
+    
+    if (processing) {
+        sendIcon.className = 'fas fa-spinner fa-spin';
+        sendButton.disabled = true;
+    } else {
+        sendIcon.className = 'fas fa-paper-plane';
+        sendButton.disabled = false;
+    }
+}
+
+// Mise à jour des suggestions
+function updateSuggestions(suggestions) {
+    if (!suggestions || suggestions.length === 0) return;
+    
+    const suggestionsContainer = document.querySelector('.suggestion-buttons');
+    suggestionsContainer.innerHTML = '';
+    
+    suggestions.slice(0, 3).forEach(suggestion => {
+        const button = document.createElement('button');
+        button.className = 'btn btn-sm btn-outline-primary suggestion-btn';
+        button.textContent = suggestion;
+        button.onclick = () => askQuestion(suggestion);
+        suggestionsContainer.appendChild(button);
+    });
+}
+
+// Contexte de conversation
+function getConversationContext() {
+    return {
+        history: conversationHistory.slice(-5),  // 5 derniers échanges
+        user_role: 'supervisor',  // À adapter selon l'utilisateur connecté
+        timestamp: new Date().toISOString()
+    };
+}
+
+// Mise à jour des statistiques
+function updateStats() {
+    document.getElementById('questionCount').textContent = questionCount;
+    
+    if (responseTimes.length > 0) {
+        const avgTime = Math.round(responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length);
+        document.getElementById('avgResponseTime').textContent = avgTime + 'ms';
+    }
+}
+
+// Chargement de l'historique récent
+async function loadRecentHistory() {
+    try {
+        const response = await fetch('/api/v1/ai/conversation/history?limit=5');
+        if (response.ok) {
+            const history = await response.json();
+            conversationHistory = history;
+            
+            // Afficher les derniers échanges
+            history.forEach(exchange => {
+                if (exchange.question) {
+                    addUserMessage(exchange.question);
+                }
+                if (exchange.response) {
+                    addAIMessage(JSON.parse(exchange.response));
+                }
+            });
+        }
+    } catch (error) {
+        console.warn('⚠️ Impossible de charger l\'historique IA:', error);
+    }
+}
+
+// Utilitaires
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Initialisation au chargement
+document.addEventListener('DOMContentLoaded', function() {
+    initConversationalAI();
+});
+</script>

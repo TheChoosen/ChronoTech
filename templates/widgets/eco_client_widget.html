@@ -1,0 +1,870 @@
+<!-- Sprint 7.5 - Widget Éco-Dashboard & Feedback Client -->
+<div class="widget" id="eco-client-widget" data-widget="eco-client">
+    <div class="widget-header">
+        <div class="widget-title">
+            <i class="fas fa-leaf text-green-500"></i>
+            <span>Éco-Dashboard & Feedback</span>
+        </div>
+        <div class="widget-actions">
+            <div class="realtime-indicator">
+                <span class="indicator-dot" id="realtime-dot"></span>
+                <span class="indicator-text">Temps réel</span>
+            </div>
+            <button class="widget-btn" onclick="refreshEcoData()">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+            <button class="widget-btn" onclick="openEcoPanel()">
+                <i class="fas fa-expand"></i>
+            </button>
+        </div>
+    </div>
+    
+    <div class="widget-content">
+        <!-- Feedback Client Temps Réel -->
+        <div class="feedback-section">
+            <h4 class="section-title">
+                <i class="fas fa-comments text-blue-500"></i>
+                Feedback Client (<10s)
+            </h4>
+            
+            <div class="feedback-stats">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-clock text-orange-500"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="avg-response-time">--</div>
+                        <div class="stat-label">Temps Moyen (s)</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-smile text-green-500"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="satisfaction-rate">--%</div>
+                        <div class="stat-label">Satisfaction</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-tachometer-alt text-blue-500"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="fast-response-rate">--%</div>
+                        <div class="stat-label">Réponses <10s</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Feedback récent -->
+            <div class="recent-feedback">
+                <h5>Derniers Retours</h5>
+                <div id="recent-feedback-list" class="feedback-list">
+                    <div class="feedback-loading">
+                        <i class="fas fa-spinner fa-spin"></i> Chargement...
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Feedback critique -->
+            <div class="critical-feedback" id="critical-feedback-section" style="display: none;">
+                <h5 class="critical-title">
+                    <i class="fas fa-exclamation-triangle text-red-500"></i>
+                    Retours Critiques
+                </h5>
+                <div id="critical-feedback-list" class="feedback-list critical"></div>
+            </div>
+        </div>
+        
+        <!-- Éco-Dashboard Central -->
+        <div class="eco-dashboard-section">
+            <h4 class="section-title">
+                <i class="fas fa-globe text-green-500"></i>
+                Dashboard Écologique
+            </h4>
+            
+            <!-- Métriques éco globales -->
+            <div class="eco-metrics-grid">
+                <div class="eco-metric-card carbon">
+                    <div class="metric-header">
+                        <i class="fas fa-cloud text-gray-600"></i>
+                        <span>Empreinte Carbone</span>
+                    </div>
+                    <div class="metric-value" id="total-co2">-- kg</div>
+                    <div class="metric-trend">
+                        <span id="co2-trend" class="trend-indicator">--</span>
+                        <span class="trend-target">Objectif: -15%</span>
+                    </div>
+                </div>
+                
+                <div class="eco-metric-card efficiency">
+                    <div class="metric-header">
+                        <i class="fas fa-route text-blue-600"></i>
+                        <span>Efficacité Routes</span>
+                    </div>
+                    <div class="metric-value" id="route-efficiency">--%</div>
+                    <div class="metric-detail">
+                        <span id="avg-distance">-- km/intervention</span>
+                    </div>
+                </div>
+                
+                <div class="eco-metric-card optimization">
+                    <div class="metric-header">
+                        <i class="fas fa-leaf text-green-600"></i>
+                        <span>Interventions Éco</span>
+                    </div>
+                    <div class="metric-value" id="eco-optimized-rate">--%</div>
+                    <div class="metric-detail">
+                        <span id="total-interventions">-- interventions</span>
+                    </div>
+                </div>
+                
+                <div class="eco-metric-card savings">
+                    <div class="metric-header">
+                        <i class="fas fa-euro-sign text-green-600"></i>
+                        <span>Économies</span>
+                    </div>
+                    <div class="metric-value" id="fuel-savings">-- €</div>
+                    <div class="metric-detail">
+                        <span id="fuel-liters">-- L économisés</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Badges Green Performers -->
+            <div class="green-badges-section">
+                <h5>Badges "Green Performer"</h5>
+                <div id="green-performers-list" class="performers-list">
+                    <div class="performers-loading">
+                        <i class="fas fa-spinner fa-spin"></i> Chargement...
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tendances durabilité -->
+            <div class="sustainability-trends">
+                <h5>Tendances Durabilité</h5>
+                <div class="trends-grid">
+                    <div class="trend-item">
+                        <span class="trend-label">Amélioration mensuelle:</span>
+                        <span class="trend-value" id="monthly-improvement">--%</span>
+                    </div>
+                    <div class="trend-item">
+                        <span class="trend-label">Bonnes pratiques:</span>
+                        <span class="trend-value" id="best-practice-adoption">--%</span>
+                    </div>
+                    <div class="trend-item">
+                        <span class="trend-label">Sensibilisation client:</span>
+                        <span class="trend-value" id="client-eco-awareness">--%</span>
+                    </div>
+                    <div class="trend-item">
+                        <span class="trend-label">Optimisation ressources:</span>
+                        <span class="trend-value" id="resource-optimization">--%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Actions rapides -->
+        <div class="eco-actions">
+            <button class="eco-action-btn" onclick="generateEcoReport()">
+                <i class="fas fa-chart-pie"></i>
+                Rapport Éco
+            </button>
+            <button class="eco-action-btn" onclick="optimizeRoutes()">
+                <i class="fas fa-route"></i>
+                Optimiser Routes
+            </button>
+            <button class="eco-action-btn" onclick="viewBadges()">
+                <i class="fas fa-medal"></i>
+                Voir Badges
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+.realtime-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-right: 8px;
+}
+
+.indicator-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+    animation: pulse 2s infinite;
+}
+
+.indicator-text {
+    font-size: 10px;
+    color: #6b7280;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.feedback-section, .eco-dashboard-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.feedback-section {
+    border-left: 4px solid #3b82f6;
+}
+
+.eco-dashboard-section {
+    border-left: 4px solid #10b981;
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.feedback-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.stat-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+}
+
+.stat-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 16px;
+    background: #f3f4f6;
+}
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-value {
+    font-size: 16px;
+    font-weight: bold;
+    color: #374151;
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 10px;
+    color: #6b7280;
+    margin-top: 2px;
+}
+
+.recent-feedback h5, .critical-feedback h5, .green-badges-section h5, .sustainability-trends h5 {
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 8px;
+}
+
+.critical-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.feedback-list {
+    max-height: 120px;
+    overflow-y: auto;
+}
+
+.feedback-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    margin-bottom: 4px;
+    background: white;
+    border-radius: 4px;
+    font-size: 11px;
+    border-left: 3px solid #e5e7eb;
+}
+
+.feedback-item.positive { border-left-color: #10b981; }
+.feedback-item.neutral { border-left-color: #f59e0b; }
+.feedback-item.negative { border-left-color: #ef4444; }
+
+.feedback-info {
+    flex: 1;
+}
+
+.feedback-customer {
+    font-weight: 600;
+    color: #374151;
+}
+
+.feedback-details {
+    color: #6b7280;
+    margin-top: 2px;
+}
+
+.feedback-rating {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.rating-stars {
+    color: #fbbf24;
+}
+
+.response-time {
+    font-size: 10px;
+    color: #6b7280;
+}
+
+.response-time.fast { color: #10b981; }
+.response-time.slow { color: #ef4444; }
+
+.feedback-loading, .performers-loading {
+    text-align: center;
+    padding: 20px;
+    color: #6b7280;
+}
+
+.eco-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.eco-metric-card {
+    padding: 12px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+
+.eco-metric-card.carbon { border-left: 4px solid #6b7280; }
+.eco-metric-card.efficiency { border-left: 4px solid #3b82f6; }
+.eco-metric-card.optimization { border-left: 4px solid #10b981; }
+.eco-metric-card.savings { border-left: 4px solid #059669; }
+
+.metric-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    font-size: 11px;
+    font-weight: 500;
+    color: #6b7280;
+}
+
+.metric-value {
+    font-size: 18px;
+    font-weight: bold;
+    color: #374151;
+    margin-bottom: 4px;
+}
+
+.metric-trend {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 10px;
+}
+
+.trend-indicator.decreasing {
+    color: #10b981;
+}
+
+.trend-indicator.increasing {
+    color: #ef4444;
+}
+
+.trend-indicator.stable {
+    color: #f59e0b;
+}
+
+.trend-target {
+    color: #6b7280;
+}
+
+.metric-detail {
+    font-size: 10px;
+    color: #6b7280;
+}
+
+.performers-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.performer-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 16px;
+    font-size: 11px;
+    font-weight: 500;
+    color: white;
+}
+
+.badge-icon {
+    font-size: 14px;
+}
+
+.performer-name {
+    font-weight: 600;
+}
+
+.performer-score {
+    opacity: 0.9;
+}
+
+.trends-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.trend-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 8px;
+    background: white;
+    border-radius: 4px;
+    font-size: 11px;
+}
+
+.trend-label {
+    color: #6b7280;
+}
+
+.trend-value {
+    font-weight: 600;
+    color: #10b981;
+}
+
+.eco-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    padding-top: 15px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.eco-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: #10b981;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.eco-action-btn:hover {
+    background: #059669;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .feedback-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .eco-metrics-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .trends-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .eco-actions {
+        flex-wrap: wrap;
+    }
+}
+</style>
+
+<script>
+// Variables globales
+let feedbackData = null;
+let ecoData = null;
+let realtimeInterval = null;
+
+// Initialisation du widget
+document.addEventListener('DOMContentLoaded', function() {
+    loadFeedbackData();
+    loadEcoData();
+    startRealtimeUpdates();
+});
+
+function startRealtimeUpdates() {
+    // Mise à jour toutes les 30 secondes pour le temps réel
+    realtimeInterval = setInterval(() => {
+        loadFeedbackData();
+        updateRealtimeIndicator();
+    }, 30000);
+}
+
+function updateRealtimeIndicator() {
+    const dot = document.getElementById('realtime-dot');
+    dot.style.animation = 'none';
+    setTimeout(() => {
+        dot.style.animation = 'pulse 2s infinite';
+    }, 100);
+}
+
+function loadFeedbackData() {
+    fetch('/api/eco-client/feedback/realtime')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                feedbackData = data.feedback_data;
+                displayFeedbackData(feedbackData);
+            } else {
+                console.error('Erreur feedback:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur chargement feedback:', error);
+            showFeedbackError();
+        });
+}
+
+function loadEcoData() {
+    fetch('/api/eco-client/dashboard')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                ecoData = data.eco_data;
+                displayEcoData(ecoData);
+            } else {
+                console.error('Erreur eco-data:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur chargement eco-data:', error);
+            showEcoError();
+        });
+}
+
+function displayFeedbackData(data) {
+    const stats = data.statistics;
+    
+    // Statistiques feedback
+    document.getElementById('avg-response-time').textContent = stats.avg_response_time + 's';
+    document.getElementById('satisfaction-rate').textContent = stats.positive_rate + '%';
+    document.getElementById('fast-response-rate').textContent = stats.fast_response_rate + '%';
+    
+    // Feedback récent
+    const recentList = document.getElementById('recent-feedback-list');
+    recentList.innerHTML = '';
+    
+    if (data.recent_feedback.length === 0) {
+        recentList.innerHTML = '<div style="text-align: center; color: #6b7280; padding: 15px;">Aucun retour récent</div>';
+    } else {
+        data.recent_feedback.slice(0, 5).forEach(feedback => {
+            const item = createFeedbackItem(feedback);
+            recentList.appendChild(item);
+        });
+    }
+    
+    // Feedback critique
+    const criticalSection = document.getElementById('critical-feedback-section');
+    const criticalList = document.getElementById('critical-feedback-list');
+    
+    if (data.critical_feedback.length > 0) {
+        criticalSection.style.display = 'block';
+        criticalList.innerHTML = '';
+        
+        data.critical_feedback.forEach(feedback => {
+            const item = createFeedbackItem(feedback, true);
+            criticalList.appendChild(item);
+        });
+    } else {
+        criticalSection.style.display = 'none';
+    }
+}
+
+function createFeedbackItem(feedback, isCritical = false) {
+    const item = document.createElement('div');
+    const satisfactionClass = feedback.overall_satisfaction >= 4 ? 'positive' : 
+                             feedback.overall_satisfaction >= 3 ? 'neutral' : 'negative';
+    
+    item.className = `feedback-item ${satisfactionClass}`;
+    
+    const stars = '★'.repeat(feedback.overall_satisfaction) + '☆'.repeat(5 - feedback.overall_satisfaction);
+    const responseTime = feedback.response_time_seconds || 0;
+    const timeClass = responseTime <= 10 ? 'fast' : 'slow';
+    
+    item.innerHTML = `
+        <div class="feedback-info">
+            <div class="feedback-customer">${feedback.customer_name || 'Client'}</div>
+            <div class="feedback-details">
+                ${feedback.work_order_title} - ${feedback.technician_name}
+                ${feedback.comments ? '<br><em>' + feedback.comments.substring(0, 50) + (feedback.comments.length > 50 ? '...' : '') + '</em>' : ''}
+            </div>
+        </div>
+        <div class="feedback-rating">
+            <div class="rating-stars">${stars}</div>
+            <div class="response-time ${timeClass}">${responseTime.toFixed(1)}s</div>
+        </div>
+    `;
+    
+    return item;
+}
+
+function displayEcoData(data) {
+    const globalMetrics = data.global_eco_metrics;
+    const carbonFootprint = data.carbon_footprint;
+    const resourceEfficiency = data.resource_efficiency;
+    const greenPerformance = data.green_performance;
+    const sustainabilityTrends = data.sustainability_trends;
+    
+    // Métriques éco globales
+    document.getElementById('total-co2').textContent = carbonFootprint.total_co2_kg + ' kg';
+    document.getElementById('co2-trend').textContent = getTrendIcon(carbonFootprint.co2_trend);
+    document.getElementById('co2-trend').className = `trend-indicator ${carbonFootprint.co2_trend}`;
+    
+    document.getElementById('route-efficiency').textContent = resourceEfficiency.gps_optimization_score + '%';
+    document.getElementById('avg-distance').textContent = globalMetrics.avg_distance_per_intervention + ' km/intervention';
+    
+    document.getElementById('eco-optimized-rate').textContent = globalMetrics.eco_optimized_percentage + '%';
+    document.getElementById('total-interventions').textContent = globalMetrics.total_interventions + ' interventions';
+    
+    document.getElementById('fuel-savings').textContent = resourceEfficiency.fuel_savings_estimate.cost_savings_euros + ' €';
+    document.getElementById('fuel-liters').textContent = resourceEfficiency.fuel_savings_estimate.monthly_savings_liters + ' L économisés';
+    
+    // Green performers
+    displayGreenPerformers(greenPerformance.top_performers);
+    
+    // Tendances durabilité
+    document.getElementById('monthly-improvement').textContent = sustainabilityTrends.monthly_improvement + '%';
+    document.getElementById('best-practice-adoption').textContent = sustainabilityTrends.best_practice_adoption + '%';
+    document.getElementById('client-eco-awareness').textContent = sustainabilityTrends.client_eco_awareness + '%';
+    document.getElementById('resource-optimization').textContent = sustainabilityTrends.resource_optimization + '%';
+}
+
+function displayGreenPerformers(performers) {
+    const performersList = document.getElementById('green-performers-list');
+    performersList.innerHTML = '';
+    
+    if (performers.length === 0) {
+        performersList.innerHTML = '<div style="text-align: center; color: #6b7280; padding: 15px;">Aucun badge attribué</div>';
+        return;
+    }
+    
+    performers.slice(0, 6).forEach(performer => {
+        const badge = document.createElement('div');
+        badge.className = 'performer-badge';
+        badge.style.backgroundColor = performer.badge.color;
+        
+        badge.innerHTML = `
+            <span class="badge-icon">${performer.badge.icon}</span>
+            <span class="performer-name">${performer.technician_name}</span>
+            <span class="performer-score">(${performer.eco_score})</span>
+        `;
+        
+        performersList.appendChild(badge);
+    });
+}
+
+function getTrendIcon(trend) {
+    const icons = {
+        'decreasing': '↓ Baisse',
+        'increasing': '↑ Hausse',
+        'stable': '→ Stable'
+    };
+    return icons[trend] || '→ Stable';
+}
+
+function refreshEcoData() {
+    loadFeedbackData();
+    loadEcoData();
+    updateRealtimeIndicator();
+}
+
+function openEcoPanel() {
+    // Ouvrir le panel éco en plein écran
+    alert('Panel éco-dashboard plein écran en développement');
+}
+
+function generateEcoReport() {
+    if (!ecoData) {
+        alert('Aucune donnée écologique disponible');
+        return;
+    }
+    
+    // Générer un rapport écologique
+    fetch('/api/eco-client/generate-report', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            include_carbon_footprint: true,
+            include_green_performers: true,
+            include_trends: true
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert('Rapport écologique généré avec succès !');
+            // Télécharger ou afficher le rapport
+        } else {
+            alert('Erreur lors de la génération: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Erreur génération rapport:', error);
+        alert('Erreur lors de la génération du rapport');
+    });
+}
+
+function optimizeRoutes() {
+    if (confirm('Lancer l\'optimisation écologique des routes ?')) {
+        fetch('/api/eco-client/optimize-routes', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert(`Optimisation terminée ! ${data.routes_optimized} routes optimisées.`);
+                loadEcoData(); // Recharger les données
+            } else {
+                alert('Erreur lors de l\'optimisation: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur optimisation routes:', error);
+            alert('Erreur lors de l\'optimisation');
+        });
+    }
+}
+
+function viewBadges() {
+    if (!ecoData || !ecoData.green_performance.top_performers.length) {
+        alert('Aucun badge Green Performer disponible');
+        return;
+    }
+    
+    // Afficher la modal des badges
+    const modal = createBadgesModal(ecoData.green_performance.top_performers);
+    document.body.appendChild(modal);
+}
+
+function createBadgesModal(performers) {
+    const modal = document.createElement('div');
+    modal.className = 'badges-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    `;
+    
+    const content = document.createElement('div');
+    content.style.cssText = `
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 80%;
+        overflow-y: auto;
+    `;
+    
+    content.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3 style="margin: 0; color: #374151;">🏆 Badges Green Performer</h3>
+            <button onclick="this.closest('.badges-modal').remove()" style="background: none; border: none; font-size: 20px; cursor: pointer;">×</button>
+        </div>
+        <div style="display: grid; gap: 10px;">
+            ${performers.map(p => `
+                <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: #f9fafb; border-radius: 8px; border-left: 4px solid ${p.badge.color};">
+                    <span style="font-size: 24px;">${p.badge.icon}</span>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; color: #374151;">${p.technician_name}</div>
+                        <div style="font-size: 12px; color: #6b7280;">${p.badge.name} - Score: ${p.eco_score}</div>
+                        <div style="font-size: 11px; color: #6b7280;">${p.interventions} interventions • ${p.eco_optimized_rate}% éco-optimisées</div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+    
+    modal.appendChild(content);
+    
+    // Fermer en cliquant à l'extérieur
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+    
+    return modal;
+}
+
+function showFeedbackError() {
+    document.getElementById('recent-feedback-list').innerHTML = 
+        '<div style="text-align: center; color: #ef4444; padding: 15px;"><i class="fas fa-exclamation-triangle"></i> Erreur chargement feedback</div>';
+}
+
+function showEcoError() {
+    document.getElementById('green-performers-list').innerHTML = 
+        '<div style="text-align: center; color: #ef4444; padding: 15px;"><i class="fas fa-exclamation-triangle"></i> Erreur chargement données éco</div>';
+}
+
+// Nettoyage lors de la destruction du widget
+window.addEventListener('beforeunload', () => {
+    if (realtimeInterval) {
+        clearInterval(realtimeInterval);
+    }
+});
+</script>

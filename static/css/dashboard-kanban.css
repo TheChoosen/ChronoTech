@@ -1,0 +1,317 @@
+/* Dashboard Kanban Modals Styles */
+
+/* Support pour les colonnes à 5 éléments */
+.col-md-2-4 {
+    flex: 0 0 20%;
+    max-width: 20%;
+}
+
+/* Containers Kanban */
+.kanban-container {
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.kanban-column {
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.kanban-column:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.kanban-header {
+    border-radius: 8px 8px 0 0 !important;
+    position: relative;
+}
+
+.kanban-header h6 {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.kanban-body {
+    border-radius: 0 0 8px 8px;
+    overflow-y: auto;
+    max-height: 400px;
+    padding: 8px;
+}
+
+/* Cartes des techniciens */
+.technician-card {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.technician-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border-color: #007bff;
+}
+
+.technician-card.dragging {
+    opacity: 0.7;
+    transform: rotate(5deg);
+}
+
+.technician-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #007bff, #0056b3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.technician-info h6 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.technician-info small {
+    font-size: 0.75rem;
+}
+
+/* Cartes des bons de travail */
+.work-order-card {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    position: relative;
+}
+
+.work-order-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border-color: #007bff;
+}
+
+.work-order-card.dragging {
+    opacity: 0.7;
+    transform: rotate(3deg);
+}
+
+/* Badges de priorité */
+.priority-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+}
+
+.priority-low { background-color: #28a745; }
+.priority-normal { background-color: #17a2b8; }
+.priority-high { background-color: #ffc107; color: #212529; }
+.priority-urgent { background-color: #dc3545; }
+
+/* Indicateurs de statut */
+.status-indicator {
+    width: 4px;
+    height: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+    border-radius: 8px 0 0 8px;
+}
+
+.status-pending { background-color: #6c757d; }
+.status-assigned { background-color: #17a2b8; }
+.status-in-progress { background-color: #ffc107; }
+.status-review { background-color: #007bff; }
+.status-completed { background-color: #28a745; }
+
+/* Statistiques */
+.stat-card {
+    padding: 8px;
+    border-radius: 6px;
+    background: rgba(0,0,0,0.02);
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    background: rgba(0,0,0,0.05);
+    transform: translateY(-1px);
+}
+
+/* Zones de drop */
+.kanban-body.drag-over {
+    background: linear-gradient(45deg, rgba(0,123,255,0.1), rgba(0,123,255,0.05));
+    border: 2px dashed #007bff;
+}
+
+.kanban-body.drag-active {
+    background: rgba(40,167,69,0.1);
+    border: 2px dashed #28a745;
+}
+
+/* Animations */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.card-enter {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Loading states */
+.loading-skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, transparent 37%, #f0f0f0 63%);
+    background-size: 400% 100%;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-loading {
+    0% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.loading-card {
+    height: 80px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+
+/* Responsive design */
+@media (max-width: 1200px) {
+    .col-md-2-4 {
+        flex: 0 0 33.333333%;
+        max-width: 33.333333%;
+    }
+}
+
+@media (max-width: 768px) {
+    .col-md-2-4 {
+        flex: 0 0 100%;
+        max-width: 100%;
+        margin-bottom: 20px;
+    }
+    
+    .kanban-container {
+        padding: 10px !important;
+    }
+    
+    .kanban-body {
+        max-height: 300px;
+    }
+}
+
+/* Détails des cartes */
+.card-details {
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
+.card-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+    line-height: 1.2;
+}
+
+.card-meta {
+    font-size: 0.7rem;
+    color: #6c757d;
+    margin-top: 6px;
+}
+
+.technician-badge {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 12px;
+    background: #e9ecef;
+    color: #495057;
+}
+
+/* Actions rapides sur les cartes */
+.card-actions {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    position: absolute;
+    top: 8px;
+    left: 8px;
+}
+
+.work-order-card:hover .card-actions,
+.technician-card:hover .card-actions {
+    opacity: 1;
+}
+
+.card-action-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: none;
+    font-size: 0.7rem;
+    margin-right: 4px;
+    transition: all 0.2s ease;
+}
+
+.card-action-btn:hover {
+    transform: scale(1.1);
+}
+
+/* Filtres actifs */
+.filter-active {
+    box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+}
+
+/* Messages d'état vide */
+.empty-state {
+    color: #6c757d;
+    font-style: italic;
+}
+
+.empty-state i {
+    opacity: 0.5;
+}
+
+/* Tooltips personnalisés */
+.custom-tooltip {
+    font-size: 0.75rem;
+    max-width: 200px;
+}
+
+/* Indicateurs de mise à jour */
+.update-indicator {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    width: 10px;
+    height: 10px;
+    background: #28a745;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.2); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
+}

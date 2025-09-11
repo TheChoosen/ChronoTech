@@ -1,3 +1,4 @@
+from core.database import get_db_connection
 """
 Modèles Sprint 2 - Work Orders Tasks et Interventions
 Extension des modèles existants selon le PRD Interventions & Bons de travail
@@ -11,10 +12,7 @@ from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
-def get_db_connection():
-    """Connexion à la base de données"""
-    return pymysql.connect(
-        host=os.getenv('MYSQL_HOST', 'localhost'),
+# Connexion centralisée importée de core.database,
         user=os.getenv('MYSQL_USER', 'root'),
         password=os.getenv('MYSQL_PASSWORD', ''),
         database=os.getenv('MYSQL_DB', 'chronotech'),

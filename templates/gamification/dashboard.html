@@ -1,0 +1,675 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Gamification{% endblock %}
+
+{% block page_styles %}
+<style>
+/* Styles pour le dashboard gamification */
+.gamification-dashboard {
+    background: var(--background-gradient);
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+.profile-header {
+    background: var(--glass-background);
+    backdrop-filter: blur(10px);
+    border-radius: var(--border-radius-large);
+    border: 1px solid var(--border-glass);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    box-shadow: var(--clay-shadow);
+}
+
+.profile-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: var(--primary-gradient);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: white;
+    position: relative;
+}
+
+.profile-info h2 {
+    margin: 0 0 0.5rem 0;
+    color: var(--text-primary);
+    font-size: 1.8rem;
+}
+
+.profile-stats {
+    display: flex;
+    gap: 2rem;
+    margin-top: 1rem;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    display: block;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-top: 0.2rem;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.badges-section {
+    background: var(--glass-background);
+    backdrop-filter: blur(10px);
+    border-radius: var(--border-radius-large);
+    border: 1px solid var(--border-glass);
+    padding: 2rem;
+    box-shadow: var(--clay-shadow);
+}
+
+.section-title {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.badges-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 1rem;
+}
+
+.badge-card {
+    background: var(--surface-color);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    text-align: center;
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.badge-card.earned {
+    border-color: var(--success-color);
+    box-shadow: 0 0 20px rgba(74, 222, 128, 0.3);
+}
+
+.badge-card.not-earned {
+    opacity: 0.6;
+    filter: grayscale(50%);
+}
+
+.badge-icon {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.badge-name {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 0.3rem;
+}
+
+.badge-progress {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.earned-date {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: var(--success-color);
+    color: white;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 10px;
+}
+
+.leaderboard-section {
+    background: var(--glass-background);
+    backdrop-filter: blur(10px);
+    border-radius: var(--border-radius-large);
+    border: 1px solid var(--border-glass);
+    padding: 2rem;
+    box-shadow: var(--clay-shadow);
+}
+
+.leaderboard-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.leaderboard-item {
+    background: var(--surface-color);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    margin-bottom: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: transform 0.2s ease;
+}
+
+.leaderboard-item:hover {
+    transform: translateY(-2px);
+}
+
+.rank-position {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--primary-gradient);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.rank-position.gold { background: linear-gradient(135deg, #FFD700, #FFA500); }
+.rank-position.silver { background: linear-gradient(135deg, #C0C0C0, #808080); }
+.rank-position.bronze { background: linear-gradient(135deg, #CD7F32, #A0522D); }
+
+.player-info {
+    flex: 1;
+}
+
+.player-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.2rem;
+}
+
+.player-stats {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.points-display {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.quick-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.quick-action-btn {
+    background: var(--primary-gradient);
+    color: white;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.quick-action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: var(--border-light);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 0.5rem;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--success-gradient);
+    transition: width 0.3s ease;
+}
+
+.notification-dot {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    width: 12px;
+    height: 12px;
+    background: var(--error-color);
+    border-radius: 50%;
+    border: 2px solid white;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.empty-state {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 2rem;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .profile-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .profile-stats {
+        justify-content: center;
+    }
+    
+    .badges-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="gamification-dashboard">
+    <div class="container">
+        <!-- En-tête du profil -->
+        <div class="profile-header">
+            <div class="profile-avatar">
+                {% if current_user.photo %}
+                    <img src="{{ current_user.photo }}" alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                {% else %}
+                    {{ current_user.name[0].upper() }}
+                {% endif %}
+            </div>
+            
+            <div class="profile-info">
+                <h2>{{ current_user.name }}</h2>
+                <p class="text-secondary">{{ current_user.department or 'Technicien' }}</p>
+                
+                <div class="profile-stats">
+                    <div class="stat-item">
+                        <span class="stat-value">{{ profile.total_points or 0 }}</span>
+                        <div class="stat-label">Points Total</div>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">{{ profile.badges_earned or 0 }}</span>
+                        <div class="stat-label">Badges Obtenus</div>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">{{ profile.work_orders_completed or 0 }}</span>
+                        <div class="stat-label">Interventions</div>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">{{ "%.1f"|format(profile.avg_satisfaction or 0) }}</span>
+                        <div class="stat-label">Satisfaction</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <!-- Section des badges -->
+            <div class="badges-section">
+                <h3 class="section-title">
+                    <i class="fas fa-medal"></i>
+                    Mes Badges
+                </h3>
+                
+                <div id="badges-container">
+                    <div class="loading-spinner">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        Chargement des badges...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section du classement -->
+            <div class="leaderboard-section">
+                <h3 class="section-title">
+                    <i class="fas fa-trophy"></i>
+                    Classement Hebdomadaire
+                </h3>
+                
+                {% if leaderboard %}
+                    <ul class="leaderboard-list">
+                        {% for entry in leaderboard[:5] %}
+                        <li class="leaderboard-item">
+                            <div class="rank-position 
+                                {% if loop.index == 1 %}gold{% elif loop.index == 2 %}silver{% elif loop.index == 3 %}bronze{% endif %}">
+                                {{ loop.index }}
+                            </div>
+                            <div class="player-info">
+                                <div class="player-name">{{ entry.entity_name }}</div>
+                                <div class="player-stats">
+                                    {{ entry.work_orders_completed }} interventions • 
+                                    {{ "%.1f"|format(entry.avg_satisfaction or 0) }}/5 satisfaction
+                                </div>
+                            </div>
+                            <div class="points-display">{{ entry.total_points }}pts</div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-chart-line"></i>
+                        <p>Aucun classement disponible pour cette semaine</p>
+                    </div>
+                {% endif %}
+                
+                <div class="quick-actions">
+                    <a href="{{ url_for('gamification.leaderboard_page') }}" class="quick-action-btn">
+                        <i class="fas fa-list"></i>
+                        Voir tous les classements
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions rapides -->
+        <div class="quick-actions">
+            <button id="recalculate-btn" class="quick-action-btn">
+                <i class="fas fa-sync-alt"></i>
+                Recalculer mes scores
+            </button>
+            <a href="#" id="notifications-btn" class="quick-action-btn" style="position: relative;">
+                <i class="fas fa-bell"></i>
+                Notifications
+                <span id="notification-count" class="notification-dot" style="display: none;"></span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour les notifications -->
+<div id="notifications-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Notifications</h3>
+            <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="notifications-list">
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    Chargement...
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-overlay"></div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Charger les badges
+    loadBadges();
+    
+    // Charger les notifications
+    loadNotifications();
+    
+    // Event listeners
+    document.getElementById('recalculate-btn').addEventListener('click', recalculateScores);
+    document.getElementById('notifications-btn').addEventListener('click', showNotifications);
+    
+    // Fermer le modal
+    document.querySelector('.modal-close').addEventListener('click', closeNotifications);
+    document.querySelector('.modal-overlay').addEventListener('click', closeNotifications);
+});
+
+async function loadBadges() {
+    try {
+        const response = await fetch('/api/gamification/badges/available');
+        const data = await response.json();
+        
+        if (data.success) {
+            renderBadges(data.badges_by_category);
+        } else {
+            showError('Erreur lors du chargement des badges: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Erreur badges:', error);
+        showError('Erreur de communication avec le serveur');
+    }
+}
+
+function renderBadges(badgesByCategory) {
+    const container = document.getElementById('badges-container');
+    
+    if (Object.keys(badgesByCategory).length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-medal"></i>
+                <p>Aucun badge disponible</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    
+    Object.entries(badgesByCategory).forEach(([category, badges]) => {
+        html += `
+            <div class="badge-category">
+                <h4 style="margin: 1.5rem 0 1rem 0; color: var(--text-primary); text-transform: capitalize;">
+                    ${category.replace('_', ' ')}
+                </h4>
+                <div class="badges-grid">
+        `;
+        
+        badges.forEach(badge => {
+            const earnedClass = badge.earned ? 'earned' : 'not-earned';
+            const progressText = badge.earned ? 
+                'Obtenu!' : 
+                `${badge.criteria_value} ${badge.criteria_type} requis`;
+            
+            html += `
+                <div class="badge-card ${earnedClass}" title="${badge.description}">
+                    ${badge.earned ? '<div class="earned-date">✓</div>' : ''}
+                    <div class="badge-icon" style="color: ${badge.color};">${badge.icon}</div>
+                    <div class="badge-name">${badge.name}</div>
+                    <div class="badge-progress">${progressText}</div>
+                    ${!badge.earned ? `<div class="progress-bar">
+                        <div class="progress-fill" style="width: 0%;"></div>
+                    </div>` : ''}
+                </div>
+            `;
+        });
+        
+        html += '</div></div>';
+    });
+    
+    container.innerHTML = html;
+}
+
+async function loadNotifications() {
+    try {
+        const response = await fetch('/api/gamification/notifications?unread_only=true');
+        const data = await response.json();
+        
+        if (data.success && data.notifications.length > 0) {
+            document.getElementById('notification-count').style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Erreur notifications:', error);
+    }
+}
+
+async function showNotifications() {
+    try {
+        const response = await fetch('/api/gamification/notifications?limit=50');
+        const data = await response.json();
+        
+        if (data.success) {
+            renderNotifications(data.notifications);
+            document.getElementById('notifications-modal').style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Erreur affichage notifications:', error);
+    }
+}
+
+function renderNotifications(notifications) {
+    const container = document.getElementById('notifications-list');
+    
+    if (notifications.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-bell-slash"></i>
+                <p>Aucune notification</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    notifications.forEach(notification => {
+        const readClass = notification.is_read ? 'read' : 'unread';
+        const date = new Date(notification.created_at).toLocaleDateString('fr-FR', {
+            day: 'numeric',
+            month: 'short',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        html += `
+            <div class="notification-item ${readClass}" data-id="${notification.id}">
+                <div class="notification-icon">
+                    <i class="fas ${getNotificationIcon(notification.type)}"></i>
+                </div>
+                <div class="notification-content">
+                    <div class="notification-title">${notification.title}</div>
+                    <div class="notification-message">${notification.message}</div>
+                    <div class="notification-date">${date}</div>
+                </div>
+                ${!notification.is_read ? '<div class="unread-dot"></div>' : ''}
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+    
+    // Marquer comme lues au clic
+    container.querySelectorAll('.notification-item.unread').forEach(item => {
+        item.addEventListener('click', () => markAsRead(item.dataset.id));
+    });
+}
+
+function getNotificationIcon(type) {
+    const icons = {
+        'badge_earned': 'fa-medal',
+        'leaderboard_position': 'fa-trophy',
+        'feedback_received': 'fa-star',
+        'milestone_reached': 'fa-flag-checkered'
+    };
+    return icons[type] || 'fa-info-circle';
+}
+
+async function markAsRead(notificationId) {
+    try {
+        await fetch(`/api/gamification/notifications/${notificationId}/read`, {
+            method: 'POST'
+        });
+        
+        // Mettre à jour l'affichage
+        const item = document.querySelector(`[data-id="${notificationId}"]`);
+        if (item) {
+            item.classList.remove('unread');
+            item.classList.add('read');
+            const dot = item.querySelector('.unread-dot');
+            if (dot) dot.remove();
+        }
+    } catch (error) {
+        console.error('Erreur marquage lecture:', error);
+    }
+}
+
+async function recalculateScores() {
+    const btn = document.getElementById('recalculate-btn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calcul en cours...';
+    btn.disabled = true;
+    
+    try {
+        const response = await fetch('/api/gamification/scores/recalculate');
+        const data = await response.json();
+        
+        if (data.success) {
+            showSuccess('Scores recalculés avec succès!');
+            // Recharger la page pour afficher les nouveaux scores
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showError('Erreur: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Erreur recalcul:', error);
+        showError('Erreur de communication avec le serveur');
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+
+function closeNotifications() {
+    document.getElementById('notifications-modal').style.display = 'none';
+}
+
+function showSuccess(message) {
+    // Utiliser le système de notifications existant
+    if (window.showNotification) {
+        window.showNotification(message, 'success');
+    } else {
+        alert(message);
+    }
+}
+
+function showError(message) {
+    if (window.showNotification) {
+        window.showNotification(message, 'error');
+    } else {
+        alert(message);
+    }
+}
+</script>
+{% endblock %}

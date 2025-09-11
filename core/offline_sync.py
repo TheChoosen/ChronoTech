@@ -5,6 +5,7 @@ Synchronisation SQLite local avec MySQL cloud
 import asyncio
 import json
 import logging
+import os
 import sqlite3
 import time
 from datetime import datetime, timedelta
@@ -38,6 +39,121 @@ class OfflineSyncManager:
         # Queue pour les synchronisations prioritaires
         self.priority_sync_queue = queue.Queue()
         
+        # Initialiser la base SQLite locale
+        self._init_offline_database()
+        
+    def _init_offline_database(self):
+        """Initialiser la base de données SQLite pour le mode offline"""
+        try:
+            # Créer le dossier data s'il n'existe pas
+            os.makedirs(os.path.dirname(self.offline_db_path), exist_ok=True)
+            
+            conn = sqlite3.connect(self.offline_db_path)
+            cursor = conn.cursor()
+            
+            # Vérifier et migrer si nécessaire
+            self._migrate_offline_database(cursor)
+            
+            conn.commit()
+            conn.close()
+            logger.info("✅ Base de données SQLite initialisée")
+            
+        except Exception as e:
+            logger.error(f"❌ Erreur initialisation base SQLite: {e}")
+    
+    def _migrate_offline_database(self, cursor):
+        """Migrer la base de données SQLite si nécessaire"""
+        try:
+            # Vérifier si les tables existent
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+            existing_tables = [row[0] for row in cursor.fetchall()]
+            
+            # Si aucunes tables, créer toutes les tables
+            if not existing_tables:
+                self._create_all_offline_tables(cursor)
+                return
+
+            # Vérifier la structure de TOUTES les tables existantes
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+            all_tables = [row[0] for row in cursor.fetchall()]
+            
+            for table_name in all_tables:
+                # Vérifier si la colonne updated_at existe
+                cursor.execute(f"PRAGMA table_info({table_name})")
+                columns = [col[1] for col in cursor.fetchall()]
+                
+                if 'updated_at' not in columns:
+                    # Ajouter la colonne updated_at
+                    try:
+                        cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+                        logger.info(f"✅ Colonne updated_at ajoutée à {table_name}")
+                    except Exception as e:
+                        logger.warning(f"⚠️ Impossible d'ajouter updated_at à {table_name}: {e}")
+            
+            # Créer les tables manquantes
+            self._create_all_offline_tables(cursor)
+            
+        except Exception as e:
+            logger.error(f"❌ Erreur migration base SQLite: {e}")
+            # En cas d'erreur, recréer toutes les tables
+            self._create_all_offline_tables(cursor)
+    
+    def _create_all_offline_tables(self, cursor):
+        """Créer toutes les tables SQLite offline"""
+        # Table pour les bons de travail offline
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS offline_work_orders (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                original_id INTEGER NOT NULL,
+                status TEXT NOT NULL,
+                notes TEXT,
+                sync_status TEXT DEFAULT 'pending',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # Table pour les commandes vocales
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS offline_voice_commands (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                command_text TEXT NOT NULL,
+                work_order_id INTEGER,
+                action_type TEXT NOT NULL,
+                sync_status TEXT DEFAULT 'pending',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # Table pour les fichiers média
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS offline_media_files (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                work_order_id INTEGER,
+                filename TEXT NOT NULL,
+                file_path TEXT NOT NULL,
+                file_type TEXT NOT NULL,
+                sync_status TEXT DEFAULT 'pending',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # Table pour la queue générale
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS offline_sync_queue (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                item_type TEXT NOT NULL,
+                item_data TEXT NOT NULL,
+                priority INTEGER DEFAULT 1,
+                sync_status TEXT DEFAULT 'pending',
+                retry_count INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+    
     def start_sync_service(self):
         """Démarrer le service de synchronisation en arrière-plan"""
         if not self.sync_running:
@@ -458,27 +574,43 @@ class OfflineSyncManager:
     
     def _update_sync_stats(self):
         """Mettre à jour les statistiques de synchronisation"""
-        offline_conn = sqlite3.connect(self.offline_db_path)
-        offline_cursor = offline_conn.cursor()
+        try:
+            offline_conn = sqlite3.connect(self.offline_db_path, timeout=10.0)
+            offline_cursor = offline_conn.cursor()
         
-        # Compter les éléments en attente
-        offline_cursor.execute('''
-            SELECT COUNT(*) FROM (
-                SELECT 1 FROM offline_work_orders WHERE sync_status = 'pending'
-                UNION ALL
-                SELECT 1 FROM offline_voice_commands WHERE sync_status = 'pending'
-                UNION ALL
-                SELECT 1 FROM offline_media WHERE sync_status = 'pending'
-                UNION ALL
-                SELECT 1 FROM sync_queue WHERE status = 'pending'
-            ) as pending_count
-        ''')
-        
-        pending_count = offline_cursor.fetchone()[0]
-        self.sync_stats['pending_items'] = pending_count
-        self.sync_stats['last_sync'] = datetime.now().isoformat()
-        
-        offline_conn.close()
+            # Compter les éléments en attente avec gestion d'erreurs
+            pending_count = 0
+            try:
+                offline_cursor.execute('SELECT COUNT(*) FROM offline_work_orders WHERE sync_status = "pending"')
+                pending_count += offline_cursor.fetchone()[0]
+            except sqlite3.OperationalError:
+                pass
+                
+            try:
+                offline_cursor.execute('SELECT COUNT(*) FROM offline_voice_commands WHERE sync_status = "pending"')
+                pending_count += offline_cursor.fetchone()[0]
+            except sqlite3.OperationalError:
+                pass
+                
+            try:
+                offline_cursor.execute('SELECT COUNT(*) FROM offline_media WHERE sync_status = "pending"')
+                pending_count += offline_cursor.fetchone()[0]
+            except sqlite3.OperationalError:
+                pass
+                
+            try:
+                offline_cursor.execute('SELECT COUNT(*) FROM sync_queue WHERE status = "pending"')
+                pending_count += offline_cursor.fetchone()[0]
+            except sqlite3.OperationalError:
+                pass
+                
+            self.sync_stats['pending_items'] = pending_count
+            self.sync_stats['last_sync'] = datetime.now().isoformat()
+            
+            offline_conn.close()
+            
+        except Exception as e:
+            logger.error(f"Erreur mise à jour stats sync: {e}")
     
     def add_priority_sync(self, sync_item: Dict):
         """Ajouter un élément à la synchronisation prioritaire"""

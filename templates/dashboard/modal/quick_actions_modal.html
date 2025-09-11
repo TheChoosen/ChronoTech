@@ -1,0 +1,116 @@
+<!-- Quick Actions Modal -->
+<div class="modal fade" id="quickActionsModal" tabindex="-1" aria-labelledby="quickActionsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 20px;">
+            <div class="modal-header border-0" style="padding: 30px 30px 0;">
+                <h5 class="modal-title text-white fw-bold" id="quickActionsModalLabel">
+                    <i class="fas fa-bolt me-2"></i>Actions Rapides
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="padding: 20px 30px 30px;">
+                <div class="row g-3">
+                    <!-- Nouvelle Intervention -->
+                    <div class="col-md-6">
+                        <div class="quick-action-card" onclick="location.href='/work_orders/create'" style="background: rgba(255,255,255,0.1); border-radius: 15px; padding: 20px; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px);">
+                            <div class="text-center text-white">
+                                <i class="fas fa-plus-circle fa-2x mb-3" style="color: #4CAF50;"></i>
+                                <h6 class="fw-bold">Nouvelle Intervention</h6>
+                                <small class="opacity-75">Créer un nouveau bon de travail</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Planning -->
+                    <div class="col-md-6">
+                        <div class="quick-action-card" onclick="location.href='/analytics/planning'" style="background: rgba(255,255,255,0.1); border-radius: 15px; padding: 20px; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px);">
+                            <div class="text-center text-white">
+                                <i class="fas fa-calendar-alt fa-2x mb-3" style="color: #2196F3;"></i>
+                                <h6 class="fw-bold">Planning</h6>
+                                <small class="opacity-75">Gérer les plannings</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Rapport Express -->
+                    <div class="col-md-6">
+                        <div class="quick-action-card" onclick="location.href='/analytics'" style="background: rgba(255,255,255,0.1); border-radius: 15px; padding: 20px; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px);">
+                            <div class="text-center text-white">
+                                <i class="fas fa-chart-line fa-2x mb-3" style="color: #FF9800;"></i>
+                                <h6 class="fw-bold">Rapport Express</h6>
+                                <small class="opacity-75">Analytics rapides</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Optimiser ma journée (Sprint 9.2) -->
+                    <div class="col-md-6">
+                        <div class="quick-action-card" onclick="optimizeMyDay()" style="background: rgba(255,255,255,0.1); border-radius: 15px; padding: 20px; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px);">
+                            <div class="text-center text-white">
+                                <i class="fas fa-magic fa-2x mb-3" style="color: #9C27B0;"></i>
+                                <h6 class="fw-bold">Optimiser ma journée</h6>
+                                <small class="opacity-75">IA Planification Proactive</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.quick-action-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    background: rgba(255,255,255,0.2) !important;
+}
+</style>
+
+<script>
+function optimizeMyDay() {
+    // Fonction Sprint 9.2 - Optimiser ma journée
+    const currentUser = {{ current_user.id if current_user.is_authenticated else 'null' }};
+    if (!currentUser) {
+        alert('Connexion requise pour l\'optimisation');
+        return;
+    }
+    
+    const today = new Date().toISOString().split('T')[0];
+    
+    fetch('/api/v1/ai/scheduler/optimize-day', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            technician_id: currentUser,
+            date: today
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const result = data.data;
+            const message = `
+🎯 Optimisation terminée !
+✅ Gain d'efficacité: +${result.efficiency_gain}%
+⏱️ Temps économisé: ${result.time_saved_minutes}min
+🚗 Trajet optimisé: ${result.optimized_travel_time}min
+            `;
+            alert(message);
+            // Fermer le modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('quickActionsModal'));
+            modal.hide();
+            // Recharger le dashboard
+            location.reload();
+        } else {
+            alert(data.message || 'Erreur lors de l\'optimisation');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert('Erreur lors de l\'optimisation');
+    });
+}
+</script>

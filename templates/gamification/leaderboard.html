@@ -1,0 +1,838 @@
+{% extends "base.html" %}
+
+{% block title %}Classements - Gamification{% endblock %}
+
+{% block page_styles %}
+<style>
+.leaderboard-page {
+    background: var(--background-gradient);
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+.leaderboard-header {
+    background: var(--glass-background);
+    backdrop-filter: blur(10px);
+    border-radius: var(--border-radius-large);
+    border: 1px solid var(--border-glass);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    text-align: center;
+    box-shadow: var(--clay-shadow);
+}
+
+.leaderboard-header h1 {
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    font-size: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.leaderboard-filters {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 1.5rem;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 200px;
+}
+
+.filter-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    text-align: left;
+}
+
+.filter-select {
+    background: var(--surface-color);
+    border: 1px solid var(--border-light);
+    border-radius: var(--border-radius);
+    padding: 0.8rem 1rem;
+    font-size: 1rem;
+    color: var(--text-primary);
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.filter-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.leaderboard-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.tab-button {
+    background: var(--glass-background);
+    border: 1px solid var(--border-glass);
+    color: var(--text-secondary);
+    padding: 0.8rem 1.5rem;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.tab-button.active {
+    background: var(--primary-gradient);
+    color: white;
+    border-color: var(--primary-color);
+    box-shadow: 0 5px 15px rgba(59, 130, 246, 0.3);
+}
+
+.tab-button:hover:not(.active) {
+    background: var(--surface-color);
+    color: var(--text-primary);
+}
+
+.leaderboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.leaderboard-section {
+    background: var(--glass-background);
+    backdrop-filter: blur(10px);
+    border-radius: var(--border-radius-large);
+    border: 1px solid var(--border-glass);
+    padding: 2rem;
+    box-shadow: var(--clay-shadow);
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+
+.section-title {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.refresh-btn {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.refresh-btn:hover {
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+}
+
+.podium {
+    display: flex;
+    justify-content: center;
+    align-items: end;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    height: 200px;
+}
+
+.podium-position {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    min-width: 120px;
+}
+
+.podium-step {
+    background: var(--surface-color);
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+    padding: 1rem;
+    width: 100%;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.podium-step.first {
+    height: 150px;
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    order: 2;
+}
+
+.podium-step.second {
+    height: 120px;
+    background: linear-gradient(135deg, #C0C0C0, #808080);
+    order: 1;
+}
+
+.podium-step.third {
+    height: 100px;
+    background: linear-gradient(135deg, #CD7F32, #A0522D);
+    order: 3;
+}
+
+.podium-rank {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: white;
+    margin-bottom: 0.5rem;
+}
+
+.podium-name {
+    font-weight: 600;
+    color: white;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.podium-score {
+    font-weight: bold;
+    color: white;
+    font-size: 1.1rem;
+}
+
+.podium-crown {
+    position: absolute;
+    top: -20px;
+    font-size: 2rem;
+    color: #FFD700;
+}
+
+.ranking-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.ranking-item {
+    background: var(--surface-color);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    margin-bottom: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.ranking-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.ranking-item.current-user {
+    border-color: var(--primary-color);
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.rank-number {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--border-light);
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.rank-number.top-10 {
+    background: var(--primary-gradient);
+    color: white;
+}
+
+.participant-info {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.participant-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--primary-gradient);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.participant-details {
+    flex: 1;
+}
+
+.participant-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.2rem;
+}
+
+.participant-stats {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    display: flex;
+    gap: 1rem;
+}
+
+.participant-score {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.score-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 0.2rem;
+}
+
+.empty-leaderboard {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 3rem 2rem;
+}
+
+.empty-leaderboard i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.loading-state {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: var(--text-secondary);
+}
+
+.loading-spinner {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+.stats-summary {
+    background: var(--glass-background);
+    backdrop-filter: blur(10px);
+    border-radius: var(--border-radius-large);
+    border: 1px solid var(--border-glass);
+    padding: 2rem;
+    box-shadow: var(--clay-shadow);
+    grid-column: 1 / -1;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 2rem;
+}
+
+.stat-card {
+    background: var(--surface-color);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+/* Responsive design */
+@media (max-width: 1024px) {
+    .leaderboard-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .leaderboard-filters {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .filter-group {
+        width: 100%;
+        max-width: 300px;
+    }
+    
+    .leaderboard-tabs {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .podium {
+        height: 150px;
+    }
+    
+    .podium-step.first { height: 100px; }
+    .podium-step.second { height: 80px; }
+    .podium-step.third { height: 60px; }
+    
+    .participant-stats {
+        flex-direction: column;
+        gap: 0.3rem;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="leaderboard-page">
+    <div class="container">
+        <!-- En-tête -->
+        <div class="leaderboard-header">
+            <h1>
+                <i class="fas fa-trophy"></i>
+                Classements
+            </h1>
+            <p class="text-secondary">Découvrez les performances de votre équipe</p>
+            
+            <!-- Filtres -->
+            <div class="leaderboard-filters">
+                <div class="filter-group">
+                    <label class="filter-label">Type de classement</label>
+                    <select id="leaderboard-type" class="filter-select">
+                        <option value="individual_weekly">Individuel - Hebdomadaire</option>
+                        <option value="individual_monthly">Individuel - Mensuel</option>
+                        <option value="team_weekly">Équipe - Hebdomadaire</option>
+                        <option value="team_monthly">Équipe - Mensuel</option>
+                        <option value="department_weekly">Département - Hebdomadaire</option>
+                        <option value="department_monthly">Département - Mensuel</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Période</label>
+                    <select id="period-select" class="filter-select">
+                        <option value="">Période actuelle</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Onglets -->
+        <div class="leaderboard-tabs">
+            <button class="tab-button active" data-tab="current">Classement Actuel</button>
+            <button class="tab-button" data-tab="history">Historique</button>
+            <button class="tab-button" data-tab="stats">Statistiques</button>
+        </div>
+
+        <!-- Contenu principal -->
+        <div id="tab-current" class="tab-content active">
+            <div class="leaderboard-grid">
+                <!-- Podium -->
+                <div class="leaderboard-section">
+                    <div class="section-header">
+                        <h3 class="section-title">
+                            <i class="fas fa-medal"></i>
+                            Podium
+                        </h3>
+                        <button id="refresh-podium" class="refresh-btn">
+                            <i class="fas fa-sync-alt"></i>
+                            Actualiser
+                        </button>
+                    </div>
+                    
+                    <div id="podium-container">
+                        <div class="loading-state">
+                            <div class="loading-spinner">
+                                <i class="fas fa-spinner fa-spin"></i>
+                            </div>
+                            <p>Chargement du podium...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Classement complet -->
+                <div class="leaderboard-section">
+                    <div class="section-header">
+                        <h3 class="section-title">
+                            <i class="fas fa-list-ol"></i>
+                            Classement Complet
+                        </h3>
+                        <button id="refresh-ranking" class="refresh-btn">
+                            <i class="fas fa-sync-alt"></i>
+                            Actualiser
+                        </button>
+                    </div>
+                    
+                    <div id="ranking-container">
+                        <div class="loading-state">
+                            <div class="loading-spinner">
+                                <i class="fas fa-spinner fa-spin"></i>
+                            </div>
+                            <p>Chargement du classement...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-history" class="tab-content" style="display: none;">
+            <!-- Historique des classements -->
+            <div class="leaderboard-section">
+                <h3 class="section-title">
+                    <i class="fas fa-history"></i>
+                    Historique des Classements
+                </h3>
+                <p class="text-secondary">Fonctionnalité en cours de développement</p>
+            </div>
+        </div>
+
+        <div id="tab-stats" class="tab-content" style="display: none;">
+            <!-- Statistiques globales -->
+            <div class="stats-summary">
+                <h3 class="section-title">
+                    <i class="fas fa-chart-bar"></i>
+                    Statistiques Générales
+                </h3>
+                
+                <div id="stats-container">
+                    <div class="loading-state">
+                        <div class="loading-spinner">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </div>
+                        <p>Chargement des statistiques...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+let currentLeaderboardType = 'individual_weekly';
+let currentPeriod = '';
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Event listeners
+    document.getElementById('leaderboard-type').addEventListener('change', handleTypeChange);
+    document.getElementById('period-select').addEventListener('change', handlePeriodChange);
+    document.getElementById('refresh-podium').addEventListener('click', loadLeaderboard);
+    document.getElementById('refresh-ranking').addEventListener('click', loadLeaderboard);
+    
+    // Onglets
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.addEventListener('click', () => switchTab(button.dataset.tab));
+    });
+    
+    // Charger les données initiales
+    loadLeaderboard();
+    loadStatistics();
+});
+
+function handleTypeChange(event) {
+    currentLeaderboardType = event.target.value;
+    generatePeriodOptions();
+    loadLeaderboard();
+}
+
+function handlePeriodChange(event) {
+    currentPeriod = event.target.value;
+    loadLeaderboard();
+}
+
+function generatePeriodOptions() {
+    const periodSelect = document.getElementById('period-select');
+    const isWeekly = currentLeaderboardType.includes('weekly');
+    
+    let options = '<option value="">Période actuelle</option>';
+    
+    if (isWeekly) {
+        // Générer les options pour les semaines passées
+        for (let i = 1; i <= 8; i++) {
+            const date = new Date();
+            date.setDate(date.getDate() - (i * 7));
+            const weekNum = getWeekNumber(date);
+            const year = date.getFullYear();
+            options += `<option value="${year}-W${weekNum}">Semaine ${weekNum} ${year}</option>`;
+        }
+    } else {
+        // Générer les options pour les mois passés
+        for (let i = 1; i <= 6; i++) {
+            const date = new Date();
+            date.setMonth(date.getMonth() - i);
+            const month = date.getMonth() + 1;
+            const year = date.getFullYear();
+            const monthName = date.toLocaleDateString('fr-FR', { month: 'long' });
+            options += `<option value="${year}-${month.toString().padStart(2, '0')}">${monthName} ${year}</option>`;
+        }
+    }
+    
+    periodSelect.innerHTML = options;
+}
+
+function getWeekNumber(date) {
+    const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
+    const pastDaysOfYear = (date - firstDayOfYear) / 86400000;
+    return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+}
+
+async function loadLeaderboard() {
+    try {
+        showLoading();
+        
+        const url = `/api/gamification/leaderboard/${currentLeaderboardType}` + 
+                   (currentPeriod ? `?period=${currentPeriod}` : '');
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (data.success) {
+            renderPodium(data.rankings.slice(0, 3));
+            renderRanking(data.rankings, data.user_position);
+        } else {
+            showError('Erreur lors du chargement: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Erreur chargement classement:', error);
+        showError('Erreur de communication avec le serveur');
+    }
+}
+
+function showLoading() {
+    document.getElementById('podium-container').innerHTML = `
+        <div class="loading-state">
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+            </div>
+            <p>Chargement...</p>
+        </div>
+    `;
+    
+    document.getElementById('ranking-container').innerHTML = `
+        <div class="loading-state">
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+            </div>
+            <p>Chargement...</p>
+        </div>
+    `;
+}
+
+function renderPodium(topThree) {
+    const container = document.getElementById('podium-container');
+    
+    if (topThree.length === 0) {
+        container.innerHTML = `
+            <div class="empty-leaderboard">
+                <i class="fas fa-trophy"></i>
+                <p>Aucun classement disponible pour cette période</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let podiumHtml = '<div class="podium">';
+    
+    const positions = ['second', 'first', 'third'];
+    const ranks = [2, 1, 3];
+    
+    positions.forEach((position, index) => {
+        const rank = ranks[index];
+        const participant = topThree[rank - 1];
+        
+        if (participant) {
+            podiumHtml += `
+                <div class="podium-position">
+                    <div class="podium-step ${position}">
+                        ${position === 'first' ? '<div class="podium-crown">👑</div>' : ''}
+                        <div class="podium-rank">#${rank}</div>
+                        <div class="podium-name">${participant.entity_name}</div>
+                        <div class="podium-score">${participant.total_points}pts</div>
+                    </div>
+                </div>
+            `;
+        } else {
+            podiumHtml += `
+                <div class="podium-position">
+                    <div class="podium-step ${position}" style="opacity: 0.3;">
+                        <div class="podium-rank">#${rank}</div>
+                        <div class="podium-name">-</div>
+                        <div class="podium-score">0pts</div>
+                    </div>
+                </div>
+            `;
+        }
+    });
+    
+    podiumHtml += '</div>';
+    container.innerHTML = podiumHtml;
+}
+
+function renderRanking(rankings, userPosition) {
+    const container = document.getElementById('ranking-container');
+    
+    if (rankings.length === 0) {
+        container.innerHTML = `
+            <div class="empty-leaderboard">
+                <i class="fas fa-list-ol"></i>
+                <p>Aucun participant dans ce classement</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '<ul class="ranking-list">';
+    
+    rankings.forEach((participant, index) => {
+        const rank = index + 1;
+        const isCurrentUser = userPosition === rank;
+        const isTopTen = rank <= 10;
+        const initial = participant.entity_name.charAt(0).toUpperCase();
+        
+        html += `
+            <li class="ranking-item ${isCurrentUser ? 'current-user' : ''}">
+                <div class="rank-number ${isTopTen ? 'top-10' : ''}">${rank}</div>
+                <div class="participant-info">
+                    <div class="participant-avatar">${initial}</div>
+                    <div class="participant-details">
+                        <div class="participant-name">
+                            ${participant.entity_name}
+                            ${isCurrentUser ? '<span style="color: var(--primary-color);"> (Vous)</span>' : ''}
+                        </div>
+                        <div class="participant-stats">
+                            <span>${participant.work_orders_completed || 0} interventions</span>
+                            <span>${(participant.avg_satisfaction || 0).toFixed(1)}/5 satisfaction</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="participant-score">
+                    ${participant.total_points}
+                    <div class="score-label">points</div>
+                </div>
+            </li>
+        `;
+    });
+    
+    html += '</ul>';
+    container.innerHTML = html;
+}
+
+async function loadStatistics() {
+    try {
+        const response = await fetch('/api/gamification/stats/overview');
+        const data = await response.json();
+        
+        if (data.success) {
+            renderStatistics(data);
+        }
+    } catch (error) {
+        console.error('Erreur statistiques:', error);
+    }
+}
+
+function renderStatistics(data) {
+    const container = document.getElementById('stats-container');
+    
+    const stats = data.system_stats || {};
+    
+    const html = `
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-value">${stats.active_users || 0}</span>
+                <div class="stat-label">Utilisateurs Actifs</div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">${stats.total_badges_earned || 0}</span>
+                <div class="stat-label">Badges Obtenus</div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">${stats.total_badges_available || 0}</span>
+                <div class="stat-label">Badges Disponibles</div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">${(stats.avg_satisfaction || 0).toFixed(1)}</span>
+                <div class="stat-label">Satisfaction Moyenne</div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">${stats.total_feedback || 0}</span>
+                <div class="stat-label">Évaluations Client</div>
+            </div>
+        </div>
+    `;
+    
+    container.innerHTML = html;
+}
+
+function switchTab(tabName) {
+    // Mettre à jour les boutons
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    
+    // Mettre à jour le contenu
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.style.display = 'none';
+    });
+    document.getElementById(`tab-${tabName}`).style.display = 'block';
+    
+    // Charger les données spécifiques à l'onglet
+    if (tabName === 'stats') {
+        loadStatistics();
+    }
+}
+
+function showError(message) {
+    if (window.showNotification) {
+        window.showNotification(message, 'error');
+    } else {
+        alert(message);
+    }
+}
+
+// Initialiser les options de période
+generatePeriodOptions();
+</script>
+{% endblock %}

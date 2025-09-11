@@ -1,0 +1,642 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Header du Dashboard -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">🔮 Dashboard Prédictif</h1>
+                    <p class="text-muted">Analyse prédictive et maintenance proactive</p>
+                </div>
+                <div>
+                    <button class="btn btn-primary" onclick="refreshAllAnalytics()">
+                        <i class="fas fa-sync-alt"></i> Actualiser
+                    </button>
+                    <button class="btn btn-success" onclick="runBatchAnalysis()">
+                        <i class="fas fa-cogs"></i> Analyser tous les véhicules
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cartes de statistiques -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-primary bg-opacity-10 p-3 rounded">
+                                <i class="fas fa-car text-primary fa-2x"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <div class="fw-bold h4 mb-0" id="vehicles-monitored">
+                                {{ stats.vehicles_monitored or 0 }}
+                            </div>
+                            <div class="text-muted small">Véhicules surveillés</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-warning bg-opacity-10 p-3 rounded">
+                                <i class="fas fa-exclamation-triangle text-warning fa-2x"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <div class="fw-bold h4 mb-0" id="critical-alerts">
+                                {{ stats.critical_alerts or 0 }}
+                            </div>
+                            <div class="text-muted small">Alertes critiques</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-info bg-opacity-10 p-3 rounded">
+                                <i class="fas fa-chart-line text-info fa-2x"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <div class="fw-bold h4 mb-0" id="total-predictions">
+                                {{ stats.total_predictions or 0 }}
+                            </div>
+                            <div class="text-muted small">Prédictions actives</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-success bg-opacity-10 p-3 rounded">
+                                <i class="fas fa-percentage text-success fa-2x"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <div class="fw-bold h4 mb-0" id="avg-confidence">
+                                {{ "%.1f"|format(stats.avg_confidence or 0) }}%
+                            </div>
+                            <div class="text-muted small">Confiance moyenne</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation par onglets -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0">
+                    <ul class="nav nav-tabs card-header-tabs" id="dashboardTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="maintenance-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#maintenance-pane" type="button" role="tab">
+                                <i class="fas fa-wrench me-2"></i>Maintenance Prédictive
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="heatmap-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#heatmap-pane" type="button" role="tab">
+                                <i class="fas fa-map-marked-alt me-2"></i>Heatmap Interventions
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="eco-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#eco-pane" type="button" role="tab">
+                                <i class="fas fa-leaf me-2"></i>Eco-Scoring
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="alerts-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#alerts-pane" type="button" role="tab">
+                                <i class="fas fa-bell me-2"></i>Alertes
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="card-body p-0">
+                    <div class="tab-content" id="dashboardTabsContent">
+                        <!-- Onglet Maintenance Prédictive -->
+                        <div class="tab-pane fade show active" id="maintenance-pane" role="tabpanel">
+                            <div class="p-4">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="mb-0">Maintenance Prédictive</h5>
+                                    <div>
+                                        <select class="form-select form-select-sm" id="urgency-filter" onchange="filterPredictions()">
+                                            <option value="">Toutes les urgences</option>
+                                            <option value="critical">Critique</option>
+                                            <option value="high">Élevée</option>
+                                            <option value="medium">Moyenne</option>
+                                            <option value="low">Faible</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div id="predictions-container">
+                                    <div class="text-center py-4">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Chargement...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Onglet Heatmap -->
+                        <div class="tab-pane fade" id="heatmap-pane" role="tabpanel">
+                            <div class="p-4">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="mb-0">Heatmap des Interventions</h5>
+                                    <div>
+                                        <select class="form-select form-select-sm" id="period-filter" onchange="updateHeatmap()">
+                                            <option value="all">Toute la période</option>
+                                            <option value="last_30_days">30 derniers jours</option>
+                                            <option value="last_90_days">90 derniers jours</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div id="map-container" style="height: 500px; background: #f8f9fa; border-radius: 8px;">
+                                    <div class="d-flex align-items-center justify-content-center h-100">
+                                        <div class="text-center">
+                                            <i class="fas fa-map-marked-alt fa-3x text-muted mb-3"></i>
+                                            <p class="text-muted">Chargement de la carte...</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Onglet Eco-Scoring -->
+                        <div class="tab-pane fade" id="eco-pane" role="tabpanel">
+                            <div class="p-4">
+                                <h5 class="mb-3">Statistiques Eco-Scoring</h5>
+                                
+                                <div class="row" id="eco-stats-container">
+                                    <div class="col-12 text-center py-4">
+                                        <div class="spinner-border text-success" role="status">
+                                            <span class="visually-hidden">Chargement...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Onglet Alertes -->
+                        <div class="tab-pane fade" id="alerts-pane" role="tabpanel">
+                            <div class="p-4">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="mb-0">Alertes Prédictives</h5>
+                                    <div>
+                                        <select class="form-select form-select-sm" id="severity-filter" onchange="filterAlerts()">
+                                            <option value="">Toutes les sévérités</option>
+                                            <option value="critical">Critique</option>
+                                            <option value="error">Erreur</option>
+                                            <option value="warning">Avertissement</option>
+                                            <option value="info">Information</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div id="alerts-container">
+                                    <div class="text-center py-4">
+                                        <div class="spinner-border text-warning" role="status">
+                                            <span class="visually-hidden">Chargement...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour les détails de prédiction -->
+<div class="modal fade" id="predictionModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Détails de la Prédiction</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="prediction-modal-body">
+                <!-- Contenu chargé dynamiquement -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                <button type="button" class="btn btn-warning" onclick="dismissPrediction()">
+                    <i class="fas fa-times"></i> Rejeter
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentPredictionId = null;
+
+// Chargement initial
+document.addEventListener('DOMContentLoaded', function() {
+    loadMaintenancePredictions();
+    
+    // Événements des onglets
+    document.getElementById('heatmap-tab').addEventListener('shown.bs.tab', function() {
+        initializeHeatmap();
+    });
+    
+    document.getElementById('eco-tab').addEventListener('shown.bs.tab', function() {
+        loadEcoStats();
+    });
+    
+    document.getElementById('alerts-tab').addEventListener('shown.bs.tab', function() {
+        loadAlerts();
+    });
+});
+
+// Fonctions de chargement des données
+function loadMaintenancePredictions() {
+    const urgencyFilter = document.getElementById('urgency-filter').value;
+    const params = urgencyFilter ? `?urgency=${urgencyFilter}` : '';
+    
+    fetch(`/api/predictive/maintenance/predictions${params}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayPredictions(data.predictions);
+            } else {
+                showError('Erreur lors du chargement des prédictions');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showError('Erreur de communication avec le serveur');
+        });
+}
+
+function displayPredictions(predictions) {
+    const container = document.getElementById('predictions-container');
+    
+    if (predictions.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                <p class="text-muted">Aucune prédiction de maintenance pour le moment</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const urgencyColors = {
+        'critical': 'danger',
+        'high': 'warning',
+        'medium': 'info',
+        'low': 'success'
+    };
+    
+    const html = predictions.map(prediction => `
+        <div class="card mb-3 border-${urgencyColors[prediction.urgency_level] || 'secondary'}">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-${urgencyColors[prediction.urgency_level] || 'secondary'} me-2">
+                                ${prediction.urgency_level.toUpperCase()}
+                            </span>
+                            <h6 class="mb-0">${prediction.license_plate} - ${prediction.make} ${prediction.model}</h6>
+                        </div>
+                        <p class="text-muted mb-2">${prediction.description}</p>
+                        <div class="small text-muted">
+                            <i class="fas fa-calendar-alt me-1"></i>
+                            Prévu le ${new Date(prediction.predicted_date).toLocaleDateString('fr-FR')}
+                            (dans ${prediction.days_until_prediction} jours)
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <div class="mb-2">
+                            <span class="badge bg-light text-dark">
+                                Confiance: ${prediction.confidence_score}%
+                            </span>
+                        </div>
+                        <div class="mb-2">
+                            <strong class="text-primary">
+                                ${prediction.predicted_cost ? prediction.predicted_cost.toFixed(2) + '€' : 'N/A'}
+                            </strong>
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary" 
+                                onclick="showPredictionDetails(${prediction.id})">
+                            <i class="fas fa-eye"></i> Détails
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    container.innerHTML = html;
+}
+
+function filterPredictions() {
+    loadMaintenancePredictions();
+}
+
+function showPredictionDetails(predictionId) {
+    currentPredictionId = predictionId;
+    // Implémenter l'affichage des détails
+    document.getElementById('prediction-modal-body').innerHTML = `
+        <p>Détails de la prédiction ${predictionId} en cours de chargement...</p>
+    `;
+    new bootstrap.Modal(document.getElementById('predictionModal')).show();
+}
+
+function dismissPrediction() {
+    if (!currentPredictionId) return;
+    
+    const reason = prompt('Raison du rejet (optionnel):');
+    if (reason === null) return;
+    
+    fetch(`/api/predictive/maintenance/dismiss/${currentPredictionId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reason: reason || 'Dismissed by user' })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('predictionModal')).hide();
+            loadMaintenancePredictions();
+            showSuccess('Prédiction rejetée avec succès');
+        } else {
+            showError(data.error || 'Erreur lors du rejet');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showError('Erreur de communication');
+    });
+}
+
+function initializeHeatmap() {
+    // Placeholder pour la carte Google Maps
+    document.getElementById('map-container').innerHTML = `
+        <div class="d-flex align-items-center justify-content-center h-100">
+            <div class="text-center">
+                <i class="fas fa-map-marked-alt fa-3x text-primary mb-3"></i>
+                <p class="text-primary mb-3">Heatmap des interventions</p>
+                <p class="text-muted small">Intégration Google Maps en cours de développement</p>
+            </div>
+        </div>
+    `;
+}
+
+function loadEcoStats() {
+    fetch('/api/predictive/eco-score/stats')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayEcoStats(data.stats, data.monthly_evolution);
+            } else {
+                showError('Erreur lors du chargement des statistiques eco-score');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showError('Erreur de communication');
+        });
+}
+
+function displayEcoStats(stats, evolution) {
+    const container = document.getElementById('eco-stats-container');
+    
+    const html = `
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h4 class="text-primary">${stats.total_scored || 0}</h4>
+                    <p class="card-text">Work Orders Évalués</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h4 class="text-success">${(stats.avg_score || 0).toFixed(1)}</h4>
+                    <p class="card-text">Score Moyen</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h4 class="text-info">${(stats.total_carbon || 0).toFixed(2)} kg</h4>
+                    <p class="card-text">Empreinte Carbone</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h4 class="text-warning">${(stats.total_recycled || 0).toFixed(2)} kg</h4>
+                    <p class="card-text">Matériaux Recyclés</p>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.innerHTML = html;
+}
+
+function loadAlerts() {
+    const severityFilter = document.getElementById('severity-filter').value;
+    const params = severityFilter ? `?severity=${severityFilter}` : '';
+    
+    fetch(`/api/predictive/alerts${params}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayAlerts(data.alerts);
+            } else {
+                showError('Erreur lors du chargement des alertes');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showError('Erreur de communication');
+        });
+}
+
+function displayAlerts(alerts) {
+    const container = document.getElementById('alerts-container');
+    
+    if (alerts.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                <p class="text-muted">Aucune alerte active</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const severityColors = {
+        'critical': 'danger',
+        'error': 'danger',
+        'warning': 'warning',
+        'info': 'info'
+    };
+    
+    const html = alerts.map(alert => `
+        <div class="card mb-2 border-${severityColors[alert.severity] || 'secondary'}">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-${severityColors[alert.severity] || 'secondary'} me-2">
+                                ${alert.severity.toUpperCase()}
+                            </span>
+                            <h6 class="mb-0">${alert.title}</h6>
+                        </div>
+                        <p class="text-muted mb-2">${alert.description}</p>
+                        <div class="small text-muted">
+                            ${new Date(alert.created_at).toLocaleString('fr-FR')}
+                        </div>
+                    </div>
+                    <div>
+                        ${!alert.acknowledged_at ? `
+                            <button class="btn btn-sm btn-outline-primary" 
+                                    onclick="acknowledgeAlert(${alert.id})">
+                                <i class="fas fa-check"></i> Acquitter
+                            </button>
+                        ` : `
+                            <span class="badge bg-success">Acquittée</span>
+                        `}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    container.innerHTML = html;
+}
+
+function filterAlerts() {
+    loadAlerts();
+}
+
+function acknowledgeAlert(alertId) {
+    fetch(`/api/predictive/alerts/acknowledge/${alertId}`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            loadAlerts();
+            showSuccess('Alerte acquittée');
+        } else {
+            showError(data.error || 'Erreur lors de l\'acquittement');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showError('Erreur de communication');
+    });
+}
+
+function refreshAllAnalytics() {
+    // Actualiser selon l'onglet actif
+    const activeTab = document.querySelector('.nav-link.active').id;
+    
+    switch(activeTab) {
+        case 'maintenance-tab':
+            loadMaintenancePredictions();
+            break;
+        case 'heatmap-tab':
+            updateHeatmap();
+            break;
+        case 'eco-tab':
+            loadEcoStats();
+            break;
+        case 'alerts-tab':
+            loadAlerts();
+            break;
+    }
+    
+    showSuccess('Données actualisées');
+}
+
+function runBatchAnalysis() {
+    if (!confirm('Lancer l\'analyse prédictive sur tous les véhicules ? Cette opération peut prendre quelques minutes.')) {
+        return;
+    }
+    
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyse en cours...';
+    btn.disabled = true;
+    
+    fetch('/api/predictive/batch/analyze-all-vehicles', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showSuccess(`Analyse terminée: ${data.summary.success_count} réussies, ${data.summary.error_count} erreurs`);
+            loadMaintenancePredictions();
+        } else {
+            showError(data.error || 'Erreur lors de l\'analyse');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showError('Erreur de communication');
+    })
+    .finally(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
+}
+
+function updateHeatmap() {
+    initializeHeatmap();
+}
+
+// Fonctions utilitaires
+function showSuccess(message) {
+    // Implémenter notification de succès
+    console.log('SUCCESS:', message);
+}
+
+function showError(message) {
+    // Implémenter notification d'erreur
+    console.error('ERROR:', message);
+}
+</script>
+{% endblock %}

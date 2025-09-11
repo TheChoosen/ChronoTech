@@ -1,3 +1,4 @@
+from core.database import get_db_connection
 """
 Routes pour la gestion des interventions - interventions.py
 """
@@ -23,16 +24,8 @@ def require_auth(f):
 
 bp = Blueprint('interventions', __name__)
 
-def get_db_connection():
-    """Connexion à la base de données"""
-    return pymysql.connect(
-        host=os.getenv('MYSQL_HOST', 'localhost'),
-        user=os.getenv('MYSQL_USER', 'root'),
-        password=os.getenv('MYSQL_PASSWORD', ''),
-        database=os.getenv('MYSQL_DB', 'chronotech'),
-        charset='utf8mb4',
-        cursorclass=pymysql.cursors.DictCursor
-    )
+# Import de la connexion centralisée
+# from core.database import get_db_connection  # Déjà importé en haut
 
 def allowed_file(filename):
     """Vérifier les extensions autorisées"""
@@ -594,3 +587,13 @@ def update_vehicle_info(work_order_id):
     except Exception as e:
         print(f"Erreur lors de la mise à jour du véhicule: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
+
+@bp.route('/kanban')
+@require_auth
+def kanban_view():
+    """Vue Kanban des interventions"""
+    try:
+        return render_template('interventions/kanban.html')
+    except Exception as e:
+        # En cas d'erreur, retourner une page simple
+        return f"<h1>Vue Kanban - Interventions</h1><p>Interface en cours de chargement...</p><p>Erreur temporaire: {str(e)}</p><a href='/interventions'>Retour à la liste</a>"

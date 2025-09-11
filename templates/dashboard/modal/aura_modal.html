@@ -1,0 +1,38 @@
+<!-- Aura Modal -->
+<div class="modal fade" id="auraModal" tabindex="-1" aria-labelledby="auraModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 20px;">
+            <div class="modal-header border-0">
+                <h5 class="modal-title text-white" id="auraModalLabel">
+                    <i class="fas fa-sparkles me-2"></i>ChronoAura - Assistance IA
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="chat-interface" style="height: 400px; background: rgba(255,255,255,0.1); border-radius: 15px; padding: 20px; backdrop-filter: blur(10px);">
+                    <div class="chat-messages" style="height: 300px; overflow-y: auto; margin-bottom: 20px;">
+                        <div class="message ai-message mb-3">
+                            <div class="d-flex align-items-start">
+                                <div class="avatar bg-light rounded-circle me-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-robot text-primary"></i>
+                                </div>
+                                <div class="message-content text-white">
+                                    <p class="mb-1">Bonjour ! Je suis ChronoAura, votre assistant IA. Comment puis-je vous aider aujourd'hui ?</p>
+                                    <small class="opacity-75">Il y a quelques secondes</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chat-input">
+                        <div class="input-group">
+                            <input type="text" class="form-control" placeholder="Tapez votre message..." style="background: rgba(255,255,255,0.2); border: none; color: white;">
+                            <button class="btn btn-light" type="button">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

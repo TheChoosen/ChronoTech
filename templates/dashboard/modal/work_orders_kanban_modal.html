@@ -1,0 +1,217 @@
+<!-- Work Orders Kanban Modal -->
+<div class="modal fade" id="workOrdersKanbanModal" tabindex="-1" aria-labelledby="workOrdersKanbanModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="workOrdersKanbanModalLabel">
+                    <i class="fas fa-tasks me-2"></i>Kanban Interventions
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <!-- Filtres et actions -->
+                <div class="px-3 py-2 border-bottom bg-light">
+                    <div class="row align-items-center">
+                        <div class="col-md-4">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">
+                                    <i class="fas fa-search"></i>
+                                </span>
+                                <input type="text" class="form-control" id="workOrderSearchFilter" 
+                                       placeholder="Rechercher une intervention...">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <select class="form-select form-select-sm" id="priorityFilter">
+                                <option value="">Toutes les priorités</option>
+                                <option value="low">Faible</option>
+                                <option value="normal">Normale</option>
+                                <option value="high">Élevée</option>
+                                <option value="urgent">Urgente</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-primary" id="refreshWorkOrdersKanban">
+                                    <i class="fas fa-sync-alt"></i> Actualiser
+                                </button>
+                                <button type="button" class="btn btn-outline-success" onclick="createWorkOrder()">
+                                    <i class="fas fa-plus"></i> Nouveau
+                                </button>
+                                <button type="button" class="btn btn-outline-info" id="exportWorkOrdersData">
+                                    <i class="fas fa-download"></i> Export
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tableau de bord des statistiques -->
+                <div class="px-3 py-2 bg-white border-bottom">
+                    <div class="row text-center">
+                        <div class="col-2">
+                            <div class="stat-card">
+                                <h6 class="text-secondary mb-1" id="pendingWorkOrdersCount">0</h6>
+                                <small class="text-muted">En attente</small>
+                            </div>
+                        </div>
+                        <div class="col-2">
+                            <div class="stat-card">
+                                <h6 class="text-info mb-1" id="assignedWorkOrdersCount">0</h6>
+                                <small class="text-muted">Assignées</small>
+                            </div>
+                        </div>
+                        <div class="col-2">
+                            <div class="stat-card">
+                                <h6 class="text-warning mb-1" id="inProgressWorkOrdersCount">0</h6>
+                                <small class="text-muted">En cours</small>
+                            </div>
+                        </div>
+                        <div class="col-2">
+                            <div class="stat-card">
+                                <h6 class="text-primary mb-1" id="reviewWorkOrdersCount">0</h6>
+                                <small class="text-muted">En révision</small>
+                            </div>
+                        </div>
+                        <div class="col-2">
+                            <div class="stat-card">
+                                <h6 class="text-success mb-1" id="completedWorkOrdersCount">0</h6>
+                                <small class="text-muted">Terminées</small>
+                            </div>
+                        </div>
+                        <div class="col-2">
+                            <div class="stat-card">
+                                <h6 class="text-danger mb-1" id="urgentWorkOrdersCount">0</h6>
+                                <small class="text-muted">Urgentes</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Colonnes Kanban -->
+                <div class="kanban-container p-3" style="min-height: 500px; background: #f8f9fa;">
+                    <div class="row">
+                        <!-- Colonne En attente -->
+                        <div class="col-md-2-4">
+                            <div class="kanban-column">
+                                <div class="kanban-header bg-secondary text-white rounded-top">
+                                    <h6 class="mb-0 p-2">
+                                        <i class="fas fa-clock me-2"></i>
+                                        En attente
+                                        <span class="badge bg-light text-secondary ms-2" id="pendingCount">0</span>
+                                    </h6>
+                                </div>
+                                <div class="kanban-body bg-white" id="pendingWorkOrders" 
+                                     style="min-height: 400px; border: 1px solid #dee2e6; border-top: none;">
+                                    <div class="p-2 text-center text-muted">
+                                        <i class="fas fa-hourglass-start fa-2x mb-2"></i>
+                                        <p class="mb-0 small">Aucune intervention en attente</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Colonne Assignées -->
+                        <div class="col-md-2-4">
+                            <div class="kanban-column">
+                                <div class="kanban-header bg-info text-white rounded-top">
+                                    <h6 class="mb-0 p-2">
+                                        <i class="fas fa-user-tag me-2"></i>
+                                        Assignées
+                                        <span class="badge bg-light text-info ms-2" id="assignedCount">0</span>
+                                    </h6>
+                                </div>
+                                <div class="kanban-body bg-white" id="assignedWorkOrders" 
+                                     style="min-height: 400px; border: 1px solid #dee2e6; border-top: none;">
+                                    <div class="p-2 text-center text-muted">
+                                        <i class="fas fa-user-check fa-2x mb-2"></i>
+                                        <p class="mb-0 small">Aucune intervention assignée</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Colonne En cours -->
+                        <div class="col-md-2-4">
+                            <div class="kanban-column">
+                                <div class="kanban-header bg-warning text-dark rounded-top">
+                                    <h6 class="mb-0 p-2">
+                                        <i class="fas fa-wrench me-2"></i>
+                                        En cours
+                                        <span class="badge bg-light text-warning ms-2" id="inProgressCount">0</span>
+                                    </h6>
+                                </div>
+                                <div class="kanban-body bg-white" id="inProgressWorkOrders" 
+                                     style="min-height: 400px; border: 1px solid #dee2e6; border-top: none;">
+                                    <div class="p-2 text-center text-muted">
+                                        <i class="fas fa-tools fa-2x mb-2"></i>
+                                        <p class="mb-0 small">Aucune intervention en cours</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Colonne En révision -->
+                        <div class="col-md-2-4">
+                            <div class="kanban-column">
+                                <div class="kanban-header bg-primary text-white rounded-top">
+                                    <h6 class="mb-0 p-2">
+                                        <i class="fas fa-eye me-2"></i>
+                                        En révision
+                                        <span class="badge bg-light text-primary ms-2" id="reviewCount">0</span>
+                                    </h6>
+                                </div>
+                                <div class="kanban-body bg-white" id="reviewWorkOrders" 
+                                     style="min-height: 400px; border: 1px solid #dee2e6; border-top: none;">
+                                    <div class="p-2 text-center text-muted">
+                                        <i class="fas fa-search fa-2x mb-2"></i>
+                                        <p class="mb-0 small">Aucune intervention en révision</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Colonne Terminées -->
+                        <div class="col-md-2-4">
+                            <div class="kanban-column">
+                                <div class="kanban-header bg-success text-white rounded-top">
+                                    <h6 class="mb-0 p-2">
+                                        <i class="fas fa-check-circle me-2"></i>
+                                        Terminées
+                                        <span class="badge bg-light text-success ms-2" id="completedCount">0</span>
+                                    </h6>
+                                </div>
+                                <div class="kanban-body bg-white" id="completedWorkOrders" 
+                                     style="min-height: 400px; border: 1px solid #dee2e6; border-top: none;">
+                                    <div class="p-2 text-center text-muted">
+                                        <i class="fas fa-trophy fa-2x mb-2"></i>
+                                        <p class="mb-0 small">Aucune intervention terminée</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Légende et actions -->
+                <div class="px-3 py-2 border-top bg-light">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Glissez-déposez les interventions pour changer leur statut. 
+                                Cliquez sur une carte pour voir les détails.
+                            </small>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <small class="text-muted">
+                                Auto-actualisation: <span id="autoRefreshStatus">Activée</span> |
+                                Dernière MàJ: <span id="lastWorkOrderUpdateTime">--:--</span>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

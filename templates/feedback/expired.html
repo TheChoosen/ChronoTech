@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Lien expiré{% endblock %}
+
+{% block page_styles %}
+<style>
+.expired-page {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 2rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.expired-container {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    padding: 4rem 3rem;
+    max-width: 500px;
+    width: 90%;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.expired-icon {
+    font-size: 5rem;
+    color: #f59e0b;
+    margin-bottom: 2rem;
+}
+
+.expired-title {
+    font-size: 2.5rem;
+    color: #333;
+    margin-bottom: 1rem;
+    font-weight: 700;
+}
+
+.expired-message {
+    font-size: 1.2rem;
+    color: #666;
+    margin-bottom: 3rem;
+    line-height: 1.6;
+}
+
+.contact-info {
+    background: #f8f9fa;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.contact-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 1rem;
+}
+
+.contact-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 0.8rem;
+    color: #555;
+}
+
+.contact-item:last-child {
+    margin-bottom: 0;
+}
+
+.close-btn {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+    color: white;
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: 50px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.close-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(107, 114, 128, 0.4);
+    color: white;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="expired-page">
+    <div class="expired-container">
+        <div class="expired-icon">
+            <i class="fas fa-clock"></i>
+        </div>
+        
+        <h1 class="expired-title">Lien expiré</h1>
+        
+        <p class="expired-message">
+            Ce lien d'évaluation a expiré ou n'est plus valide. 
+            Les liens d'évaluation sont valables pendant 30 jours après l'intervention.
+        </p>
+
+        <div class="contact-info">
+            <h3 class="contact-title">Besoin d'aide ?</h3>
+            <div class="contact-item">
+                <i class="fas fa-phone"></i>
+                <span>Téléphone : +33 1 23 45 67 89</span>
+            </div>
+            <div class="contact-item">
+                <i class="fas fa-envelope"></i>
+                <span>Email : contact@chronotech.com</span>
+            </div>
+            <div class="contact-item">
+                <i class="fas fa-clock"></i>
+                <span>Lundi - Vendredi : 8h00 - 18h00</span>
+            </div>
+        </div>
+        
+        <button onclick="window.close()" class="close-btn">
+            <i class="fas fa-times"></i>
+            Fermer cette page
+        </button>
+    </div>
+</div>
+{% endblock %}

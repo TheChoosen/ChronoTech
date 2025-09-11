@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 import json
 import logging
 from typing import Dict, List, Optional, Any
-from core.database import db_manager
+from core.database import get_db_connection
 
 logger = logging.getLogger(__name__)
 
@@ -62,8 +62,8 @@ class CopilotAI:
         if not date_to:
             date_to = date_from + timedelta(days=1)
             
-        conn = db_manager.get_connection()
-        cursor = conn.cursor(dictionary=True)
+        conn = get_db_connection()
+        cursor = conn.cursor()
         
         # Analyser la charge par technicien
         cursor.execute("""
@@ -165,8 +165,8 @@ class CopilotAI:
     
     def suggest_reassignment(self, overloaded_tech_id: int) -> List[Dict]:
         """Suggère des réassignations pour un technicien surchargé"""
-        conn = db_manager.get_connection()
-        cursor = conn.cursor(dictionary=True)
+        conn = get_db_connection()
+        cursor = conn.cursor()
         
         # Récupérer les tâches du technicien surchargé
         cursor.execute("""
@@ -215,6 +215,53 @@ class CopilotAI:
         
         conn.close()
         return suggestions
+    
+    def suggest_best_technician(self, task_data: Dict) -> Dict:
+        """Suggère le meilleur technicien pour une tâche"""
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            
+            # Récupérer les techniciens disponibles avec leur charge de travail
+            cursor.execute("""
+                SELECT 
+                    u.id, u.name, u.email,
+                    COUNT(wo.id) as current_workload,
+                    AVG(COALESCE(wo.estimated_duration, 120)) as avg_duration
+                FROM users u
+                LEFT JOIN work_orders wo ON u.id = wo.assigned_technician_id 
+                    AND wo.status IN ('assigned', 'in_progress')
+                WHERE u.role = 'technician' AND u.is_active = 1
+                GROUP BY u.id, u.name, u.email
+                ORDER BY current_workload ASC
+            """)
+            
+            technicians = cursor.fetchall()
+            conn.close()
+            
+            if not technicians:
+                return {
+                    'suggested_technician_id': None,
+                    'suggested_technician_name': None,
+                    'reason': 'Aucun technicien disponible'
+                }
+            
+            # Choisir le technicien avec la plus faible charge
+            best_tech = technicians[0]
+            
+            return {
+                'suggested_technician_id': best_tech['id'],
+                'suggested_technician_name': best_tech['name'],
+                'reason': f"Charge de travail optimale ({best_tech['current_workload']} tâches actives)"
+            }
+            
+        except Exception as e:
+            logger.error(f"Erreur suggestion meilleur technicien: {e}")
+            return {
+                'suggested_technician_id': None,
+                'suggested_technician_name': None,
+                'reason': 'Erreur lors de la suggestion'
+            }
 
 # Instance globale
 copilot_ai = CopilotAI()

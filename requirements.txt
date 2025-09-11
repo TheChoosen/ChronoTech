@@ -21,12 +21,17 @@ google-auth-oauthlib>=1.0.0
 
 # Sprint 2 - Expérience Terrain Augmentée
 # opencv-python>=4.8.0  # Pour AR (optionnel - installé si nécessaire)
-# aiohttp>=3.8.0        # Pour sync async (optionnel)
+aiohttp>=3.8.0                  # Pour sync async - CORRIGÉ
 mysql-connector-python>=8.0.0  # Sync offline MySQL
 numpy>=1.21.0                   # Traitement AR
 SpeechRecognition>=3.10.0       # Voice recognition backup
 google-auth-httplib2>=0.1.0
 httplib2>=0.22.0
+
+# Sprint 6 - Sécurité Avancée & 2FA (Tâche #41)
+PyJWT>=2.8.0                    # JSON Web Tokens pour API
+pyotp>=2.9.0                    # 2FA TOTP authentication
+qrcode[pil]>=7.4.0              # QR codes pour configuration 2FA
 
 # Flask extensions
 Flask-WTF>=1.1.1

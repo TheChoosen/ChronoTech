@@ -3,7 +3,7 @@ Routes API pour le Copilote IA
 """
 from flask import Blueprint, request, jsonify, session
 from core.ai_copilot import copilot_ai
-from core.database import db_manager
+from core.database import get_db_connection
 from datetime import datetime
 import logging
 
@@ -43,8 +43,8 @@ def analyze_task():
                 'error': 'task_id requis'
             }), 400
         
-        conn = db_manager.get_connection()
-        cursor = conn.cursor(dictionary=True)
+        conn = get_db_connection()
+        cursor = conn.cursor()
         
         cursor.execute("""
             SELECT wo.*, c.name as customer_name, u.name as technician_name
@@ -113,7 +113,7 @@ def execute_suggestion():
         new_tech_id = request.json.get('new_technician_id')
         
         if suggestion_type == 'reassign_task' and task_id and new_tech_id:
-            conn = db_manager.get_connection()
+            conn = get_db_connection()
             cursor = conn.cursor()
             
             # Réassigner la tâche

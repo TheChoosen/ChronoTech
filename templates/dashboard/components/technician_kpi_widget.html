@@ -1,0 +1,248 @@
+<!-- Widget KPI Techniciens -->
+<div class="technician-kpi-widget clay-card mb-4" id="technician-kpi-widget">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="fa-solid fa-users-gear me-2 text-success"></i>
+            KPI Techniciens
+        </h5>
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-success" id="refresh-technician-kpi" title="Actualiser KPI">
+                <i class="fa-solid fa-sync"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#techniciansKanbanModal" title="Vue détaillée">
+                <i class="fa-solid fa-expand"></i>
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- Métriques principales -->
+        <div class="row text-center mb-3">
+            <div class="col-6">
+                <div class="kpi-card bg-success text-white rounded p-2">
+                    <i class="fa-solid fa-user-check fa-2x mb-1"></i>
+                    <h4 class="mb-0" id="kpi-active-technicians">0</h4>
+                    <small>Actifs</small>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="kpi-card bg-primary text-white rounded p-2">
+                    <i class="fa-solid fa-tasks fa-2x mb-1"></i>
+                    <h4 class="mb-0" id="kpi-active-interventions">0</h4>
+                    <small>Interventions</small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Performance moyenne -->
+        <div class="performance-section mb-3">
+            <h6 class="mb-2">
+                <i class="fa-solid fa-chart-line me-1"></i>
+                Performance Moyenne
+            </h6>
+            <div class="progress mb-2" style="height: 20px;">
+                <div class="progress-bar bg-success" id="performance-bar" role="progressbar" 
+                     style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                    <span id="performance-text">Calcul...</span>
+                </div>
+            </div>
+            <div class="d-flex justify-content-between small text-muted">
+                <span>Temps moyen: <span id="avg-time">--</span></span>
+                <span>Efficacité: <span id="efficiency-rate">--%</span></span>
+            </div>
+        </div>
+        
+        <!-- Top Performers -->
+        <div class="top-performers">
+            <h6 class="mb-2">
+                <i class="fa-solid fa-trophy me-1"></i>
+                Top Performers
+            </h6>
+            <div id="top-performers-list">
+                <div class="text-center py-2">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status">
+                        <span class="visually-hidden">Chargement...</span>
+                    </div>
+                    <p class="mb-0 small text-muted mt-1">Calcul des performances...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Actions rapides -->
+        <div class="text-center mt-3">
+            <button class="btn btn-success btn-sm me-2" onclick="assignTechnician()">
+                <i class="fa-solid fa-user-plus me-1"></i>Assigner
+            </button>
+            <button class="btn btn-outline-info btn-sm" onclick="showTechniciansReport()">
+                <i class="fa-solid fa-chart-bar me-1"></i>Rapport
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+.kpi-card {
+    transition: transform 0.2s ease;
+}
+
+.kpi-card:hover {
+    transform: translateY(-2px);
+}
+
+.top-performer-item {
+    display: flex;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.top-performer-item:last-child {
+    border-bottom: none;
+}
+
+.performer-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #28a745, #20c997);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 12px;
+    margin-right: 10px;
+}
+
+.performer-info {
+    flex: 1;
+}
+
+.performer-name {
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.performer-score {
+    font-size: 11px;
+    color: #6c757d;
+}
+
+.performer-badge {
+    font-size: 18px;
+}
+</style>
+
+<script>
+// Initialisation du widget KPI Techniciens
+document.addEventListener('DOMContentLoaded', function() {
+    initTechnicianKpiWidget();
+});
+
+function initTechnicianKpiWidget() {
+    loadTechnicianKpi();
+    
+    // Actualisation automatique toutes les 2 minutes
+    setInterval(loadTechnicianKpi, 120000);
+    
+    // Bouton d'actualisation
+    document.getElementById('refresh-technician-kpi')?.addEventListener('click', () => {
+        loadTechnicianKpi(true);
+    });
+}
+
+async function loadTechnicianKpi(forceRefresh = false) {
+    try {
+        const response = await fetch('/api/technicians/kpi');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const data = await response.json();
+        updateKpiDisplay(data);
+        
+    } catch (error) {
+        console.error('❌ Erreur chargement KPI techniciens:', error);
+        showKpiError();
+    }
+}
+
+function updateKpiDisplay(data) {
+    // Métriques principales
+    document.getElementById('kpi-active-technicians').textContent = data.active_technicians || 0;
+    document.getElementById('kpi-active-interventions').textContent = data.active_interventions || 0;
+    
+    // Performance moyenne
+    const performance = data.average_performance || 0;
+    const performanceBar = document.getElementById('performance-bar');
+    const performanceText = document.getElementById('performance-text');
+    
+    performanceBar.style.width = `${performance}%`;
+    performanceBar.setAttribute('aria-valuenow', performance);
+    performanceText.textContent = `${performance}%`;
+    
+    // Couleur de la barre selon performance
+    performanceBar.className = 'progress-bar ' + 
+        (performance >= 80 ? 'bg-success' : 
+         performance >= 60 ? 'bg-warning' : 'bg-danger');
+    
+    // Temps et efficacité
+    document.getElementById('avg-time').textContent = data.average_time || '--';
+    document.getElementById('efficiency-rate').textContent = `${data.efficiency_rate || 0}%`;
+    
+    // Top performers
+    updateTopPerformers(data.top_performers || []);
+}
+
+function updateTopPerformers(performers) {
+    const container = document.getElementById('top-performers-list');
+    
+    if (performers.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-2">
+                <i class="fa-solid fa-users fa-2x mb-2 text-muted"></i>
+                <p class="mb-0 small text-muted">Aucune donnée disponible</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = performers.slice(0, 3).map((performer, index) => `
+        <div class="top-performer-item">
+            <div class="performer-avatar">
+                ${performer.initials || performer.name?.substring(0, 2) || '??'}
+            </div>
+            <div class="performer-info">
+                <div class="performer-name">${performer.name || 'Inconnu'}</div>
+                <div class="performer-score">${performer.completed_today || 0} interventions</div>
+            </div>
+            <div class="performer-badge">
+                ${index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
+            </div>
+        </div>
+    `).join('');
+}
+
+function showKpiError() {
+    document.getElementById('kpi-active-technicians').textContent = '?';
+    document.getElementById('kpi-active-interventions').textContent = '?';
+    document.getElementById('performance-text').textContent = 'Erreur';
+    document.getElementById('avg-time').textContent = '--';
+    document.getElementById('efficiency-rate').textContent = '--%';
+    
+    document.getElementById('top-performers-list').innerHTML = `
+        <div class="text-center py-2">
+            <i class="fa-solid fa-exclamation-triangle fa-2x mb-2 text-warning"></i>
+            <p class="mb-0 small text-muted">Erreur de chargement</p>
+        </div>
+    `;
+}
+
+function assignTechnician() {
+    // Ouvre la modal d'assignation de technicien
+    const modal = new bootstrap.Modal(document.getElementById('assignTechnicianModal'));
+    modal.show();
+}
+
+function showTechniciansReport() {
+    // Redirige vers le rapport détaillé des techniciens
+    window.location.href = '/analytics/technicians';
+}
+</script>

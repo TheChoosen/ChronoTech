@@ -1,0 +1,322 @@
+<!-- Détails Intervention Vue 360 - Dashboard Component -->
+<div class="card shadow-sm border-0">
+    <div class="card-header py-3 bg-gradient-primary text-white">
+        <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">
+                <i class="fas fa-clipboard-check me-2"></i>
+                Vue 360 - Intervention
+            </h6>
+            <div class="btn-group" role="group">
+                <button class="btn btn-outline-light btn-sm" onclick="refreshInterventionDetails()">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <button class="btn btn-outline-light btn-sm" onclick="toggleInterventionView()">
+                    <i class="fas fa-expand-arrows-alt"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card-body p-0" id="intervention-360-container">
+        {% if recent_orders and recent_orders|length > 0 %}
+            {% set intervention = recent_orders[0] %}
+            
+            <!-- Sélecteur d'intervention -->
+            <div class="border-bottom p-3 bg-light">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <select class="form-select form-select-sm" id="intervention-selector" onchange="loadInterventionDetails(this.value)">
+                            {% for order in recent_orders %}
+                            <option value="{{ order.id }}" {% if loop.first %}selected{% endif %}>
+                                {{ order.claim_number }} - {{ order.customer_name }} 
+                                ({{ order.priority|upper }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <span class="badge bg-{{ 'danger' if intervention.priority == 'urgent' else 'warning' if intervention.priority == 'high' else 'info' }}">
+                            {{ intervention.priority|upper }}
+                        </span>
+                        <span class="badge bg-{{ 'success' if intervention.status == 'completed' else 'warning' if intervention.status == 'in_progress' else 'secondary' }}">
+                            {{ intervention.status|upper }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="intervention-360-content">
+                <!-- Informations principales -->
+                <div class="row g-0">
+                    <!-- Colonne gauche - Informations client et véhicule -->
+                    <div class="col-md-6 border-end">
+                        <!-- Client -->
+                        <div class="p-3 border-bottom">
+                            <h6 class="text-primary mb-2">
+                                <i class="fas fa-user me-2"></i>Client
+                            </h6>
+                            <div class="customer-info">
+                                <p class="mb-1"><strong>{{ intervention.customer_name }}</strong></p>
+                                {% if intervention.customer_phone %}
+                                <p class="mb-1 text-muted">
+                                    <i class="fas fa-phone me-1"></i>{{ intervention.customer_phone }}
+                                </p>
+                                {% endif %}
+                                {% if intervention.customer_email %}
+                                <p class="mb-1 text-muted">
+                                    <i class="fas fa-envelope me-1"></i>{{ intervention.customer_email }}
+                                </p>
+                                {% endif %}
+                                {% if intervention.customer_address %}
+                                <p class="mb-0 text-muted">
+                                    <i class="fas fa-map-marker-alt me-1"></i>{{ intervention.customer_address }}
+                                </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Véhicule -->
+                        {% if intervention.vehicle_make %}
+                        <div class="p-3 border-bottom">
+                            <h6 class="text-success mb-2">
+                                <i class="fas fa-car me-2"></i>Véhicule
+                            </h6>
+                            <div class="vehicle-info">
+                                <p class="mb-1">
+                                    <strong>{{ intervention.vehicle_make }} {{ intervention.vehicle_model }}</strong>
+                                    {% if intervention.vehicle_year %}({{ intervention.vehicle_year }}){% endif %}
+                                </p>
+                                {% if intervention.vehicle_plate %}
+                                <p class="mb-0 text-muted">
+                                    <i class="fas fa-id-card me-1"></i>{{ intervention.vehicle_plate }}
+                                </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Technicien assigné -->
+                        {% if intervention.technician_name %}
+                        <div class="p-3">
+                            <h6 class="text-info mb-2">
+                                <i class="fas fa-user-cog me-2"></i>Technicien
+                            </h6>
+                            <p class="mb-0">{{ intervention.technician_name }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Colonne droite - Détails intervention -->
+                    <div class="col-md-6">
+                        <!-- Description -->
+                        <div class="p-3 border-bottom">
+                            <h6 class="text-warning mb-2">
+                                <i class="fas fa-clipboard-list me-2"></i>Description
+                            </h6>
+                            <p class="mb-0">{{ intervention.description }}</p>
+                        </div>
+                        
+                        <!-- Dates importantes -->
+                        <div class="p-3 border-bottom">
+                            <h6 class="text-secondary mb-2">
+                                <i class="fas fa-calendar me-2"></i>Planification
+                            </h6>
+                            <div class="dates-info">
+                                {% if intervention.scheduled_date %}
+                                <p class="mb-1">
+                                    <i class="fas fa-calendar-check me-1"></i>
+                                    <strong>Prévu:</strong> {{ intervention.scheduled_date.strftime('%d/%m/%Y %H:%M') }}
+                                </p>
+                                {% endif %}
+                                <p class="mb-1">
+                                    <i class="fas fa-plus me-1"></i>
+                                    <strong>Créé:</strong> {{ intervention.created_at.strftime('%d/%m/%Y %H:%M') }}
+                                </p>
+                                {% if intervention.updated_at != intervention.created_at %}
+                                <p class="mb-0">
+                                    <i class="fas fa-edit me-1"></i>
+                                    <strong>Modifié:</strong> {{ intervention.updated_at.strftime('%d/%m/%Y %H:%M') }}
+                                </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Coûts -->
+                        {% if intervention.estimated_cost or intervention.actual_cost %}
+                        <div class="p-3">
+                            <h6 class="text-dark mb-2">
+                                <i class="fas fa-euro-sign me-2"></i>Coûts
+                            </h6>
+                            <div class="costs-info">
+                                {% if intervention.estimated_cost %}
+                                <p class="mb-1">
+                                    <strong>Estimé:</strong> {{ "%.2f"|format(intervention.estimated_cost) }} €
+                                </p>
+                                {% endif %}
+                                {% if intervention.actual_cost %}
+                                <p class="mb-0">
+                                    <strong>Réel:</strong> {{ "%.2f"|format(intervention.actual_cost) }} €
+                                </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Barre d'état et actions -->
+                <div class="border-top p-3 bg-light">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                {% if intervention.notes_count %}
+                                <span class="badge bg-info me-2">
+                                    <i class="fas fa-sticky-note me-1"></i>{{ intervention.notes_count }} note(s)
+                                </span>
+                                {% endif %}
+                                {% if intervention.media_count %}
+                                <span class="badge bg-success me-2">
+                                    <i class="fas fa-camera me-1"></i>{{ intervention.media_count }} média(s)
+                                </span>
+                                {% endif %}
+                                {% if intervention.last_note_date %}
+                                <small class="text-muted">
+                                    Dernière note: {{ intervention.last_note_date.strftime('%d/%m %H:%M') }}
+                                </small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <div class="btn-group" role="group">
+                                <a href="{{ url_for('interventions.intervention_details', work_order_id=intervention.id) }}" 
+                                   class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-eye me-1"></i>Détails
+                                </a>
+                                {% if user_role in ['admin', 'supervisor'] or intervention.assigned_technician_id == session.user_id %}
+                                <button class="btn btn-outline-success btn-sm" onclick="startIntervention({{ intervention.id }})">
+                                    <i class="fas fa-play me-1"></i>Démarrer
+                                </button>
+                                {% endif %}
+                                <button class="btn btn-outline-secondary btn-sm" onclick="showNotes({{ intervention.id }})">
+                                    <i class="fas fa-comment me-1"></i>Notes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Notes récentes (si disponibles) -->
+                {% if intervention.recent_notes %}
+                <div class="border-top p-3" style="max-height: 150px; overflow-y: auto;">
+                    <h6 class="text-muted mb-2">
+                        <i class="fas fa-comments me-2"></i>Notes récentes
+                    </h6>
+                    {% set notes_list = intervention.recent_notes.split('|||') %}
+                    {% for note in notes_list[:3] %}
+                    <div class="alert alert-light py-2 mb-2">
+                        <small>{{ note }}</small>
+                    </div>
+                    {% endfor %}
+                    {% if notes_list|length > 3 %}
+                    <small class="text-muted">... et {{ notes_list|length - 3 }} autre(s) note(s)</small>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+            
+        {% else %}
+            <!-- Aucune intervention -->
+            <div class="p-4 text-center text-muted">
+                <i class="fas fa-clipboard fa-3x mb-3 opacity-50"></i>
+                <h6>Aucune intervention récente</h6>
+                <p class="mb-3">Il n'y a pas d'interventions à afficher pour le moment.</p>
+                <button class="btn btn-primary btn-sm" onclick="createNewIntervention()">
+                    <i class="fas fa-plus me-1"></i>Créer une intervention
+                </button>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Fonctions JavaScript pour la vue 360
+function refreshInterventionDetails() {
+    // Rafraîchir les détails
+    location.reload();
+}
+
+function toggleInterventionView() {
+    const container = document.getElementById('intervention-360-container');
+    container.classList.toggle('expanded-view');
+}
+
+function loadInterventionDetails(interventionId) {
+    // Charger les détails d'une intervention spécifique via AJAX
+    if (interventionId) {
+        window.location.href = `/interventions/${interventionId}/details`;
+    }
+}
+
+function startIntervention(interventionId) {
+    // Démarrer une intervention
+    if (confirm('Démarrer cette intervention maintenant ?')) {
+        fetch(`/api/work_orders/${interventionId}/start`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Erreur lors du démarrage: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur de communication');
+        });
+    }
+}
+
+function showNotes(interventionId) {
+    // Afficher les notes d'une intervention
+    window.open(`/interventions/${interventionId}/details#notes`, '_blank');
+}
+
+function createNewIntervention() {
+    // Créer une nouvelle intervention
+    window.location.href = '/work-orders/create';
+}
+</script>
+
+<style>
+.intervention-360-content {
+    font-size: 0.9rem;
+}
+
+.intervention-360-content .badge {
+    font-size: 0.75rem;
+}
+
+.expanded-view {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1050;
+    background: white;
+    overflow-y: auto;
+}
+
+.customer-info, .vehicle-info, .dates-info, .costs-info {
+    line-height: 1.4;
+}
+
+.alert-light {
+    border-left: 3px solid #007bff;
+}
+</style>

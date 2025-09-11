@@ -14,6 +14,7 @@ import os
 import logging
 from datetime import datetime, timedelta
 import pymysql
+import mysql.connector.cursor
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 import json
@@ -51,7 +52,7 @@ except ImportError as e:
 # NOUVEAU SPRINT 2 - Expérience Terrain Augmentée
 try:
     from core.voice_to_action import voice_engine
-    from core.offline_sync import init_sync_manager, sync_manager
+    from core.optimized_mysql_sync import get_optimized_sync_manager
     from core.ar_checklist import ar_overlay
     from routes.api.sprint2_api import register_sprint2_routes
     SPRINT2_FIELD_EXPERIENCE = True
@@ -149,6 +150,22 @@ def create_app(config_class=Config):
     except Exception as e:
         logger.warning(f"Impossible d'enregistrer contextual chat API blueprint: {e}")
     
+    # SPRINT 3 - Client Portal Blueprint
+    try:
+        from routes.client_portal import client_portal_bp
+        app.register_blueprint(client_portal_bp)
+        logger.info("✅ Sprint 3 - Client Portal blueprint enregistré")
+    except Exception as e:
+        logger.warning(f"Sprint 3 Client Portal non disponible: {e}")
+    
+    # SPRINT 4 - Predictive Analytics Blueprint
+    try:
+        from routes.predictive_routes import predictive_bp
+        app.register_blueprint(predictive_bp)
+        logger.info("✅ Sprint 4 - Predictive Analytics blueprint enregistré")
+    except Exception as e:
+        logger.warning(f"Sprint 4 Predictive Analytics non disponible: {e}")
+    
     try:
         from routes.ai.copilot_api import copilot_bp
         app.register_blueprint(copilot_bp, url_prefix='/api/copilot')
@@ -177,6 +194,22 @@ def create_app(config_class=Config):
         logger.info("✅ Dashboard Widgets Routes blueprint enregistré")
     except Exception as e:
         logger.warning(f"Impossible d'enregistrer dashboard widgets routes blueprint: {e}")
+    
+    # Dashboard Kanban API
+    try:
+        from routes.dashboard_api import dashboard_api_bp
+        app.register_blueprint(dashboard_api_bp)
+        logger.info("✅ Dashboard Kanban API blueprint enregistré")
+    except Exception as e:
+        logger.warning(f"Impossible d'enregistrer dashboard kanban API blueprint: {e}")
+    
+    # API Techniciens pour les widgets KPI
+    try:
+        from routes.api.technicians_api import register_technicians_api
+        register_technicians_api(app)
+        logger.info("✅ API Techniciens KPI enregistrée")
+    except Exception as e:
+        logger.warning(f"Impossible d'enregistrer API techniciens KPI: {e}")
     
     # Register Sprint 2 API blueprints (sécurisés)
     if SPRINT2_AVAILABLE:
@@ -207,31 +240,24 @@ def create_app(config_class=Config):
             
             # Initialiser le gestionnaire de synchronisation
             mysql_config = {
-                'host': app.config.get('DATABASE_HOST', 'localhost'),
-                'user': app.config.get('DATABASE_USER', 'root'),
-                'password': app.config.get('DATABASE_PASSWORD', ''),
-                'database': app.config.get('DATABASE_NAME', 'chronotech'),
+                'host': app.config.get('MYSQL_HOST', '192.168.50.101'),
+                'user': app.config.get('MYSQL_USER', 'gsicloud'),
+                'password': app.config.get('MYSQL_PASSWORD', 'TCOChoosenOne204$'),
+                'database': app.config.get('MYSQL_DB', 'bdm'),
                 'charset': 'utf8mb4'
             }
             
-            sync_manager = init_sync_manager(mysql_config)
-            sync_manager.start_sync_service()
+            sync_manager = get_optimized_sync_manager(mysql_config)
             
             logger.info("🚀✅ Sprint 2 Field Experience initialisé - Voice + Offline + AR")
             
         except Exception as e:
-            logger.error(f"❌ Erreur Sprint 2 Field Experience: {e}")
-            logger.error(traceback.format_exc())
+            logger.warning(f"⚠️ Sprint 2 Field Experience sync non disponible: {e}")
+            logger.info("ℹ️ Continuons sans synchronisation offline - fonctionnalité optionnelle")
     else:
         logger.warning("⚠️ Sprint 2 API blueprints non disponibles - fonctionnalités limitées")
     
-    # Register Sprint 3 blueprints (Collaboration immersive)
-    try:
-        from routes.client_portal import client_portal_bp
-        app.register_blueprint(client_portal_bp)
-        logger.info("✅ Client Portal blueprint enregistré (Sprint 3) - /client")
-    except Exception as e:
-        logger.error(f"❌ Erreur enregistrement Client Portal blueprint: {e}")
+    # Sprint 3 Client Portal déjà enregistré ci-dessus
     
     try:
         from core.visual_annotations import visual_annotations_bp
@@ -279,6 +305,54 @@ def create_app(config_class=Config):
             logger.error(f"❌ Erreur enregistrement Customer 360 API: {e}")
     else:
         logger.warning("⚠️ Customer 360 API non disponible")
+    
+    # Register Sprint 5 - Gamification blueprints
+    try:
+        from routes.gamification_routes import gamification_bp, feedback_bp
+        app.register_blueprint(gamification_bp)
+        app.register_blueprint(feedback_bp)
+        logger.info("✅ Sprint 5 Gamification blueprints enregistrés")
+    except Exception as e:
+        logger.error(f"❌ Erreur enregistrement Gamification blueprints: {e}")
+    
+    # Register Sprint 9.1 - ML Prédictif blueprints
+    try:
+        from routes.sprint9_ml import sprint9_ml_bp
+        app.register_blueprint(sprint9_ml_bp)
+        logger.info("✅ Sprint 9.1 ML Prédictif blueprint enregistré")
+    except Exception as e:
+        logger.error(f"❌ Erreur enregistrement Sprint 9.1 ML blueprint: {e}")
+    
+    # Register Sprint 9.2 - Planification Proactive & Optimisation blueprints
+    try:
+        from routes.sprint9_scheduler import sprint9_scheduler_bp
+        app.register_blueprint(sprint9_scheduler_bp)
+        logger.info("✅ Sprint 9.2 Planification Proactive blueprint enregistré")
+    except Exception as e:
+        logger.error(f"❌ Erreur enregistrement Sprint 9.2 Scheduler blueprint: {e}")
+    
+    # === SPRINT 6 - RBAC AVANCÉ & API PUBLIQUE ===
+    try:
+        from routes.rbac_routes import rbac_bp
+        app.register_blueprint(rbac_bp, url_prefix='/admin/rbac')
+        logger.info("✅ Sprint 6 RBAC Admin blueprint enregistré - /admin/rbac")
+    except Exception as e:
+        logger.error(f"❌ Erreur enregistrement RBAC blueprint: {e}")
+    
+    try:
+        from routes.api.public_simple import api_public_bp
+        app.register_blueprint(api_public_bp, url_prefix='/api/v1')
+        logger.info("✅ Sprint 6 API Publique blueprint enregistré - /api/v1")
+    except Exception as e:
+        logger.error(f"❌ Erreur enregistrement API Publique blueprint: {e}")
+    
+    # === SPRINT 6 - 2FA AUTHENTICATION (Tâche #41) ===
+    try:
+        from routes.two_factor_routes import two_factor_bp
+        app.register_blueprint(two_factor_bp)
+        logger.info("✅ Sprint 6 - 2FA Authentication blueprint enregistré (Tâche #41)")
+    except Exception as e:
+        logger.error(f"❌ Erreur enregistrement 2FA blueprint: {e}")
     
     # Configuration de la base de données
     with app.app_context():
@@ -474,7 +548,7 @@ def get_user_company_code(user_id):
     cursor = None
     try:
         conn = get_db_connection("gsi")
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_class=mysql.connector.cursor.MySQLCursorDict)
         
         # Get the compagnieweb_Record_id from clientsweb
         cursor.execute("""
@@ -582,18 +656,35 @@ def dashboard():
                 """, (user_id,))
                 stats['my_tasks'] = cursor.fetchone()
                 
-                # Mes interventions du jour
+                # Mes interventions du jour avec détails complets
                 cursor.execute("""
-                    SELECT wo.*, c.name as customer_name,
-                           CASE 
-                               WHEN wo.scheduled_date IS NOT NULL THEN wo.scheduled_date
-                               ELSE wo.created_at
-                           END as task_date
+                    SELECT 
+                        wo.*,
+                        c.name as customer_name,
+                        c.phone as customer_phone,
+                        c.email as customer_email,
+                        c.address as customer_address,
+                        v.make as vehicle_make,
+                        v.model as vehicle_model,
+                        v.year as vehicle_year,
+                        v.license_plate as vehicle_plate,
+                        COUNT(DISTINCT in_.id) as notes_count,
+                        COUNT(DISTINCT im.id) as media_count,
+                        MAX(in_.created_at) as last_note_date,
+                        GROUP_CONCAT(DISTINCT in_.content ORDER BY in_.created_at DESC SEPARATOR '|||') as recent_notes,
+                        CASE 
+                            WHEN wo.scheduled_date IS NOT NULL THEN wo.scheduled_date
+                            ELSE wo.created_at
+                        END as task_date
                     FROM work_orders wo
                     LEFT JOIN customers c ON wo.customer_id = c.id
+                    LEFT JOIN vehicles v ON wo.vehicle_id = v.id
+                    LEFT JOIN intervention_notes in_ ON wo.id = in_.work_order_id
+                    LEFT JOIN intervention_media im ON wo.id = im.work_order_id
                     WHERE wo.assigned_technician_id = %s
                     AND wo.status NOT IN ('completed', 'cancelled')
                     AND DATE(COALESCE(wo.scheduled_date, wo.created_at)) = CURDATE()
+                    GROUP BY wo.id
                     ORDER BY wo.priority DESC, task_date ASC
                 """, (user_id,))
                 my_tasks_today = cursor.fetchall()
@@ -613,12 +704,30 @@ def dashboard():
                 """)
                 stats['overview'] = cursor.fetchone()
                 
-                # Interventions récentes
+                # Interventions récentes avec détails complets pour vue 360
                 cursor.execute("""
-                    SELECT wo.*, u.name as technician_name, c.name as customer_name
+                    SELECT 
+                        wo.*,
+                        u.name as technician_name,
+                        c.name as customer_name,
+                        c.phone as customer_phone,
+                        c.email as customer_email,
+                        c.address as customer_address,
+                        v.make as vehicle_make,
+                        v.model as vehicle_model,
+                        v.year as vehicle_year,
+                        v.license_plate as vehicle_plate,
+                        COUNT(DISTINCT in_.id) as notes_count,
+                        COUNT(DISTINCT im.id) as media_count,
+                        MAX(in_.created_at) as last_note_date,
+                        GROUP_CONCAT(DISTINCT in_.content ORDER BY in_.created_at DESC SEPARATOR '|||') as recent_notes
                     FROM work_orders wo
                     LEFT JOIN users u ON wo.assigned_technician_id = u.id
                     LEFT JOIN customers c ON wo.customer_id = c.id
+                    LEFT JOIN vehicles v ON wo.vehicle_id = v.id
+                    LEFT JOIN intervention_notes in_ ON wo.id = in_.work_order_id
+                    LEFT JOIN intervention_media im ON wo.id = im.work_order_id
+                    GROUP BY wo.id
                     ORDER BY wo.updated_at DESC
                     LIMIT 10
                 """)
@@ -637,6 +746,8 @@ def dashboard():
             return render_template('dashboard/main.html', 
                                  stats=stats, 
                                  recent_orders=recent_orders,
+                                 my_tasks_today=my_tasks_today,
+                                 notifications=notifications,
                                  user_role=user_role)
                                  
     except ConnectionError as e:
@@ -1002,12 +1113,21 @@ else:
 if ROUTES_AVAILABLE:
     try:
         if work_orders_bp:
-            app.register_blueprint(work_orders_bp, url_prefix='/work_orders')
+            app.register_blueprint(work_orders_bp, url_prefix='/work-orders')
             logger.info("✅ Blueprint work_orders enregistré avec /work_orders (cohérence underscore)")
         
         if interventions_bp:
             app.register_blueprint(interventions_bp, url_prefix='/interventions')
             logger.info("✅ Blueprint interventions enregistré")
+            
+            # Enregistrer l'API Kanban
+            try:
+                import routes.interventions.kanban_api as kanban_module
+                kanban_bp = kanban_module.kanban_bp
+                app.register_blueprint(kanban_bp)
+                logger.info("✅ Blueprint Kanban API enregistré")
+            except Exception as e:
+                logger.warning(f"⚠️ Erreur enregistrement Kanban API: {e}")
         
         if customers_bp:
             app.register_blueprint(customers_bp, url_prefix='/customers')
@@ -1389,8 +1509,17 @@ if __name__ == '__main__':
     os.makedirs('static/temp', exist_ok=True)
     
     # Lancement de l'application
+    port = int(os.getenv('FLASK_PORT', 5021))  # Port 5021 pour test
+    host = app.config.get('HOST', '0.0.0.0')
+    
+    logger.info(f"🚀 Démarrage ChronoTech sur {host}:{port}")
+    logger.info(f"📱 Interface principale: http://localhost:{port}")
+    logger.info(f"📊 Dashboard: http://localhost:{port}/dashboard")
+    logger.info(f"🔧 Interventions: http://localhost:{port}/interventions/")
+    logger.info(f"📋 Vue Kanban: http://localhost:{port}/interventions/kanban")
+    
     app.run(
-        debug=os.getenv('FLASK_ENV') == 'development',
-        host=app.config.get('HOST', '0.0.0.0'),
-        port=int(os.getenv('FLASK_PORT', 5011))
+        debug=os.getenv('FLASK_DEBUG', 'False').lower() == 'true',
+        host=host,
+        port=port
     )

@@ -1,3 +1,4 @@
+from core.database import get_db_connection
 """
 API Routes sécurisées Sprint 2 - Work Orders Tasks
 Architecture imbriquée /work_orders/<id>/tasks/* 
@@ -17,16 +18,8 @@ logger = logging.getLogger(__name__)
 # Blueprint pour les routes API des tâches
 api_tasks_bp = Blueprint('api_tasks', __name__)
 
-def get_db_connection():
-    """Connexion à la base de données"""
-    return pymysql.connect(
-        host=os.getenv('MYSQL_HOST', 'localhost'),
-        user=os.getenv('MYSQL_USER', 'root'),
-        password=os.getenv('MYSQL_PASSWORD', ''),
-        database=os.getenv('MYSQL_DB', 'chronotech'),
-        charset='utf8mb4',
-        cursorclass=pymysql.cursors.DictCursor
-    )
+# Import de la connexion centralisée
+from core.database import get_db_connection
 
 def require_auth(f):
     """Décorateur pour vérifier l'authentification"""

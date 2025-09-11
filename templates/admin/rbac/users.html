@@ -1,0 +1,448 @@
+{% extends "base.html" %}
+
+{% block title %}Gestion Utilisateurs RBAC - ChronoTech{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header avec navigation -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('rbac.dashboard') }}">RBAC Admin</a></li>
+                    <li class="breadcrumb-item active">Utilisateurs</li>
+                </ol>
+            </nav>
+            
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="clay-title">
+                        <i class="fa-solid fa-users text-primary me-2"></i>
+                        Gestion Utilisateurs
+                    </h2>
+                    <p class="text-muted">{{ total }} utilisateurs actifs - Page {{ page }} sur {{ pages }}</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('rbac.list_roles') }}" class="btn btn-outline-secondary me-2">
+                        <i class="fa-solid fa-user-tag me-1"></i>Gérer Rôles
+                    </a>
+                    <button class="btn btn-primary" onclick="bulkPermissionModal()">
+                        <i class="fa-solid fa-users-gear me-1"></i>Actions en lot
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres et recherche -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card clay-card">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Rechercher</label>
+                            <input type="text" class="form-control" name="search" 
+                                   value="{{ request.args.get('search', '') }}" 
+                                   placeholder="Nom, email...">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Rôle</label>
+                            <select class="form-select" name="role">
+                                <option value="">Tous les rôles</option>
+                                <option value="admin" {{ 'selected' if request.args.get('role') == 'admin' }}>Admin</option>
+                                <option value="manager" {{ 'selected' if request.args.get('role') == 'manager' }}>Manager</option>
+                                <option value="supervisor" {{ 'selected' if request.args.get('role') == 'supervisor' }}>Superviseur</option>
+                                <option value="technician" {{ 'selected' if request.args.get('role') == 'technician' }}>Technicien</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Statut</label>
+                            <select class="form-select" name="status">
+                                <option value="">Tous</option>
+                                <option value="active" {{ 'selected' if request.args.get('status') == 'active' }}>Actif</option>
+                                <option value="inactive" {{ 'selected' if request.args.get('status') == 'inactive' }}>Inactif</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fa-solid fa-search me-1"></i>Filtrer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des utilisateurs -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card clay-card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Liste des Utilisateurs</h5>
+                        <div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="selectAll">
+                                <label class="form-check-label" for="selectAll">Tout sélectionner</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th width="40">
+                                        <input type="checkbox" class="form-check-input" id="masterCheck">
+                                    </th>
+                                    <th>Utilisateur</th>
+                                    <th>Rôle</th>
+                                    <th>Dernière connexion</th>
+                                    <th>Statut</th>
+                                    <th>Permissions spéciales</th>
+                                    <th width="200">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr data-user-id="{{ user.id }}">
+                                    <td>
+                                        <input type="checkbox" class="form-check-input user-checkbox" 
+                                               value="{{ user.id }}">
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm me-3">
+                                                <div class="avatar-title bg-primary rounded-circle">
+                                                    {{ user.name[:2].upper() }}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0">{{ user.name }}</h6>
+                                                <small class="text-muted">{{ user.email }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'danger' if user.role == 'admin' else 'primary' if user.role == 'manager' else 'success' if user.role == 'supervisor' else 'info' }}">
+                                            {{ user.role_display_name or user.role|title }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if user.last_login %}
+                                            <small class="text-muted">
+                                                {{ user.last_login.strftime('%d/%m/%Y %H:%M') }}
+                                            </small>
+                                        {% else %}
+                                            <small class="text-muted">Jamais connecté</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if user.is_active %}
+                                            <span class="badge bg-success">Actif</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inactif</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex flex-wrap gap-1" id="user-special-permissions-{{ user.id }}">
+                                            <!-- Chargé dynamiquement via AJAX -->
+                                            <small class="text-muted">Chargement...</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('rbac.user_permissions', user_id=user.id) }}" 
+                                               class="btn btn-outline-primary" title="Gérer permissions">
+                                                <i class="fa-solid fa-key"></i>
+                                            </a>
+                                            <button class="btn btn-outline-info" 
+                                                    onclick="viewUserActivity({{ user.id }})" 
+                                                    title="Voir activité">
+                                                <i class="fa-solid fa-chart-line"></i>
+                                            </button>
+                                            <button class="btn btn-outline-warning" 
+                                                    onclick="quickPermissionModal({{ user.id }}, '{{ user.name }}')" 
+                                                    title="Permission rapide">
+                                                <i class="fa-solid fa-bolt"></i>
+                                            </button>
+                                            {% if user.role != 'admin' %}
+                                            <button class="btn btn-outline-danger" 
+                                                    onclick="toggleUserStatus({{ user.id }}, {{ user.is_active|lower }})" 
+                                                    title="Activer/Désactiver">
+                                                <i class="fa-solid fa-{{ 'lock' if user.is_active else 'unlock' }}"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Pagination -->
+                {% if pages > 1 %}
+                <div class="card-footer">
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center mb-0">
+                            {% if page > 1 %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('rbac.list_users', page=page-1) }}">Précédent</a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for p in range(1, pages + 1) %}
+                                {% if p == page %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ p }}</span>
+                                </li>
+                                {% elif p <= 3 or p >= pages - 2 or (p >= page - 1 and p <= page + 1) %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('rbac.list_users', page=p) }}">{{ p }}</a>
+                                </li>
+                                {% elif p == 4 or p == pages - 3 %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if page < pages %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('rbac.list_users', page=page+1) }}">Suivant</a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Permission Rapide -->
+<div class="modal fade" id="quickPermissionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Permission Rapide</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="quickPermissionForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Utilisateur</label>
+                        <input type="text" class="form-control" id="selectedUserName" readonly>
+                        <input type="hidden" id="selectedUserId">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Permission</label>
+                        <select class="form-select" id="quickPermissionSelect" required>
+                            <option value="">Sélectionner une permission</option>
+                            <optgroup label="Work Orders">
+                                <option value="work_orders.view_all">Voir tous les bons</option>
+                                <option value="work_orders.edit_all">Modifier tous les bons</option>
+                                <option value="work_orders.assign">Assigner des bons</option>
+                            </optgroup>
+                            <optgroup label="Clients">
+                                <option value="customers.view">Voir les clients</option>
+                                <option value="customers.edit">Modifier les clients</option>
+                                <option value="customers.export">Exporter les données</option>
+                            </optgroup>
+                            <optgroup label="Administration">
+                                <option value="users.manage_permissions">Gérer les permissions</option>
+                                <option value="system.audit_logs">Voir les logs d'audit</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Action</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="permissionAction" 
+                                   id="actionGrant" value="grant" checked>
+                            <label class="btn btn-outline-success" for="actionGrant">
+                                <i class="fa-solid fa-check me-1"></i>Accorder
+                            </label>
+                            
+                            <input type="radio" class="btn-check" name="permissionAction" 
+                                   id="actionRevoke" value="revoke">
+                            <label class="btn btn-outline-danger" for="actionRevoke">
+                                <i class="fa-solid fa-times me-1"></i>Révoquer
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3" id="expirationSection">
+                        <label class="form-label">Expiration (optionnel)</label>
+                        <select class="form-select" id="expirationDays">
+                            <option value="">Permanent</option>
+                            <option value="1">1 jour</option>
+                            <option value="7">1 semaine</option>
+                            <option value="30">1 mois</option>
+                            <option value="90">3 mois</option>
+                            <option value="365">1 an</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Raison (optionnel)</label>
+                        <textarea class="form-control" id="permissionReason" rows="2" 
+                                  placeholder="Motif de cette modification..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fa-solid fa-save me-1"></i>Appliquer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Charger les permissions spéciales pour chaque utilisateur
+document.addEventListener('DOMContentLoaded', function() {
+    const users = document.querySelectorAll('[data-user-id]');
+    users.forEach(userRow => {
+        const userId = userRow.dataset.userId;
+        loadUserSpecialPermissions(userId);
+    });
+});
+
+function loadUserSpecialPermissions(userId) {
+    fetch(`{{ url_for('rbac.api_user_effective_permissions', user_id=0) }}`.replace('0', userId))
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById(`user-special-permissions-${userId}`);
+            container.innerHTML = '';
+            
+            if (data.permissions && data.permissions.length > 0) {
+                // Montrer seulement les permissions non-standards
+                const specialPerms = data.permissions.filter(p => 
+                    p.includes('system.') || p.includes('.edit_all') || p.includes('.manage')
+                ).slice(0, 3);
+                
+                if (specialPerms.length > 0) {
+                    specialPerms.forEach(perm => {
+                        const badge = document.createElement('span');
+                        badge.className = 'badge bg-warning text-dark';
+                        badge.textContent = perm.split('.')[1];
+                        badge.title = perm;
+                        container.appendChild(badge);
+                    });
+                    
+                    if (data.permissions.length > 3) {
+                        const moreBadge = document.createElement('span');
+                        moreBadge.className = 'badge bg-info';
+                        moreBadge.textContent = `+${data.permissions.length - 3}`;
+                        container.appendChild(moreBadge);
+                    }
+                } else {
+                    container.innerHTML = '<small class="text-muted">Standard</small>';
+                }
+            } else {
+                container.innerHTML = '<small class="text-muted">Aucune</small>';
+            }
+        })
+        .catch(error => {
+            console.error('Erreur chargement permissions:', error);
+            document.getElementById(`user-special-permissions-${userId}`).innerHTML = 
+                '<small class="text-danger">Erreur</small>';
+        });
+}
+
+function quickPermissionModal(userId, userName) {
+    document.getElementById('selectedUserId').value = userId;
+    document.getElementById('selectedUserName').value = userName;
+    
+    // Reset form
+    document.getElementById('quickPermissionForm').reset();
+    document.getElementById('actionGrant').checked = true;
+    
+    new bootstrap.Modal(document.getElementById('quickPermissionModal')).show();
+}
+
+function toggleUserStatus(userId, currentStatus) {
+    const action = currentStatus ? 'désactiver' : 'activer';
+    
+    if (!confirm(`Êtes-vous sûr de vouloir ${action} cet utilisateur ?`)) {
+        return;
+    }
+    
+    // Simulé - à implémenter
+    showToast(`Utilisateur ${action} avec succès`, 'success');
+    setTimeout(() => location.reload(), 1000);
+}
+
+function viewUserActivity(userId) {
+    // Ouvrir dans un nouvel onglet vers les logs d'audit filtrés
+    const url = `{{ url_for('rbac.audit_logs') }}?user_id=${userId}`;
+    window.open(url, '_blank');
+}
+
+// Gestion du formulaire de permission rapide
+document.getElementById('quickPermissionForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        permission: document.getElementById('quickPermissionSelect').value,
+        action: document.querySelector('input[name="permissionAction"]:checked').value,
+        expires_days: document.getElementById('expirationDays').value,
+        reason: document.getElementById('permissionReason').value
+    };
+    
+    const userId = document.getElementById('selectedUserId').value;
+    
+    fetch(`{{ url_for('rbac.update_user_permissions', user_id=0) }}`.replace('0', userId), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message, 'success');
+            bootstrap.Modal.getInstance(document.getElementById('quickPermissionModal')).hide();
+            
+            // Recharger les permissions de cet utilisateur
+            loadUserSpecialPermissions(userId);
+        } else {
+            showToast(data.error || 'Erreur lors de la mise à jour', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showToast('Erreur lors de la mise à jour', 'error');
+    });
+});
+
+// Masquer/afficher la section expiration selon l'action
+document.querySelectorAll('input[name="permissionAction"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        const expirationSection = document.getElementById('expirationSection');
+        expirationSection.style.display = this.value === 'grant' ? 'block' : 'none';
+    });
+});
+
+// Gestion de la sélection multiple
+document.getElementById('masterCheck').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.user-checkbox');
+    checkboxes.forEach(checkbox => checkbox.checked = this.checked);
+});
+</script>
+{% endblock %}
